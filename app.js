@@ -738,12 +738,12 @@ function openTaskDetail(taskId) {
 
   document.getElementById('tdModalTitle').textContent = t.title;
   document.getElementById('tdModalBody').innerHTML = `
-    <!-- ??상태 탭 -->
+    <!-- 📋 상태 탭 -->
     <div style="background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:14px;padding:16px;margin-bottom:18px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
         <div>
-          <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">업무紐?/div>
-          <div style="font-size:15px;font-weight:800;color:var(--text-primary)">${t.isImportant?'??':''}${t.title}</div>
+          <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">업무명</div>
+          <div style="font-size:15px;font-weight:800;color:var(--text-primary)">${t.isImportant?'⭐':''}${t.title}</div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
           <span class="status-badge status-${t.status}">${WS.getStatusLabel(t.status)}</span>
@@ -753,15 +753,15 @@ function openTaskDetail(taskId) {
       </div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
         <div style="background:var(--bg-secondary);border-radius:10px;padding:10px 12px">
-          <div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">?쒖옉??/div>
+          <div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">시작일</div>
           <div style="font-size:13px;font-weight:700;color:var(--text-primary)">${t.startDate||'-'}</div>
         </div>
         <div style="background:var(--bg-secondary);border-radius:10px;padding:10px 12px">
-          <div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">醫낅즺??/div>
+          <div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">마감일</div>
           <div style="font-size:13px;font-weight:700;color:var(--text-primary)">${t.dueDate||'-'}</div>
         </div>
         <div style="background:var(--bg-secondary);border-radius:10px;padding:10px 12px">
-          <div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">吏꾪뻾瑜?/div>
+          <div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">진행율</div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
             <div class="progress-bar" style="flex:1;height:5px">
               <div class="progress-fill ${fillCls}" style="width:${progress}%"></div>
@@ -770,16 +770,16 @@ function openTaskDetail(taskId) {
           </div>
         </div>
         <div style="background:var(--bg-secondary);border-radius:10px;padding:10px 12px">
-          <div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">보고?댁슜</div>
+          <div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">보고내용</div>
           <div style="font-size:12px;font-weight:700;color:var(--text-primary)">${t.reportContent||'-'}</div>
         </div>
       </div>
     </div>
 
-    <!-- ??吏꾪뻾??설정 -->
+    <!-- 📊 진행율 설정 -->
     <div style="margin-bottom:16px">
       <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px">
-        <i data-lucide="sliders-horizontal" style="width:13px;height:13px"></i> 吏꾪뻾??설정
+        <i data-lucide="sliders-horizontal" style="width:13px;height:13px"></i> 진행율 설정
       </div>
       <div style="display:flex;align-items:center;gap:12px">
         <input type="range" min="0" max="100" value="${progress}" id="progressSlider_${t.id}"
@@ -792,7 +792,7 @@ function openTaskDetail(taskId) {
       </div>
     </div>
 
-    <!-- ??설명 -->
+    <!-- ✏️ 설명 -->
     <div class="form-group" style="margin-bottom:0">
       <label class="form-label" style="display:flex;align-items:center;gap:6px">
         <i data-lucide="pencil-line" style="width:13px;height:13px"></i> 설명
@@ -805,15 +805,15 @@ function openTaskDetail(taskId) {
     <input type="hidden" id="td_score"  value="${t.score||0}">
     <input type="hidden" id="td_title"  value="${t.title}">
 
-    <!-- ??업무 히스토리 (?좉?) -->
+    <!-- 📜 업무 히스토리 (접기/펼치기) -->
     <div style="margin-top:18px;border-top:1px solid var(--border-color);padding-top:14px">
       <button class="btn" style="width:100%;justify-content:space-between;background:var(--bg-tertiary);border:none;font-size:12px;font-weight:700;height:36px"
-        onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.chev').textContent=this.nextElementSibling.style.display==='none'?'??:'??">
+        onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.chev').textContent=this.nextElementSibling.style.display==='none'?'▼':'▲'">
         <span style="display:flex;align-items:center;gap:6px">
           <i data-lucide="history" style="width:14px;height:14px"></i> 업무 히스토리
           <span style="font-size:10px;background:var(--bg-card);border-radius:8px;padding:1px 7px;color:var(--text-muted)">${(t.history||[]).length}건</span>>
         </span>
-        <span class="chev">??/span>
+        <span class="chev">▼</span>
       </button>
       <div style="display:none;margin-top:8px">
         <div class="history-timeline">
