@@ -910,7 +910,8 @@ function openNewTaskModal(mode = null, parentId = null, assigneeId = null) {
     resultEl.value = '';
   }
 
-  // simple 紐⑤뱶: ??댄?·?꾨뱶 蹂寃?  const modalTitle = document.querySelector('#newTaskModal .modal-title');
+  // simple 모드: 제목·버튼 변경
+  const modalTitle = document.querySelector('#newTaskModal .modal-title');
   const submitBtn  = document.querySelector('#newTaskModal .modal-foot .btn-blue');
   const rowPT   = document.getElementById('nt_row_priority_team');
   const rowDate = document.getElementById('nt_row_dates');
