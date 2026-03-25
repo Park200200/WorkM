@@ -975,7 +975,7 @@ function createNewTask() {
     team: document.getElementById('nt_team')?.value || '',
     score: parseInt(document.getElementById('nt_score').value) || 0,
     reportContent: document.getElementById('nt_result').value || '',  // 업무결과
-    processTags: window._processTags || [],                           // 怨쇱젙?깅줉
+    processTags: window._processTags || [],  // 과정등록
     spentTime: '0h',
     parentId: window._newParentId || null,
     history: [
@@ -998,7 +998,7 @@ function createNewTask() {
   renderPage_Tasks();
   renderPage_Settings();
   closeModalDirect('newTaskModal');
-  showToast('success', '????업무媛 吏?쒕릺됩니다.');
+  showToast('success', '새 업무가 등록되었습니다.');
   titleInput.value = '';
   document.getElementById('nt_desc').value = '';
 }
