@@ -2455,3 +2455,154 @@ function drToggleAllReport() {
   renderDailyReportTasks();
   showToast('success', allReported ? '일괄 보고 취소' : '일괄 보고 완료 처리');
 }
+
+/* ════════════════════════════════════════════════
+   📅 달력 날짜 픽커
+════════════════════════════════════════════════ */
+let _dpTargetId = null;
+let _dpDisplayId = null;
+let _dpYear = null;
+let _dpMonth = null;
+
+function openDatePicker(targetId, displayId) {
+  _dpTargetId  = targetId;
+  _dpDisplayId = displayId;
+
+  // 기존 팝업 제거
+  const old = document.getElementById('_datePicker');
+  if (old) old.remove();
+
+  // 현재 값
+  const cur = document.getElementById(targetId)?.value;
+  const base = cur ? new Date(cur) : new Date();
+  _dpYear  = base.getFullYear();
+  _dpMonth = base.getMonth();
+
+  const popup = document.createElement('div');
+  popup.id = '_datePicker';
+  popup.style.cssText = `
+    position:fixed;z-index:99999;background:var(--bg-secondary);
+    border:1px solid var(--border-color);border-radius:14px;
+    box-shadow:0 8px 32px rgba(0,0,0,.18);padding:14px;
+    min-width:280px;user-select:none;
+  `;
+
+  // 기준 버튼 위치
+  const btn = document.getElementById(displayId);
+  if (btn) {
+    const r = btn.getBoundingClientRect();
+    popup.style.top  = (r.bottom + 6) + 'px';
+    popup.style.left = r.left + 'px';
+  } else {
+    popup.style.top  = '50%';
+    popup.style.left = '50%';
+    popup.style.transform = 'translate(-50%,-50%)';
+  }
+
+  document.body.appendChild(popup);
+  _dpRender();
+
+  // 외부 클릭 시 닫기
+  setTimeout(() => {
+    document.addEventListener('click', _dpOutsideClick, true);
+  }, 10);
+}
+
+function _dpOutsideClick(e) {
+  const popup = document.getElementById('_datePicker');
+  if (popup && !popup.contains(e.target)) {
+    popup.remove();
+    document.removeEventListener('click', _dpOutsideClick, true);
+  }
+}
+
+function _dpRender() {
+  const popup = document.getElementById('_datePicker');
+  if (!popup) return;
+
+  const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  const days   = ['일','월','화','수','목','금','토'];
+  const firstDay = new Date(_dpYear, _dpMonth, 1).getDay();
+  const lastDate = new Date(_dpYear, _dpMonth + 1, 0).getDate();
+  const today    = new Date();
+  const curVal   = document.getElementById(_dpTargetId)?.value;
+
+  let html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <button onclick="event.stopPropagation();_dpPrev()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-primary);padding:2px 8px">‹</button>
+      <span style="font-weight:800;font-size:14px;color:var(--text-primary)">${_dpYear}년 ${months[_dpMonth]}</span>
+      <button onclick="event.stopPropagation();_dpNext()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-primary);padding:2px 8px">›</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">
+      ${days.map((d,i) => `<div style="text-align:center;font-size:10.5px;font-weight:700;padding:4px 0;color:${i===0?'#ef4444':i===6?'#4f6ef7':'var(--text-muted)'}">${d}</div>`).join('')}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">
+  `;
+
+  // 빈 칸
+  for (let i = 0; i < firstDay; i++) {
+    html += `<div></div>`;
+  }
+
+  for (let d = 1; d <= lastDate; d++) {
+    const dt = `${_dpYear}-${String(_dpMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday    = d === today.getDate() && _dpMonth === today.getMonth() && _dpYear === today.getFullYear();
+    const isSelected = dt === curVal;
+    const dow = (firstDay + d - 1) % 7;
+    const color = dow === 0 ? '#ef4444' : dow === 6 ? '#4f6ef7' : 'var(--text-primary)';
+
+    html += `
+      <div onclick="event.stopPropagation();_dpSelect('${dt}')"
+        style="text-align:center;padding:5px 2px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:${isSelected||isToday?'800':'500'};
+               color:${isSelected?'#fff':color};
+               background:${isSelected?'var(--accent-blue)':isToday?'rgba(79,110,247,.15)':'transparent'};
+               border:${isToday&&!isSelected?'1.5px solid var(--accent-blue)':'1.5px solid transparent'}">
+        ${d}
+      </div>
+    `;
+  }
+
+  html += `</div>
+    <div style="display:flex;gap:6px;margin-top:10px;justify-content:flex-end">
+      <button onclick="event.stopPropagation();_dpSelect('today')" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid var(--border-color);background:var(--bg-tertiary);cursor:pointer;color:var(--text-primary)">오늘</button>
+      <button onclick="event.stopPropagation();document.getElementById('_datePicker').remove();document.removeEventListener('click',_dpOutsideClick,true)" style="font-size:11px;padding:4px 10px;border-radius:7px;border:1px solid var(--border-color);background:var(--bg-tertiary);cursor:pointer;color:var(--text-primary)">닫기</button>
+    </div>
+  `;
+
+  popup.innerHTML = html;
+}
+
+function _dpPrev() {
+  _dpMonth--;
+  if (_dpMonth < 0) { _dpMonth = 11; _dpYear--; }
+  _dpRender();
+}
+function _dpNext() {
+  _dpMonth++;
+  if (_dpMonth > 11) { _dpMonth = 0; _dpYear++; }
+  _dpRender();
+}
+function _dpSelect(dt) {
+  let selected = dt;
+  if (dt === 'today') {
+    const t = new Date();
+    selected = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+  }
+
+  const hiddenEl  = document.getElementById(_dpTargetId);
+  const displayEl = document.getElementById(_dpDisplayId);
+
+  if (hiddenEl) hiddenEl.value = selected;
+  if (displayEl) {
+    const [y, m, d] = selected.split('-');
+    const labelId = _dpDisplayId.replace('_display', '_label');
+    const labelEl = document.getElementById(labelId);
+    const labelText = `${y}년 ${parseInt(m)}월 ${parseInt(d)}일`;
+    if (labelEl) labelEl.textContent = labelText;
+    else displayEl.querySelector('span') && (displayEl.querySelector('span').textContent = labelText);
+  }
+
+  const popup = document.getElementById('_datePicker');
+  if (popup) popup.remove();
+  document.removeEventListener('click', _dpOutsideClick, true);
+}
