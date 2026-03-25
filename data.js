@@ -1,120 +1,62 @@
-﻿// ============================================================
-//  WorkM - 怨듭슜 ?곗씠??& ?곹깭 愿由?// ============================================================
+// ============================================================
+//  WorkM - 공용 데이터 & 상태 관리
+// ============================================================
 
 const WS = {
-  // ?? ?꾩옱 ?ъ슜????
+  // 현재 로그인 사용자
   currentUser: null,
 
-  // ?? 蹂몄궗 ?뺣낫 ??
+  // 본사 정보
   hqInfo: JSON.parse(localStorage.getItem('ws_hq_info')) || {
-    name: 'WorkM Headquarters',
-    ceo: '源吏??,
+    name: 'WorkM 본사',
+    ceo: '김지훈',
     businessNum: '123-45-67890',
     phone: '02-1234-5678',
     email: 'contact@workm.kr',
-    address: '?쒖슱??媛뺣궓援??뚰뿤?濡?123, ?뚰겕???15痢?,
+    address: '서울시 강남구 테헤란로 123, 워크엠빌딩 15층',
     logoText: 'WorkM'
   },
 
-  // ?? 遺??愿由???
+  // 부서 목록
   departments: JSON.parse(localStorage.getItem('ws_departments')) || [
-    { id: 1, name: '媛쒕컻?' },
-    { id: 2, name: '湲고쉷?' },
-    { id: 3, name: '?붿옄?명?' },
-    { id: 4, name: '留덉??낇?' },
-    { id: 5, name: '寃쎌쁺吏?먰?' }
+    { id: 1, name: '개발팀' },
+    { id: 2, name: '마케팅팀' },
+    { id: 3, name: '디자인팀' },
+    { id: 4, name: '영업팀' },
+    { id: 5, name: '경영지원팀' }
   ],
 
-  // ?? 吏곴툒 愿由???
+  // 직급 목록
   ranks: JSON.parse(localStorage.getItem('ws_ranks')) || [
-    { id: 1, name: '?ъ썝', level: 1 },
-    { id: 2, name: '二쇱엫', level: 2 },
-    { id: 3, name: '?由?, level: 3 },
-    { id: 4, name: '怨쇱옣', level: 4 },
-    { id: 5, name: '李⑥옣', level: 5 },
-    { id: 6, name: '遺??, level: 6 },
-    { id: 7, name: '?댁궗', level: 7 },
+    { id: 1, name: '인턴', level: 1 },
+    { id: 2, name: '사원', level: 2 },
+    { id: 3, name: '주임', level: 3 },
+    { id: 4, name: '대리', level: 4 },
+    { id: 5, name: '과장', level: 5 },
+    { id: 6, name: '차장', level: 6 },
+    { id: 7, name: '팀장', level: 7 },
+    { id: 8, name: '부장', level: 8 },
+    { id: 9, name: '이사', level: 9 },
+    { id: 10, name: '대표', level: 10 },
   ],
 
-  // ?? 吏곸콉 愿由???
+  // 직책 목록
   positions: JSON.parse(localStorage.getItem('ws_positions')) || [
-    { id: 1, name: '??? },
-    { id: 2, name: '??? },
-    { id: 3, name: '?뚰듃?? },
-    { id: 4, name: '?ㅼ옣' },
-    { id: 5, name: '蹂몃??? },
+    { id: 1, name: '팀원' },
+    { id: 2, name: '팀장' },
+    { id: 3, name: '프로젝트매니저' },
+    { id: 4, name: '선임' },
+    { id: 5, name: '수석' },
     { id: 6, name: 'CEO' },
   ],
 
-  // ?먥븧 議곗쭅 愿由?CRUD ?먥븧
-
-  /* ?? 遺???? */
-  saveDepartments()  { localStorage.setItem('ws_departments', JSON.stringify(this.departments)); },
-  addDepartment(name) {
-    const id = (Math.max(0, ...this.departments.map(d=>d.id)) + 1);
-    this.departments.push({ id, name: name.trim() });
-    this.saveDepartments();
-    return id;
-  },
-  updateDepartment(id, name) {
-    const d = this.departments.find(d=>d.id===id);
-    if(d) { d.name = name.trim(); this.saveDepartments(); }
-  },
-  deleteDepartment(id) {
-    this.departments = this.departments.filter(d=>d.id!==id);
-    this.saveDepartments();
-  },
-
-  /* ?? 吏곴툒 ?? */
-  saveRanks()  { localStorage.setItem('ws_ranks', JSON.stringify(this.ranks)); },
-  addRank(name) {
-    const id = (Math.max(0, ...this.ranks.map(r=>r.id)) + 1);
-    const level = this.ranks.length + 1;
-    this.ranks.push({ id, name: name.trim(), level });
-    this.saveRanks();
-    return id;
-  },
-  updateRank(id, name) {
-    const r = this.ranks.find(r=>r.id===id);
-    if(r) { r.name = name.trim(); this.saveRanks(); }
-  },
-  deleteRank(id) {
-    this.ranks = this.ranks.filter(r=>r.id!==id);
-    // level ?ъ젙??    this.ranks.forEach((r,i) => r.level = i+1);
-    this.saveRanks();
-  },
-
-  /* ?? 吏곸콉 ?? */
-  savePositions()  { localStorage.setItem('ws_positions', JSON.stringify(this.positions)); },
-  addPosition(name) {
-    const id = (Math.max(0, ...this.positions.map(p=>p.id)) + 1);
-    this.positions.push({ id, name: name.trim() });
-    this.savePositions();
-    return id;
-  },
-  updatePosition(id, name) {
-    const p = this.positions.find(p=>p.id===id);
-    if(p) { p.name = name.trim(); this.savePositions(); }
-  },
-  deletePosition(id) {
-    this.positions = this.positions.filter(p=>p.id!==id);
-    this.savePositions();
-  },
-
-  // ?? 媛뺤“??愿由???
-  accents: JSON.parse(localStorage.getItem('ws_accents')) || [
-    '#4f6ef7','#9747ff','#06b6d4','#22c55e','#f59e0b','#6b7280','#ef4444'
-  ],
-  currentAccent: localStorage.getItem('ws_current_accent') || '#4f6ef7',
-  saveAccents() { localStorage.setItem('ws_accents', JSON.stringify(this.accents)); },
-
-  // ?? ?낅Т寃곌낵 愿由???
+  // 업무결과 목록
   taskResults: JSON.parse(localStorage.getItem('ws_task_results')) || [
-    { id:1, name:'誘몄셿猷?, icon:'?? },
-    { id:2, name:'吏꾪뻾以?, icon:'?봽' },
-    { id:3, name:'遺遺꾩셿猷?, icon:'?뵸' },
-    { id:4, name:'?꾨즺',   icon:'?? },
-    { id:5, name:'蹂대쪟',   icon:'?? },
+    { id:1, name:'정상완료', icon:'✅' },
+    { id:2, name:'진행중',   icon:'🔄' },
+    { id:3, name:'부분완료', icon:'🔶' },
+    { id:4, name:'보류',     icon:'⏸' },
+    { id:5, name:'취소',     icon:'❌' },
   ],
   saveTaskResults() { localStorage.setItem('ws_task_results', JSON.stringify(this.taskResults)); },
   addTaskResult(name, icon = '') {
@@ -132,194 +74,144 @@ const WS = {
     this.saveTaskResults();
   },
 
+  // 사용자 목록
   users: JSON.parse(localStorage.getItem('ws_users')) || [
-    { id:1, name:'源吏??, role:'???, dept:'媛쒕컻?', avatar:'KJ', color:'#4f6ef7', email:'kim@workm.kr', phone:'010-1234-5678', birthday:'1985-05-12', hiredAt:'2020-01-01', resignedAt:null, address:'?쒖슱??媛뺣궓援??뚰뿤?濡?123', loginId:'admin', password:'password123', status:'洹쇰Т(?닿렐)', note:'? 珥앷큵 愿由ъ옄', photo:'' },
-    { id:2, name:'?댁닔吏?, role:'?좎엫', dept:'媛쒕컻?', avatar:'LS', color:'#9747ff', email:'lee@workm.kr', phone:'010-2345-6789', birthday:'1990-08-22', hiredAt:'2021-03-15', resignedAt:null, address:'寃쎄린???깅궓??遺꾨떦援??먭탳??줈 456', loginId:'lee01', password:'password123', status:'洹쇰Т', note:'Frontend 媛쒕컻 由щ뱶', photo:'' },
-    { id:3, name:'諛뺣?以', role:'二쇱엫', dept:'湲고쉷?', avatar:'PM', color:'#06b6d4', email:'park@workm.kr', phone:'010-3456-7890', birthday:'1992-11-05', hiredAt:'2022-07-01', resignedAt:null, address:'?쒖슱??留덊룷援??낅쭑濡?789', loginId:'park02', password:'password123', status:'洹쇰Т(異쒖옣)', note:'?좉퇋 ?쒕퉬??湲고쉷 ?대떦', photo:'' },
-    { id:4, name:'理쒖쑀由?, role:'?由?, dept:'?붿옄?명?', avatar:'CY', color:'#f59e0b', email:'choi@workm.kr', phone:'010-4567-8901', birthday:'1991-02-14', hiredAt:'2021-11-10', resignedAt:null, address:'?쒖슱???≫뙆援??щ┝?쎈줈 321', loginId:'choi03', password:'password123', status:'洹쇰Т(?닿?)', note:'UI/UX ?붿옄??珥앷큵', photo:'' },
-    { id:5, name:'?뺥쁽??, role:'???, dept:'留덉??낇?', avatar:'JH', color:'#22c55e', email:'jung@workm.kr', phone:'010-5678-9012', birthday:'1986-09-30', hiredAt:'2020-05-20', resignedAt:null, address:'?덉뼇???숈븞援??쒕??濡?654', loginId:'jung04', password:'password123', status:'?댁쭅', note:'?≪븘?댁쭅 以?(蹂듦? ?덉젙)', photo:'' },
-    { id:6, name:'?쒖냼??, role:'?좎엫', dept:'留덉??낇?', avatar:'HS', color:'#ef4444', email:'han@workm.kr', phone:'010-6789-0123', birthday:'1989-12-25', hiredAt:'2021-06-01', resignedAt:null, address:'?쒖슱??媛뺤꽌援?媛?묐?濡?987', loginId:'han05', password:'password123', status:'洹쇰Т', note:'肄섑뀗痢?留덉????대떦', photo:'' },
+    { id:1, name:'김지훈', role:'팀장', dept:'개발팀', avatar:'KJ', color:'#4f6ef7',
+      email:'kim@workm.kr', phone:'010-1234-5678', birthday:'1985-05-12',
+      hiredAt:'2020-01-01', resignedAt:null, address:'서울시 강남구 테헤란로 123',
+      loginId:'admin', password:'1234', status:'재직(재택)', note:'앱 개발 관리자', photo:'' },
+    { id:2, name:'이수진', role:'선임', dept:'개발팀', avatar:'LS', color:'#9747ff',
+      email:'lee@workm.kr', phone:'010-2345-6789', birthday:'1990-08-22',
+      hiredAt:'2021-03-15', resignedAt:null, address:'경기도 성남시 분당구 판교로 456',
+      loginId:'lee01', password:'1234', status:'재직', note:'Frontend 개발팀 리드', photo:'' },
+    { id:3, name:'박민수', role:'대리', dept:'마케팅팀', avatar:'PM', color:'#06b6d4',
+      email:'park@workm.kr', phone:'010-3456-7890', birthday:'1992-11-05',
+      hiredAt:'2022-07-01', resignedAt:null, address:'서울시 마포구 월드컵로 789',
+      loginId:'park02', password:'1234', status:'재직(출장)', note:'일정 관리 및 마케팅 담당', photo:'' },
+    { id:4, name:'최유리', role:'주임', dept:'디자인팀', avatar:'CY', color:'#f59e0b',
+      email:'choi@workm.kr', phone:'010-4567-8901', birthday:'1991-02-14',
+      hiredAt:'2021-11-10', resignedAt:null, address:'서울시 서초구 서초대로 321',
+      loginId:'choi03', password:'1234', status:'재직(외근)', note:'UI/UX 디자인 전담', photo:'' },
+    { id:5, name:'정현수', role:'팀장', dept:'마케팅팀', avatar:'JH', color:'#22c55e',
+      email:'jung@workm.kr', phone:'010-5678-9012', birthday:'1986-09-30',
+      hiredAt:'2020-05-20', resignedAt:null, address:'인천시 연수구 컨벤시아대로 654',
+      loginId:'jung04', password:'1234', status:'휴직', note:'육아휴직 중 (복직 예정)', photo:'' },
+    { id:6, name:'한소희', role:'선임', dept:'영업팀', avatar:'HS', color:'#ef4444',
+      email:'han@workm.kr', phone:'010-6789-0123', birthday:'1989-12-25',
+      hiredAt:'2021-06-01', resignedAt:null, address:'서울시 강남구 학동로 987',
+      loginId:'han05', password:'1234', status:'재직', note:'영업 실적 담당', photo:'' },
   ],
 
-  // ?? ?섑뵆 ?낅Т ?곗씠??(濡쒖뺄 ?ㅽ넗由ъ? ?곕룞) ??
+  // 샘플 업무 데이터
   tasks: JSON.parse(localStorage.getItem('ws_tasks')) || [
     {
-      id:1, title:'?좉퇋 ?꾩껜?꾪솴 UI 媛쒕컻', 
-      desc:'硫붿씤 ?꾩껜?꾪솴 ?붾㈃??React濡??ш컻諛? 諛섏쓳???덉씠?꾩썐 ?곸슜 ?꾩슂.',
-      assignerId:1, assigneeId:2, 
+      id:1, title:'메인 대시보드 UI 개발',
+      desc:'메인 대시보드 페이지를 React로 개발하고 다양한 화면 크기 적용 필요.',
+      assignerId:1, assigneeIds:[2],
       status:'progress', priority:'high',
-      progress:65, dueDate:'2026-03-25',
+      progress:65, dueDate:'2026-03-28',
       createdAt:'2026-03-10', startedAt:'2026-03-11',
-      isImportant:true, team:'媛쒕컻?',
-      score: 15, spentTime: '12h', reportContent: 'React 而댄룷?뚰듃 援ъ“ ?ㅺ퀎 諛?API ?곕룞 以鍮??꾨즺', hasAttachment: true,
-      parentId: null,
+      isImportant:true, team:'개발팀',
+      score:15, spentTime:'12h', reportContent:'React 컴포넌트 완성 및 API 연동 완료', hasAttachment:true,
+      parentId:null,
       history:[
-        { date:'2026-03-10', event:'?낅Т 吏??, detail:'源吏?????댁닔吏?, icon:'clipboard-list', color:'#4f6ef7' },
-        { date:'2026-03-11', event:'?낅Т ?쒖옉', detail:'吏꾪뻾以묒쑝濡??곹깭 蹂寃?, icon:'play-circle', color:'#06b6d4' },
-        { date:'2026-03-18', event:'吏꾩쿃 50%', detail:'湲곕낯 而댄룷?뚰듃 援ы쁽 ?꾨즺', icon:'zap', color:'#f59e0b' },
-        { date:'2026-03-22', event:'吏꾩쿃 65%', detail:'API ?곕룞 ?묒뾽 吏꾪뻾 以?, icon:'wrench', color:'#9747ff' },
+        { date:'2026-03-10', event:'업무 등록', detail:'김지훈 → 이수진', icon:'clipboard-list', color:'#4f6ef7' },
+        { date:'2026-03-11', event:'업무 시작', detail:'진행중 상태로 변경', icon:'play-circle', color:'#06b6d4' },
+        { date:'2026-03-22', event:'진행율 65%', detail:'API 연동 작업 진행 중', icon:'wrench', color:'#9747ff' },
       ]
     },
     {
-      id:2, title:'Q1 留덉???湲고쉷???묒꽦',
-      desc:'2026??1遺꾧린 SNS 罹좏럹??湲고쉷???묒꽦 諛??덉궛 ?몄꽦.',
-      assignerId:5, assigneeId:6,
+      id:2, title:'Q1 마케팅 기획서 작성',
+      desc:'2026년 1분기 SNS 캠페인 기획서 작성 및 예산 책정.',
+      assignerId:5, assigneeIds:[5],
       status:'delay', priority:'high',
       progress:30, dueDate:'2026-03-24',
       createdAt:'2026-03-05', startedAt:'2026-03-06',
-      isImportant:true, team:'留덉??낇?',
-      score: 10, spentTime: '8h', reportContent: '1遺꾧린 SNS ?寃?遺꾩꽍 諛??덉궛??珥덉븞 ?묒꽦', hasAttachment: false,
-      parentId: null,
+      isImportant:true, team:'마케팅팀',
+      score:10, spentTime:'8h', reportContent:'1분기 SNS 타겟 분석 및 예산안 기본 작성', hasAttachment:false,
+      parentId:null,
       history:[
-        { date:'2026-03-05', event:'?낅Т 吏??, detail:'?뺥쁽?????쒖냼??, icon:'clipboard-list', color:'#4f6ef7' },
-        { date:'2026-03-06', event:'?낅Т ?쒖옉', detail:'?먮즺 ?섏쭛 ?쒖옉', icon:'play-circle', color:'#06b6d4' },
-        { date:'2026-03-15', event:'吏??諛쒖깮', detail:'?몃? ?곗씠???섍툒 吏??, icon:'alert-triangle', color:'#ef4444' },
-        { date:'2026-03-20', event:'吏꾩쿃 30%', detail:'湲곕낯 援ъ“ ?묒꽦 ?꾨즺', icon:'file-text', color:'#f59e0b' },
+        { date:'2026-03-05', event:'업무 등록', detail:'정현수 → 정현수', icon:'clipboard-list', color:'#4f6ef7' },
+        { date:'2026-03-20', event:'진행율 30%', detail:'기본 자료 수집 완료', icon:'file-text', color:'#f59e0b' },
       ]
     },
     {
-      id:3, title:'?쒕쾭 API ?깅뒫 理쒖쟻??,
-      desc:'?묐떟?띾룄 50% 媛쒖꽑 紐⑺몴. 罹먯떆 ?덉씠???꾩엯 諛?荑쇰━ ?쒕떇.',
-      assignerId:1, assigneeId:3,
+      id:3, title:'보안 API 성능 최적화',
+      desc:'응답시도 50% 개선 목표. 캐시 레이어 도입 및 쿼리 최적화.',
+      assignerId:1, assigneeIds:[3],
       status:'progress', priority:'medium',
       progress:80, dueDate:'2026-03-30',
       createdAt:'2026-03-12', startedAt:'2026-03-13',
-      isImportant:false, team:'媛쒕컻?',
-      score: 20, spentTime: '15h', reportContent: 'DB ?몃뜳??理쒖쟻??諛??덈뵒??罹먯떆 ?곸슜 ?꾨즺', hasAttachment: true,
-      parentId: null,
+      isImportant:false, team:'개발팀',
+      score:20, spentTime:'15h', reportContent:'DB 인덱스 최적화 및 캐시 레이어 적용 완료', hasAttachment:true,
+      parentId:null,
       history:[
-        { date:'2026-03-12', event:'?낅Т 吏??, detail:'源吏????諛뺣?以', icon:'clipboard-list', color:'#4f6ef7' },
-        { date:'2026-03-13', event:'?낅Т ?쒖옉', detail:'?깅뒫 ?꾨줈?뚯씪留??쒖옉', icon:'play-circle', color:'#06b6d4' },
-        { date:'2026-03-19', event:'吏꾩쿃 60%', detail:'罹먯떆 ?쒕쾭 援ъ텞 ?꾨즺', icon:'zap', color:'#22c55e' },
-        { date:'2026-03-23', event:'吏꾩쿃 80%', detail:'荑쇰━ 理쒖쟻???묒뾽 以?, icon:'wrench', color:'#9747ff' },
+        { date:'2026-03-12', event:'업무 등록', detail:'김지훈 → 박민수', icon:'clipboard-list', color:'#4f6ef7' },
+        { date:'2026-03-23', event:'진행율 80%', detail:'쿼리 최적화 작업 완료', icon:'zap', color:'#22c55e' },
       ]
     },
     {
-      id:4, title:'UX ?ъ슜??媛쒖꽑 由ы룷??,
-      desc:'?ъ슜???명꽣酉?5嫄?吏꾪뻾 ??媛쒖꽑 ?ъ씤???뺣━ 諛?蹂닿퀬.',
-      assignerId:1, assigneeId:4,
+      id:4, title:'UX 사용성 개선 보고서',
+      desc:'사용자 설문조사 5명 이상 진행 후 개선 사항 정리 및 보고.',
+      assignerId:1, assigneeIds:[4],
       status:'waiting', priority:'low',
       progress:0, dueDate:'2026-04-05',
       createdAt:'2026-03-20', startedAt:null,
-      isImportant:false, team:'?붿옄?명?',
-      score: 5, spentTime: '0h', reportContent: '?명꽣酉???곸옄 ??쇅 吏꾪뻾 以?, hasAttachment: false,
-      parentId: null,
+      isImportant:false, team:'디자인팀',
+      score:5, spentTime:'0h', reportContent:'설문 대상자 선정 작업 진행 중', hasAttachment:false,
+      parentId:null,
       history:[
-        { date:'2026-03-20', event:'?낅Т 吏??, detail:'源吏????理쒖쑀由?, icon:'clipboard-list', color:'#4f6ef7' },
-      ]
-    },
-    {
-      id:5, title:'?붽컙 ?ㅼ쟻 蹂닿퀬??,
-      desc:'2026??2???蹂?KPI ?ъ꽦瑜?痍⑦빀 諛?寃쎌쁺吏?蹂닿퀬 ?먮즺 ?묒꽦.',
-      assignerId:5, assigneeId:1,
-      status:'progress', priority:'high',
-      progress:45, dueDate:'2026-03-24',
-      createdAt:'2026-03-18', startedAt:'2026-03-19',
-      isImportant:true, team:'媛쒕컻?',
-      score: 12, spentTime: '5h', reportContent: '2???ㅼ쟻 ?곗씠??異붿텧 諛?遺꾩꽍 蹂닿퀬???묒꽦 以?, hasAttachment: true,
-      parentId: null,
-      history:[
-        { date:'2026-03-18', event:'?낅Т 吏??, detail:'?뺥쁽????源吏??, icon:'clipboard-list', color:'#4f6ef7' },
-        { date:'2026-03-19', event:'?낅Т ?쒖옉', detail:'?곗씠???섏쭛 ?쒖옉', icon:'play-circle', color:'#06b6d4' },
-        { date:'2026-03-22', event:'吏꾩쿃 45%', detail:'媛쒕컻? ?곗씠??痍⑦빀 ?꾨즺', icon:'bar-chart-3', color:'#f59e0b' },
-      ]
-    },
-    {
-      id:6, title:'怨좉컼 ?쇰뱶諛?DB ?뺣━',
-      desc:'?묐뀈 ?섎컲湲?CS 臾몄쓽 ?댁슜 移댄뀒怨좊━??諛??몄궗?댄듃 ?꾩텧.',
-      assignerId:1, assigneeId:2,
-      status:'done', priority:'low',
-      progress:100, dueDate:'2026-03-20',
-      createdAt:'2026-03-14', startedAt:'2026-03-15',
-      isImportant:false, team:'媛쒕컻?',
-      score: 8, spentTime: '10h', reportContent: 'CS ?쇰뱶諛?DB 留덉씠洹몃젅?댁뀡 諛??뺤젣 ?꾨즺', hasAttachment: false,
-      parentId: null,
-      history:[
-        { date:'2026-03-14', event:'?낅Т 吏??, detail:'源吏?????댁닔吏?, icon:'clipboard-list', color:'#4f6ef7' },
-        { date:'2026-03-15', event:'?낅Т ?쒖옉', detail:'DB ?묎렐 沅뚰븳 ?뺤씤', icon:'play-circle', color:'#06b6d4' },
-        { date:'2026-03-19', event:'?꾨즺', detail:'蹂닿퀬??怨듭쑀 ?꾨즺', icon:'check-circle-2', color:'#22c55e' },
-      ]
-    },
-    {
-      id:7, title:'?쒕뵫?섏씠吏 由щ돱??,
-      desc:'?좉퇋 釉뚮옖???꾩씠?댄떚??湲곕컲?쇰줈 ?덊럹?댁? ?꾨㈃ ?ъ꽕怨?',
-      assignerId:5, assigneeId:4,
-      status:'progress', priority:'medium',
-      progress:55, dueDate:'2026-04-10',
-      createdAt:'2026-03-15', startedAt:'2026-03-16',
-      isImportant:true, team:'?붿옄?명?',
-      score: 18, spentTime: '20h', reportContent: '硫붿씤 鍮꾩＜???붿옄??諛??됱긽 媛?대뱶 ?뺤젙', hasAttachment: true,
-      parentId: null,
-      history:[
-        { date:'2026-03-15', event:'?낅Т 吏??, detail:'?뺥쁽????理쒖쑀由?, icon:'clipboard-list', color:'#4f6ef7' },
-        { date:'2026-03-16', event:'?낅Т ?쒖옉', detail:'?붿옄???쒖븞 ?묒뾽 ?쒖옉', icon:'play-circle', color:'#06b6d4' },
-        { date:'2026-03-22', event:'吏꾩쿃 55%', detail:'硫붿씤 ?섏씠吏 ?붿옄???꾨즺', icon:'palette', color:'#9747ff' },
-      ]
-    },
-    {
-      id:8, title:'蹂댁븞 痍⑥빟???먭?',
-      desc:'?뺢린 蹂댁븞 媛먯궗. OWASP Top 10 湲곗? ?꾩닔 ?먭?.',
-      assignerId:1, assigneeId:3,
-      status:'waiting', priority:'high',
-      progress:0, dueDate:'2026-03-28',
-      createdAt:'2026-03-22', startedAt:null,
-      isImportant:true, team:'媛쒕컻?',
-      score: 15, spentTime: '0h', reportContent: '痍⑥빟??吏꾨떒 ?먭? ??ぉ 由ъ뒪???묒꽦 以?, hasAttachment: false,
-      parentId: null,
-      history:[
-        { date:'2026-03-22', event:'?낅Т 吏??, detail:'源吏????諛뺣?以', icon:'clipboard-list', color:'#4f6ef7' },
+        { date:'2026-03-20', event:'업무 등록', detail:'김지훈 → 최유리', icon:'clipboard-list', color:'#4f6ef7' },
       ]
     },
   ],
 
-  // ?? ?뚮┝ 紐⑸줉 ??
+  // 알림 목록
   notifications: [
-    { id:1, type:'delay', msg:'Q1 留덉???湲고쉷??- ?ㅻ뒛源뚯?!', time:'諛⑷툑 ??, read:false },
-    { id:2, type:'new', msg:'???낅Т 吏?? 蹂댁븞 痍⑥빟???먭?', time:'2?쒓컙 ??, read:false },
-    { id:3, type:'progress', msg:'?댁닔吏?- ?꾩껜?꾪솴 UI 65% ?ъ꽦', time:'4?쒓컙 ??, read:false },
-    { id:4, type:'done', msg:'怨좉컼 ?쇰뱶諛?DB ?뺣━ ?꾨즺??, time:'1????, read:true },
-    { id:5, type:'info', msg:'?붽컙 ?ㅼ쟻 蹂닿퀬??留덇컧 D-1', time:'1????, read:true },
+    { id:1, type:'delay', msg:'Q1 마케팅 기획서 - 기한 초과!', time:'방금 전', read:false },
+    { id:2, type:'new',  msg:'새 업무 등록: 보안 API 성능 최적화', time:'2시간 전', read:false },
+    { id:3, type:'progress', msg:'이수진 - 대시보드 UI 65% 달성', time:'4시간 전', read:false },
   ],
 
-  // ?? 硫붿떆吏 紐⑸줉 (濡쒖뺄 ?ㅽ넗由ъ? ?곕룞) ??
+  // 메시지 목록
   messages: JSON.parse(localStorage.getItem('ws_messages')) || [
-    { id: 1, senderId: 2, text: '??λ떂, ?좉퇋 UI ?쒖븞 ?뺤씤 遺?곷뱶由쎈땲??', time: '10:25 AM' },
-    { id: 2, senderId: 1, text: '?? 吏湲?諛붾줈 ?뺤씤?대낵寃뚯슂. 怨좎깮 留롮쑝?⑥뼱??', time: '10:30 AM' },
-    { id: 3, senderId: 3, text: '?쒕쾭 理쒖쟻???묒뾽 80% ?꾨즺?섏뿀?듬땲?? ?ㅽ썑??諛고룷 媛?ν븷 寃?媛숈븘??', time: '11:15 AM' },
-    { id: 4, senderId: 4, text: '?붿옄??媛?대뱶 ?섏젙蹂?怨듭쑀?대몢?덉뒿?덈떎. 李멸퀬諛붾엻?덈떎.', time: '01:45 PM' }
+    { id:1, senderId:2, text:'팀장님, 대시보드 UI 진행상황 확인 요청드립니다.', time:'10:25 AM' },
+    { id:2, senderId:1, text:'네, 내일까지로 확인하겠습니다.', time:'10:30 AM' },
   ],
 
-  // ?? 異쒗눜洹?湲곕줉 ??
-  attendance: { checkedIn: false, checkInTime: null, checkOutTime: null },
+  // 강조색 목록
+  accents: JSON.parse(localStorage.getItem('ws_accents')) || [
+    '#4f6ef7','#9747ff','#06b6d4','#22c55e','#f59e0b','#6b7280','#ef4444'
+  ],
+  currentAccent: localStorage.getItem('ws_current_accent') || '#4f6ef7',
 
-  // ?? ?좏떥 ?⑥닔 ??
+  // ── 유틸 메서드 ──────────────────────────────────────────
   getUser(id){ return this.users.find(u => u.id === id); },
   getTask(id){ return this.tasks.find(t => t.id === id); },
 
   getDday(dueDate){
     const due = new Date(dueDate);
     due.setHours(23,59,59,0);
-    const now = new Date();
-    const diff = Math.ceil((due - now) / (1000*60*60*24));
+    const diff = Math.ceil((due - new Date()) / (1000*60*60*24));
     return diff;
   },
 
   getDdayBadge(dueDate){
     const d = this.getDday(dueDate);
-    if(d < 0) return { cls:'dday-today', label:`D+${Math.abs(d)} 吏?? };
+    if(d < 0) return { cls:'dday-today', label:`D+${Math.abs(d)} 지연` };
     if(d === 0) return { cls:'dday-today', label:'D-DAY' };
-    if(d <= 2) return { cls:'dday-urgent', label:`D-${d}` };
-    if(d <= 7) return { cls:'dday-soon', label:`D-${d}` };
+    if(d <= 2)  return { cls:'dday-urgent', label:`D-${d}` };
+    if(d <= 7)  return { cls:'dday-soon',   label:`D-${d}` };
     if(d <= 14) return { cls:'dday-normal', label:`D-${d}` };
     return { cls:'dday-ok', label:`D-${d}` };
   },
 
   getStatusLabel(s){
-    return { waiting:'?湲?, progress:'吏꾪뻾以?, delay:'吏??, done:'?꾨즺' }[s] || s;
+    return { waiting:'대기', progress:'진행중', delay:'지연', done:'완료' }[s] || s;
   },
 
   getPriorityLabel(p){
-    return { high:'湲닿툒', medium:'以묎컙', low:'??쓬' }[p] || p;
+    return { high:'높음', medium:'보통', low:'낮음' }[p] || p;
   },
 
   formatDate(d){
@@ -328,89 +220,78 @@ const WS = {
     return `${dt.getMonth()+1}/${dt.getDate()}`;
   },
 
-  // ?닿? 吏?쒗븳 ?낅Т
+  // 내가 지시한 업무
   getAssignedByMe(){
     if(!this.currentUser) return [];
     return this.tasks.filter(t => t.assignerId === this.currentUser.id);
   },
 
-  // ?닿? 諛쏆? ?낅Т
+  // 내가 받은 업무
   getAssignedToMe(){
     if(!this.currentUser) return [];
-    return this.tasks.filter(t => t.assigneeId === this.currentUser.id);
+    return this.tasks.filter(t => {
+      const ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+      return ids.includes(this.currentUser.id);
+    });
   },
 
-  // ?ㅻ뒛 ?꾨즺?댁빞 ???낅Т
+  // 오늘 마감 업무
   getTodayTasks(){
     if(!this.currentUser) return [];
     return this.tasks.filter(t => {
       const d = this.getDday(t.dueDate);
-      return d <= 0 && t.status !== 'done' && t.assigneeId === this.currentUser.id;
+      const ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+      return d <= 0 && t.status !== 'done' && ids.includes(this.currentUser.id);
     });
   },
 
-  // 留덇컧??湲곗? ?뺣젹
+  // 마감일 기준 정렬
   getSortedByDue(){
     return [...this.tasks]
       .filter(t => t.status !== 'done')
       .sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate));
   },
 
-  // ?곹깭 蹂寃?  changeTaskStatus(taskId, newStatus){
+  // 상태 변경
+  changeTaskStatus(taskId, newStatus){
     const t = this.getTask(taskId);
     if(!t) return;
     const now = new Date().toISOString().split('T')[0];
     t.status = newStatus;
     const label = this.getStatusLabel(newStatus);
-    t.history.push({ date:now, event:`?곹깭 蹂寃? ${label}`, detail:'?ъ슜??吏곸젒 蹂寃?, icon:'refresh-cw', color:'#06b6d4' });
+    t.history.push({ date:now, event:`상태 변경: ${label}`, detail:'사용자 직접 변경', icon:'refresh-cw', color:'#06b6d4' });
     if(newStatus === 'done') t.progress = 100;
     this.saveTasks();
   },
 
-  // 吏꾩쿃瑜?蹂寃?  changeProgress(taskId, pct){
+  // 진행율 변경
+  changeProgress(taskId, pct){
     const t = this.getTask(taskId);
     if(!t) return;
     t.progress = pct;
     const now = new Date().toISOString().split('T')[0];
-    t.history.push({ date:now, event:`吏꾩쿃瑜?${pct}%`, detail:'吏곸젒 ?낅뜲?댄듃', icon:'trending-up', color:'#22c55e' });
+    t.history.push({ date:now, event:`진행율 ${pct}%`, detail:'직접 업데이트', icon:'trending-up', color:'#22c55e' });
     this.saveTasks();
   },
 
-  saveTasks(){
-    localStorage.setItem('ws_tasks', JSON.stringify(this.tasks));
-  },
+  saveTasks(){ localStorage.setItem('ws_tasks', JSON.stringify(this.tasks)); },
 
-  unreadCount(){
-    return this.notifications.filter(n => !n.read).length;
-  },
+  unreadCount(){ return this.notifications.filter(n => !n.read).length; },
 
-  // ?? ?ъ슜??愿由???
-  saveUsers(){
-    localStorage.setItem('ws_users', JSON.stringify(this.users));
-  },
-  addUser(u){
-    u.id = Date.now();
-    this.users.push(u);
-    this.saveUsers();
-  },
+  // 사용자 CRUD
+  saveUsers(){ localStorage.setItem('ws_users', JSON.stringify(this.users)); },
+  addUser(u){ u.id = Date.now(); this.users.push(u); this.saveUsers(); },
   updateUser(id, data){
-    const idx = this.users.findIndex(u=>u.id===id);
-    if(idx!==-1) {
-      this.users[idx] = { ...this.users[idx], ...data };
-      this.saveUsers();
-    }
+    const idx = this.users.findIndex(u => u.id === id);
+    if(idx !== -1) { this.users[idx] = { ...this.users[idx], ...data }; this.saveUsers(); }
   },
   deleteUser(id){
-    this.users = this.users.filter(u=>u.id!==id);
+    this.users = this.users.filter(u => u.id !== id);
     this.saveUsers();
-    // ?대떦 ?ъ슜?먭? ?대떦???낅Т 泥섎━ (null 泥섎━ ??
-    this.tasks.forEach(t=>{ if(t.assigneeId===id) t.assigneeId=null; });
+    this.tasks.forEach(t => { if(t.assigneeId === id) t.assigneeId = null; });
   },
 
-  // ?? 媛뺤“??愿由???
-  accents: JSON.parse(localStorage.getItem('ws_accents')) || ['#4f6ef7', '#9747ff', '#06b6d4', '#22c55e', '#f59e0b', '#ef4444'],
-  currentAccent: localStorage.getItem('ws_current_accent') || '#4f6ef7',
-
+  // 강조색 CRUD
   addAccent(color){
     if(this.accents.includes(color)) return false;
     this.accents.push(color);
@@ -421,107 +302,86 @@ const WS = {
     this.accents = this.accents.filter(a => a !== color);
     this.saveAccents();
   },
-  saveAccents(){
-    localStorage.setItem('ws_accents', JSON.stringify(this.accents));
-  },
+  saveAccents(){ localStorage.setItem('ws_accents', JSON.stringify(this.accents)); },
   applyAccent(color){
     this.currentAccent = color;
     localStorage.setItem('ws_current_accent', color);
     document.documentElement.style.setProperty('--accent-blue', color);
-    // 蹂댁“ ?됱긽 (?고븳 諛곌꼍 ?? ?먮룞 怨꾩궛 (?⑥닚??
-    document.documentElement.style.setProperty('--accent-blue-light', color + '22'); 
+    document.documentElement.style.setProperty('--accent-blue-light', color + '22');
   },
 
-  saveHQInfo(){
-    localStorage.setItem('ws_hq_info', JSON.stringify(this.hqInfo));
-  },
-  saveRanks(){ localStorage.setItem('ws_ranks', JSON.stringify(this.ranks)); },
+  // 본사 정보 저장
+  saveHQInfo(){ localStorage.setItem('ws_hq_info', JSON.stringify(this.hqInfo)); },
+
+  // 부서 CRUD
   saveDepts(){ localStorage.setItem('ws_departments', JSON.stringify(this.departments)); },
-  savePos(){ localStorage.setItem('ws_positions', JSON.stringify(this.positions)); },
-  
-  // CRUD - 遺??  addDept(name){ this.departments.push({ id:Date.now(), name }); this.saveDepts(); },
+  addDept(name){ this.departments.push({ id:Date.now(), name }); this.saveDepts(); },
   updateDept(id, name){ const d=this.departments.find(x=>x.id===id); if(d) d.name=name; this.saveDepts(); },
   deleteDept(id){ this.departments=this.departments.filter(x=>x.id!==id); this.saveDepts(); },
 
-  // CRUD - 吏곴툒
+  // 직급 CRUD
+  saveRanks(){ localStorage.setItem('ws_ranks', JSON.stringify(this.ranks)); },
   addRank(name, level){ this.ranks.push({ id:Date.now(), name, level }); this.saveRanks(); },
   updateRank(id, name, level){ const r=this.ranks.find(x=>x.id===id); if(r){ r.name=name; r.level=level; } this.saveRanks(); },
   deleteRank(id){ this.ranks=this.ranks.filter(x=>x.id!==id); this.saveRanks(); },
 
-  // CRUD - 吏곸콉
+  // 직책 CRUD
+  savePos(){ localStorage.setItem('ws_positions', JSON.stringify(this.positions)); },
   addPos(name){ this.positions.push({ id:Date.now(), name }); this.savePos(); },
   updatePos(id, name){ const p=this.positions.find(x=>x.id===id); if(p) p.name=name; this.savePos(); },
   deletePos(id){ this.positions=this.positions.filter(x=>x.id!==id); this.savePos(); },
 
-  // ?? 異쒗눜洹?湲곕줉  { userId: { "YYYY-MM-DD": { checkIn: "HH:MM", checkOut: "HH:MM" } } }
+  // 출퇴근 기록
   get attendance() {
     return JSON.parse(localStorage.getItem('ws_attendance')) || {};
   },
-
-  // ?ㅻ뒛 ?좎쭨 ??諛섑솚
   _todayKey() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   },
-
-  // ?ㅻ뒛 ???ъ슜?먯쓽 異쒗눜洹?湲곕줉 媛?몄삤湲?  getTodayAttendance(userId) {
+  getTodayAttendance(userId) {
     const all = this.attendance;
     const uid = String(userId);
     return (all[uid] && all[uid][this._todayKey()]) || null;
   },
-
-  // 異쒓렐 湲곕줉
   checkIn(userId) {
     const all = this.attendance;
     const uid = String(userId);
     const today = this._todayKey();
-    if (!all[uid]) all[uid] = {};
+    if(!all[uid]) all[uid] = {};
+    if(!all[uid][today]) all[uid][today] = {};
+    if(all[uid][today].checkIn) return;
     const now = new Date();
-    const hhmm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    const ampm = now.getHours() < 12 ? '?ㅼ쟾' : '?ㅽ썑';
+    const ampm = now.getHours() < 12 ? '오전' : '오후';
     const hh12 = now.getHours() % 12 || 12;
-    const timeStr = `${ampm} ${String(hh12).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    if (!all[uid][today]) all[uid][today] = {};
-    // 異쒓렐 ?쒓컙???대? 湲곕줉?섏뼱 ?덉쑝硫???뼱?곗? ?딆쓬 (?뱀씪 理쒖큹 湲곕줉 怨좎젙)
-    if (all[uid][today].checkIn) return;
-    all[uid][today].checkIn = timeStr;
-    all[uid][today].checkInRaw = hhmm;
+    all[uid][today].checkIn = `${ampm} ${String(hh12).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    all[uid][today].checkInRaw = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     localStorage.setItem('ws_attendance', JSON.stringify(all));
   },
-
-  // ?닿렐 湲곕줉
   checkOut(userId) {
     const all = this.attendance;
     const uid = String(userId);
     const today = this._todayKey();
-    if (!all[uid] || !all[uid][today]) return;
+    if(!all[uid] || !all[uid][today]) return;
     const now = new Date();
-    const ampm = now.getHours() < 12 ? '?ㅼ쟾' : '?ㅽ썑';
+    const ampm = now.getHours() < 12 ? '오전' : '오후';
     const hh12 = now.getHours() % 12 || 12;
-    const timeStr = `${ampm} ${String(hh12).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    all[uid][today].checkOut = timeStr;
+    all[uid][today].checkOut = `${ampm} ${String(hh12).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     localStorage.setItem('ws_attendance', JSON.stringify(all));
   },
 
-  saveMessages(){
-
-    localStorage.setItem('ws_messages', JSON.stringify(this.messages));
-  },
+  // 메시지
+  saveMessages(){ localStorage.setItem('ws_messages', JSON.stringify(this.messages)); },
   addMessage(text){
     if(!this.currentUser) return;
     const now = new Date();
-    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-    this.messages.push({
-      id: Date.now(),
-      senderId: this.currentUser.id,
-      text: text,
-      time: time
-    });
+    const time = now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', hour12:true });
+    this.messages.push({ id:Date.now(), senderId:this.currentUser.id, text, time });
     this.saveMessages();
   }
 };
 
-// 濡쒖뺄?ㅽ넗由ъ??먯꽌 ?뚮쭏 諛?媛뺤“??蹂듭썝
+// 페이지 로드시 테마 및 강조색 적용
 document.addEventListener('DOMContentLoaded', () => {
   const theme = localStorage.getItem('ws_theme') || 'light';
   document.documentElement.setAttribute('data-theme', theme);
