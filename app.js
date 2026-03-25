@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 
 let sidebarTimer = null;
 
@@ -922,8 +922,8 @@ function openNewTaskModal(mode = null, parentId = null, assigneeId = null) {
     if(rowDate) rowDate.style.display  = 'none';
     if(rowImp)  rowImp.style.display   = 'none';
   } else if (mode === 'schedule') {
-    if(modalTitle) modalTitle.textContent = '???ㅼ?伊?추가';
-    if(submitBtn)  { submitBtn.textContent = '?ㅼ?伊댁텛媛'; submitBtn.onclick = createNewTask; }
+    if(modalTitle) modalTitle.textContent = '내 스케줄 추가';
+    if(submitBtn)  { submitBtn.textContent = '스케줄 등록'; submitBtn.onclick = createNewTask; }
     if(rowPT)   rowPT.style.display   = 'none';
     if(rowDate) rowDate.style.display  = '';
     if(rowImp)  rowImp.style.display   = 'none';
@@ -954,7 +954,7 @@ function createNewTask() {
   const due = document.getElementById('nt_due').value;
 
   if(!title || !due){
-    showToast('error', '?쒕ぉ怨?留덇컧?쇱쓣 입력하세요');
+    showToast('error', '제목과 날짜를 입력하세요');
     return;
   }
 
