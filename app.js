@@ -878,29 +878,48 @@ function addProgressReport(taskId) {
   const now = new Date();
   const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
   if (!t.history) t.history = [];
-  t.history.push({ date: dateStr, event: label, detail: text, icon, color });
+
+  // 당일 기존 항목 탐색
+  const todayIdx = t.history.findIndex(h => h.date === dateStr);
+  let isUpdate = false;
+
+  if (todayIdx !== -1) {
+    // 당일 항목 업데이트
+    t.history[todayIdx] = { date: dateStr, event: label, detail: text, icon, color };
+    isUpdate = true;
+  } else {
+    // 신규 추가
+    t.history.push({ date: dateStr, event: label, detail: text, icon, color });
+  }
   WS.saveTasks();
 
   // 히스토리 타임라인 즉시 갱신
   const timeline = document.getElementById(`historyTimeline_${taskId}`);
   const countEl  = document.getElementById(`historyCount_${taskId}`);
   if (timeline) {
-    const h = t.history[t.history.length - 1];
-    const newItem = document.createElement('div');
-    newItem.className = 'timeline-item';
-    newItem.innerHTML = `
+    const h = isUpdate ? t.history[todayIdx] : t.history[t.history.length - 1];
+    const itemHtml = `
       <div class="timeline-dot" style="background:${h.color}22;border-color:${h.color}"><i data-lucide="${h.icon}"></i></div>
       <div class="timeline-content">
-        <div class="t-date">${h.date}</div>
+        <div class="t-date">${h.date} <span style="font-size:10px;background:${h.color}22;color:${h.color};border-radius:4px;padding:1px 5px;margin-left:4px">${isUpdate?'업데이트':''}</span></div>
         <div class="t-text">${h.event}</div>
         <div class="t-sub">${h.detail}</div>
       </div>`;
-    timeline.insertBefore(newItem, timeline.firstChild);
+    if (isUpdate) {
+      // 타임라인 첫 번째 항목(= 최신순이므로 오늘 항목)을 교체
+      const first = timeline.querySelector('.timeline-item');
+      if (first) first.innerHTML = itemHtml;
+    } else {
+      const newItem = document.createElement('div');
+      newItem.className = 'timeline-item';
+      newItem.innerHTML = itemHtml;
+      timeline.insertBefore(newItem, timeline.firstChild);
+    }
     refreshIcons();
   }
   if (countEl) countEl.textContent = t.history.length + '건';
   if (textEl)  textEl.value = '';
-  showToast('success', '진행보고가 등록됐습니다.');
+  showToast('success', isUpdate ? '오늘 진행보고를 업데이트했습니다.' : '진행보고가 등록됐습니다.');
 }
 
 function changeStatusFromModal(taskId, status) {
