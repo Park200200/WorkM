@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 
 let sidebarTimer = null;
 
@@ -2391,11 +2391,12 @@ let _attClockTimer = null;
 
 function renderAttendancePill() {
   if (!WS.currentUser) return;
-  const pill    = document.getElementById('attendancePill');
-  const inEl    = document.getElementById('attCheckInTime');
-  const outEl   = document.getElementById('attCheckOutTime');
-  const btnIcon = document.getElementById('attBtnIcon');
-  const btn     = document.getElementById('attBtn');
+  const pill       = document.getElementById('attendancePill');
+  const inEl       = document.getElementById('attCheckInTime');
+  const outEl      = document.getElementById('attCheckOutTime');
+  const outLabel   = document.getElementById('attCheckOutLabel');
+  const btnIcon    = document.getElementById('attBtnIcon');
+  const btn        = document.getElementById('attBtn');
   if (!pill) return;
 
   // 실시간 시계 타이머 초기화
@@ -2404,26 +2405,36 @@ function renderAttendancePill() {
   const rec    = WS.getTodayAttendance(WS.currentUser.id);
   const accent = WS.currentAccent || '#4f6ef7';
 
+  const _disableBtn = () => {
+    if (btn) { btn.onclick = null; btn.style.cursor = 'default'; btn.style.background = 'rgba(255,255,255,0.18)'; btn.style.borderColor = 'rgba(255,255,255,0.35)'; btn.style.color = '#fff'; }
+  };
+
   if (!rec || !rec.checkIn) {
     // 미출근
-    inEl.textContent  = '--:--';
-    outEl.textContent = '--:--';
-    if (btnIcon) btnIcon.textContent = '근무전';
-    if (btn) { btn.onclick = null; btn.style.cursor = 'default'; btn.style.background = 'rgba(255,255,255,0.18)'; btn.style.borderColor = 'rgba(255,255,255,0.35)'; btn.style.color = '#fff'; }
-  } else if (rec.checkOut) {
-    // 이미 퇴근한 상태
-    if (inEl)   inEl.textContent  = rec.checkIn  || '--:--';
-    if (outEl)  outEl.textContent = rec.checkOut || '--:--';
-    if (btnIcon) btnIcon.textContent = '퇴근완료';
-    if (btn) { btn.onclick = null; btn.style.cursor = 'default'; btn.style.background = 'rgba(255,255,255,0.18)'; btn.style.borderColor = 'rgba(255,255,255,0.35)'; btn.style.color = '#fff'; }
-  } else {
-    // 근무 중
-    if (inEl) inEl.textContent = rec.checkIn || '--:--';
+    if (inEl)     inEl.textContent     = '--:--';
+    if (outEl)    outEl.textContent    = '--:--';
+    if (outLabel) outLabel.textContent = '퇴근';
+    if (btnIcon)  btnIcon.textContent  = '근무전';
+    _disableBtn();
 
-    // 퇴근 전 실시간 현재시각 표시
+  } else if (rec.checkOut) {
+    // 퇴근 완료
+    if (inEl)     inEl.textContent     = rec.checkIn  || '--:--';
+    if (outEl)    outEl.textContent    = rec.checkOut || '--:--';
+    if (outLabel) outLabel.textContent = '퇴근';
+    if (btnIcon)  btnIcon.textContent  = '완료';
+    _disableBtn();
+
+  } else {
+    // 근무 중 ─ 출근시간 표시
+    if (inEl)     inEl.textContent     = rec.checkIn || '--:--';
+    if (outLabel) outLabel.textContent = '근무중';   // 우측 레이블 → 근무중
+    if (btnIcon)  btnIcon.textContent  = '퇴근';     // 중앙 버튼 → 퇴근
+
+    // 우측 시간 : 실시간 현재시각
     function _tick() {
       if (!outEl) return;
-      const n = new Date();
+      const n    = new Date();
       const ampm = n.getHours() < 12 ? '오전' : '오후';
       const hh12 = n.getHours() % 12 || 12;
       outEl.textContent = `${ampm} ${String(hh12).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}`;
@@ -2431,60 +2442,46 @@ function renderAttendancePill() {
     _tick();
     _attClockTimer = setInterval(_tick, 1000);
 
-    if (btnIcon) btnIcon.textContent = '퇴근';
+    // 버튼 활성화
     if (btn) {
       btn.style.cursor      = 'pointer';
       btn.style.background  = accent;
       btn.style.borderColor = accent;
       btn.style.color       = '#fff';
       btn.onclick = () => {
-        clearInterval(_attClockTimer);
-        _attClockTimer = null;
+        clearInterval(_attClockTimer); _attClockTimer = null;
         WS.checkOut(WS.currentUser.id);
         WS.updateUser(WS.currentUser.id, { status: '퇴근' });
 
-        // 퇴근 farewell 팝업
-        const checkInTime  = rec.checkIn  || '--:--';
-        const checkOutRec  = WS.getTodayAttendance(WS.currentUser.id);
-        const checkOutTime = checkOutRec?.checkOut || (() => {
+        const checkInTime  = rec.checkIn || '--:--';
+        const nowRec       = WS.getTodayAttendance(WS.currentUser.id);
+        const checkOutTime = nowRec?.checkOut || (() => {
           const n = new Date();
-          const ampm = n.getHours() < 12 ? '오전' : '오후';
-          const hh12 = n.getHours() % 12 || 12;
-          return `${ampm} ${String(hh12).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+          const ap = n.getHours() < 12 ? '오전' : '오후';
+          const hh = n.getHours() % 12 || 12;
+          return `${ap} ${String(hh).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
         })();
 
         const overlay = document.createElement('div');
-        overlay.id = '_checkoutOverlay';
-        overlay.style.cssText = `
-          position:fixed;inset:0;z-index:99999;
-          background:rgba(0,0,0,0.72);
-          display:flex;align-items:center;justify-content:center;
-          animation:fadeIn .3s ease;
-        `;
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center';
         overlay.innerHTML = `
-          <div style="background:var(--bg-secondary);border-radius:20px;padding:40px 48px;text-align:center;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,.4)">
-            <div style="font-size:40px;margin-bottom:12px">🌇</div>
-            <div style="font-size:20px;font-weight:900;color:var(--text-primary);margin-bottom:14px">
-              ${WS.currentUser.name}님, 수고하셨습니다!
-            </div>
-            <div style="font-size:14px;color:var(--text-muted);line-height:1.8">
+          <div style="background:var(--bg-secondary);border-radius:20px;padding:40px 48px;text-align:center;max-width:440px;box-shadow:0 24px 64px rgba(0,0,0,.4)">
+            <div style="font-size:42px;margin-bottom:12px">🌇</div>
+            <div style="font-size:20px;font-weight:900;color:var(--text-primary);margin-bottom:14px">${WS.currentUser.name}님, 수고하셨습니다!</div>
+            <div style="font-size:14px;color:var(--text-muted);line-height:1.9">
               금일 <strong style="color:var(--text-primary)">${checkInTime}</strong>에 출근하셔서<br>
               <strong style="color:var(--text-primary)">${checkOutTime}</strong>까지 고생 하셨습니다.<br><br>
               퇴근 후 즐거운 시간 보내시길 바랍니다. 😊
             </div>
-            <div style="margin-top:18px;font-size:12px;color:var(--text-muted)">잠시 후 자동 로그아웃됩니다...</div>
+            <div style="margin-top:18px;font-size:12px;color:var(--text-muted)">4초 후 자동 로그아웃됩니다...</div>
           </div>`;
         document.body.appendChild(overlay);
-
-        setTimeout(() => {
-          overlay.remove();
-          localStorage.removeItem('ws_user');
-          window.location.href = 'login.html';
-        }, 4000);
+        setTimeout(() => { overlay.remove(); localStorage.removeItem('ws_user'); window.location.href = 'login.html'; }, 4000);
       };
     }
   }
 }
+
 
 
 /* ════════════════════════════════════════════════
