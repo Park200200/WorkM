@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 
 let sidebarTimer = null;
 
@@ -782,10 +782,11 @@ function openTaskDetail(taskId) {
         <i data-lucide="sliders-horizontal" style="width:13px;height:13px"></i> 진행율 설정
       </div>
       <div style="display:flex;align-items:center;gap:12px">
-        <input type="range" min="0" max="100" value="${progress}" id="progressSlider_${t.id}"
+        <input type="range" min="${t.progress}" max="100" value="${progress}" id="progressSlider_${t.id}"
           style="flex:1;accent-color:var(--accent-blue)"
-          oninput="document.getElementById('progVal_${t.id}').textContent=this.value+'%'; document.getElementById('progBar_live_${t.id}').style.width=this.value+'%'">
+          oninput="const _min=parseInt(this.min);if(parseInt(this.value)<_min)this.value=_min;document.getElementById('progVal_${t.id}').textContent=this.value+'%'; document.getElementById('progBar_live_${t.id}').style.width=this.value+'%'">
         <span id="progVal_${t.id}" style="font-size:15px;font-weight:800;color:var(--accent-blue);min-width:40px;text-align:right">${progress}%</span>
+
       </div>
       <div class="progress-bar" style="margin-top:8px;height:8px;border-radius:6px">
         <div class="progress-fill ${fillCls}" id="progBar_live_${t.id}" style="width:${progress}%;border-radius:6px"></div>
@@ -2386,45 +2387,105 @@ function deleteRank(id) { deleteOrgItem('rank', id); }
 /* ?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧
    異쒗눜洹?위젯
 ?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧 */
+let _attClockTimer = null;
+
 function renderAttendancePill() {
   if (!WS.currentUser) return;
-  const pill   = document.getElementById('attendancePill');
-  const inEl   = document.getElementById('attCheckInTime');
-  const outEl  = document.getElementById('attCheckOutTime');
-  const btnIcon= document.getElementById('attBtnIcon');
-  const btn    = document.getElementById('attBtn');
+  const pill    = document.getElementById('attendancePill');
+  const inEl    = document.getElementById('attCheckInTime');
+  const outEl   = document.getElementById('attCheckOutTime');
+  const btnIcon = document.getElementById('attBtnIcon');
+  const btn     = document.getElementById('attBtn');
   if (!pill) return;
 
-  const rec = WS.getTodayAttendance(WS.currentUser.id);
+  // 실시간 시계 타이머 초기화
+  if (_attClockTimer) { clearInterval(_attClockTimer); _attClockTimer = null; }
+
+  const rec    = WS.getTodayAttendance(WS.currentUser.id);
   const accent = WS.currentAccent || '#4f6ef7';
 
   if (!rec || !rec.checkIn) {
-    // 미출근 상태
+    // 미출근
     inEl.textContent  = '--:--';
     outEl.textContent = '--:--';
-    btnIcon.textContent = '근무전';
+    if (btnIcon) btnIcon.textContent = '근무전';
+    if (btn) { btn.onclick = null; btn.style.cursor = 'default'; btn.style.background = 'rgba(255,255,255,0.18)'; btn.style.borderColor = 'rgba(255,255,255,0.35)'; btn.style.color = '#fff'; }
+  } else if (rec.checkOut) {
+    // 이미 퇴근한 상태
+    if (inEl)   inEl.textContent  = rec.checkIn  || '--:--';
+    if (outEl)  outEl.textContent = rec.checkOut || '--:--';
+    if (btnIcon) btnIcon.textContent = '퇴근완료';
     if (btn) { btn.onclick = null; btn.style.cursor = 'default'; btn.style.background = 'rgba(255,255,255,0.18)'; btn.style.borderColor = 'rgba(255,255,255,0.35)'; btn.style.color = '#fff'; }
   } else {
-    // 출근 상태
-    inEl.textContent  = rec.checkIn ? rec.checkIn.slice(11,16) : '--:--';
-    outEl.textContent = rec.checkOut ? rec.checkOut.slice(11,16) : '--:--';
-    btnIcon.textContent = rec.checkOut ? '퇴근' : '근무중';
+    // 근무 중
+    if (inEl) inEl.textContent = rec.checkIn || '--:--';
+
+    // 퇴근 전 실시간 현재시각 표시
+    function _tick() {
+      if (!outEl) return;
+      const n = new Date();
+      const ampm = n.getHours() < 12 ? '오전' : '오후';
+      const hh12 = n.getHours() % 12 || 12;
+      outEl.textContent = `${ampm} ${String(hh12).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}`;
+    }
+    _tick();
+    _attClockTimer = setInterval(_tick, 1000);
+
+    if (btnIcon) btnIcon.textContent = '퇴근';
     if (btn) {
-      btn.style.cursor = 'pointer';
-      btn.style.background = accent;
+      btn.style.cursor      = 'pointer';
+      btn.style.background  = accent;
       btn.style.borderColor = accent;
-      btn.style.color = '#fff';
+      btn.style.color       = '#fff';
       btn.onclick = () => {
-        if (!rec.checkOut) {
-          WS.checkOut(WS.currentUser.id);
-          WS.updateUser(WS.currentUser.id, { status: '근무(퇴근)' });
-          renderAttendancePill();
-          showToast('info', '퇴근 처리 완료! 수고하셨습니다.');
-        }
+        clearInterval(_attClockTimer);
+        _attClockTimer = null;
+        WS.checkOut(WS.currentUser.id);
+        WS.updateUser(WS.currentUser.id, { status: '퇴근' });
+
+        // 퇴근 farewell 팝업
+        const checkInTime  = rec.checkIn  || '--:--';
+        const checkOutRec  = WS.getTodayAttendance(WS.currentUser.id);
+        const checkOutTime = checkOutRec?.checkOut || (() => {
+          const n = new Date();
+          const ampm = n.getHours() < 12 ? '오전' : '오후';
+          const hh12 = n.getHours() % 12 || 12;
+          return `${ampm} ${String(hh12).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+        })();
+
+        const overlay = document.createElement('div');
+        overlay.id = '_checkoutOverlay';
+        overlay.style.cssText = `
+          position:fixed;inset:0;z-index:99999;
+          background:rgba(0,0,0,0.72);
+          display:flex;align-items:center;justify-content:center;
+          animation:fadeIn .3s ease;
+        `;
+        overlay.innerHTML = `
+          <div style="background:var(--bg-secondary);border-radius:20px;padding:40px 48px;text-align:center;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,.4)">
+            <div style="font-size:40px;margin-bottom:12px">🌇</div>
+            <div style="font-size:20px;font-weight:900;color:var(--text-primary);margin-bottom:14px">
+              ${WS.currentUser.name}님, 수고하셨습니다!
+            </div>
+            <div style="font-size:14px;color:var(--text-muted);line-height:1.8">
+              금일 <strong style="color:var(--text-primary)">${checkInTime}</strong>에 출근하셔서<br>
+              <strong style="color:var(--text-primary)">${checkOutTime}</strong>까지 고생 하셨습니다.<br><br>
+              퇴근 후 즐거운 시간 보내시길 바랍니다. 😊
+            </div>
+            <div style="margin-top:18px;font-size:12px;color:var(--text-muted)">잠시 후 자동 로그아웃됩니다...</div>
+          </div>`;
+        document.body.appendChild(overlay);
+
+        setTimeout(() => {
+          overlay.remove();
+          localStorage.removeItem('ws_user');
+          window.location.href = 'login.html';
+        }, 4000);
       };
     }
   }
 }
+
 
 /* ════════════════════════════════════════════════
    📋 일일보고 모달
