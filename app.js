@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 
 let sidebarTimer = null;
 
@@ -751,7 +751,7 @@ function openTaskDetail(taskId) {
           <span class="dday-badge ${dd.cls}">${dd.label}</span>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
         <div style="background:var(--bg-secondary);border-radius:10px;padding:10px 12px">
           <div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">시작일</div>
           <div style="font-size:13px;font-weight:700;color:var(--text-primary)">${t.startDate||'-'}</div>
@@ -774,6 +774,13 @@ function openTaskDetail(taskId) {
           <div style="font-size:12px;font-weight:700;color:var(--text-primary)">${t.reportContent||'-'}</div>
         </div>
       </div>
+      <!-- ✏️ 설명 (상단 카드 하단 이동) -->
+      <div style="border-top:1px solid var(--border-color);padding-top:12px">
+        <label class="form-label" style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+          <i data-lucide="pencil-line" style="width:12px;height:12px"></i> 업무 설명
+        </label>
+        <textarea class="form-input" id="td_desc" rows="2" style="resize:vertical;font-size:13px">${t.desc||''}</textarea>
+      </div>
     </div>
 
     <!-- 📊 진행율 설정 -->
@@ -786,19 +793,47 @@ function openTaskDetail(taskId) {
           style="flex:1;accent-color:var(--accent-blue)"
           oninput="const _min=parseInt(this.min);if(parseInt(this.value)<_min)this.value=_min;document.getElementById('progVal_${t.id}').textContent=this.value+'%'; document.getElementById('progBar_live_${t.id}').style.width=this.value+'%'">
         <span id="progVal_${t.id}" style="font-size:15px;font-weight:800;color:var(--accent-blue);min-width:40px;text-align:right">${progress}%</span>
-
       </div>
       <div class="progress-bar" style="margin-top:8px;height:8px;border-radius:6px">
         <div class="progress-fill ${fillCls}" id="progBar_live_${t.id}" style="width:${progress}%;border-radius:6px"></div>
       </div>
     </div>
 
-    <!-- ✏️ 설명 -->
-    <div class="form-group" style="margin-bottom:0">
-      <label class="form-label" style="display:flex;align-items:center;gap:6px">
-        <i data-lucide="pencil-line" style="width:13px;height:13px"></i> 설명
-      </label>
-      <textarea class="form-input" id="td_desc" rows="3" style="resize:vertical">${t.desc||''}</textarea>
+    <!-- 📝 진행보고 입력 -->
+    <div style="margin-bottom:18px;background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:14px;padding:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        <i data-lucide="message-square-plus" style="width:13px;height:13px"></i> 진행보고 추가
+      </div>
+      <!-- 아이콘(유형) 선택 -->
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="reportIconChips">
+        ${[
+          {icon:'play-circle',   label:'업무시작',  color:'#4f6ef7'},
+          {icon:'search',        label:'시장조사',  color:'#06b6d4'},
+          {icon:'wrench',        label:'작업중',    color:'#9747ff'},
+          {icon:'check-circle',  label:'작업완료',  color:'#22c55e'},
+          {icon:'message-circle',label:'협의완료',  color:'#f59e0b'},
+          {icon:'alert-triangle',label:'이슈발생',  color:'#ef4444'},
+          {icon:'x-circle',      label:'업무취소',  color:'#6b7280'},
+          {icon:'file-text',     label:'보고서작성', color:'#8b5cf6'},
+        ].map((ic,idx) => `
+          <button type="button"
+            onclick="document.querySelectorAll('#reportIconChips .ricon-chip').forEach(b=>b.classList.remove('active'));this.classList.add('active');document.getElementById('td_reportIconVal').value='${ic.icon}|${ic.label}|${ic.color}';"
+            class="ricon-chip" style="display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:20px;border:1.5px solid var(--border-color);background:var(--bg-secondary);font-size:11.5px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all .15s;white-space:nowrap">
+            <i data-lucide="${ic.icon}" style="width:12px;height:12px"></i>${ic.label}
+          </button>`).join('')}
+      </div>
+      <style>
+        .ricon-chip.active { background:var(--accent-blue)!important; color:#fff!important; border-color:var(--accent-blue)!important; }
+      </style>
+      <input type="hidden" id="td_reportIconVal" value="message-square|진행보고|#4f6ef7">
+      <!-- 내용 입력 -->
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <textarea id="td_reportText" placeholder="진행 내용을 입력하세요..." rows="2"
+          class="form-input" style="flex:1;resize:none;font-size:13px"></textarea>
+        <button onclick="addProgressReport(${t.id})" class="btn btn-blue" style="height:auto;padding:8px 14px;white-space:nowrap;align-self:stretch">
+          <i data-lucide="plus" style="width:14px;height:14px"></i> 추가
+        </button>
+      </div>
     </div>
 
     <!-- hidden 변경 -->
@@ -807,17 +842,17 @@ function openTaskDetail(taskId) {
     <input type="hidden" id="td_title"  value="${t.title}">
 
     <!-- 📜 업무 히스토리 (접기/펼치기) -->
-    <div style="margin-top:18px;border-top:1px solid var(--border-color);padding-top:14px">
+    <div style="border-top:1px solid var(--border-color);padding-top:14px" id="historySection_${t.id}">
       <button class="btn" style="width:100%;justify-content:space-between;background:var(--bg-tertiary);border:none;font-size:12px;font-weight:700;height:36px"
         onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.chev').textContent=this.nextElementSibling.style.display==='none'?'▼':'▲'">
         <span style="display:flex;align-items:center;gap:6px">
           <i data-lucide="history" style="width:14px;height:14px"></i> 업무 히스토리
-          <span style="font-size:10px;background:var(--bg-card);border-radius:8px;padding:1px 7px;color:var(--text-muted)">${(t.history||[]).length}건</span>>
+          <span id="historyCount_${t.id}" style="font-size:10px;background:var(--bg-card);border-radius:8px;padding:1px 7px;color:var(--text-muted)">${(t.history||[]).length}건</span>
         </span>
-        <span class="chev">▼</span>
+        <span class="chev">▲</span>
       </button>
-      <div style="display:none;margin-top:8px">
-        <div class="history-timeline">
+      <div id="historyList_${t.id}" style="display:block;margin-top:8px">
+        <div class="history-timeline" id="historyTimeline_${t.id}">
           ${[...(t.history||[])].reverse().map(h=>`
             <div class="timeline-item">
               <div class="timeline-dot" style="background:${h.color}22;border-color:${h.color}"><i data-lucide="${h.icon}"></i></div>
@@ -827,7 +862,7 @@ function openTaskDetail(taskId) {
                 <div class="t-sub">${h.detail}</div>
               </div>
             </div>`).join('')}
-          ${(t.history||[]).length===0?'<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px">?덉뒪?좊━媛 없습니다</div>':''}
+          ${(t.history||[]).length===0?'<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px">히스토리가 없습니다</div>':''}
         </div>
       </div>
     </div>
@@ -836,6 +871,44 @@ function openTaskDetail(taskId) {
   window._editingTaskId = taskId;
   openModal('taskDetailModal');
   refreshIcons();
+}
+
+/* 📝 진행보고 히스토리 추가 */
+function addProgressReport(taskId) {
+  const t = WS.getTask(taskId);
+  if (!t) return;
+  const textEl = document.getElementById('td_reportText');
+  const iconVal = (document.getElementById('td_reportIconVal')?.value || 'message-square|진행보고|#4f6ef7');
+  const text = textEl?.value?.trim();
+  if (!text) { showToast('warning', '진행 내용을 입력하세요.'); return; }
+
+  const [icon, label, color] = iconVal.split('|');
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+  if (!t.history) t.history = [];
+  t.history.push({ date: dateStr, event: label, detail: text, icon, color });
+  WS.saveTask(t);
+
+  // 히스토리 타임라인 즉시 갱신
+  const timeline = document.getElementById(`historyTimeline_${taskId}`);
+  const countEl  = document.getElementById(`historyCount_${taskId}`);
+  if (timeline) {
+    const h = t.history[t.history.length - 1];
+    const newItem = document.createElement('div');
+    newItem.className = 'timeline-item';
+    newItem.innerHTML = `
+      <div class="timeline-dot" style="background:${h.color}22;border-color:${h.color}"><i data-lucide="${h.icon}"></i></div>
+      <div class="timeline-content">
+        <div class="t-date">${h.date}</div>
+        <div class="t-text">${h.event}</div>
+        <div class="t-sub">${h.detail}</div>
+      </div>`;
+    timeline.insertBefore(newItem, timeline.firstChild);
+    refreshIcons();
+  }
+  if (countEl) countEl.textContent = t.history.length + '건';
+  if (textEl)  textEl.value = '';
+  showToast('success', '진행보고가 등록됐습니다.');
 }
 
 function changeStatusFromModal(taskId, status) {
