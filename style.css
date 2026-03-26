@@ -654,11 +654,11 @@ tr:hover .btn-sub-add { opacity: 1; }
 .attendance-pill {
   display: flex;
   align-items: center;
-  background: #1aaa5a;
+  background: var(--currentAccent, #4f6ef7);
   border-radius: 50px;
   padding: 4px 8px;
   gap: 7px;
-  box-shadow: 0 4px 14px rgba(26, 170, 90, 0.4);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--currentAccent, #4f6ef7) 55%, transparent);
   transition: background 0.4s ease, box-shadow 0.4s ease;
   cursor: default;
   user-select: none;
@@ -721,8 +721,8 @@ tr:hover .btn-sub-add { opacity: 1; }
   animation: pill-pulse 2.2s ease-in-out infinite;
 }
 @keyframes pill-pulse {
-  0%, 100% { box-shadow: 0 4px 14px rgba(26,170,90,0.4); }
-  50%       { box-shadow: 0 4px 24px rgba(26,170,90,0.7); }
+  0%, 100% { box-shadow: 0 4px 14px color-mix(in srgb, var(--currentAccent, #4f6ef7) 40%, transparent); }
+  50%       { box-shadow: 0 4px 26px color-mix(in srgb, var(--currentAccent, #4f6ef7) 70%, transparent); }
 }
 
 /* ─── 전체 너비 카드 (내가 지시한 업무) ─── */
