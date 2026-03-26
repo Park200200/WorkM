@@ -736,7 +736,8 @@ function openTaskDetail(taskId) {
   const fillCls = t.status==='delay'?'delay':t.status==='done'?'done':'';
   const progress = t.progress || 0;
 
-  document.getElementById('tdModalTitle').textContent = t.title;
+  document.getElementById('tdModalTitle').innerHTML =
+    `${t.title} <span style="font-size:13px;font-weight:700;background:var(--accent-blue);color:#fff;border-radius:20px;padding:2px 10px;vertical-align:middle;margin-left:6px">${progress}%</span>`;
   document.getElementById('tdModalBody').innerHTML = `
     <!-- 📋 상태 탭 -->
     <div style="background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:14px;padding:16px;margin-bottom:18px">
