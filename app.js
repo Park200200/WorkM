@@ -887,7 +887,7 @@ function addProgressReport(taskId) {
   const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
   if (!t.history) t.history = [];
   t.history.push({ date: dateStr, event: label, detail: text, icon, color });
-  WS.saveTask(t);
+  WS.saveTasks();
 
   // 히스토리 타임라인 즉시 갱신
   const timeline = document.getElementById(`historyTimeline_${taskId}`);
