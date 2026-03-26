@@ -2427,7 +2427,8 @@ function renderAttendancePill() {
 
   } else {
     // 근무 중 ─ 출근시간 표시
-    if (inEl)     inEl.textContent     = rec.checkInRaw || rec.checkIn || '--:--';
+    const _pt = (r) => r.checkInRaw || ((r.checkIn||'').match(/(\d{2}):(\d{2})/) || ['','--','--']).slice(1).join(':');
+    if (inEl)     inEl.textContent = _pt(rec);
     if (outLabel) outLabel.textContent = '근무중';   // 우측 레이블 → 근무중
     if (btnIcon)  btnIcon.textContent  = '퇴근';     // 중앙 버튼 → 퇴근
 
