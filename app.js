@@ -906,7 +906,7 @@ function openNewTaskModal(mode = null, parentId = null, assigneeId = null) {
     const resultOpts = (WS.taskResults || []).map(r =>
       `<option value="${r.name}">${r.icon ? r.icon + ' ' : ''}${r.name}</option>`
     ).join('');
-    resultEl.innerHTML = <option value="">-- 선택 --</option>${resultOpts};
+    resultEl.innerHTML = `<option value="">-- 선택 --</option>${resultOpts}`;
     resultEl.value = '';
   }
 
@@ -2240,64 +2240,148 @@ function saveHQInfo() {
 }
 
 /* ?? 吏곴툒愿由??섏씠吏 ?? */
+/* ── 기타설정 페이지 렌더 (부서/직급/직책/업무결과) ── */
 function renderPage_RankMgmt() {
-  const ranks = WS.ranks;
-  const container = document.getElementById('rankMgmtContent');
-  if(!container) return;
-  container.innerHTML = `
-    <div class="card" style="margin-top:20px">
-      <table class="table">
-        <thead>
-          <tr>
-            <th style="width:100px">?쒖쐞(Level)</th>
-            <th>吏곴툒紐?/th>
-            <th>?쎌묶</th>
-            <th style="width:80px; text-align:center">愿由?/th>
-          </tr>
-        </thead>
-        <tbody>
-          ${ranks.sort((a,b)=>b.level-a.level).map(r => `
-            <tr>
-              <td><span class="badge badge-outline" style="color:var(--accent-blue); border-color:var(--accent-blue)">Lv.${r.level}</span></td>
-              <td><strong>${r.name}</strong></td>
-              <td><span style="color:var(--text-muted)">${r.short || r.name[0]}</span></td>
-              <td style="text-align:center">
-                <button class="btn-icon text-red" onclick="deleteRank(${r.id})"><i data-lucide="trash-2"></i></button>
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      ${ranks.length === 0 ? '<div style="padding:40px; text-align:center; color:var(--text-muted)">?깅줉??吏곴툒??없습니다.</div>' : ''}
-    </div>
-  `;
+  // 빈 배열이면 기본값 복원
+  const DEFAULT_DEPTS = ['개발팀','마케팅팀','디자인팀','영업팀','경영지원팀'];
+  const DEFAULT_RANKS = ['인턴','사원','주임','대리','과장','차장','팀장','부장','이사','대표'];
+  const DEFAULT_POS   = ['팀원','팀장','프로젝트매니저','선임','수석','CEO'];
+
+  if (!WS.departments.length) {
+    WS.departments = DEFAULT_DEPTS.map((n,i) => ({ id: i+1, name: n }));
+    WS.saveDepts();
+  }
+  if (!WS.ranks.length) {
+    WS.ranks = DEFAULT_RANKS.map((n,i) => ({ id: i+1, name: n, level: i+1 }));
+    WS.saveRanks();
+  }
+  if (!WS.positions.length) {
+    WS.positions = DEFAULT_POS.map((n,i) => ({ id: i+1, name: n }));
+    WS.savePos();
+  }
+  if (!WS.taskResults.length) {
+    WS.taskResults = [
+      {id:1, name:'정상완료', icon:'✅'},
+      {id:2, name:'진행중',   icon:'🔄'},
+      {id:3, name:'부분완료', icon:'🔶'},
+      {id:4, name:'보류',     icon:'⏸'},
+      {id:5, name:'취소',     icon:'❌'},
+    ];
+    WS.saveTaskResults();
+  }
+
+  function itemCard(type, item) {
+    const label = item.level !== undefined ? `<span style="font-size:10px;color:var(--text-muted)">Lv.${item.level}</span>` : '';
+    const icon  = item.icon ? `<span style="margin-right:4px">${item.icon}</span>` : '';
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:6px">
+        <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${icon}${item.name} ${label}</div>
+        <div style="display:flex;gap:4px">
+          <button onclick="editOrgItem('${type}',${item.id})" style="background:none;border:none;cursor:pointer;padding:3px;color:var(--text-muted)"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>
+          <button onclick="deleteOrgItem('${type}',${item.id})" style="background:none;border:none;cursor:pointer;padding:3px;color:#ef4444"><i data-lucide="trash-2" style="width:13px;height:13px"></i></button>
+        </div>
+      </div>`;
+  }
+
+  const deptList   = document.getElementById('deptList');
+  const rankList   = document.getElementById('rankList');
+  const posList    = document.getElementById('posList');
+  const resultList = document.getElementById('resultList');
+
+  if(deptList)   deptList.innerHTML   = WS.departments.map(d => itemCard('dept', d)).join('') || '<div style="color:var(--text-muted);font-size:12px;padding:8px">항목 없음</div>';
+  if(rankList)   rankList.innerHTML   = WS.ranks.sort((a,b)=>a.level-b.level).map(r => itemCard('rank', r)).join('') || '<div style="color:var(--text-muted);font-size:12px;padding:8px">항목 없음</div>';
+  if(posList)    posList.innerHTML    = WS.positions.map(p => itemCard('pos', p)).join('') || '<div style="color:var(--text-muted);font-size:12px;padding:8px">항목 없음</div>';
+  if(resultList) resultList.innerHTML = WS.taskResults.map(r => itemCard('result', r)).join('') || '<div style="color:var(--text-muted);font-size:12px;padding:8px">항목 없음</div>';
+
+  const deptCount   = document.getElementById('deptCount');
+  const rankCount   = document.getElementById('rankCount');
+  const posCount    = document.getElementById('posCount');
+  const resultCount = document.getElementById('resultCount');
+
+  if(deptCount)   deptCount.textContent   = WS.departments.length;
+  if(rankCount)   rankCount.textContent   = WS.ranks.length;
+  if(posCount)    posCount.textContent    = WS.positions.length;
+  if(resultCount) resultCount.textContent = WS.taskResults.length;
+
   refreshIcons();
 }
 
-function addRank() {
-  const name = prompt('?덈줈??吏곴툒紐낆쓣 입력하세요');
-  if(!name) return;
-  const level = prompt('吏곴툒 ?덈꺼(?レ옄)??입력하세요(?? 1=?ъ썝, 5=???:', '1');
-  if(!level) return;
-  
-  WS.ranks.push({
-    id: Date.now(),
-    name: name,
-    level: parseInt(level),
-    short: name.substring(0, 2)
-  });
-  WS.saveRanks();
+function openOrgModal(type) {
+  const labels = { dept:'부서', rank:'직급', pos:'직책' };
+  const label  = labels[type] || type;
+  const name   = prompt(`새 ${label} 이름을 입력하세요.`);
+  if (!name || !name.trim()) return;
+
+  if (type === 'dept') {
+    WS.departments.push({ id: Date.now(), name: name.trim() });
+    WS.saveDepts();
+  } else if (type === 'rank') {
+    const maxLv = WS.ranks.length ? Math.max(...WS.ranks.map(r => r.level)) : 0;
+    WS.ranks.push({ id: Date.now(), name: name.trim(), level: maxLv + 1 });
+    WS.saveRanks();
+  } else {
+    WS.positions.push({ id: Date.now(), name: name.trim() });
+    WS.savePos();
+  }
   renderPage_RankMgmt();
-  showToast('success', `<i data-lucide="plus-circle"></i> ${name} 吏곴툒??추가되었습니다.`);
+  showToast('success', `${label} "${name.trim()}" 추가 완료!`);
 }
 
-function deleteRank(id) {
-  if(!confirm('?뺣쭚 삭제하시겠습니까?')) return;
-  WS.ranks = WS.ranks.filter(r => r.id !== id);
-  WS.saveRanks();
+function openResultModal() {
+  const name = prompt('새 업무결과 항목 이름을 입력하세요.');
+  if (!name || !name.trim()) return;
+  const icon = prompt('아이콘 이모지 입력 (없으면 빈칸)', '');
+  WS.taskResults.push({ id: Date.now(), name: name.trim(), icon: icon || '' });
+  WS.saveTaskResults();
   renderPage_RankMgmt();
-  showToast('info', '吏곴툒??삭제되었습니다.');
+  showToast('success', `업무결과 "${name.trim()}" 추가 완료!`);
 }
+
+function editOrgItem(type, id) {
+  const lists = { dept: WS.departments, rank: WS.ranks, pos: WS.positions, result: WS.taskResults };
+  const list  = lists[type];
+  if (!list) return;
+  const item = list.find(x => x.id === id);
+  if (!item) return;
+
+  const newName = prompt('이름을 수정하세요.', item.name);
+  if (!newName || !newName.trim()) return;
+
+  if (type === 'dept')   { item.name = newName.trim(); WS.saveDepts(); }
+  else if (type === 'rank')   {
+    const newLv = prompt('레벨(숫자)', item.level);
+    item.name  = newName.trim();
+    item.level = parseInt(newLv) || item.level;
+    WS.saveRanks();
+  }
+  else if (type === 'pos')    { item.name = newName.trim(); WS.savePos(); }
+  else if (type === 'result') {
+    const newIcon = prompt('아이콘 이모지', item.icon || '');
+    item.name = newName.trim();
+    item.icon = newIcon;
+    WS.saveTaskResults();
+  }
+  renderPage_RankMgmt();
+  showToast('info', '수정 완료!');
+}
+
+function deleteOrgItem(type, id) {
+  const labels = { dept:'부서', rank:'직급', pos:'직책', result:'업무결과' };
+  const label  = labels[type] || type;
+  if (!confirm(`${label} 항목을 삭제하시겠습니까?`)) return;
+
+  if (type === 'dept')   { WS.departments = WS.departments.filter(x => x.id !== id); WS.saveDepts(); }
+  else if (type === 'rank')   { WS.ranks = WS.ranks.filter(x => x.id !== id); WS.saveRanks(); }
+  else if (type === 'pos')    { WS.positions = WS.positions.filter(x => x.id !== id); WS.savePos(); }
+  else if (type === 'result') { WS.taskResults = WS.taskResults.filter(x => x.id !== id); WS.saveTaskResults(); }
+  renderPage_RankMgmt();
+  showToast('info', `${label} 삭제 완료!`);
+}
+
+/* --- 구 함수 (호환성 유지) --- */
+function addRank() { openOrgModal('rank'); }
+function deleteRank(id) { deleteOrgItem('rank', id); }
+
 
 /* ?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧
    異쒗눜洹?위젯
