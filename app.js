@@ -906,7 +906,7 @@ function openNewTaskModal(mode = null, parentId = null, assigneeId = null) {
     const resultOpts = (WS.taskResults || []).map(r =>
       `<option value="${r.name}">${r.icon ? r.icon + ' ' : ''}${r.name}</option>`
     ).join('');
-    resultEl.innerHTML = `<option value="">-- ?좏깮 --</option>${resultOpts}`;
+    resultEl.innerHTML = <option value="">-- 선택 --</option>${resultOpts};
     resultEl.value = '';
   }
 
@@ -2534,7 +2534,7 @@ function _dpRender() {
       <button onclick="event.stopPropagation();_dpNext()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-primary);padding:2px 8px">›</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">
-      ${days.map((d,i) => `<div style="text-align:center;font-size:10.5px;font-weight:700;padding:4px 0;color:${i===0?'#ef4444':i===6?'#4f6ef7':'var(--text-muted)'}">${d}</div>`).join('')}
+      ${days.map((d,i) => `<div style="text-align:center;font-size:10.5px;font-weight:700;padding:4px 0;color:${i===0?'#ef4444':i===6?'var(--accent-blue)':'var(--text-muted)'}">${d}</div>`).join('')}
     </div>
     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">
   `;
@@ -2549,7 +2549,7 @@ function _dpRender() {
     const isToday    = d === today.getDate() && _dpMonth === today.getMonth() && _dpYear === today.getFullYear();
     const isSelected = dt === curVal;
     const dow = (firstDay + d - 1) % 7;
-    const color = dow === 0 ? '#ef4444' : dow === 6 ? '#4f6ef7' : 'var(--text-primary)';
+    const color = dow === 0 ? '#ef4444' : dow === 6 ? 'var(--accent-blue)' : 'var(--text-primary)';
 
     html += `
       <div onclick="event.stopPropagation();_dpSelect('${dt}')"
