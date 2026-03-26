@@ -807,16 +807,7 @@ function openTaskDetail(taskId) {
       </div>
       <!-- 아이콘(유형) 선택 -->
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="reportIconChips">
-        ${[
-          {icon:'play-circle',   label:'업무시작',  color:'#4f6ef7'},
-          {icon:'search',        label:'시장조사',  color:'#06b6d4'},
-          {icon:'wrench',        label:'작업중',    color:'#9747ff'},
-          {icon:'check-circle',  label:'작업완료',  color:'#22c55e'},
-          {icon:'message-circle',label:'협의완료',  color:'#f59e0b'},
-          {icon:'alert-triangle',label:'이슈발생',  color:'#ef4444'},
-          {icon:'x-circle',      label:'업무취소',  color:'#6b7280'},
-          {icon:'file-text',     label:'보고서작성', color:'#8b5cf6'},
-        ].map((ic,idx) => `
+        ${(WS.reportTypes||[]).map(ic => `
           <button type="button"
             onclick="document.querySelectorAll('#reportIconChips .ricon-chip').forEach(b=>b.classList.remove('active'));this.classList.add('active');document.getElementById('td_reportIconVal').value='${ic.icon}|${ic.label}|${ic.color}';"
             class="ricon-chip" style="display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:20px;border:1.5px solid var(--border-color);background:var(--bg-secondary);font-size:11.5px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all .15s;white-space:nowrap">
@@ -2344,6 +2335,19 @@ function renderPage_RankMgmt() {
     ];
     WS.saveTaskResults();
   }
+  if (!WS.reportTypes.length) {
+    WS.reportTypes = [
+      { id:1, label:'업무시작',  icon:'play-circle',    color:'#4f6ef7' },
+      { id:2, label:'시장조사',  icon:'search',         color:'#06b6d4' },
+      { id:3, label:'작업중',    icon:'wrench',         color:'#9747ff' },
+      { id:4, label:'작업완료',  icon:'check-circle',   color:'#22c55e' },
+      { id:5, label:'협의완료',  icon:'message-circle', color:'#f59e0b' },
+      { id:6, label:'이슈발생',  icon:'alert-triangle', color:'#ef4444' },
+      { id:7, label:'업무취소',  icon:'x-circle',       color:'#6b7280' },
+      { id:8, label:'보고서작성',icon:'file-text',      color:'#8b5cf6' },
+    ];
+    WS.saveReportTypes();
+  }
 
   function itemCard(type, item) {
     const label = item.level !== undefined ? `<span style="font-size:10px;color:var(--text-muted)">Lv.${item.level}</span>` : '';
@@ -2362,21 +2366,37 @@ function renderPage_RankMgmt() {
   const rankList   = document.getElementById('rankList');
   const posList    = document.getElementById('posList');
   const resultList = document.getElementById('resultList');
+  const rtList     = document.getElementById('reportTypeList');
 
   if(deptList)   deptList.innerHTML   = WS.departments.map(d => itemCard('dept', d)).join('') || '<div style="color:var(--text-muted);font-size:12px;padding:8px">항목 없음</div>';
   if(rankList)   rankList.innerHTML   = WS.ranks.sort((a,b)=>a.level-b.level).map(r => itemCard('rank', r)).join('') || '<div style="color:var(--text-muted);font-size:12px;padding:8px">항목 없음</div>';
   if(posList)    posList.innerHTML    = WS.positions.map(p => itemCard('pos', p)).join('') || '<div style="color:var(--text-muted);font-size:12px;padding:8px">항목 없음</div>';
   if(resultList) resultList.innerHTML = WS.taskResults.map(r => itemCard('result', r)).join('') || '<div style="color:var(--text-muted);font-size:12px;padding:8px">항목 없음</div>';
+  if(rtList)     rtList.innerHTML     = WS.reportTypes.map(r => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${r.color}22;border:1.5px solid ${r.color}">
+          <i data-lucide="${r.icon}" style="width:12px;height:12px;color:${r.color}"></i>
+        </span>
+        <span style="font-size:13px;font-weight:600;color:var(--text-primary)">${r.label}</span>
+      </div>
+      <div style="display:flex;gap:4px">
+        <button onclick="editReportType(${r.id})" style="background:none;border:none;cursor:pointer;padding:3px;color:var(--text-muted)"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>
+        <button onclick="deleteOrgItem('reportType',${r.id})" style="background:none;border:none;cursor:pointer;padding:3px;color:#ef4444"><i data-lucide="trash-2" style="width:13px;height:13px"></i></button>
+      </div>
+    </div>`).join('') || '<div style="color:var(--text-muted);font-size:12px;padding:8px">항목 없음</div>';
 
   const deptCount   = document.getElementById('deptCount');
   const rankCount   = document.getElementById('rankCount');
   const posCount    = document.getElementById('posCount');
   const resultCount = document.getElementById('resultCount');
+  const rtCount     = document.getElementById('reportTypeCount');
 
   if(deptCount)   deptCount.textContent   = WS.departments.length;
   if(rankCount)   rankCount.textContent   = WS.ranks.length;
   if(posCount)    posCount.textContent    = WS.positions.length;
   if(resultCount) resultCount.textContent = WS.taskResults.length;
+  if(rtCount)     rtCount.textContent     = WS.reportTypes.length;
 
   refreshIcons();
 }
@@ -2412,6 +2432,28 @@ function openResultModal() {
   showToast('success', `업무결과 "${name.trim()}" 추가 완료!`);
 }
 
+function openReportTypeModal(editId) {
+  const editing = editId ? WS.reportTypes.find(r => r.id === editId) : null;
+  const label  = prompt('진행보고 유형 이름 (예: 업무시작)', editing?.label || '');
+  if (!label || !label.trim()) return;
+  const ICONS  = ['play-circle','search','wrench','check-circle','message-circle','alert-triangle','x-circle','file-text','star','flag','zap','clock','users','briefcase'];
+  const iconStr = prompt(`아이콘 이름 (lucide 아이콘)\n선택 예시: ${ICONS.join(', ')}`, editing?.icon || 'message-square');
+  const color  = prompt('색상 (예: #4f6ef7)', editing?.color || '#4f6ef7');
+  if (editing) {
+    editing.label = label.trim();
+    editing.icon  = iconStr?.trim() || editing.icon;
+    editing.color = color?.trim()   || editing.color;
+  } else {
+    const newId = (Math.max(0, ...WS.reportTypes.map(r => r.id)) + 1);
+    WS.reportTypes.push({ id: newId, label: label.trim(), icon: iconStr?.trim() || 'message-square', color: color?.trim() || '#4f6ef7' });
+  }
+  WS.saveReportTypes();
+  renderPage_RankMgmt();
+  showToast('success', `진행보고 유형 "${label.trim()}" ${editing?'수정':'추가'} 완료!`);
+}
+
+function editReportType(id) { openReportTypeModal(id); }
+
 function editOrgItem(type, id) {
   const lists = { dept: WS.departments, rank: WS.ranks, pos: WS.positions, result: WS.taskResults };
   const list  = lists[type];
@@ -2441,7 +2483,7 @@ function editOrgItem(type, id) {
 }
 
 function deleteOrgItem(type, id) {
-  const labels = { dept:'부서', rank:'직급', pos:'직책', result:'업무결과' };
+  const labels = { dept:'부서', rank:'직급', pos:'직책', result:'업무결과', reportType:'진행보고 유형' };
   const label  = labels[type] || type;
   if (!confirm(`${label} 항목을 삭제하시겠습니까?`)) return;
 
@@ -2449,6 +2491,7 @@ function deleteOrgItem(type, id) {
   else if (type === 'rank')   { WS.ranks = WS.ranks.filter(x => x.id !== id); WS.saveRanks(); }
   else if (type === 'pos')    { WS.positions = WS.positions.filter(x => x.id !== id); WS.savePos(); }
   else if (type === 'result') { WS.taskResults = WS.taskResults.filter(x => x.id !== id); WS.saveTaskResults(); }
+  else if (type === 'reportType') { WS.reportTypes = WS.reportTypes.filter(x => x.id !== id); WS.saveReportTypes(); }
   renderPage_RankMgmt();
   showToast('info', `${label} 삭제 완료!`);
 }

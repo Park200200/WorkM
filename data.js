@@ -74,6 +74,19 @@ const WS = {
     this.saveTaskResults();
   },
 
+  // 진행보고 유형 목록
+  reportTypes: JSON.parse(localStorage.getItem('ws_report_types')) || [
+    { id:1, label:'업무시작',  icon:'play-circle',    color:'#4f6ef7' },
+    { id:2, label:'시장조사',  icon:'search',         color:'#06b6d4' },
+    { id:3, label:'작업중',    icon:'wrench',         color:'#9747ff' },
+    { id:4, label:'작업완료',  icon:'check-circle',   color:'#22c55e' },
+    { id:5, label:'협의완료',  icon:'message-circle', color:'#f59e0b' },
+    { id:6, label:'이슈발생',  icon:'alert-triangle', color:'#ef4444' },
+    { id:7, label:'업무취소',  icon:'x-circle',       color:'#6b7280' },
+    { id:8, label:'보고서작성',icon:'file-text',      color:'#8b5cf6' },
+  ],
+  saveReportTypes() { localStorage.setItem('ws_report_types', JSON.stringify(this.reportTypes)); },
+
   // 사용자 목록
   users: JSON.parse(localStorage.getItem('ws_users')) || [
     { id:1, name:'김지훈', role:'팀장', dept:'개발팀', avatar:'KJ', color:'#4f6ef7',
