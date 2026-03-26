@@ -2885,3 +2885,38 @@ function _dpSelect(dt) {
   if (popup) popup.remove();
   document.removeEventListener('click', _dpOutsideClick, true);
 }
+
+/* ── saveTaskDetail 당일 히스토리 중복 방지 패치 ── */
+(function() {
+  const _orig = saveTaskDetail;
+  saveTaskDetail = function() {
+    const id = window._editingTaskId;
+    if (!id) return _orig();
+    const t = WS.getTask(id);
+    if (!t) return _orig();
+
+    const slider  = document.getElementById(`progressSlider_${id}`);
+    const descEl  = document.getElementById('td_desc');
+    if (slider) t.progress = parseInt(slider.value);
+    if (descEl)  t.desc = descEl.value;
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+    if (!t.history) t.history = [];
+    const entry = {
+      date: dateStr, event: '진행율 업데이트',
+      detail: `진행율 ${t.progress}% · ${t.desc ? '설명 수정' : ''}`,
+      icon: 'refresh-cw', color: '#4f6ef7'
+    };
+    const idx = t.history.findIndex(h => h.date === dateStr);
+    if (idx !== -1) { t.history[idx] = entry; }
+    else            { t.history.push(entry); }
+
+    WS.saveTasks();
+    renderDashboard();
+    renderPage_Tasks();
+    closeModalDirect('taskDetailModal');
+    showToast('success', '<i data-lucide="check-circle-2"></i> 저장되었습니다.');
+    refreshIcons();
+  };
+})();
