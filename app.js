@@ -936,21 +936,15 @@ function saveTaskDetail() {
   if (slider) t.progress = parseInt(slider.value);
   if (descEl) t.desc = descEl.value;
 
-  // 히스토리: 당일 기존 항목이 있으면 업데이트, 없으면 신규 추가
+  // ?덉뒪?좊━ 湲곕줉
   const now = new Date();
   const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
   if (!t.history) t.history = [];
-  const newEntry = {
-    date: dateStr, event: '진행율 업데이트',
-    detail: `진행율 ${t.progress}% · ${t.desc ? '설명 수정' : ''}`,
+  t.history.push({
+    date: dateStr, event: '吏꾪뻾??업데이트',
+    detail: `吏꾪뻾瑜?${t.progress}% · ${t.desc ? '설명 수정' : ''}`,
     icon: 'refresh-cw', color: '#4f6ef7'
-  };
-  const todayIdx = t.history.findIndex(h => h.date === dateStr);
-  if (todayIdx !== -1) {
-    t.history[todayIdx] = newEntry;
-  } else {
-    t.history.push(newEntry);
-  }
+  });
 
   WS.saveTasks();
   renderDashboard();
