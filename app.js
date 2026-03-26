@@ -2419,7 +2419,7 @@ function renderAttendancePill() {
 
   } else if (rec.checkOut) {
     // 퇴근 완료
-    if (inEl)     inEl.textContent     = rec.checkIn  || '--:--';
+    if (inEl)     inEl.textContent     = rec.checkInRaw || rec.checkIn  || '--:--';
     if (outEl)    outEl.textContent    = rec.checkOut || '--:--';
     if (outLabel) outLabel.textContent = '퇴근';
     if (btnIcon)  btnIcon.textContent  = '완료';
@@ -2427,7 +2427,7 @@ function renderAttendancePill() {
 
   } else {
     // 근무 중 ─ 출근시간 표시
-    if (inEl)     inEl.textContent     = rec.checkIn || '--:--';
+    if (inEl)     inEl.textContent     = rec.checkInRaw || rec.checkIn || '--:--';
     if (outLabel) outLabel.textContent = '근무중';   // 우측 레이블 → 근무중
     if (btnIcon)  btnIcon.textContent  = '퇴근';     // 중앙 버튼 → 퇴근
 
@@ -2436,7 +2436,7 @@ function renderAttendancePill() {
       if (!outEl) return;
       const n    = new Date();
       const ampm = n.getHours() < 12 ? '오전' : '오후';
-      const hh12 = n.getHours() % 12 || 12;
+      outEl.textContent = `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}`;
       outEl.textContent = `${ampm} ${String(hh12).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}`;
     }
     _tick();
