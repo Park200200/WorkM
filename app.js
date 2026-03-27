@@ -2375,8 +2375,8 @@ function renderPage_RankMgmt() {
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:6px">
         <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${icon}${item.name} ${label}</div>
         <div style="display:flex;gap:4px">
-          <button onclick="editOrgItem('${type}',${item.id})" style="background:none;border:none;cursor:pointer;padding:3px;color:var(--text-muted)"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>
-          <button onclick="deleteOrgItem('${type}',${item.id})" style="background:none;border:none;cursor:pointer;padding:3px;color:#ef4444"><i data-lucide="trash-2" style="width:13px;height:13px"></i></button>
+          <button onclick="editOrgItem('${type}',${item.id})" title="수정" style="background:none;border:none;cursor:pointer;padding:3px 6px;color:var(--text-muted);font-size:13px">✏️</button>
+          <button onclick="deleteOrgItem('${type}',${item.id})" title="삭제" style="background:none;border:none;cursor:pointer;padding:3px 6px;color:#ef4444;font-size:13px">🗑️</button>
         </div>
       </div>`;
   }
@@ -2400,8 +2400,8 @@ function renderPage_RankMgmt() {
         <span style="font-size:13px;font-weight:600;color:var(--text-primary)">${r.label}</span>
       </div>
       <div style="display:flex;gap:4px">
-        <button onclick="editReportType(${r.id})" style="background:none;border:none;cursor:pointer;padding:3px;color:var(--text-muted)"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>
-        <button onclick="deleteOrgItem('reportType',${r.id})" style="background:none;border:none;cursor:pointer;padding:3px;color:#ef4444"><i data-lucide="trash-2" style="width:13px;height:13px"></i></button>
+        <button onclick="editReportType(${r.id})" title="수정" style="background:none;border:none;cursor:pointer;padding:3px 6px;color:var(--text-muted);font-size:13px">✏️</button>
+        <button onclick="deleteOrgItem('reportType',${r.id})" title="삭제" style="background:none;border:none;cursor:pointer;padding:3px 6px;color:#ef4444;font-size:13px">🗑️</button>
       </div>
     </div>`).join('') || '<div style="color:var(--text-muted);font-size:12px;padding:8px">항목 없음</div>';
 
