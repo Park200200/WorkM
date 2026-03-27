@@ -1080,7 +1080,9 @@ function createNewTask() {
     startedAt: document.getElementById('nt_start')?.value || null,
     isImportant: document.getElementById('nt_important')?.checked || false,
     team: document.getElementById('nt_team')?.value || '',
+    scoreMin: parseInt(document.getElementById('nt_score_min')?.value) || 0,
     score: parseInt(document.getElementById('nt_score').value) || 0,
+    scoreMax: parseInt(document.getElementById('nt_score_max')?.value) || 0,
     reportContent: document.getElementById('nt_result').value || '',  // 업무결과
     processTags: window._processTags || [],  // 과정등록
     spentTime: '0h',
@@ -1236,12 +1238,12 @@ function renderAssignmentByTask(targetEl) {
     </tr>`;
   }).join('');
 
+
   el.innerHTML = `<table class="task-table">
-    <thead><tr><th>업무紐?/th><th>담당 吏곸썝</th><th>媛??/th><th>愿由?/th></tr></thead>
-    <tbody>${rows || '<tr><td colspan="4" class="empty-state">?곗씠?곌? 없습니다.</td></tr>'}</tbody>
+    <thead><tr><th>업무제목</th><th>담당자</th><th>상태</th><th>마감일</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="4" class="empty-state">데이터가 없습니다.</td></tr>'}</tbody>
   </table>`;
   refreshIcons();
-}
 
 /* ?? 업무목록: 吏곸썝蹂?由ъ뒪???? */
 function renderAssignmentByStaff(targetEl) {
@@ -1382,7 +1384,9 @@ function saveEditTask() {
       startedAt:     document.getElementById('nt_start')?.value || t.startedAt,
       dueDate:       document.getElementById('nt_due')?.value || t.dueDate,
       reportContent: document.getElementById('nt_result')?.value || '',  // nt_result ??reportContent
+      scoreMin:      parseInt(document.getElementById('nt_score_min')?.value) || 0,
       score:         parseInt(document.getElementById('nt_score')?.value) || 0,
+      scoreMax:      parseInt(document.getElementById('nt_score_max')?.value) || 0,
       isImportant:   document.getElementById('nt_important')?.checked ?? t.isImportant,
       processTags:   window._processTags || t.processTags,
     };
