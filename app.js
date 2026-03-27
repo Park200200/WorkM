@@ -850,8 +850,8 @@ function openTaskDetail(taskId) {
             <div class="timeline-item">
               <div class="timeline-dot" style="background:${h.color}22;border-color:${h.color}"><i data-lucide="${h.icon}"></i></div>
               <div class="timeline-content">
-                <div class="t-date">${h.date}${h.progress!==undefined?` <span style="font-size:10px;font-weight:800;background:var(--currentAccent,#4f6ef7);color:#fff;border-radius:20px;padding:1px 7px;margin-left:4px">${h.progress}%</span>`:''}</div>
-                <div class="t-text">${h.event}</div>
+                <div class="t-date">${h.date}</div>
+                <div class="t-text">${h.event}${h.progress!==undefined?' '+h.progress+'%':''}</div>
                 <div class="t-sub">${h.detail}</div>
               </div>
             </div>`).join('')}
