@@ -528,8 +528,8 @@
         <label class="form-label">업무 설명</label>
         <textarea class="form-textarea" id="nt_desc" placeholder="상세 내용 입력..."></textarea>
       </div>
-      <!-- 우선순위 + 팀 -->
-      <div class="form-row" id="nt_row_priority_team">
+      <!-- 우선순위 + 팀 (숨김 - 내부 저장용) -->
+      <div class="form-row" id="nt_row_priority_team" style="display:none">
         <div class="form-group">
           <label class="form-label">우선순위</label>
           <select class="form-select" id="nt_priority">
@@ -544,6 +544,13 @@
             <option>개발팀</option><option>기획팀</option>
             <option>디자인팀</option><option>마케팅팀</option>
           </select>
+        </div>
+      </div>
+      <!-- 팀 선택 (체크박스 복수 선택) -->
+      <div class="form-group" id="nt_row_teams_check">
+        <label class="form-label">팀 선택 <span style="font-size:10px;color:var(--text-muted)">(복수 선택 가능)</span></label>
+        <div id="nt_teams_checkboxes" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:10px">
+          <!-- overrides.js에서 WS.departments 기반으로 동적 생성 -->
         </div>
       </div>
       <!-- 시작일 + 완료 기한 -->
@@ -565,16 +572,16 @@
           </button>
         </div>
       </div>
-      <!-- 업무결과 + 배정점수 -->
-      <div class="form-row">
-        <div class="form-group">
+      <!-- 업무결과 + 성과포인트 (같은 행, 그리드 정렬) -->
+      <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:12px;align-items:start">
+        <div class="form-group" style="margin:0">
           <label class="form-label">업무결과</label>
-          <select class="form-select" id="nt_result">
+          <select class="form-select" id="nt_result" style="width:100%">
             <option value="">-- 선택 --</option>
           </select>
         </div>
-        <div class="form-group" id="nt_row_score">
-          <label class="form-label">성과포인트</label>
+        <div class="form-group" id="nt_row_score" style="margin:0">
+          <label class="form-label" style="margin-bottom:6px;display:block">성과포인트</label>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
             <div>
               <div style="font-size:10px;color:var(--text-muted);margin-bottom:3px;font-weight:600">최소</div>

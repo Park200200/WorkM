@@ -193,14 +193,26 @@ function addProgressReport(taskId) {
 function createNewTask() {
   const titleInput = document.getElementById('nt_title');
   const title = titleInput ? titleInput.value.trim() : '';
-  const due   = document.getElementById('nt_due')?.value;
 
-  if (!title || !due) {
-    showToast('error', '제목과 날짜를 입력하세요');
+  if (!title) {
+    showToast('error', '업무 제목을 입력하세요');
     return;
   }
 
   const today = new Date().toISOString().split('T')[0];
+  // 날짜: nt_due 값 사용, 없으면 오늘+30일 자동 설정
+  const dueRaw = document.getElementById('nt_due')?.value;
+  const due = dueRaw || (() => {
+    const d = new Date(); d.setDate(d.getDate()+30);
+    return d.toISOString().split('T')[0];
+  })();
+
+  // 팀 체크박스 선택값 읽기 (복수)
+  const checkedTeams = Array.from(
+    document.querySelectorAll('#nt_teams_checkboxes input[type=checkbox]:checked')
+  ).map(cb => cb.value);
+  const teamValue = checkedTeams.length ? checkedTeams.join(', ') : (document.getElementById('nt_team')?.value || '');
+
   const nt = {
     id:            Date.now(),
     title:         title,
@@ -214,7 +226,8 @@ function createNewTask() {
     createdAt:     today,
     startedAt:     document.getElementById('nt_start')?.value || null,
     isImportant:   document.getElementById('nt_important')?.checked || false,
-    team:          document.getElementById('nt_team')?.value || '',
+    team:          teamValue,
+    teams:         checkedTeams,
     scoreMin:      parseInt(document.getElementById('nt_score_min')?.value) || 0,
     score:         parseInt(document.getElementById('nt_score')?.value) || 0,
     scoreMax:      parseInt(document.getElementById('nt_score_max')?.value) || 0,
@@ -365,10 +378,14 @@ function openNewTaskModal(mode, parentId, isSimple) {
     hide(rowPT); hide(rowDate); hide(rowImp); show(rowScore);
 
   } else {
-    // 기본: 새 업무 등록
-    if (modalTitle) modalTitle.textContent = '새 업무 지시';
+    // 기본: 새 업무 추가
+    if (modalTitle) modalTitle.textContent = '새 업무 추가';
     if (submitBtn)  { submitBtn.textContent = '업무 등록'; submitBtn.onclick = createNewTask; }
-    show(rowPT); show(rowDate); show(rowImp); show(rowScore);
+    hide(rowPT); hide(rowDate); show(rowImp); show(rowScore);
+    // 팀 체크박스 표시 및 채우기
+    const rowTeamsCheck = document.getElementById('nt_row_teams_check');
+    show(rowTeamsCheck);
+    _populateTeamCheckboxes();
   }
 
   if (parentId) {
@@ -560,3 +577,28 @@ function renderAttendancePill() {
 
 // 1초마다 출퇴근 위젯 업데이트
 setInterval(renderAttendancePill, 1000);
+
+/* 팀 체크박스 populate */
+function _populateTeamCheckboxes(selectedTeams) {
+  const wrap = document.getElementById('nt_teams_checkboxes');
+  if (!wrap) return;
+  const depts = (WS.departments && WS.departments.length)
+    ? WS.departments
+    : [
+        {name:'개발팀'},{name:'기획팀'},
+        {name:'디자인팀'},{name:'마케팅팀'},
+        {name:'경영지원팀'}
+      ];
+  const sel = selectedTeams || [];
+  wrap.innerHTML = depts.map(d =>
+    '<label style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;background:var(--bg-secondary);border:1.5px solid var(--border-color);cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text-secondary);transition:all .15s" ' +
+      'onmouseover="this.style.borderColor=\'var(--accent-blue)\'" ' +
+      'onmouseout="if(!this.querySelector(\'input\').checked)this.style.borderColor=\'var(--border-color)\'">' +
+      '<input type="checkbox" value="' + d.name + '" ' + (sel.includes(d.name)?'checked':'') + ' ' +
+        'onchange="this.closest(\'label\').style.background=this.checked?\'rgba(79,110,247,.12)\':\'var(--bg-secondary)\';' +
+                  'this.closest(\'label\').style.borderColor=this.checked?\'var(--accent-blue)\':\'var(--border-color)\'" ' +
+        'style="accent-color:var(--accent-blue)">' +
+      d.name +
+    '</label>'
+  ).join('');
+}
