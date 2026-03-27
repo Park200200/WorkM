@@ -116,18 +116,37 @@
           </div>
         </div>
 
-        <!-- 출퇴근 위젯 -->
-        <div class="attendance-pill" id="attendancePill">
-          <div class="att-side att-left">
-            <span class="att-label">출근</span>
-            <span class="att-time" id="attCheckInTime">--:--</span>
+        <!-- 출퇴근 위젯 (새 디자인) -->
+        <div id="attendancePill" style="
+          display:inline-flex;align-items:center;gap:0;
+          background:#2d3a1e;border-radius:50px;overflow:hidden;
+          box-shadow:0 3px 12px rgba(0,0,0,.25);cursor:default;
+          font-family:inherit;user-select:none">
+          <!-- 출근 시간 -->
+          <div style="padding:8px 16px;text-align:center">
+            <div style="font-size:10px;font-weight:700;color:#8fae6a;letter-spacing:.5px">출근</div>
+            <div style="font-size:15px;font-weight:800;color:#e8f5d0;letter-spacing:.5px" id="attCheckInTime">--:--</div>
           </div>
-          <div class="att-toggle-btn" id="attBtn">
-            <span id="attBtnIcon">→</span>
+          <!-- 현재 시간 (실시간) -->
+          <div style="padding:8px 16px;text-align:center;border-left:1px solid rgba(255,255,255,.08)">
+            <div style="font-size:10px;font-weight:700;color:#8fae6a;letter-spacing:.5px">현재</div>
+            <div style="font-size:15px;font-weight:800;color:#e8f5d0;letter-spacing:.5px;font-variant-numeric:tabular-nums" id="attNowTime">--:--:--</div>
           </div>
-          <div class="att-side att-right">
-            <span class="att-label" id="attCheckOutLabel">퇴근</span>
-            <span class="att-time" id="attCheckOutTime">--:--</span>
+          <!-- 근무 시간 (누적) -->
+          <div style="padding:8px 16px;text-align:center;border-left:1px solid rgba(255,255,255,.08)">
+            <div style="font-size:10px;font-weight:700;color:#8fae6a;letter-spacing:.5px">근무</div>
+            <div style="font-size:15px;font-weight:800;color:#e8f5d0;letter-spacing:.5px;font-variant-numeric:tabular-nums" id="attWorkTime">--:--</div>
+          </div>
+          <!-- 퇴근 버튼 -->
+          <div onclick="doCheckOut()" style="
+            padding:0 22px;height:100%;min-height:52px;
+            display:flex;align-items:center;gap:8px;
+            background:#4a6228;cursor:pointer;transition:background .15s;
+            font-size:15px;font-weight:800;color:#e8f5d0;letter-spacing:.3px;
+            border-left:1px solid rgba(255,255,255,.08)"
+            onmouseover="this.style.background='#5c7a32'"
+            onmouseout="this.style.background='#4a6228'">
+            퇴근 →
           </div>
         </div>
 
@@ -885,9 +904,9 @@
       </div>
     </section>
 
-<script src="data.js?v=20260327i"></script>
-<script src="app.js?v=20260327i"></script>
-<script src="modules/overrides.js?v=20260327i"></script>
+<script src="data.js?v=20260328a"></script>
+<script src="app.js?v=20260328a"></script>
+<script src="modules/overrides.js?v=20260328a"></script>
 
 <!-- ── 커스텀 날짜 픽커 팝업 ── -->
 <div id="customDatePicker" style="display:none;position:fixed;z-index:9999">

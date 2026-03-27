@@ -813,40 +813,110 @@ function renderPage_RankMgmt() {
 }
 
 /* ══════════════════════════════════════════════
-   renderAttendancePill – 강조색(--currentAccent) 적용
-   (style.css의 var(--currentAccent) 변수 사용)
+   renderAttendancePill – 새 출퇴근 위젯 실시간 업데이트
 ══════════════════════════════════════════════ */
 function renderAttendancePill() {
-  const u   = WS.currentUser;
+  const u = WS.currentUser;
   if (!u) return;
-  const rec = WS.getAttendance(u.id);
-  if (!rec) return;
+  const rec = WS.getAttendance ? WS.getAttendance(u.id) : null;
 
-  const pillEl = document.getElementById('attendancePill');
-  if (!pillEl) return;
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mi = String(now.getMinutes()).padStart(2,'0');
+  const ss = String(now.getSeconds()).padStart(2,'0');
 
-  const inTime  = rec.checkIn  ? rec.checkIn.slice(11,16)  : '--:--';
-  const outTime = rec.checkOut ? rec.checkOut.slice(11,16) : '--:--';
+  // 현재 시간 표시
+  const nowEl = document.getElementById('attNowTime');
+  if (nowEl) nowEl.textContent = hh + ':' + mi + ':' + ss;
 
-  const now    = new Date();
-  const hh     = String(now.getHours()).padStart(2,'0');
-  const mi     = String(now.getMinutes()).padStart(2,'0');
-  const ss     = String(now.getSeconds()).padStart(2,'0');
-  const workStr = rec.checkIn ? hh + ':' + mi + ':' + ss : '--:--:--';
+  // 출근 시간 표시
+  const inEl = document.getElementById('attCheckInTime');
+  if (inEl) {
+    const inTime = rec && rec.checkIn ? rec.checkIn.slice(11,16) : '--:--';
+    inEl.textContent = inTime;
+  }
 
-  pillEl.innerHTML =
-    '<span style="font-size:10px;font-weight:700;opacity:.8">출근</span>' +
-    '<span style="font-weight:800;font-size:13px">' + inTime + '</span>' +
-    '<span style="margin:0 2px;opacity:.6">→</span>' +
-    '<span style="font-size:10px;font-weight:700;opacity:.8">퇴근</span>' +
-    '<span style="font-weight:800;font-size:13px;margin-right:6px">' + outTime + '</span>' +
-    '<span style="font-size:10px;background:rgba(255,255,255,.15);border-radius:8px;padding:2px 7px">' +
-      '근무중 ' + workStr +
-    '</span>';
+  // 근무 시간 누적 계산 (출근~현재)
+  const workEl = document.getElementById('attWorkTime');
+  if (workEl) {
+    if (rec && rec.checkIn) {
+      const checkInDate = new Date(rec.checkIn);
+      const diffMs = now - checkInDate;
+      if (diffMs > 0) {
+        const totalMin = Math.floor(diffMs / 60000);
+        const wh = Math.floor(totalMin / 60);
+        const wm = totalMin % 60;
+        workEl.textContent = String(wh).padStart(2,'0') + ':' + String(wm).padStart(2,'0');
+      } else {
+        workEl.textContent = '00:00';
+      }
+    } else {
+      workEl.textContent = '--:--';
+    }
+  }
 }
 
 // 1초마다 출퇴근 위젯 업데이트
 setInterval(renderAttendancePill, 1000);
+
+/* ══════════════════════════════════════════════
+   doCheckOut – 퇴근 클릭 처리
+   인사 메시지 2초 후 로그아웃
+══════════════════════════════════════════════ */
+function doCheckOut() {
+  const u = WS.currentUser;
+  if (!u) return;
+
+  // 근무 총 시간 계산
+  const rec = WS.getAttendance ? WS.getAttendance(u.id) : null;
+  let totalStr = '0시간 0분';
+  if (rec && rec.checkIn) {
+    const diffMs = new Date() - new Date(rec.checkIn);
+    const totalMin = Math.max(0, Math.floor(diffMs / 60000));
+    const wh = Math.floor(totalMin / 60);
+    const wm = totalMin % 60;
+    totalStr = wh + '시간 ' + wm + '분';
+  }
+
+  // 퇴근 기록
+  if (typeof WS.checkOut === 'function') WS.checkOut(u.id);
+
+  // 인사 메시지 오버레이 표시
+  const overlay = document.createElement('div');
+  overlay.id = 'checkoutOverlay';
+  overlay.style.cssText =
+    'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;' +
+    'background:rgba(0,0,0,.65);backdrop-filter:blur(6px);animation:fadeIn .3s ease';
+  overlay.innerHTML =
+    '<div style="background:#2d3a1e;border-radius:20px;padding:40px 48px;text-align:center;' +
+         'max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
+      '<div style="font-size:48px;margin-bottom:16px">🌇</div>' +
+      '<div style="font-size:22px;font-weight:800;color:#e8f5d0;margin-bottom:10px">' +
+        u.name + '님, 오늘도 수고하셨습니다!' +
+      '</div>' +
+      '<div style="font-size:16px;color:#8fae6a;margin-bottom:6px">' +
+        '오늘 총 근무시간은 <strong style="color:#e8f5d0">' + totalStr + '</strong> 입니다.' +
+      '</div>' +
+      '<div style="font-size:13px;color:#6d8f4f;margin-top:8px">' +
+        '퇴근 후 즐거운 시간 되시길 바랍니다 🍀' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  // 2초 후 로그아웃
+  setTimeout(function() {
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity .4s';
+    setTimeout(function() {
+      if (typeof logout === 'function') logout();
+      else {
+        localStorage.removeItem('ws_user');
+        window.location.href = 'login.html';
+      }
+    }, 400);
+  }, 2000);
+}
+
 
 /* 팀 체크박스 populate */
 function _populateTeamCheckboxes(selectedTeams) {
