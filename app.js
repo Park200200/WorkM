@@ -792,7 +792,7 @@ function openTaskDetail(taskId) {
       <div style="display:flex;align-items:center;gap:12px">
         <input type="range" min="${t.progress}" max="100" value="${progress}" id="progressSlider_${t.id}"
           style="flex:1;accent-color:var(--accent-blue)"
-          oninput="const _min=parseInt(this.min);if(parseInt(this.value)<_min)this.value=_min;document.getElementById('progVal_${t.id}').textContent=this.value+'%'; document.getElementById('progBar_live_${t.id}').style.width=this.value+'%'">
+          oninput="const _min=parseInt(this.min);if(parseInt(this.value)<_min)this.value=_min;document.getElementById('progVal_${t.id}').textContent=this.value+'%'; document.getElementById('progBar_live_${t.id}').style.width=this.value+'%';const _rb=document.getElementById('reportProgressBadge_${t.id}');if(_rb)_rb.textContent=this.value+'%';">
         <span id="progVal_${t.id}" style="font-size:15px;font-weight:800;color:var(--accent-blue);min-width:40px;text-align:right">${progress}%</span>
       </div>
       <div class="progress-bar" style="margin-top:8px;height:8px;border-radius:6px">
@@ -804,6 +804,7 @@ function openTaskDetail(taskId) {
     <div style="margin-bottom:18px;background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:14px;padding:14px">
       <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px">
         <i data-lucide="message-square-plus" style="width:13px;height:13px"></i> 진행보고 추가
+        <span id="reportProgressBadge_${t.id}" style="font-size:12px;font-weight:800;background:var(--currentAccent,#4f6ef7);color:#fff;border-radius:20px;padding:1px 9px;margin-left:4px">${progress}%</span>
       </div>
       <!-- 아이콘(유형) 선택 -->
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="reportIconChips">
