@@ -166,6 +166,60 @@ function applyAccent(color) {
 
 
 /* ══════════════════════════════════════════════
+   switchProfileTab – theme-tab 전환 시 hover 리스너 초기화
+══════════════════════════════════════════════ */
+function switchProfileTab(tabId, el) {
+  document.querySelectorAll('#page-profile .tab-item').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  ['profile-tab', 'notif-tab', 'theme-tab'].forEach(id => {
+    const t = document.getElementById(id);
+    if (t) t.style.display = id === tabId ? 'block' : 'none';
+  });
+
+  if (tabId === 'theme-tab') {
+    setTimeout(() => {
+      // 현재 강조색으로 디자인 시스템 패널 초기화
+      const accent = WS.currentAccent || localStorage.getItem('ws_current_accent') || '#4f6ef7';
+      renderDesignSystem(accent);
+
+      // accent chip 목록에 hover 이벤트 (한 번만 등록)
+      const accentList = document.getElementById('accentList');
+      if (accentList && !accentList._dsHoverBound) {
+        accentList._dsHoverBound = true;
+
+        accentList.addEventListener('mouseover', function(e) {
+          const chip = e.target.closest('.accent-chip');
+          if (!chip) return;
+          // background: 'rgb(...)' 또는 '#hex' 형태
+          const bg = chip.style.background || chip.style.backgroundColor;
+          if (bg) renderDesignSystem(_normalizeColor(bg));
+        });
+
+        accentList.addEventListener('mouseleave', function() {
+          // 마우스가 목록을 벗어나면 현재 실제 강조색 팔레트 복원
+          const cur = WS.currentAccent || localStorage.getItem('ws_current_accent') || '#4f6ef7';
+          renderDesignSystem(cur);
+        });
+      }
+    }, 60);
+  }
+}
+
+/* rgb(...) 색상 문자열을 #hex로 변환 */
+function _normalizeColor(colorStr) {
+  if (!colorStr) return '#4f6ef7';
+  if (colorStr.startsWith('#')) return colorStr;
+  // rgb(r,g,b) → #hex
+  const m = colorStr.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  if (m) {
+    return '#' + [m[1],m[2],m[3]]
+      .map(n => parseInt(n).toString(16).padStart(2,'0')).join('');
+  }
+  return colorStr;
+}
+
+/* ══════════════════════════════════════════════
+
    업무설정 페이지 – renderPage_Tasks 완전 교체
    (컬럼 헤더 한글 정상 출력 + 클릭 이벤트 보장)
 ══════════════════════════════════════════════ */
