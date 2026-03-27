@@ -981,3 +981,9 @@ tr:hover .btn-sub-add { opacity: 1; }
   box-shadow: 0 4px 12px rgba(79,110,247,0.35);
 }
 .dp-apply-btn:hover { opacity: 0.87; }
+
+/* number input 스피너 버튼 제거 */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+
