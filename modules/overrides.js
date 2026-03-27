@@ -25,6 +25,17 @@ function showToast(type, msg, duration) {
   }, duration);
 }
 
+/* ══════════════════════════════════════════════
+   triggerAddAccent – 네이티브 컬러피커로 강조색 추가
+   (colorPickerPanel 대신 accentColorPicker input 사용)
+══════════════════════════════════════════════ */
+function triggerAddAccent() {
+  const picker = document.getElementById('accentColorPicker');
+  if (picker) {
+    picker.click();
+  }
+}
+
 
 /* ══════════════════════════════════════════════
    색상 유틸 – HEX ↔ HSL 변환
