@@ -36,6 +36,40 @@ function triggerAddAccent() {
   }
 }
 
+/* ══════════════════════════════════════════════
+   initHeader – 사용자 아바타·이름 안전하게 표시
+══════════════════════════════════════════════ */
+function initHeader() {
+  const u = WS.currentUser;
+  if (!u) return;
+  const av  = u.avatar || (u.name ? u.name.slice(0,2) : '?');
+  const col = u.color  || '#4f6ef7';
+  const grad = 'linear-gradient(135deg,' + col + ',#9747ff)';
+
+  const hAv = document.getElementById('headerAvatar');
+  if (hAv) { hAv.textContent = av; hAv.style.background = grad; }
+  const hNm = document.getElementById('headerName');
+  if (hNm) hNm.textContent = u.name || '-';
+
+  const sAv = document.getElementById('sidebarAvatar');
+  if (sAv) { sAv.textContent = av; sAv.style.background = grad; }
+  const sNm = document.getElementById('sidebarName');
+  if (sNm) sNm.textContent = u.name || '-';
+  const sRl = document.getElementById('sidebarRole');
+  if (sRl) sRl.textContent =
+    [u.dept, u.role].filter(Boolean).join(' · ') + (u.pos ? ' | ' + u.pos : '');
+
+  const badge = document.getElementById('sideTaskBadge');
+  if (badge) {
+    const list = typeof WS.getAssignedToMe === 'function'
+      ? WS.getAssignedToMe() : (WS.tasks || []);
+    badge.textContent = list.filter(t => t.status !== 'done').length;
+  }
+  if (typeof renderNotifBadge === 'function') renderNotifBadge();
+  if (typeof renderNotifList  === 'function') renderNotifList();
+}
+
+
 
 /* ══════════════════════════════════════════════
    색상 유틸 – HEX ↔ HSL 변환
