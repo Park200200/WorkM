@@ -511,6 +511,13 @@
       <button class="modal-close" onclick="closeModalDirect('newTaskModal')">✕</button>
     </div>
     <div class="modal-body">
+      <!-- 업무 선택 (스케줄 모드 전용) -->
+      <div class="form-group" id="nt_row_task_select" style="display:none">
+        <label class="form-label">업무 선택 <span style="font-size:10px;color:var(--text-muted)">(선택하면 제목 자동 입력)</span></label>
+        <select class="form-select" id="nt_task_select" onchange="const t=WS.tasks.find(x=>x.id==this.value);if(t){document.getElementById('nt_title').value=t.title;}">
+          <option value="">-- 업무 목록에서 선택 --</option>
+        </select>
+      </div>
       <!-- 업무 제목 (전체 너비) -->
       <div class="form-group">
         <label class="form-label">업무 제목 *</label>

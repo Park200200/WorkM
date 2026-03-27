@@ -1012,24 +1012,39 @@ function openNewTaskModal(mode = null, parentId = null, assigneeId = null) {
     if(rowPT)   rowPT.style.display   = 'none';
     if(rowDate) rowDate.style.display  = 'none';
     if(rowImp)  rowImp.style.display   = 'none';
+    const _rs1 = document.getElementById('nt_row_task_select'); if(_rs1) _rs1.style.display='none';
   } else if (mode === 'schedule') {
     if(modalTitle) modalTitle.textContent = '내 스케줄 추가';
     if(submitBtn)  { submitBtn.textContent = '스케줄 등록'; submitBtn.onclick = createNewTask; }
     if(rowPT)   rowPT.style.display   = 'none';
     if(rowDate) rowDate.style.display  = '';
     if(rowImp)  rowImp.style.display   = 'none';
+    // 업무 선택 드롭다운 표시 및 현재 사용자 업무 목록 채우기
+    const rowSel = document.getElementById('nt_row_task_select');
+    const selEl  = document.getElementById('nt_task_select');
+    if (rowSel) rowSel.style.display = '';
+    if (selEl) {
+      const uid = WS.currentUser?.id;
+      const myTasks = WS.tasks.filter(t =>
+        t.assignerId === uid || (t.assigneeIds||[]).includes(uid)
+      );
+      selEl.innerHTML = '<option value="">-- 업무 목록에서 선택 --</option>' +
+        myTasks.map(t => `<option value="${t.id}">${t.title}</option>`).join('');
+    }
   } else if (mode === 'edit') {
     if(modalTitle) modalTitle.textContent = '업무 수정';
     if(submitBtn)  { submitBtn.textContent = '저장하기'; submitBtn.onclick = saveEditTask; }
     if(rowPT)   rowPT.style.display   = 'none';
     if(rowDate) rowDate.style.display  = 'none';
     if(rowImp)  rowImp.style.display   = 'none';
+    const _rs2 = document.getElementById('nt_row_task_select'); if(_rs2) _rs2.style.display='none';
   } else {
     if(modalTitle) modalTitle.textContent = '새 업무 등록';
     if(submitBtn)  { submitBtn.textContent = '업무 등록'; submitBtn.onclick = createNewTask; }
     if(rowPT)   rowPT.style.display   = '';
     if(rowDate) rowDate.style.display  = '';
     if(rowImp)  rowImp.style.display   = '';
+    const _rs3 = document.getElementById('nt_row_task_select'); if(_rs3) _rs3.style.display='none';
   }
 
   if(parentId) {
