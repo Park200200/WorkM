@@ -850,7 +850,7 @@ function openTaskDetail(taskId) {
             <div class="timeline-item">
               <div class="timeline-dot" style="background:${h.color}22;border-color:${h.color}"><i data-lucide="${h.icon}"></i></div>
               <div class="timeline-content">
-                <div class="t-date">${h.date}</div>
+                <div class="t-date">${h.date}${h.progress!==undefined?` <span style="font-size:10px;font-weight:800;background:var(--currentAccent,#4f6ef7);color:#fff;border-radius:20px;padding:1px 7px;margin-left:4px">${h.progress}%</span>`:''}</div>
                 <div class="t-text">${h.event}</div>
                 <div class="t-sub">${h.detail}</div>
               </div>
@@ -884,13 +884,17 @@ function addProgressReport(taskId) {
   const todayIdx = t.history.findIndex(h => h.date === dateStr);
   let isUpdate = false;
 
+  // 현재 슬라이더 진행율 가져오기
+  const sliderNow = document.getElementById(`progressSlider_${taskId}`);
+  const progressNow = sliderNow ? parseInt(sliderNow.value) : (t.progress || 0);
+
   if (todayIdx !== -1) {
     // 당일 항목 업데이트
-    t.history[todayIdx] = { date: dateStr, event: label, detail: text, icon, color };
+    t.history[todayIdx] = { date: dateStr, event: label, detail: text, icon, color, progress: progressNow };
     isUpdate = true;
   } else {
     // 신규 추가
-    t.history.push({ date: dateStr, event: label, detail: text, icon, color });
+    t.history.push({ date: dateStr, event: label, detail: text, icon, color, progress: progressNow });
   }
   WS.saveTasks();
 
