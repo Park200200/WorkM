@@ -486,13 +486,13 @@ a{text-decoration:none;color:inherit}
 
 /* ─── 토스트 ─── */
 .toast-container{position:fixed;top:68px;right:20px;z-index:1000;display:flex;flex-direction:column;gap:8px}
-.toast{background:var(--bg-modal);border:1.5px solid var(--border-color);border-radius:var(--radius-md);padding:11px 15px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow-lg);min-width:260px;animation:slideInRight .3s ease}
-@keyframes slideInRight{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
-.toast.success{border-left:3px solid var(--status-done)}
-.toast.error{border-left:3px solid var(--status-delay)}
-.toast.info{border-left:3px solid var(--accent-blue)}
-.t-icon{font-size:16px}
-.t-msg{font-size:13px;font-weight:500;color:var(--text-primary)}
+.toast{background:var(--currentAccent,#4f6ef7);border:none;border-radius:var(--radius-md);padding:11px 18px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.18);min-width:220px;animation:slideInRight .3s ease}
+.toast.success{background:var(--currentAccent,#4f6ef7)}
+.toast.error{background:#ef4444}
+.toast.info{background:var(--currentAccent,#4f6ef7)}
+.toast.warning{background:#f59e0b}
+.t-icon{display:none}
+.t-msg{font-size:13px;font-weight:600;color:#fff}
 
 /* ─── 탭 ─── */
 .tab-bar{display:flex;border-bottom:1px solid var(--border-color);padding:0 16px;gap:0}

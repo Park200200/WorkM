@@ -5,6 +5,28 @@
  */
 
 /* ══════════════════════════════════════════════
+   showToast – 아이콘 제거, 강조색 배경 적용
+══════════════════════════════════════════════ */
+function showToast(type, msg, duration) {
+  duration = duration || 3000;
+  // msg 안의 <i data-lucide="...">...</i> 또는 <i ...></i> 태그 제거
+  const cleanMsg = String(msg).replace(/<i[^>]*>.*?<\/i>/gi, '').replace(/<i[^>]*\/>/gi, '').trim();
+  const c = document.getElementById('toastContainer');
+  if (!c) return;
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type || 'info');
+  t.innerHTML = '<span class="t-msg">' + cleanMsg + '</span>';
+  c.appendChild(t);
+  setTimeout(function() {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(20px)';
+    t.style.transition = 'all .3s';
+    setTimeout(function() { t.remove(); }, 300);
+  }, duration);
+}
+
+
+/* ══════════════════════════════════════════════
    업무설정 페이지 – renderPage_Tasks 완전 교체
    (컬럼 헤더 한글 정상 출력 + 클릭 이벤트 보장)
 ══════════════════════════════════════════════ */
