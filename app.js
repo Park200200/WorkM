@@ -1031,6 +1031,7 @@ function openNewTaskModal(mode = null, parentId = null, assigneeId = null) {
       selEl.innerHTML = '<option value="">-- 업무 목록에서 선택 --</option>' +
         myTasks.map(t => `<option value="${t.id}">${t.title}</option>`).join('');
     }
+    const _sc1 = document.getElementById('nt_row_score'); if(_sc1) _sc1.style.display='none';
   } else if (mode === 'edit') {
     if(modalTitle) modalTitle.textContent = '업무 수정';
     if(submitBtn)  { submitBtn.textContent = '저장하기'; submitBtn.onclick = saveEditTask; }
@@ -1045,6 +1046,7 @@ function openNewTaskModal(mode = null, parentId = null, assigneeId = null) {
     if(rowDate) rowDate.style.display  = '';
     if(rowImp)  rowImp.style.display   = '';
     const _rs3 = document.getElementById('nt_row_task_select'); if(_rs3) _rs3.style.display='none';
+    const _sc3 = document.getElementById('nt_row_score'); if(_sc3) _sc3.style.display='';
   }
 
   if(parentId) {
