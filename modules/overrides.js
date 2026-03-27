@@ -218,7 +218,9 @@ function createNewTask() {
     title:         title,
     desc:          document.getElementById('nt_desc')?.value || '',
     assignerId:    WS.currentUser?.id || 1,
-    assigneeIds:   [],
+    assigneeIds:   _getSelectedCollaboratorIds().length
+                     ? _getSelectedCollaboratorIds()
+                     : [],
     status:        'waiting',
     priority:      document.getElementById('nt_priority')?.value || 'medium',
     progress:      0,
@@ -360,6 +362,11 @@ function openNewTaskModal(mode, parentId, isSimple) {
     if (submitBtn)  { submitBtn.textContent = '스케줄 등록'; submitBtn.onclick = createNewTask; }
     hide(rowPT); show(rowDate); hide(rowImp); hide(rowScore);
 
+    // 팀 체크박스 숨기고 협업대상자 섹션 표시
+    const rowTeamsCheck2 = document.getElementById('nt_row_teams_check');
+    hide(rowTeamsCheck2);
+    _showCollaborators();
+
     // 업무 선택 드롭다운 표시 및 채우기
     show(rowSel);
     const selEl = document.getElementById('nt_task_select');
@@ -372,6 +379,7 @@ function openNewTaskModal(mode, parentId, isSimple) {
         myTasks.map(t => '<option value="' + t.id + '">' + t.title + '</option>').join('');
     }
 
+
   } else if (mode === 'edit') {
     if (modalTitle) modalTitle.textContent = '업무 수정';
     if (submitBtn)  { submitBtn.textContent = '저장하기'; submitBtn.onclick = saveEditTask; }
@@ -382,6 +390,8 @@ function openNewTaskModal(mode, parentId, isSimple) {
     if (modalTitle) modalTitle.textContent = '새 업무 추가';
     if (submitBtn)  { submitBtn.textContent = '업무 등록'; submitBtn.onclick = createNewTask; }
     hide(rowPT); hide(rowDate); show(rowImp); show(rowScore);
+    // 협업대상자 섹션 숨김
+    _hideCollaborators();
     // 팀 체크박스 표시 및 채우기
     const rowTeamsCheck = document.getElementById('nt_row_teams_check');
     show(rowTeamsCheck);
@@ -602,3 +612,70 @@ function _populateTeamCheckboxes(selectedTeams) {
     '</label>'
   ).join('');
 }
+
+/* 협업대상자 섹션 생성/표시 (schedule 모드 전용) */
+function _showCollaborators(selectedIds) {
+  // 기존 섹션 제거 후 재생성
+  let sec = document.getElementById('nt_row_collaborators');
+  if (!sec) {
+    sec = document.createElement('div');
+    sec.id = 'nt_row_collaborators';
+    sec.className = 'form-group';
+    // nt_row_teams_check 바로 아래에 삽입
+    const ref = document.getElementById('nt_row_teams_check');
+    if (ref && ref.parentNode) ref.parentNode.insertBefore(sec, ref.nextSibling);
+    else {
+      const body = document.querySelector('#newTaskModal .modal-body');
+      if (body) body.appendChild(sec);
+    }
+  }
+  sec.style.display = '';
+
+  const users = (WS.users || []).filter(u => u.id !== WS.currentUser?.id);
+  const sel = selectedIds || [];
+
+  const checkboxStyle =
+    'display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;' +
+    'background:var(--bg-secondary);border:1.5px solid var(--border-color);cursor:pointer;' +
+    'font-size:12.5px;font-weight:600;color:var(--text-secondary);transition:all .15s';
+
+  sec.innerHTML =
+    '<label class="form-label">' +
+      '협업대상자 <span style="font-size:10px;color:var(--text-muted)">(복수 선택 가능)</span>' +
+    '</label>' +
+    '<div id="nt_collaborator_boxes" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;' +
+      'background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:10px">' +
+      (users.length === 0
+        ? '<div style="color:var(--text-muted);font-size:12px">등록된 직원이 없습니다.</div>'
+        : users.map(u =>
+          '<label style="' + checkboxStyle + '" ' +
+            'onmouseover="this.style.borderColor=\'var(--accent-blue)\'" ' +
+            'onmouseout="if(!this.querySelector(\'input\').checked)this.style.borderColor=\'var(--border-color)\'">' +
+            '<input type="checkbox" value="' + u.id + '" ' + (sel.includes(u.id) ? 'checked' : '') + ' ' +
+              'onchange="' +
+                'this.closest(\'label\').style.background=this.checked?\'rgba(79,110,247,.12)\':\' var(--bg-secondary)\';' +
+                'this.closest(\'label\').style.borderColor=this.checked?\'var(--accent-blue)\':\' var(--border-color)\';" ' +
+              'style="accent-color:var(--accent-blue)">' +
+            '<span style="display:inline-flex;align-items:center;justify-content:center;' +
+              'width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,' + (u.color||'#4f6ef7') + ',#9747ff);' +
+              'font-size:11px;color:#fff;font-weight:700;flex-shrink:0">' + (u.avatar||u.name[0]) + '</span>' +
+            '<span>' + u.name + '</span>' +
+            '<span style="font-size:10px;color:var(--text-muted)">' + (u.dept||'') + '</span>' +
+          '</label>'
+        ).join(''))
+    + '</div>';
+}
+
+/* 협업대상자 섹션 숨기기 */
+function _hideCollaborators() {
+  const sec = document.getElementById('nt_row_collaborators');
+  if (sec) sec.style.display = 'none';
+}
+
+/* createNewTask에서 협업대상자 ID 읽기 (schedule 모드용) */
+function _getSelectedCollaboratorIds() {
+  return Array.from(
+    document.querySelectorAll('#nt_collaborator_boxes input[type=checkbox]:checked')
+  ).map(cb => parseInt(cb.value)).filter(Boolean);
+}
+
