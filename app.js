@@ -2942,3 +2942,33 @@ function _dpSelect(dt) {
     refreshIcons();
   };
 })();
+
+/* ── 성과포인트(scoreMin/scoreMax) 저장 패치 ── */
+(function(){
+  // createNewTask 패치: scoreMin/scoreMax 추가
+  const _origCreate = createNewTask;
+  createNewTask = function() {
+    _origCreate();
+    // 마지막으로 생성된 태스크에 scoreMin/scoreMax 보강
+    const last = WS.tasks[WS.tasks.length - 1];
+    if (last) {
+      last.scoreMin = parseInt(document.getElementById('nt_score_min')?.value) || 0;
+      last.scoreMax = parseInt(document.getElementById('nt_score_max')?.value) || 0;
+      WS.saveTasks();
+    }
+  };
+})();
+
+/* ── renderPage_Tasks 헤더 한글 복구 패치 ── */
+(function(){
+  const _origRender = renderPage_Tasks;
+  renderPage_Tasks = function(filter) {
+    _origRender(filter);
+    // 깨진 테이블 헤더를 올바른 한글로 교체
+    const ths = document.querySelectorAll('#taskListArea .task-table thead th');
+    const labels = ['\uc5c5\ubb34\uc81c\ubaa9','\ub2f4\ub2f9\uc790','\uc0c1\ud0dc','\ub9c8\uac10\uc77c'];
+    ths.forEach((th, i) => { if (labels[i]) th.textContent = labels[i]; });
+    const emptyTd = document.querySelector('#taskListArea .task-table .empty-state');
+    if (emptyTd && emptyTd.textContent.includes('?')) emptyTd.textContent = '\ub370\uc774\ud130\uac00 \uc5c6\uc2b5\ub2c8\ub2e4.';
+  };
+})();
