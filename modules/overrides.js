@@ -27,6 +27,145 @@ function showToast(type, msg, duration) {
 
 
 /* ══════════════════════════════════════════════
+   색상 유틸 – HEX ↔ HSL 변환
+══════════════════════════════════════════════ */
+function _hexToHSL(hex) {
+  const r = parseInt(hex.slice(1,3),16)/255;
+  const g = parseInt(hex.slice(3,5),16)/255;
+  const b = parseInt(hex.slice(5,7),16)/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+}
+
+function _hslToHex(h, s, l) {
+  h = ((h % 360) + 360) % 360;
+  s = Math.max(0, Math.min(100, s));
+  l = Math.max(0, Math.min(100, l));
+  const hn = h / 360, sn = s / 100, ln = l / 100;
+  let r, g, b;
+  if (sn === 0) { r = g = b = ln; }
+  else {
+    const q = ln < 0.5 ? ln * (1 + sn) : ln + sn - ln * sn;
+    const p = 2 * ln - q;
+    const hue2 = (t) => {
+      if (t < 0) t += 1; if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q-p)*6*t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q-p)*(2/3-t)*6;
+      return p;
+    };
+    r = hue2(hn + 1/3); g = hue2(hn); b = hue2(hn - 1/3);
+  }
+  return '#' + [r,g,b].map(x => Math.round(x*255).toString(16).padStart(2,'0')).join('');
+}
+
+/* ══════════════════════════════════════════════
+   renderDesignSystem – 강조색 기반 7색 팔레트 생성
+══════════════════════════════════════════════ */
+function renderDesignSystem(accentHex) {
+  if (!accentHex || accentHex.length < 4) return;
+  const [h, s, l] = _hexToHSL(accentHex);
+
+  const palette = [
+    { key: '--ds-primary',   label: '기본컬러',   hex: accentHex },
+    { key: '--ds-secondary', label: '보조컬러',   hex: _hslToHex((h+40)%360, Math.round(s*0.55), Math.min(l+18,82)) },
+    { key: '--ds-accent',    label: '강조컬러',   hex: _hslToHex(h, Math.min(s+12,100), Math.max(l-18,20)) },
+    { key: '--ds-neutral',   label: '중립컬러',   hex: _hslToHex(h, 14, 54) },
+    { key: '--ds-bg',        label: '배경컬러',   hex: _hslToHex(h, 10, 97) },
+    { key: '--ds-surface',   label: '표면컬러',   hex: _hslToHex(h, 13, 91) },
+    { key: '--ds-text',      label: '텍스트컬러', hex: _hslToHex(h, 20, 16) },
+  ];
+
+  // CSS 변수에 적용
+  const root = document.documentElement;
+  palette.forEach(c => root.style.setProperty(c.key, c.hex));
+
+  // #designSystemColors 섹션 동적 생성 (없으면 theme-tab에 추가)
+  let el = document.getElementById('designSystemColors');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'designSystemColors';
+    const themeTab = document.getElementById('theme-tab');
+    if (themeTab) themeTab.appendChild(el);
+    else return;
+  }
+
+  el.innerHTML =
+    '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:16px;margin-top:16px">' +
+      '<div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:14px;' +
+           'display:flex;align-items:center;gap:6px;letter-spacing:.5px;text-transform:uppercase">' +
+        '<i data-lucide="palette" style="width:14px;height:14px"></i> 디자인 시스템 컬러' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">' +
+        palette.map(c => {
+          const isLight = _hexToHSL(c.hex)[2] > 60;
+          const textCol = isLight ? '#1a1d2e' : '#ffffff';
+          return (
+            '<div style="text-align:center;cursor:pointer" ' +
+              'onclick="(function(){try{navigator.clipboard.writeText(\'' + c.hex + '\')}catch(e){}' +
+              'showToast(\'success\',\'' + c.hex.toUpperCase() + ' 복사됨\')})()" ' +
+              'title="클릭하여 복사: ' + c.hex.toUpperCase() + '">' +
+              '<div style="width:100%;aspect-ratio:1;border-radius:10px;background:' + c.hex + ';' +
+                   'border:1.5px solid rgba(0,0,0,.08);margin-bottom:6px;' +
+                   'display:flex;align-items:center;justify-content:center;' +
+                   'font-size:9px;font-weight:700;color:' + textCol + ';' +
+                   'transition:transform .15s;box-shadow:0 2px 8px rgba(0,0,0,.10)" ' +
+                   'onmouseover="this.style.transform=\'scale(1.08)\'" ' +
+                   'onmouseout="this.style.transform=\'\'">' +
+              '</div>' +
+              '<div style="font-size:10px;font-weight:700;color:var(--text-primary);margin-bottom:2px">' + c.label + '</div>' +
+              '<div style="font-size:9px;color:var(--text-muted);font-family:monospace">' + c.hex.toUpperCase() + '</div>' +
+            '</div>'
+          );
+        }).join('') +
+      '</div>' +
+      '<div style="font-size:10px;color:var(--text-muted);margin-top:10px">' +
+        '색상 칩을 클릭하면 HEX 코드가 클립보드에 복사됩니다.' +
+      '</div>' +
+    '</div>';
+
+  refreshIcons();
+}
+
+/* ══════════════════════════════════════════════
+   applyAccent – 강조색 적용 + 디자인 시스템 업데이트
+══════════════════════════════════════════════ */
+function applyAccent(color) {
+  WS.currentAccent = color;
+  localStorage.setItem('ws_current_accent', color);
+
+  const root = document.documentElement;
+  root.style.setProperty('--accent-blue', color);
+  root.style.setProperty('--currentAccent', color);
+  root.style.setProperty('--accent-blue-light', color + '22');
+  root.style.setProperty('--bg-sidebar-active', color + '1a');
+
+  document.querySelectorAll('.accent-chip').forEach(chip => {
+    chip.classList.toggle('active',
+      chip.style.background === color || chip.dataset.color === color);
+  });
+
+  showToast('success', '강조색이 변경되었습니다.');
+  refreshIcons();
+  if (typeof renderAttendancePill === 'function') renderAttendancePill();
+
+  // 디자인 시스템 컬러 팔레트 업데이트
+  renderDesignSystem(color);
+}
+
+
+/* ══════════════════════════════════════════════
    업무설정 페이지 – renderPage_Tasks 완전 교체
    (컬럼 헤더 한글 정상 출력 + 클릭 이벤트 보장)
 ══════════════════════════════════════════════ */
