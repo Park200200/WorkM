@@ -792,7 +792,7 @@ function openTaskDetail(taskId) {
       <div style="display:flex;align-items:center;gap:12px">
         <input type="range" min="${t.progress}" max="100" value="${progress}" id="progressSlider_${t.id}"
           style="flex:1;accent-color:var(--accent-blue)"
-          oninput="const _min=parseInt(this.min);if(parseInt(this.value)<_min)this.value=_min;document.getElementById('progVal_${t.id}').textContent=this.value+'%'; document.getElementById('progBar_live_${t.id}').style.width=this.value+'%';const _rb=document.getElementById('reportProgressBadge_${t.id}');if(_rb)_rb.textContent=this.value+'%';">
+          oninput="const _min=parseInt(this.min);if(parseInt(this.value)<_min)this.value=_min;document.getElementById('progVal_${t.id}').textContent=this.value+'%'; document.getElementById('progBar_live_${t.id}').style.width=this.value+'%'">
         <span id="progVal_${t.id}" style="font-size:15px;font-weight:800;color:var(--accent-blue);min-width:40px;text-align:right">${progress}%</span>
       </div>
       <div class="progress-bar" style="margin-top:8px;height:8px;border-radius:6px">
@@ -804,7 +804,6 @@ function openTaskDetail(taskId) {
     <div style="margin-bottom:18px;background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:14px;padding:14px">
       <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px">
         <i data-lucide="message-square-plus" style="width:13px;height:13px"></i> 진행보고 추가
-        <span id="reportProgressBadge_${t.id}" style="font-size:12px;font-weight:800;background:var(--currentAccent,#4f6ef7);color:#fff;border-radius:20px;padding:1px 9px;margin-left:4px">${progress}%</span>
       </div>
       <!-- 아이콘(유형) 선택 -->
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="reportIconChips">
@@ -851,7 +850,7 @@ function openTaskDetail(taskId) {
               <div class="timeline-dot" style="background:${h.color}22;border-color:${h.color}"><i data-lucide="${h.icon}"></i></div>
               <div class="timeline-content">
                 <div class="t-date">${h.date}</div>
-                <div class="t-text">${h.event}${h.progress!==undefined?' '+h.progress+'%':''}</div>
+                <div class="t-text">${h.event}</div>
                 <div class="t-sub">${h.detail}</div>
               </div>
             </div>`).join('')}
@@ -884,17 +883,13 @@ function addProgressReport(taskId) {
   const todayIdx = t.history.findIndex(h => h.date === dateStr);
   let isUpdate = false;
 
-  // 현재 슬라이더 진행율 가져오기
-  const sliderNow = document.getElementById(`progressSlider_${taskId}`);
-  const progressNow = sliderNow ? parseInt(sliderNow.value) : (t.progress || 0);
-
   if (todayIdx !== -1) {
     // 당일 항목 업데이트
-    t.history[todayIdx] = { date: dateStr, event: label, detail: text, icon, color, progress: progressNow };
+    t.history[todayIdx] = { date: dateStr, event: label, detail: text, icon, color };
     isUpdate = true;
   } else {
     // 신규 추가
-    t.history.push({ date: dateStr, event: label, detail: text, icon, color, progress: progressNow });
+    t.history.push({ date: dateStr, event: label, detail: text, icon, color });
   }
   WS.saveTasks();
 
@@ -1012,41 +1007,24 @@ function openNewTaskModal(mode = null, parentId = null, assigneeId = null) {
     if(rowPT)   rowPT.style.display   = 'none';
     if(rowDate) rowDate.style.display  = 'none';
     if(rowImp)  rowImp.style.display   = 'none';
-    const _rs1 = document.getElementById('nt_row_task_select'); if(_rs1) _rs1.style.display='none';
   } else if (mode === 'schedule') {
     if(modalTitle) modalTitle.textContent = '내 스케줄 추가';
     if(submitBtn)  { submitBtn.textContent = '스케줄 등록'; submitBtn.onclick = createNewTask; }
     if(rowPT)   rowPT.style.display   = 'none';
     if(rowDate) rowDate.style.display  = '';
     if(rowImp)  rowImp.style.display   = 'none';
-    // 업무 선택 드롭다운 표시 및 현재 사용자 업무 목록 채우기
-    const rowSel = document.getElementById('nt_row_task_select');
-    const selEl  = document.getElementById('nt_task_select');
-    if (rowSel) rowSel.style.display = '';
-    if (selEl) {
-      const uid = WS.currentUser?.id;
-      const myTasks = WS.tasks.filter(t =>
-        t.assignerId === uid || (t.assigneeIds||[]).includes(uid)
-      );
-      selEl.innerHTML = '<option value="">-- 업무 목록에서 선택 --</option>' +
-        myTasks.map(t => `<option value="${t.id}">${t.title}</option>`).join('');
-    }
-    const _sc1 = document.getElementById('nt_row_score'); if(_sc1) _sc1.style.display='none';
   } else if (mode === 'edit') {
     if(modalTitle) modalTitle.textContent = '업무 수정';
     if(submitBtn)  { submitBtn.textContent = '저장하기'; submitBtn.onclick = saveEditTask; }
     if(rowPT)   rowPT.style.display   = 'none';
     if(rowDate) rowDate.style.display  = 'none';
     if(rowImp)  rowImp.style.display   = 'none';
-    const _rs2 = document.getElementById('nt_row_task_select'); if(_rs2) _rs2.style.display='none';
   } else {
     if(modalTitle) modalTitle.textContent = '새 업무 등록';
     if(submitBtn)  { submitBtn.textContent = '업무 등록'; submitBtn.onclick = createNewTask; }
     if(rowPT)   rowPT.style.display   = '';
     if(rowDate) rowDate.style.display  = '';
     if(rowImp)  rowImp.style.display   = '';
-    const _rs3 = document.getElementById('nt_row_task_select'); if(_rs3) _rs3.style.display='none';
-    const _sc3 = document.getElementById('nt_row_score'); if(_sc3) _sc3.style.display='';
   }
 
   if(parentId) {
@@ -1168,7 +1146,7 @@ function setAssignmentMode(mode, btn) {
   document.querySelectorAll('#assignmentSubFilter .chip').forEach(c => c.classList.remove('active'));
   btn.classList.add('active');
   
-  // 吏곸썝 愿 _{\uc9c1\uc6d0 \uad00\ub9ac \ubc84\ud2bc \ud45c\uc2dc \uc5ec\ubd80 \uc81c\uc5b4}
+  // 吏곸썝 愿由?踰꾪듉 ?쒖떆 ?щ? ?쒖뼱
   const staffActions = document.getElementById('staffManageActions');
   if(staffActions) staffActions.style.display = mode==='staff' ? 'block' : 'none';
   
@@ -2397,8 +2375,8 @@ function renderPage_RankMgmt() {
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:6px">
         <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${icon}${item.name} ${label}</div>
         <div style="display:flex;gap:4px">
-          <button onclick="editOrgItem('${type}',${item.id})" title="수정" style="background:none;border:none;cursor:pointer;padding:3px 6px;color:var(--text-muted);font-size:13px">✏️</button>
-          <button onclick="deleteOrgItem('${type}',${item.id})" title="삭제" style="background:none;border:none;cursor:pointer;padding:3px 6px;color:#ef4444;font-size:13px">🗑️</button>
+          <button onclick="editOrgItem('${type}',${item.id})" style="background:none;border:none;cursor:pointer;padding:3px;color:var(--text-muted)"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>
+          <button onclick="deleteOrgItem('${type}',${item.id})" style="background:none;border:none;cursor:pointer;padding:3px;color:#ef4444"><i data-lucide="trash-2" style="width:13px;height:13px"></i></button>
         </div>
       </div>`;
   }
@@ -2422,8 +2400,8 @@ function renderPage_RankMgmt() {
         <span style="font-size:13px;font-weight:600;color:var(--text-primary)">${r.label}</span>
       </div>
       <div style="display:flex;gap:4px">
-        <button onclick="editReportType(${r.id})" title="수정" style="background:none;border:none;cursor:pointer;padding:3px 6px;color:var(--text-muted);font-size:13px">✏️</button>
-        <button onclick="deleteOrgItem('reportType',${r.id})" title="삭제" style="background:none;border:none;cursor:pointer;padding:3px 6px;color:#ef4444;font-size:13px">🗑️</button>
+        <button onclick="editReportType(${r.id})" style="background:none;border:none;cursor:pointer;padding:3px;color:var(--text-muted)"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>
+        <button onclick="deleteOrgItem('reportType',${r.id})" style="background:none;border:none;cursor:pointer;padding:3px;color:#ef4444"><i data-lucide="trash-2" style="width:13px;height:13px"></i></button>
       </div>
     </div>`).join('') || '<div style="color:var(--text-muted);font-size:12px;padding:8px">항목 없음</div>';
 
@@ -2940,35 +2918,5 @@ function _dpSelect(dt) {
     closeModalDirect('taskDetailModal');
     showToast('success', '<i data-lucide="check-circle-2"></i> 저장되었습니다.');
     refreshIcons();
-  };
-})();
-
-/* ── 성과포인트(scoreMin/scoreMax) 저장 패치 ── */
-(function(){
-  // createNewTask 패치: scoreMin/scoreMax 추가
-  const _origCreate = createNewTask;
-  createNewTask = function() {
-    _origCreate();
-    // 마지막으로 생성된 태스크에 scoreMin/scoreMax 보강
-    const last = WS.tasks[WS.tasks.length - 1];
-    if (last) {
-      last.scoreMin = parseInt(document.getElementById('nt_score_min')?.value) || 0;
-      last.scoreMax = parseInt(document.getElementById('nt_score_max')?.value) || 0;
-      WS.saveTasks();
-    }
-  };
-})();
-
-/* ── renderPage_Tasks 헤더 한글 복구 패치 ── */
-(function(){
-  const _origRender = renderPage_Tasks;
-  renderPage_Tasks = function(filter) {
-    _origRender(filter);
-    // 깨진 테이블 헤더를 올바른 한글로 교체
-    const ths = document.querySelectorAll('#taskListArea .task-table thead th');
-    const labels = ['\uc5c5\ubb34\uc81c\ubaa9','\ub2f4\ub2f9\uc790','\uc0c1\ud0dc','\ub9c8\uac10\uc77c'];
-    ths.forEach((th, i) => { if (labels[i]) th.textContent = labels[i]; });
-    const emptyTd = document.querySelector('#taskListArea .task-table .empty-state');
-    if (emptyTd && emptyTd.textContent.includes('?')) emptyTd.textContent = '\ub370\uc774\ud130\uac00 \uc5c6\uc2b5\ub2c8\ub2e4.';
   };
 })();
