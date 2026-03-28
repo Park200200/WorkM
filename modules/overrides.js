@@ -1184,8 +1184,8 @@ function saveDrWrite() {
 /* openDailyReportModal에서 renderDailyScheduleList 호출 제거용 재정의는 이미 위에 있음 */
 
 /* ══════════════════════════════════════════════
-   renderTaskListView – 업무목록 탭 그리드 헤더 변경
-   헤더: 업무제목 / 기본점수 / 팀리스트 / 업무결과 / 관리
+   renderTaskListView – 업무목록 탭 그리드
+   컬럼: 업무제목(+팀) / 업무설명 / 기본점수 / 업무결과 / 관리
 ══════════════════════════════════════════════ */
 function renderTaskListView(targetEl) {
   const el = targetEl || document.getElementById('taskListArea');
@@ -1198,33 +1198,41 @@ function renderTaskListView(targetEl) {
     let html = '';
     tasks.forEach(t => {
       const indent = level * 24;
-      // 기본점수: scoreBase 또는 score
       const baseScore = t.scoreBase !== undefined ? t.scoreBase : (t.score || 0);
-      // 팀리스트: team 필드
-      const teamStr = t.team || '-';
-      // 업무결과: reportContent
+      const teamStr   = t.team || '';
+      // 업무결과: reportContent (새 업무 추가에서 선택한 값)
       const resultStr = t.reportContent
         ? '<span class="report-status-badge">' + t.reportContent + '</span>'
         : '<span style="color:var(--text-muted);font-size:11px">-</span>';
+      // 업무설명
+      const descStr = t.desc
+        ? '<span style="font-size:11.5px;color:var(--text-secondary)">' + t.desc + '</span>'
+        : '<span style="color:var(--text-muted);font-size:11px">-</span>';
 
       html += '<tr>' +
-        // 업무제목
+        // ① 업무제목 + 팀리스트 아래 표시
         '<td>' +
           '<div class="tree-node" style="padding-left:' + indent + 'px">' +
             (level > 0 ? '<div class="tree-line"></div>' : '') +
-            '<div class="tree-title">' + (t.isImportant ? '<span class="star-icon"><i data-lucide="star"></i></span>' : '') + ' ' + t.title + '</div>' +
-            '<button class="btn-sub-add" onclick="openNewTaskModal(' + t.id + ')" title="하위 업무 추가"><i data-lucide="plus" style="width:12px;height:12px"></i></button>' +
+            '<div class="tree-title">' +
+              (t.isImportant ? '<span class="star-icon"><i data-lucide="star"></i></span>' : '') +
+              ' ' + t.title +
+            '</div>' +
+            '<button class="btn-sub-add" onclick="openNewTaskModal(' + t.id + ')" title="하위 업무 추가">' +
+              '<i data-lucide="plus" style="width:12px;height:12px"></i>' +
+            '</button>' +
           '</div>' +
+          (teamStr ? '<div style="font-size:11px;color:var(--text-muted);padding-left:' + indent + 'px;margin-top:2px">' + teamStr + '</div>' : '') +
         '</td>' +
-        // 기본점수
+        // ② 업무설명
+        '<td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + descStr + '</td>' +
+        // ③ 기본점수
         '<td style="text-align:center;width:80px">' +
           '<div class="score-tag">' + baseScore + '<span>pt</span></div>' +
         '</td>' +
-        // 팀리스트
-        '<td style="font-size:12px;color:var(--text-secondary)">' + teamStr + '</td>' +
-        // 업무결과
-        '<td style="width:110px">' + resultStr + '</td>' +
-        // 관리 (수정 + 삭제)
+        // ④ 업무결과 (reportContent)
+        '<td style="width:120px">' + resultStr + '</td>' +
+        // ⑤ 관리 (수정 + 삭제)
         '<td style="width:90px">' +
           '<div class="manage-actions">' +
             '<button class="btn-icon-sm edit" onclick="openEditTaskModal(' + t.id + ')" title="수정">' +
@@ -1246,9 +1254,9 @@ function renderTaskListView(targetEl) {
     '<table class="task-table">' +
       '<thead><tr>' +
         '<th>업무제목</th>' +
+        '<th>업무설명</th>' +
         '<th style="text-align:center;width:80px">기본점수</th>' +
-        '<th>팀리스트</th>' +
-        '<th style="width:110px">업무결과</th>' +
+        '<th style="width:120px">업무결과</th>' +
         '<th style="width:90px;text-align:center">관리</th>' +
       '</tr></thead>' +
       '<tbody>' +
