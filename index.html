@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -555,6 +555,238 @@
         </div>
         <div id="profileArea"></div>
       </div>
+
+      <!-- ══════════════════════════════
+           🏢 본사정보 페이지
+      ══════════════════════════════ -->
+      <div class="page" id="page-hq-info">
+        <div class="page-header">
+          <div>
+            <div class="page-title">본사정보</div>
+            <div class="page-subtitle">본사 기본 정보 및 담당자를 관리합니다</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="resetHqInfo()"><i data-lucide="rotate-ccw" style="width:14px;height:14px;margin-right:4px;vertical-align:middle"></i>초기화</button>
+            <button class="btn btn-blue" onclick="saveHqInfo()"><i data-lucide="save" style="width:14px;height:14px;margin-right:4px;vertical-align:middle"></i>저장</button>
+          </div>
+        </div>
+
+        <div class="hq-info-layout">
+
+          <!-- ── 좌측 영역 ── -->
+          <div class="hq-left">
+
+            <!-- 기본 정보 카드 -->
+            <div class="hq-card">
+              <div class="hq-card-head">
+                <div class="hq-card-title">
+                  <i data-lucide="file-text" style="width:16px;height:16px;color:var(--accent-blue)"></i>
+                  기본 정보
+                </div>
+                <span class="hq-code-badge" id="hqCodeBadge"># 코드: —</span>
+              </div>
+
+              <!-- 사업자 이름 -->
+              <div class="form-group">
+                <label class="form-label hq-label">사업자 이름 (법인명)</label>
+                <input type="text" class="form-input" id="hq_company" placeholder="법인명 입력">
+              </div>
+
+              <!-- 주소 -->
+              <div class="form-group">
+                <label class="form-label hq-label">
+                  <i data-lucide="map-pin" style="width:12px;height:12px;color:var(--text-muted)"></i>
+                  주소 (우편번호 검색)
+                </label>
+                <div style="display:flex;gap:8px;margin-bottom:8px">
+                  <input type="text" class="form-input" id="hq_zip" placeholder="우편번호" style="width:100px;flex-shrink:0" readonly>
+                  <button class="btn btn-blue" style="flex-shrink:0" onclick="searchHqAddress()">우편번호 검색</button>
+                </div>
+                <input type="text" class="form-input" id="hq_addr1" placeholder="기본 주소" readonly style="margin-bottom:8px">
+                <input type="text" class="form-input" id="hq_addr2" placeholder="상세 주소 입력 (예: 101호)">
+              </div>
+
+              <!-- 대표자 + 대표전화 -->
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label hq-label">대표자 이름</label>
+                  <input type="text" class="form-input" id="hq_ceo" placeholder="대표자 이름">
+                </div>
+                <div class="form-group">
+                  <label class="form-label hq-label">
+                    <i data-lucide="phone" style="width:11px;height:11px;color:var(--text-muted)"></i>
+                    대표자 전화
+                  </label>
+                  <input type="text" class="form-input" id="hq_ceo_phone" placeholder="010-0000-0000">
+                </div>
+              </div>
+
+              <!-- 사업자 전화 + 사업자 번호 -->
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label hq-label">
+                    <i data-lucide="phone" style="width:11px;height:11px;color:var(--text-muted)"></i>
+                    사업자 전화
+                  </label>
+                  <input type="text" class="form-input" id="hq_biz_phone" placeholder="053-000-0000">
+                </div>
+                <div class="form-group">
+                  <label class="form-label hq-label">사업자 번호</label>
+                  <input type="text" class="form-input" id="hq_biz_no" placeholder="000-00-00000">
+                </div>
+              </div>
+
+              <!-- 업태 + 종목 -->
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label hq-label">업태</label>
+                  <input type="text" class="form-input" id="hq_biz_type" placeholder="예) 도매">
+                </div>
+                <div class="form-group">
+                  <label class="form-label hq-label">종목 (업종)</label>
+                  <input type="text" class="form-input" id="hq_biz_item" placeholder="예) 원단">
+                </div>
+              </div>
+
+              <!-- 세금계산서 이메일 -->
+              <div class="form-group">
+                <label class="form-label hq-label">
+                  <i data-lucide="mail" style="width:11px;height:11px;color:var(--text-muted)"></i>
+                  세금계산서 이메일
+                </label>
+                <input type="email" class="form-input" id="hq_tax_email" placeholder="tax@company.com">
+              </div>
+            </div><!-- /기본 정보 카드 -->
+
+            <!-- 담당자 정보 카드 -->
+            <div class="hq-card" style="margin-top:16px">
+              <div class="hq-card-head">
+                <div class="hq-card-title">
+                  <i data-lucide="user-circle" style="width:16px;height:16px;color:var(--accent-blue)"></i>
+                  담당자 정보
+                </div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:80px 1fr;gap:16px;align-items:start">
+                <!-- 프로필 사진 -->
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                  <div id="hqManagerPhotoPreview"
+                    onclick="document.getElementById('hqManagerPhotoFile').click()"
+                    style="width:70px;height:70px;border-radius:50%;background:var(--bg-tertiary);border:2px dashed var(--border-color);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;transition:border-color .2s"
+                    onmouseover="this.style.borderColor='var(--accent-blue)'"
+                    onmouseout="this.style.borderColor='var(--border-color)'">
+                    <i data-lucide="user" style="width:28px;height:28px;color:var(--text-muted)"></i>
+                  </div>
+                  <input type="file" id="hqManagerPhotoFile" accept="image/*" style="display:none" onchange="handleHqManagerPhoto(this)">
+                  <span style="font-size:10px;color:var(--text-muted);text-align:center">프로필 사진</span>
+                </div>
+
+                <!-- 담당자 필드들 -->
+                <div>
+                  <div class="form-row" style="margin-bottom:10px">
+                    <div class="form-group">
+                      <label class="form-label hq-label">담당자 이름</label>
+                      <input type="text" class="form-input" id="hq_mgr_name" placeholder="담당자 이름">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label hq-label">
+                        <i data-lucide="briefcase" style="width:11px;height:11px;color:var(--text-muted)"></i>
+                        직함
+                      </label>
+                      <input type="text" class="form-input" id="hq_mgr_title" placeholder="예) 담당자">
+                    </div>
+                  </div>
+                  <div class="form-group" style="margin-bottom:10px">
+                    <label class="form-label hq-label">
+                      <i data-lucide="smartphone" style="width:11px;height:11px;color:var(--text-muted)"></i>
+                      담당자 휴대폰
+                    </label>
+                    <input type="text" class="form-input" id="hq_mgr_mobile" placeholder="010-0000-0000">
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label hq-label">시스템 ID</label>
+                      <input type="text" class="form-input" id="hq_mgr_id" placeholder="system_id" style="background:var(--bg-tertiary);color:var(--text-muted)" readonly>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label hq-label">비밀번호</label>
+                      <input type="password" class="form-input" id="hq_mgr_pw" value="***" placeholder="••••••">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div><!-- /담당자 정보 카드 -->
+
+          </div><!-- /hq-left -->
+
+          <!-- ── 우측 영역 ── -->
+          <div class="hq-right">
+
+            <!-- 사업자등록증 -->
+            <div class="hq-card">
+              <div class="hq-card-title" style="margin-bottom:10px">
+                <i data-lucide="file-badge" style="width:15px;height:15px;color:var(--accent-blue)"></i>
+                사업자등록증
+              </div>
+              <div id="hqBizDocPreview"
+                onclick="document.getElementById('hqBizDocFile').click()"
+                style="width:100%;aspect-ratio:3/2;border-radius:10px;border:2px dashed var(--border-color);background:var(--bg-tertiary);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;overflow:hidden;transition:border-color .2s"
+                onmouseover="this.style.borderColor='var(--accent-blue)'"
+                onmouseout="this.style.borderColor='var(--border-color)'">
+                <i data-lucide="image" style="width:36px;height:36px;color:var(--text-muted)"></i>
+                <span style="font-size:12px;color:var(--text-muted)">등록된 이미지가 없습니다.</span>
+              </div>
+              <input type="file" id="hqBizDocFile" accept="image/*" style="display:none" onchange="handleHqBizDoc(this)">
+              <div style="display:flex;gap:6px;margin-top:8px">
+                <button class="btn" style="flex:1;font-size:12px" onclick="document.getElementById('hqBizDocFile').click()">
+                  <i data-lucide="upload" style="width:12px;height:12px;margin-right:4px;vertical-align:middle"></i>업로드
+                </button>
+                <button class="btn" style="font-size:12px" onclick="clearHqBizDoc()">
+                  <i data-lucide="trash-2" style="width:12px;height:12px;color:var(--danger)"></i>
+                </button>
+              </div>
+            </div><!-- /사업자등록증 -->
+
+            <!-- 솔루션 메인 이미지 -->
+            <div class="hq-card" style="margin-top:12px">
+              <div class="hq-card-title" style="margin-bottom:10px">
+                <i data-lucide="monitor" style="width:15px;height:15px;color:var(--accent-blue)"></i>
+                솔루션 메인 이미지
+              </div>
+              <div id="hqMainImgPreview"
+                onclick="document.getElementById('hqMainImgFile').click()"
+                style="width:100%;aspect-ratio:16/9;border-radius:10px;border:2px dashed var(--border-color);background:var(--bg-tertiary);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;overflow:hidden;transition:border-color .2s"
+                onmouseover="this.style.borderColor='var(--accent-blue)'"
+                onmouseout="this.style.borderColor='var(--border-color)'">
+                <i data-lucide="image" style="width:36px;height:36px;color:var(--text-muted)"></i>
+                <span style="font-size:12px;color:var(--text-muted)">클릭하여 이미지 업로드</span>
+              </div>
+              <input type="file" id="hqMainImgFile" accept="image/*" style="display:none" onchange="handleHqMainImg(this)">
+              <div style="display:flex;gap:6px;margin-top:8px">
+                <button class="btn" style="flex:1;font-size:12px" onclick="document.getElementById('hqMainImgFile').click()">
+                  <i data-lucide="upload" style="width:12px;height:12px;margin-right:4px;vertical-align:middle"></i>업로드
+                </button>
+                <button class="btn" style="font-size:12px" onclick="clearHqMainImg()">
+                  <i data-lucide="trash-2" style="width:12px;height:12px;color:var(--danger)"></i>
+                </button>
+              </div>
+            </div><!-- /솔루션 메인 이미지 -->
+
+            <!-- 수정 이력 -->
+            <div class="hq-card" style="margin-top:12px">
+              <div class="hq-card-title" style="margin-bottom:12px">
+                <i data-lucide="clock" style="width:15px;height:15px;color:var(--accent-blue)"></i>
+                수정 이력
+              </div>
+              <div id="hqHistoryList" class="hq-history-list">
+                <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">이력이 없습니다.</div>
+              </div>
+            </div><!-- /수정 이력 -->
+
+          </div><!-- /hq-right -->
+
+        </div><!-- /hq-info-layout -->
+      </div><!-- /page-hq-info -->
 
     </div><!-- /main-content -->
   </div><!-- /main-area -->
