@@ -1588,3 +1588,76 @@ function deleteOrgItem(type, id) {
   renderPage_RankMgmt();
   showToast('info', label + ' 삭제 완료!');
 }
+
+/* ══════════════════════════════════════════════
+   업무분장 그리드 한글 깨짐 수정
+   renderAssignmentByTask / renderAssignmentByStaff
+══════════════════════════════════════════════ */
+function renderAssignmentByTask(targetEl) {
+  var el = targetEl || document.getElementById('taskListArea');
+  if (!el) return;
+  var rows = WS.tasks.map(function(t) {
+    var ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+    var assigneeHtml = ids.length > 0
+      ? ids.map(function(uid) {
+          var u = WS.getUser(uid);
+          return u ? '<div class="staff-badge"><div class="avatar-sm" style="background:linear-gradient(135deg,' + (u.color || '#4f6ef7') + ',#9747ff)">' + u.avatar + '</div>' + u.name + '</div>' : '';
+        }).join('')
+      : '<span style="color:var(--text-muted);font-size:11.5px">미배정</span>';
+    return '<tr>' +
+      '<td style="width:40%"><div style="font-weight:700;font-size:13.5px">' + t.title + '</div><div style="font-size:11px;color:var(--text-muted)">' + (t.team || '') + '</div></td>' +
+      '<td><div class="badge-list">' + assigneeHtml + '</div></td>' +
+      '<td><div class="score-tag">' + (t.score || 0) + '<span>pt</span></div></td>' +
+      '<td style="width:80px"><div class="manage-actions">' +
+        '<button class="btn-icon-sm edit" onclick="openTaskAssignModal(' + t.id + ')" title="담당 직원 지정"><i data-lucide="user-plus" class="icon-sm"></i></button>' +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+
+  el.innerHTML =
+    '<table class="task-table">' +
+      '<thead><tr>' +
+        '<th>업무명</th>' +
+        '<th>담당 직원</th>' +
+        '<th>점수</th>' +
+        '<th>관리</th>' +
+      '</tr></thead>' +
+      '<tbody>' + (rows || '<tr><td colspan="4" class="empty-state">데이터가 없습니다.</td></tr>') + '</tbody>' +
+    '</table>';
+  refreshIcons();
+}
+
+function renderAssignmentByStaff(targetEl) {
+  var el = targetEl || document.getElementById('taskListArea');
+  if (!el) return;
+  var rows = WS.users.map(function(u) {
+    var myTasks = WS.tasks.filter(function(t) {
+      var ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+      return ids.includes(u.id);
+    });
+    var badges = myTasks.map(function(t) { return '<span class="task-badge">' + t.title + '</span>'; }).join('');
+    return '<tr>' +
+      '<td style="width:200px">' +
+        '<div style="display:flex;align-items:center;gap:10px">' +
+          '<div class="avatar" style="width:32px;height:32px;background:linear-gradient(135deg,' + u.color + ',#9747ff);color:#fff;font-size:12px;font-weight:800;border-radius:50%;display:flex;align-items:center;justify-content:center">' + u.avatar + '</div>' +
+          '<div><div style="font-weight:700;font-size:13px">' + u.name + '</div><div style="font-size:10.5px;color:var(--text-muted)">' + u.role + ' · ' + u.dept + '</div></div>' +
+        '</div>' +
+      '</td>' +
+      '<td><div class="badge-list">' + (badges || '<span style="color:var(--text-muted);font-size:11px">배정된 업무 없음</span>') + '</div></td>' +
+      '<td style="width:100px"><div class="manage-actions">' +
+        '<button class="btn-icon-sm edit" onclick="openAssignmentManageModal(' + u.id + ')" title="업무 배정 관리"><i data-lucide="settings-2" class="icon-sm"></i></button>' +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+
+  el.innerHTML =
+    '<table class="task-table">' +
+      '<thead><tr>' +
+        '<th>직원 정보</th>' +
+        '<th>배정 업무</th>' +
+        '<th>관리</th>' +
+      '</tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>';
+  refreshIcons();
+}
