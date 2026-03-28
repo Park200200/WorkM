@@ -1839,7 +1839,8 @@ function _renderProcessSelected() {
 function _renderProcessTypeList() {
   var list = document.getElementById('nt_process_type_list');
   if (!list) return;
-  var types = WS.reportTypes || [];
+  var types = JSON.parse(localStorage.getItem('ws_report_types')) || WS.reportTypes || [];
+  WS.reportTypes = types;
   if (!types.length) {
     list.innerHTML = '<div style="padding:12px;text-align:center;font-size:11px;color:var(--text-muted)">등록된 진행보고 유형이 없습니다.<br><span style="font-size:10px">(본사관리 → 기타설정에서 추가)</span></div>';
     return;
