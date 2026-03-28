@@ -426,51 +426,41 @@ function buildAssignedByMe() {
   </div>`;
 }
 
-/* 내가 지시한 업무 Body 렌더 함수 */
+/* ?꾩퐫?붿뼵??Body ?꾩슜 踰꾩쟾 */
 function buildAssignedByMeBody() {
   const tasks = WS.getAssignedByMe();
   if(tasks.length===0) return '<div class="empty-state"><div class="es-icon"><i data-lucide="inbox"></i></div><div class="es-text">지시한 업무가 없습니다</div></div>';
 
-  // 지시 중요도 아이콘 목록 로드
-  const instrImportances = JSON.parse(localStorage.getItem('ws_instr_importances')) || WS.instrImportances || [];
+  // 지시 중요도 목록 로드
+  const importances = JSON.parse(localStorage.getItem('ws_instr_importances')) || [];
+
+  // 중요도 아이콘 배지 HTML 생성
+  const importanceBadges = importances.length > 0
+    ? importances.map(imp => {
+        const c = imp.color || '#ef4444';
+        const hasIcon = imp.icon && imp.icon.length > 2;
+        const inner = hasIcon
+          ? `<i data-lucide="${imp.icon}" style="width:12px;height:12px;color:${c}"></i>`
+          : `<span style="width:7px;height:7px;border-radius:50%;background:${c};display:inline-block"></span>`;
+        return `<span title="${imp.name}" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${c}22;border:1.5px solid ${c};cursor:default;flex-shrink:0">${inner}</span>`;
+      }).join('')
+    : `<span style="font-size:11px;color:var(--text-muted)">-</span>`;
 
   const rows = tasks.map(t => {
     const _ids2 = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
     const assignee = WS.getUser(_ids2[0]);
     const dd = WS.getDdayBadge(t.dueDate);
     const fillCls = t.status==='delay'?'delay':t.status==='done'?'done':'';
-
-    // 지시중요도 아이콘 배지 렌더링
-    const impBadge = instrImportances.length > 0
-      ? instrImportances.map(imp => {
-          const c = imp.color || '#ef4444';
-          const hasIcon = imp.icon && imp.icon.length > 2;
-          const inner = hasIcon
-            ? `<i data-lucide="${imp.icon}" style="width:11px;height:11px;color:${c}"></i>`
-            : `<span style="width:7px;height:7px;border-radius:50%;background:${c};display:inline-block"></span>`;
-          return `<span title="${imp.name}" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${c}22;border:1.5px solid ${c};cursor:default">${inner}</span>`;
-        }).join('')
-      : `<span style="font-size:11px;color:var(--text-muted)">-</span>`;
-
-    return `<tr>
-      <td onclick="openTaskDetail(${t.id})" style="cursor:pointer">
-        <div style="display:flex;align-items:center;gap:6px">
-          ${t.isImportant?'<span class="star-icon"><i data-lucide="star"></i></span>':''}
-          <span style="font-weight:600;font-size:12.5px">${t.title}</span>
-        </div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${t.team||''}</div>
-      </td>
-      <td onclick="openAssigneeChat(${t.id},${_ids2[0]||'null'})" style="cursor:pointer" title="클릭하면 대화창 열기">
-        <div class="avatar-group">
-          <div class="avatar" style="background:linear-gradient(135deg,${assignee?.color||'#4f6ef7'},#9747ff)">${assignee?.avatar||'?'}</div>
-        </div>
-        <div style="font-size:11px;color:var(--accent-blue);margin-top:2px;font-weight:600">${assignee?.name||''}</div>
-      </td>
+    return `<tr onclick="openTaskDetail(${t.id})" style="cursor:pointer">
+      <td><div style="display:flex;align-items:center;gap:6px">${t.isImportant?'<span class="star-icon"><i data-lucide="star"></i></span>':''}<span style="font-weight:600;font-size:12.5px">${t.title}</span></div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${t.team||''}</div></td>
+      <td><div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,${assignee?.color||'#4f6ef7'},#9747ff)">${assignee?.avatar||'?'}</div></div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${assignee?.name||''}</div></td>
       <td><span class="status-badge status-${t.status}">${WS.getStatusLabel(t.status)}</span></td>
       <td><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ${fillCls}" style="width:${t.progress}%"></div></div><span class="progress-label">${t.progress}%</span></div></td>
       <td><span class="dday-badge ${dd.cls}">${dd.label}</span></td>
+      <td onclick="event.stopPropagation()"><div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">${importanceBadges}</div></td>
+    </tr>`;
   }).join('');
-  return `<div style="padding:8px"><table class="task-table"><thead><tr><th>업무명</th><th>담당자</th><th>상태</th><th>진행률</th><th>마감일</th><th>액션</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<div style="padding:8px"><table class="task-table"><thead><tr><th>업무명</th><th>담당자</th><th>상태</th><th>진행률</th><th>마감일</th><th>지시중요도</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 
