@@ -2920,3 +2920,109 @@ function _dpSelect(dt) {
     refreshIcons();
   };
 })();
+
+/* ════════════════════════════════════════
+   🏢 본사정보 페이지 함수
+   ════════════════════════════════════════ */
+function renderPage_HQInfo() {
+  loadHqInfo();
+  renderHqHistory();
+  refreshIcons();
+}
+function loadHqInfo() {
+  var data = JSON.parse(localStorage.getItem('ws_hq_info') || '{}');
+  var set = function(id, val) { var el = document.getElementById(id); if(el) el.value = val || ''; };
+  set('hq_company', data.company); set('hq_zip', data.zip);
+  set('hq_addr1', data.addr1);    set('hq_addr2', data.addr2);
+  set('hq_ceo', data.ceo);        set('hq_ceo_phone', data.ceoPhone);
+  set('hq_biz_phone', data.bizPhone); set('hq_biz_no', data.bizNo);
+  set('hq_biz_type', data.bizType);   set('hq_biz_item', data.bizItem);
+  set('hq_tax_email', data.taxEmail); set('hq_mgr_name', data.mgrName);
+  set('hq_mgr_title', data.mgrTitle); set('hq_mgr_mobile', data.mgrMobile);
+  set('hq_mgr_id', data.mgrId || (WS.currentUser ? WS.currentUser.id : ''));
+  var cb = document.getElementById('hqCodeBadge');
+  if(cb) cb.textContent = '# 코드: ' + (data.code || 'CODE-F1');
+  if(data.bizDocImg) { var p1=document.getElementById('hqBizDocPreview'); if(p1) p1.innerHTML='<img src="'+data.bizDocImg+'" style="width:100%;height:100%;object-fit:cover">'; }
+  if(data.mainImg)   { var p2=document.getElementById('hqMainImgPreview'); if(p2) p2.innerHTML='<img src="'+data.mainImg+'" style="width:100%;height:100%;object-fit:cover" alt="Solution Main">'; }
+  if(data.mgrPhoto)  { var p3=document.getElementById('hqManagerPhotoPreview'); if(p3) p3.innerHTML='<img src="'+data.mgrPhoto+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">'; }
+}
+function saveHqInfo() {
+  var get = function(id) { var el=document.getElementById(id); return el?el.value.trim():''; };
+  var existing = JSON.parse(localStorage.getItem('ws_hq_info') || '{}');
+  var data = Object.assign({}, existing, {
+    company:get('hq_company'), zip:get('hq_zip'), addr1:get('hq_addr1'), addr2:get('hq_addr2'),
+    ceo:get('hq_ceo'), ceoPhone:get('hq_ceo_phone'), bizPhone:get('hq_biz_phone'), bizNo:get('hq_biz_no'),
+    bizType:get('hq_biz_type'), bizItem:get('hq_biz_item'), taxEmail:get('hq_tax_email'),
+    mgrName:get('hq_mgr_name'), mgrTitle:get('hq_mgr_title'), mgrMobile:get('hq_mgr_mobile'), mgrId:get('hq_mgr_id')
+  });
+  if(!data.history) data.history=[];
+  var now=new Date(), pd=function(n){return String(n).padStart(2,'0');};
+  var ds=now.getFullYear()+'-'+pd(now.getMonth()+1)+'-'+pd(now.getDate())+' '+pd(now.getHours())+':'+pd(now.getMinutes());
+  data.history.unshift({date:ds, text:'정보 수정', by:(WS.currentUser?WS.currentUser.name+' ('+(WS.currentUser.role||'')+')':'관리자')});
+  if(data.history.length>10) data.history=data.history.slice(0,10);
+  localStorage.setItem('ws_hq_info', JSON.stringify(data));
+  renderHqHistory();
+  showToast('success','<i data-lucide="check-circle-2"></i> 본사정보가 저장되었습니다.');
+  refreshIcons();
+}
+function resetHqInfo() {
+  if(!confirm('입력한 내용을 초기화하시겠습니까?')) return;
+  ['hq_company','hq_zip','hq_addr1','hq_addr2','hq_ceo','hq_ceo_phone','hq_biz_phone','hq_biz_no','hq_biz_type','hq_biz_item','hq_tax_email','hq_mgr_name','hq_mgr_title','hq_mgr_mobile'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var p1=document.getElementById('hqBizDocPreview'); if(p1) p1.innerHTML='<i data-lucide="image" style="width:36px;height:36px;color:var(--text-muted)"></i><span style="font-size:12px;color:var(--text-muted)">등록된 이미지가 없습니다.</span>';
+  var p2=document.getElementById('hqMainImgPreview'); if(p2) p2.innerHTML='<i data-lucide="image" style="width:36px;height:36px;color:var(--text-muted)"></i><span style="font-size:12px;color:var(--text-muted)">클릭하여 이미지 업로드</span>';
+  var p3=document.getElementById('hqManagerPhotoPreview'); if(p3) p3.innerHTML='<i data-lucide="user" style="width:28px;height:28px;color:var(--text-muted)"></i>';
+  showToast('info','초기화되었습니다.'); refreshIcons();
+}
+function renderHqHistory() {
+  var data=JSON.parse(localStorage.getItem('ws_hq_info')||'{}');
+  var list=document.getElementById('hqHistoryList'); if(!list) return;
+  var history=data.history||[];
+  if(!history.length){list.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">이력이 없습니다.</div>';return;}
+  list.innerHTML=history.map(function(h,i){
+    return '<div class="hq-history-item"><div class="hq-history-dot '+(i===history.length-1?'first':'')+'"></div><div class="hq-history-content"><div class="hq-history-date">'+h.date+'</div><div class="hq-history-text">'+h.text+'</div><div class="hq-history-by">\u270e '+h.by+'</div></div></div>';
+  }).join('');
+}
+function handleHqBizDoc(input) {
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader(); reader.onload=function(e){
+    var p=document.getElementById('hqBizDocPreview'); if(p) p.innerHTML='<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover">';
+    var d=JSON.parse(localStorage.getItem('ws_hq_info')||'{}'); d.bizDocImg=e.target.result; localStorage.setItem('ws_hq_info',JSON.stringify(d));
+    showToast('success','사업자등록증 이미지가 등록되었습니다.');
+  }; reader.readAsDataURL(file);
+}
+function clearHqBizDoc() {
+  var p=document.getElementById('hqBizDocPreview'); if(p) p.innerHTML='<i data-lucide="image" style="width:36px;height:36px;color:var(--text-muted)"></i><span style="font-size:12px;color:var(--text-muted)">등록된 이미지가 없습니다.</span>';
+  var d=JSON.parse(localStorage.getItem('ws_hq_info')||'{}'); delete d.bizDocImg; localStorage.setItem('ws_hq_info',JSON.stringify(d)); refreshIcons();
+}
+function handleHqMainImg(input) {
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader(); reader.onload=function(e){
+    var p=document.getElementById('hqMainImgPreview'); if(p) p.innerHTML='<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover" alt="Solution Main">';
+    var d=JSON.parse(localStorage.getItem('ws_hq_info')||'{}'); d.mainImg=e.target.result; localStorage.setItem('ws_hq_info',JSON.stringify(d));
+    showToast('success','솔루션 메인 이미지가 등록되었습니다.');
+  }; reader.readAsDataURL(file);
+}
+function clearHqMainImg() {
+  var p=document.getElementById('hqMainImgPreview'); if(p) p.innerHTML='<i data-lucide="image" style="width:36px;height:36px;color:var(--text-muted)"></i><span style="font-size:12px;color:var(--text-muted)">클릭하여 이미지 업로드</span>';
+  var d=JSON.parse(localStorage.getItem('ws_hq_info')||'{}'); delete d.mainImg; localStorage.setItem('ws_hq_info',JSON.stringify(d)); refreshIcons();
+}
+function handleHqManagerPhoto(input) {
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader(); reader.onload=function(e){
+    var p=document.getElementById('hqManagerPhotoPreview'); if(p) p.innerHTML='<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+    var d=JSON.parse(localStorage.getItem('ws_hq_info')||'{}'); d.mgrPhoto=e.target.result; localStorage.setItem('ws_hq_info',JSON.stringify(d));
+    showToast('success','담당자 사진이 등록되었습니다.');
+  }; reader.readAsDataURL(file);
+}
+function searchHqAddress() {
+  if(typeof daum==='undefined'||!daum.Postcode){
+    var s=document.createElement('script'); s.src='https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+    s.onload=function(){openHqDaumPostcode();}; document.head.appendChild(s);
+  } else { openHqDaumPostcode(); }
+}
+function openHqDaumPostcode() {
+  new daum.Postcode({oncomplete:function(data){
+    document.getElementById('hq_zip').value=data.zonecode;
+    document.getElementById('hq_addr1').value=data.roadAddress||data.jibunAddress;
+  }}).open();
+}
