@@ -421,20 +421,30 @@ document.addEventListener('DOMContentLoaded', () => {
   document.documentElement.style.setProperty('--accent-blue-light', accent + '22');
 
   // ── init-data.json 동기화 ──────────────────────────────────────
-  // localStorage에 핵심 데이터가 없으면 init-data.json에서 자동 로드
+  // localStorage에 핵심 데이터가 없거나, ws_task_results에 icon이 없으면 init-data.json 로드
   const INIT_KEYS = [
     'ws_departments','ws_ranks','ws_positions',
     'ws_task_results','ws_report_types','ws_detail_tasks',
     'ws_users','ws_tasks'
   ];
   const needsInit = INIT_KEYS.some(k => !localStorage.getItem(k));
-  if (needsInit) {
+
+  // ws_task_results에 icon/color 없는 항목이 있으면 강제 갱신 플래그
+  const savedResults = JSON.parse(localStorage.getItem('ws_task_results') || '[]');
+  const resultNeedsUpdate = savedResults.length > 0 && savedResults.some(r => !r.icon || !r.color);
+
+  if (needsInit || resultNeedsUpdate) {
     fetch('./init-data.json?v=' + Date.now())
       .then(r => r.json())
       .then(data => {
         INIT_KEYS.forEach(k => {
-          // 이미 값이 있으면 덮어쓰지 않음
-          if (!localStorage.getItem(k) && data[k]) {
+          // ws_task_results: icon 없으면 무조건 덮어쓰기
+          if (k === 'ws_task_results' && data[k]) {
+            if (!localStorage.getItem(k) || resultNeedsUpdate) {
+              localStorage.setItem(k, JSON.stringify(data[k]));
+              WS.taskResults = data[k];
+            }
+          } else if (!localStorage.getItem(k) && data[k]) {
             localStorage.setItem(k, JSON.stringify(data[k]));
           }
         });
@@ -442,14 +452,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.ws_departments && !WS.departments.length) WS.departments = data.ws_departments;
         if (data.ws_ranks && !WS.ranks.length) WS.ranks = data.ws_ranks;
         if (data.ws_positions && !WS.positions.length) WS.positions = data.ws_positions;
-        if (data.ws_task_results && !WS.taskResults.length) WS.taskResults = data.ws_task_results;
         if (data.ws_report_types && !WS.reportTypes.length) WS.reportTypes = data.ws_report_types;
         if (data.ws_detail_tasks && !WS.detailTasks.length) WS.detailTasks = data.ws_detail_tasks;
         if (data.ws_users && !WS.users.length) WS.users = data.ws_users;
         if (data.ws_tasks && !WS.tasks.length) WS.tasks = data.ws_tasks;
         // 페이지 재렌더 (앱이 이미 초기화된 경우)
         if (typeof renderCurrentPage === 'function') renderCurrentPage();
-        console.log('[WorkM] init-data.json 로드 완료');
+        console.log('[WorkM] init-data.json 로드 완료 (task_results 갱신:', resultNeedsUpdate, ')');
       })
       .catch(() => console.warn('[WorkM] init-data.json 로드 실패 (로컬 환경에서는 정상)'));
   }

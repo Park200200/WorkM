@@ -757,13 +757,17 @@ function renderPage_RankMgmt() {
     const editBtn   = '<button onclick="editOrgItem(\'' + type + '\',' + item.id + ')" title="수정" style="background:none;border:none;cursor:pointer;padding:3px 6px;font-size:13px">✏️</button>';
     const deleteBtn = '<button onclick="deleteOrgItem(\'' + type + '\',' + item.id + ')" title="삭제" style="background:none;border:none;cursor:pointer;padding:3px 6px;font-size:13px">🗑️</button>';
 
-    // 업무결과: lucide 아이콘 + 컴러 배지 표시
-    if (type === 'result' && item.icon && item.color && item.icon.length > 2) {
-      var c = item.color;
+    // 업무결과: lucide 아이콘 + 컬러 배지 표시
+    if (type === 'result') {
+      var c = item.color || '#6b7280';
+      var hasLucide = item.icon && item.icon.length > 2;
+      var circleInner = hasLucide
+        ? '<i data-lucide="' + item.icon + '" style="width:12px;height:12px;color:' + c + '"></i>'
+        : '<span style="width:8px;height:8px;border-radius:50%;background:' + c + ';display:inline-block"></span>';
       return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:6px">' +
         '<div style="display:flex;align-items:center;gap:8px">' +
           '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:' + c + '22;border:1.5px solid ' + c + '">' +
-            '<i data-lucide="' + item.icon + '" style="width:12px;height:12px;color:' + c + '"></i>' +
+            circleInner +
           '</span>' +
           '<span style="font-size:13px;font-weight:700;color:' + c + '">' + item.name + '</span>' +
         '</div>' +
