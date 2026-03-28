@@ -3252,12 +3252,13 @@ function openInstructionModal() {
   const m = document.getElementById('instructionModal');
   if (!m) return;
 
-  // ── 업무 드롭다운 채우기
+  // ── 업무 드롭다운: 기타설정 > 상세업무 리스트 (WS.detailTasks)
   const taskSel = document.getElementById('instrTask');
   if (taskSel) {
-    taskSel.innerHTML = '<option value="">-- 업무를 선택하세요 --</option>' +
-      (WS.tasks || []).map(t =>
-        `<option value="${t.id}">${t.title}</option>`
+    const detailList = WS.detailTasks || JSON.parse(localStorage.getItem('ws_detail_tasks') || '[]');
+    taskSel.innerHTML = '<option value="">— 업무를 선택하세요 —</option>' +
+      detailList.map(d =>
+        `<option value="${d.id || d.name}">${d.name}</option>`
       ).join('');
   }
 
@@ -3325,9 +3326,40 @@ function openInstructionModal() {
   const fileList = document.getElementById('instrFileList');
   if (fileList) fileList.innerHTML = '';
 
-  // ── 오늘 날짜 기본값
-  const dueEl = document.getElementById('instrDueDate');
-  if (dueEl) dueEl.value = new Date().toISOString().slice(0,10);
+  // ── 날짜 피커 초기화 (커스텀 캘린더 버튼 방식)
+  const dueHidden  = document.getElementById('instrDueDate');
+  const dueLabelEl = document.getElementById('instrDueDateLabel');
+  if (dueHidden)  dueHidden.value = '';
+  if (dueLabelEl) dueLabelEl.textContent = '날짜를 선택하세요';
+
+  // ── 업무중요도 칩 생성 (ws_instr_importances 기반, 복수선택)
+  window._instrImportances = [];
+  const impPicks = document.getElementById('instrImportancePicks');
+  if (impPicks) {
+    const importances = JSON.parse(localStorage.getItem('ws_instr_importances')) || [];
+    if (importances.length === 0) {
+      impPicks.innerHTML = '<span style="font-size:11px;color:var(--text-muted)">기타설정에서 중요도를 추가하세요</span>';
+    } else {
+      impPicks.innerHTML = importances.map(imp => {
+        const c   = imp.color || '#ef4444';
+        const hasIcon = imp.icon && imp.icon.length > 2;
+        const iconHtml = hasIcon
+          ? `<i data-lucide="${imp.icon}" style="width:10px;height:10px;color:${c}"></i>`
+          : '';
+        return `<span onclick="_toggleInstrImportance('${imp.name}','${c}',this)"
+          data-imp="${imp.name}"
+          style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;
+                 font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;
+                 border:1.5px solid ${c};color:${c};background:transparent"
+          onmouseover="if(!this.classList.contains('imp-on'))this.style.background='${c}22'"
+          onmouseout="if(!this.classList.contains('imp-on'))this.style.background='transparent'">
+          ${iconHtml}${imp.name}
+        </span>`;
+      }).join('');
+    }
+  }
+  const impVal = document.getElementById('instrImportanceVal');
+  if (impVal) impVal.value = '';
 
   m.style.display = 'flex';
   setTimeout(refreshIcons, 50);
@@ -3399,12 +3431,37 @@ function renderInstrFileList() {
   setTimeout(refreshIcons, 30);
 }
 
+/* 업무중요도 칩 토글 */
+window._instrImportances = [];
+function _toggleInstrImportance(name, color, el) {
+  if (!window._instrImportances) window._instrImportances = [];
+  const idx = window._instrImportances.indexOf(name);
+  if (idx !== -1) {
+    window._instrImportances.splice(idx, 1);
+    el.classList.remove('imp-on');
+    el.style.background = 'transparent';
+    el.style.color       = color;
+    el.style.fontWeight  = '600';
+    el.style.boxShadow   = 'none';
+  } else {
+    window._instrImportances.push(name);
+    el.classList.add('imp-on');
+    el.style.background  = color;
+    el.style.color       = '#ffffff';
+    el.style.fontWeight  = '700';
+    el.style.boxShadow   = '0 2px 8px ' + color + '55';
+  }
+  const impVal = document.getElementById('instrImportanceVal');
+  if (impVal) impVal.value = window._instrImportances.join(', ');
+}
+
 /* 모달 닫기 */
 function closeInstructionModal() {
   const m = document.getElementById('instructionModal');
   if (m) m.style.display = 'none';
   window._instrProcedures = [];
   window._instrSelectedReports = [];
+  window._instrImportances = [];
 }
 
 /* 저장 */
@@ -3416,47 +3473,65 @@ function saveInstruction() {
   const repEl    = document.getElementById('instrReport');
   const procEl   = document.getElementById('instrProcedureText');
   const fileEl   = document.getElementById('instrFile');
+  const impVal   = document.getElementById('instrImportanceVal');
 
-  const taskId   = taskSel   ? taskSel.value   : '';
-  const assigneeId = assSel  ? assSel.value    : '';
-  const dueDate  = dueEl     ? dueEl.value     : '';
-  const content  = contEl    ? contEl.value.trim() : '';
-  const report   = repEl     ? repEl.value.trim()  : '';
-  const procedure= procEl    ? procEl.value    : '';
+  const taskId     = taskSel ? taskSel.value : '';
+  const assigneeId = assSel  ? assSel.value  : '';
+  const dueDate    = dueEl   ? dueEl.value   : '';
+  const content    = contEl  ? contEl.value.trim() : '';
+  const report     = repEl   ? repEl.value.trim()  : '';
+  const procedure  = procEl  ? procEl.value   : '';
+  const importance = impVal  ? impVal.value   : '';
 
-  if (!taskId)   { showToast('error', '업무를 선택하세요.');    return; }
+  if (!taskId)    { showToast('error', '업무를 선택하세요.');    return; }
   if (!assigneeId){ showToast('error', '담당자를 선택하세요.'); return; }
-  if (!dueDate)  { showToast('error', '지시완료일을 입력하세요.'); return; }
-  if (!content)  { showToast('error', '지시내용을 입력하세요.'); return; }
+  if (!dueDate)   { showToast('error', '지시완료일을 선택하세요.'); return; }
+  if (!content)   { showToast('error', '지시내용을 입력하세요.'); return; }
 
   const taskName     = taskSel.options[taskSel.selectedIndex]?.text || '';
   const assigneeName = assSel.options[assSel.selectedIndex]?.text  || '';
+  const attachments  = fileEl ? Array.from(fileEl.files).map(f => f.name) : [];
 
-  // 첨부파일 이름 목록 (실제 업로드는 서버 없으므로 이름만 저장)
-  const attachments = fileEl
-    ? Array.from(fileEl.files).map(f => f.name)
-    : [];
+  // ── ws_instructions 저장
+  const instr = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
+  const newId = Date.now();
+  const newItem = {
+    id: newId, taskId, taskName,
+    assigneeId: Number(assigneeId), assigneeName,
+    dueDate, content, report, procedure, importance, attachments,
+    status: 'progress', progress: 0, team: '',
+    isImportant: importance.length > 0,
+    author: WS.currentUser ? WS.currentUser.name : '관리자',
+    createdAt: new Date().toISOString()
+  };
+  instr.unshift(newItem);
+  localStorage.setItem('ws_instructions', JSON.stringify(instr));
 
-  const instructions = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
-  instructions.unshift({
-    id:           Date.now(),
-    taskId:       Number(taskId),
-    taskName,
-    assigneeId:   Number(assigneeId),
-    assigneeName,
-    dueDate,
-    content,
-    report,
-    procedure,
-    attachments,
-    author:       WS.currentUser ? WS.currentUser.name : '관리자',
-    createdAt:    new Date().toISOString()
+  // ── WS.tasks에도 추가하여 buildAssignedByMeBody에 바로 반영
+  if (!WS.tasks) WS.tasks = [];
+  WS.tasks.push({
+    id: newId, title: taskName, team: '',
+    assigneeIds: [Number(assigneeId)],
+    assignerId: WS.currentUser ? WS.currentUser.id : 0,
+    dueDate, status: 'progress', progress: 0,
+    isImportant: newItem.isImportant
   });
-  localStorage.setItem('ws_instructions', JSON.stringify(instructions));
 
-  showToast('success', `지시사항이 저장되었습니다.`);
+  // ── 내가 지시한 업무 리스트 재렌더
+  const byMeEl = document.getElementById('byMeBody');
+  if (byMeEl && typeof buildAssignedByMeBody === 'function') {
+    byMeEl.innerHTML = buildAssignedByMeBody();
+    setTimeout(refreshIcons, 50);
+  }
+  const byMeCount = document.getElementById('byMeCount');
+  if (byMeCount) byMeCount.textContent = WS.getAssignedByMe ? WS.getAssignedByMe().length : '';
+
+  showToast('success', '지시사항이 등록되었습니다.');
   closeInstructionModal();
 }
+
+
+
 
 /* 삭제 */
 function deleteInstruction(id) {

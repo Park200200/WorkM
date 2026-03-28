@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -692,13 +692,40 @@
               </div>
             </div>
 
-            <!-- 지시완료일 -->
-            <div class="form-group" style="margin:0">
-              <label class="form-label">
-                <i data-lucide="calendar" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
-                지시완료일 *
-              </label>
-              <input type="date" class="form-input" id="instrDueDate" style="cursor:pointer">
+            <!-- 지시완료일 + 업무중요도 2열 -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+
+              <!-- 지시완료일: 커스텀 날짜 피커 -->
+              <div class="form-group" style="margin:0">
+                <label class="form-label">
+                  <i data-lucide="calendar" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+                  지시완료일 *
+                </label>
+                <input type="hidden" id="instrDueDate">
+                <button type="button" id="instrDueDateDisplay"
+                  onclick="openDatePicker('instrDueDate','instrDueDateDisplay')"
+                  style="display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;
+                         border-radius:10px;border:1.5px solid var(--border-color);
+                         background:var(--bg-secondary);cursor:pointer;color:var(--text-primary);
+                         font-size:13px;transition:border-color .2s;text-align:left"
+                  onmouseover="this.style.borderColor='var(--accent-blue)'"
+                  onmouseout="this.style.borderColor='var(--border-color)'">
+                  <i data-lucide="calendar" style="width:14px;height:14px;opacity:.6;flex-shrink:0"></i>
+                  <span id="instrDueDateLabel" style="color:var(--text-secondary)">날짜를 선택하세요</span>
+                </button>
+              </div>
+
+              <!-- 업무중요도 복수선택 -->
+              <div class="form-group" style="margin:0">
+                <label class="form-label">
+                  <i data-lucide="flag" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+                  업무중요도
+                  <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-left:3px">(복수선택)</span>
+                </label>
+                <div id="instrImportancePicks" style="display:flex;flex-wrap:wrap;gap:5px;padding:4px 0;min-height:36px"></div>
+                <input type="hidden" id="instrImportanceVal">
+              </div>
+
             </div>
 
             <!-- 지시내용 -->
