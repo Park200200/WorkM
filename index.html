@@ -955,12 +955,10 @@
         <input class="form-input" id="oim_name" placeholder="이름 입력">
       </div>
       <div class="form-group" id="oim_icon_group" style="display:none">
-        <label class="form-label">아이콘 <span style="font-size:10px;color:var(--text-muted)">(Lucide 아이콘명)</span></label>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input class="form-input" id="oim_icon" placeholder="play-circle, search, wrench …" oninput="previewOimIcon()" style="flex:1">
-          <span id="oim_icon_preview" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border-color)">
-            <i id="oim_icon_el" data-lucide="message-square" style="width:16px;height:16px"></i>
-          </span>
+        <label class="form-label">아이콘 선택 <span style="font-size:10px;color:var(--text-muted)">(클릭으로 선택)</span></label>
+        <input type="hidden" id="oim_icon" value="message-square">
+        <div id="oim_icon_grid" style="display:flex;flex-wrap:wrap;gap:5px;padding:8px;background:var(--bg-tertiary);border-radius:10px;border:1px solid var(--border-color)">
+          <!-- JS에서 동적 생성 -->
         </div>
       </div>
       <div class="form-group" id="oim_color_group" style="display:none">

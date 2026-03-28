@@ -1866,25 +1866,28 @@ function renderDetailTaskCheckboxes(currentDesc) {
     container.innerHTML = '<div style="padding:10px;font-size:11px;color:var(--text-muted)">상세업무 없음 (기타설정에서 추가)</div>';
     return;
   }
+  container.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:8px 8px;';
   container.innerHTML = WS.detailTasks.map(function(d) {
     var checked = selected.includes(d.name);
     var uid = 'dtcb_' + d.id;
-    return '<label for="' + uid + '" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;cursor:pointer;user-select:none;' +
-      'background:' + (checked ? 'color-mix(in srgb,' + accent + ' 8%,var(--bg-primary))' : 'transparent') + ';' +
-      'transition:background 0.15s" onchange="updateDetailTaskCheck(this.querySelector(\'input\'))">' +
+    return '<label for="' + uid + '" style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;cursor:pointer;user-select:none;' +
+      'border:2px solid ' + (checked ? accent : 'var(--border-color)') + ';' +
+      'background:' + (checked ? 'color-mix(in srgb,' + accent + ' 10%,var(--bg-primary))' : 'var(--bg-primary)') + ';' +
+      'transition:all 0.15s">' +
       '<input type="checkbox" id="' + uid + '" value="' + d.name + '"' + (checked ? ' checked' : '') +
-        ' style="width:14px;height:14px;accent-color:' + accent + ';cursor:pointer;flex-shrink:0">' +
-      '<span style="font-size:12.5px;font-weight:600;color:var(--text-primary)">' + d.name + '</span>' +
+        ' onchange="updateDetailTaskCheckStyle(this)"' +
+        ' style="width:14px;height:14px;accent-color:' + accent + ';cursor:pointer">' +
+      '<span style="font-size:12px;font-weight:600;color:var(--text-primary)">' + d.name + '</span>' +
       '</label>';
   }).join('');
 }
 
 function updateDetailTaskCheck(cb) {
   if (!cb) return;
-  var label = cb.closest('label');
-  if (!label) return;
+  var label = cb.closest('label'); if (!label) return;
   var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
-  label.style.background = cb.checked ? 'color-mix(in srgb,' + accent + ' 8%,var(--bg-primary))' : 'transparent';
+  if (cb.checked) { label.style.borderColor = accent; label.style.background = 'color-mix(in srgb,' + accent + ' 10%,var(--bg-primary))'; }
+  else { label.style.borderColor = 'var(--border-color)'; label.style.background = 'var(--bg-primary)'; }
 }
 
 function _getSelectedDetailTasks() {
@@ -1940,21 +1943,22 @@ function _renderProcessTypeList() {
     list.innerHTML = '<div style="padding:12px;text-align:center;font-size:11px;color:var(--text-muted)">등록된 진행보고 유형이 없습니다.<br><span style="font-size:10px">(본사관리 → 기타설정에서 추가)</span></div>';
     return;
   }
+  var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
+  list.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:8px 8px;';
   list.innerHTML = types.map(function(t) {
     var tName = t.label || t.name || '';
     var alreadyAdded = window._processOrder.indexOf(tName) !== -1;
-    return '<div ondblclick="addProcessOrder(\'' + tName.replace(/'/g, "\\'") + '\')" ' +
-      'style="padding:8px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;' +
-      'color:var(--text-primary);display:flex;align-items:center;gap:8px;transition:all 0.15s;' +
-      'opacity:' + (alreadyAdded ? '0.35' : '1') + ';' +
-      'background:var(--bg-primary)" ' +
-      'onmouseenter="if(this.style.opacity !== \'0.35\')this.style.background=\'var(--bg-tertiary)\'" ' +
-      'onmouseleave="this.style.background=\'var(--bg-primary)\'" ' +
-      'id="ptype_' + t.id + '">' +
-      (t.icon ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:'+(t.color||'#4f6ef7')+'22;border:1.5px solid '+(t.color||'#4f6ef7')+';flex-shrink:0"><i data-lucide="' + t.icon + '" style="width:12px;height:12px;color:'+(t.color||'#4f6ef7')+'"></i></span>' : '<span style="width:22px;height:22px;border-radius:50%;background:var(--bg-tertiary);display:inline-block;flex-shrink:0"></span>') +
-      '<span>' + tName + '</span>' +
-      (alreadyAdded ? '<span style="font-size:10px;color:var(--text-muted);margin-left:auto">추가됨</span>' : '') +
-    '</div>';
+    var accent2 = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
+    var tColor  = t.color || accent2;
+    return '<span ondblclick="addProcessOrder(\'' + tName.replace(/'/g, "\\'") + '\')"'
+      + ' style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;cursor:pointer;user-select:none;'
+      + 'border:2px solid ' + (alreadyAdded ? tColor : 'var(--border-color)') + ';'
+      + 'background:' + (alreadyAdded ? 'color-mix(in srgb,' + tColor + ' 15%,var(--bg-primary))' : 'var(--bg-primary)') + ';'
+      + 'transition:all 0.15s;opacity:' + (alreadyAdded ? '0.5' : '1') + '" >'
+      + (t.icon ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:' + tColor + '22;border:1px solid ' + tColor + '"><i data-lucide="' + t.icon + '" style="width:10px;height:10px;color:' + tColor + '"></i></span>' : '')
+      + '<span style="font-size:12px;font-weight:600;color:var(--text-primary)">' + tName + '</span>'
+      + (alreadyAdded ? '<span style="font-size:9px;color:var(--text-muted)">✓</span>' : '')
+      + '</span>';
   }).join(''); if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
 }
 
@@ -2573,7 +2577,7 @@ function openReportTypeModal(editId) {
   if (cl) cl.value = item ? (item.color || '#4f6ef7') : '#4f6ef7';
   previewOimIcon();
   if (typeof openModal === 'function') openModal('orgItemModal');
-  setTimeout(function(){ var i2 = document.getElementById('oim_name'); if(i2) i2.focus(); }, 100);
+  setTimeout(function() { var icv = (document.getElementById('oim_icon')||{}).value||'message-square'; renderIconGrid(icv); var i2=document.getElementById('oim_name'); if(i2) i2.focus(); }, 80);
 }
 
 function editReportType(id) { openReportTypeModal(id); }
@@ -2616,4 +2620,46 @@ function saveOrgItemModal() {
   }
   if (typeof closeModalDirect === 'function') closeModalDirect('orgItemModal');
   if (typeof renderPage_RankMgmt === 'function') renderPage_RankMgmt();
+}
+
+/* updateDetailTaskCheckStyle - updateDetailTaskCheck 별칭 */
+function updateDetailTaskCheckStyle(cb) { updateDetailTaskCheck(cb); }
+
+/* ══════════════════════════════════════════════
+   orgItemModal – 아이콘 그리드 선택 UI
+   selectOimIcon(name) : 그리드 항목 클릭시 호출
+══════════════════════════════════════════════ */
+var _OIM_ICONS = [
+  'play-circle','stop-circle','check-circle','x-circle','alert-circle','info',
+  'search','wrench','settings','zap','flag','star','bookmark','bell',
+  'file-text','clipboard','clipboard-list','message-circle','message-square',
+  'users','user','briefcase','package','layers','grid',
+  'calendar','clock','timer','hourglass','alarm-clock',
+  'trending-up','bar-chart-2','pie-chart','target','award',
+  'thumbs-up','thumbs-down','heart','shield','lock','key',
+  'mail','phone','map-pin','home','building'
+];
+
+function renderIconGrid(selectedIcon) {
+  var grid = document.getElementById('oim_icon_grid');
+  if (!grid) return;
+  var sel = selectedIcon || document.getElementById('oim_icon')?.value || '';
+  grid.innerHTML = _OIM_ICONS.map(function(ic) {
+    var isSelected = ic === sel;
+    var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
+    return '<button type="button" onclick="selectOimIcon(\'' + ic + '\')" title="' + ic + '"'
+      + ' style="width:36px;height:36px;border-radius:8px;border:2px solid ' + (isSelected ? accent : 'var(--border-color)') + ';'
+      + 'background:' + (isSelected ? 'color-mix(in srgb,' + accent + ' 12%,var(--bg-primary))' : 'var(--bg-tertiary)') + ';'
+      + 'cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 0.15s"'
+      + ' id="oim_ic_btn_' + ic.replace(/-/g,'_') + '">'
+      + '<i data-lucide="' + ic + '" style="width:16px;height:16px;color:' + (isSelected ? accent : 'var(--text-secondary)') + '"></i>'
+      + '</button>';
+  }).join('');
+  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
+}
+
+function selectOimIcon(iconName) {
+  var inp = document.getElementById('oim_icon');
+  if (inp) inp.value = iconName;
+  renderIconGrid(iconName);
 }
