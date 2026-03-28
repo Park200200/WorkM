@@ -3301,7 +3301,7 @@ function openInstructionModal() {
   // ── 폼 초기화
   const reportInput = document.getElementById('instrReport');
   if (reportInput) reportInput.value = '';
-  window._instrSelectedReport = '';
+  window._instrSelectedReports = [];
   const fields = ['instrContent','instrProcedureText'];
   fields.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   const fileInput = document.getElementById('instrFile');
@@ -3339,34 +3339,32 @@ function _toggleInstrProcedure(label, el) {
   if (txt) txt.value = window._instrProcedures.join(' → ');
 }
 
-/* 보고내용 단일 선택 (업무결과 리스트 기반) */
-window._instrSelectedReport = '';
+/* 보고내용 복수 선택 (업무결과 리스트 기반) */
+window._instrSelectedReports = [];
 function _selectInstrReport(name, el) {
-  // 기존 선택 모두 해제
-  const wrap = document.getElementById('instrReportPicks');
-  if (wrap) {
-    wrap.querySelectorAll('span[data-result]').forEach(function(s) {
-      s.classList.remove('selected');
-      s.style.background  = 'transparent';
-      s.style.fontWeight  = '600';
-      s.style.boxShadow   = 'none';
-    });
-  }
-  // 현재 클릭한 항목 활성화
-  if (window._instrSelectedReport === name) {
-    // 이미 선택된 항목을 다시 클릭 → 선택 해제
-    window._instrSelectedReport = '';
-    const inp = document.getElementById('instrReport');
-    if (inp) inp.value = '';
+  if (!window._instrSelectedReports) window._instrSelectedReports = [];
+  var c = el.style.borderColor || '#6b7280';
+  var idx = window._instrSelectedReports.indexOf(name);
+  if (idx !== -1) {
+    // 이미 선택된 항목 클릭 → 선택 해제
+    window._instrSelectedReports.splice(idx, 1);
+    el.classList.remove('selected');
+    el.style.background = 'transparent';
+    el.style.color      = c;
+    el.style.fontWeight = '600';
+    el.style.boxShadow  = 'none';
   } else {
-    window._instrSelectedReport = name;
+    // 새로 선택 → 배경색 채워 밝게 표시
+    window._instrSelectedReports.push(name);
     el.classList.add('selected');
-    el.style.background = el.style.borderColor + '33';
+    el.style.background = c;
+    el.style.color      = '#ffffff';
     el.style.fontWeight = '700';
-    el.style.boxShadow  = '0 0 0 2px ' + el.style.borderColor + '66';
-    const inp = document.getElementById('instrReport');
-    if (inp) inp.value = name;
+    el.style.boxShadow  = '0 2px 8px ' + c + '55';
   }
+  // hidden input에 선택된 모든 값 저장
+  var inp = document.getElementById('instrReport');
+  if (inp) inp.value = window._instrSelectedReports.join(', ');
 }
 
 /* 첨부파일 목록 렌더 */
@@ -3390,6 +3388,7 @@ function closeInstructionModal() {
   const m = document.getElementById('instructionModal');
   if (m) m.style.display = 'none';
   window._instrProcedures = [];
+  window._instrSelectedReports = [];
 }
 
 /* 저장 */
