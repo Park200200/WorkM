@@ -911,6 +911,39 @@
   </div>
 </div>
 
+<!-- ════════════════════════
+     모달 - 팀별 업무배정 관리
+════════════════════════ -->
+<div class="modal-overlay" id="teamAssignModal" style="display:none" onclick="closeModal('teamAssignModal',event)">
+  <div class="modal-box" style="max-width:500px">
+    <div class="modal-head">
+      <div class="modal-title">팀별 업무배정 관리</div>
+      <button class="modal-close" onclick="closeModalDirect('teamAssignModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- 팀 정보 -->
+      <div style="padding:12px 16px;background:var(--bg-tertiary);border-radius:var(--radius-sm);margin-bottom:16px;display:flex;align-items:center;gap:10px">
+        <i data-lucide="users" style="width:16px;height:16px;color:var(--accent-blue);flex-shrink:0"></i>
+        <div>
+          <div style="font-size:11px;color:var(--text-muted)">팀명</div>
+          <div id="tam_team_name" style="font-size:15px;font-weight:800;color:var(--text-primary)">-</div>
+        </div>
+      </div>
+      <!-- 업무 배정 안내 -->
+      <div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:10px">
+        업무 배정 <span style="font-weight:400;color:var(--text-muted)">(체크하여 팀에 배정)</span>
+        <span id="tam_team_count" style="margin-left:8px;font-size:11px;color:var(--accent-blue)"></span>
+      </div>
+      <!-- 업무 체크박스 리스트 -->
+      <div id="tam_task_checklist" style="max-height:380px;overflow-y:auto;padding:2px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModalDirect('teamAssignModal')">취소</button>
+      <button class="btn btn-blue" onclick="saveTeamAssignment()">저장</button>
+    </div>
+  </div>
+</div>
+
     <!-- ════ 본사정보 페이지 ════ -->
     <section id="page-hq-info" class="page-section" style="display:none">
       <div class="page-header">

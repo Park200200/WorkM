@@ -2048,9 +2048,107 @@ function renderAssignmentByTeam(targetEl) {
   refreshIcons();
 }
 
-/* 팀별 관리 (향후 확장용) */
+/* 팀별 업무배정 관리 모달 */
 function openTeamAssignPanel(deptName) {
-  showToast('info', '"' + deptName + '" 팀 관리 기능은 준비 중입니다.');
+  window._teamAssignDept = deptName;
+
+  // 팀명 표시
+  var nameEl = document.getElementById('tam_team_name');
+  if (nameEl) nameEl.textContent = deptName;
+
+  // 업무 체크박스 리스트 렌더
+  var container = document.getElementById('tam_task_checklist');
+  var countEl   = document.getElementById('tam_team_count');
+  if (!container) return;
+
+  var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
+
+  var html = WS.tasks.map(function(t) {
+    // 이 팀에 이미 배정된 업무인지 확인
+    var isAssigned = t.team && t.team.indexOf(deptName) !== -1;
+    var uid = 'ta_tc_' + t.id;
+    return (
+      '<label for="' + uid + '" style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;' +
+        'border:2px solid ' + (isAssigned ? accent : 'transparent') + ';' +
+        'background:' + (isAssigned ? 'color-mix(in srgb,' + accent + ' 9%,var(--bg-primary))' : 'var(--bg-tertiary)') + ';' +
+        'cursor:pointer;transition:all 0.15s;margin-bottom:6px;user-select:none" ' +
+        'onchange="updateTeamCheckItem(this.querySelector(\'input\'))">' +
+        '<input type="checkbox" id="' + uid + '" value="' + t.id + '"' + (isAssigned ? ' checked' : '') +
+          ' style="width:16px;height:16px;accent-color:' + accent + ';cursor:pointer;flex-shrink:0">' +
+        '<div style="flex:1">' +
+          '<div style="font-weight:700;font-size:13px;color:var(--text-primary)">' + t.title + '</div>' +
+          '<div style="font-size:10.5px;color:var(--text-muted)">' + (t.team || '팀 없음') + '</div>' +
+        '</div>' +
+        '<div style="width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;' +
+          'background:' + (isAssigned ? accent : 'var(--bg-primary)') + ';' +
+          'border:2px solid ' + (isAssigned ? accent : 'var(--border-color)') + '" id="cb_box_' + t.id + '">' +
+          (isAssigned ? '<svg viewBox="0 0 24 24" width="12" height="12" stroke="#fff" stroke-width="3" fill="none"><polyline points="20 6 9 17 4 12"/></svg>' : '') +
+        '</div>' +
+      '</label>'
+    );
+  }).join('');
+
+  container.innerHTML = html || '<div style="padding:20px;text-align:center;color:var(--text-muted)">등록된 업무가 없습니다.</div>';
+
+  // 선택된 업무 수 카운터
+  setTimeout(function() { updateTeamTaskCount(); }, 0);
+
+  if (typeof openModal === 'function') openModal('teamAssignModal');
+  if (typeof refreshIcons === 'function') refreshIcons();
+}
+
+function updateTeamCheckItem(cb) {
+  if (!cb) return;
+  var label = cb.closest('label');
+  var boxEl  = document.getElementById('cb_box_' + cb.value);
+  var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
+  if (cb.checked) {
+    if (label) { label.style.borderColor = accent; label.style.background = 'color-mix(in srgb,' + accent + ' 9%,var(--bg-primary))'; }
+    if (boxEl)  { boxEl.style.background = accent; boxEl.style.borderColor = accent;
+      boxEl.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" stroke="#fff" stroke-width="3" fill="none"><polyline points="20 6 9 17 4 12"/></svg>'; }
+  } else {
+    if (label) { label.style.borderColor = 'transparent'; label.style.background = 'var(--bg-tertiary)'; }
+    if (boxEl)  { boxEl.style.background = 'var(--bg-primary)'; boxEl.style.borderColor = 'var(--border-color)'; boxEl.innerHTML = ''; }
+  }
+  updateTeamTaskCount();
+}
+
+function updateTeamTaskCount() {
+  var countEl = document.getElementById('tam_team_count');
+  if (!countEl) return;
+  var checked = document.querySelectorAll('#tam_task_checklist input[type=checkbox]:checked').length;
+  var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
+  countEl.innerHTML = '선택됨 <strong style="color:' + accent + '">' + checked + '</strong>건';
+}
+
+function saveTeamAssignment() {
+  var deptName = window._teamAssignDept;
+  if (!deptName) return;
+
+  var checkedIds = [];
+  document.querySelectorAll('#tam_task_checklist input[type=checkbox]:checked').forEach(function(cb) {
+    checkedIds.push(Number(cb.value));
+  });
+  var uncheckedIds = [];
+  document.querySelectorAll('#tam_task_checklist input[type=checkbox]:not(:checked)').forEach(function(cb) {
+    uncheckedIds.push(Number(cb.value));
+  });
+
+  // 체크된 업무 → 팀에 추가, 체크 해제된 업무 → 팀에서 제거
+  WS.tasks = WS.tasks.map(function(t) {
+    var teamArr = (t.team || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    if (checkedIds.includes(t.id)) {
+      if (!teamArr.includes(deptName)) teamArr.push(deptName);
+    } else if (uncheckedIds.includes(t.id)) {
+      teamArr = teamArr.filter(function(s){ return s !== deptName; });
+    }
+    return Object.assign({}, t, { team: teamArr.join(', ') });
+  });
+  WS.saveTasks();
+
+  if (typeof closeModalDirect === 'function') closeModalDirect('teamAssignModal');
+  if (typeof renderPage_Tasks === 'function') renderPage_Tasks();
+  showToast('success', '"' + deptName + '" 팀 업무배정이 저장되었습니다.');
 }
 
 /* ══════════════════════════════════════════════
