@@ -1101,7 +1101,7 @@ function renderDailyScheduleList() {
   }).join('');
 }
 
-/* ③ 금일 업무실행 보고 리스트 */
+/* ③ 금일 업무실행 보고 리스트 (보고완료/보고없음 토글 + 관리 아이콘) */
 function renderDailyExecReport() {
   const me    = WS.currentUser;
   const tbody = document.getElementById('dr_exec_list');
@@ -1113,30 +1113,73 @@ function renderDailyExecReport() {
   });
 
   if (myTasks.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">배정된 업무가 없습니다</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted)">배정된 업무가 없습니다</td></tr>';
     return;
   }
   tbody.innerHTML = myTasks.map(t => {
     const baseScore = t.scoreBase !== undefined ? t.scoreBase : (t.performanceScore || '-');
-    const saved = t.drExecReport || '';
+    const reported  = !!t.drExecReported;
+    // 보고완료/보고없음 토글 버튼
+    const repBtn = reported
+      ? '<button class="btn-sm btn-primary" style="font-size:11px;padding:3px 10px;background:var(--accent-green,#22c55e);border:none;border-radius:6px;color:#fff;cursor:pointer;font-weight:700" onclick="drToggleExecReport(' + t.id + ')">보고완료</button>'
+      : '<button class="btn-sm"            style="font-size:11px;padding:3px 10px;border:1.5px solid var(--border-color);border-radius:6px;background:transparent;color:var(--text-secondary);cursor:pointer;font-weight:600" onclick="drToggleExecReport(' + t.id + ')">보고없음</button>';
+    // 관리 – 작성 아이콘
+    const hasReport = !!(t.drExecReport && t.drExecReport.trim());
+    const editIcon = '<button title="보고 작성" onclick="openDrWrite(' + t.id + ')" '
+      + 'style="background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;'
+      + 'color:' + (hasReport ? 'var(--accent-blue)' : 'var(--text-muted)') + ';transition:.15s"'
+      + ' onmouseover="this.style.background=\'var(--bg-secondary)\'"'
+      + ' onmouseout="this.style.background=\'none\'">'
+      + '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
+      + '</button>';
     return '<tr>' +
       '<td style="font-weight:600">' + (t.isImportant ? '⭐ ' : '') + t.title + '</td>' +
-      '<td style="font-size:11.5px;color:var(--text-secondary)">' + (t.desc || '-') + '</td>' +
+      '<td style="font-size:11.5px;color:var(--text-secondary);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (t.desc || '-') + '</td>' +
       '<td style="text-align:center;font-weight:700;color:var(--accent-blue)">' + baseScore + '</td>' +
-      '<td><textarea data-tid="' + t.id + '" class="form-input dr-exec-input" rows="2" ' +
-        'placeholder="금일 진행 상황을 입력하세요..." ' +
-        'style="font-size:11.5px;resize:vertical;min-height:44px;width:100%">' + saved + '</textarea></td>' +
+      '<td style="text-align:center">' + repBtn + '</td>' +
+      '<td style="text-align:center">' + editIcon + '</td>' +
     '</tr>';
   }).join('');
 }
 
-/* 보고 저장 */
-function drSaveExecReport() {
-  let cnt = 0;
-  document.querySelectorAll('.dr-exec-input').forEach(ta => {
-    const t = WS.getTask ? WS.getTask(parseInt(ta.dataset.tid)) : null;
-    if (t) { t.drExecReport = ta.value; cnt++; }
-  });
-  if (cnt > 0 && WS.saveTasks) WS.saveTasks();
-  showToast('success', cnt + '건 보고내용이 저장되었습니다.');
+/* 보고완료/보고없음 토글 */
+function drToggleExecReport(taskId) {
+  const t = WS.getTask ? WS.getTask(taskId) : null;
+  if (!t) return;
+  t.drExecReported = !t.drExecReported;
+  if (WS.saveTasks) WS.saveTasks();
+  renderDailyExecReport();
+  showToast('success', t.drExecReported ? '"' + t.title + '" 보고완료 처리' : '"' + t.title + '" 보고없음으로 변경');
 }
+
+/* 보고 작성 팝업 열기 */
+let _drWriteTaskId = null;
+function openDrWrite(taskId) {
+  const t = WS.getTask ? WS.getTask(taskId) : null;
+  if (!t) return;
+  _drWriteTaskId = taskId;
+  const titleEl = document.getElementById('drWriteTitle');
+  if (titleEl) titleEl.textContent = '[' + t.title + '] 금일 보고 작성';
+  const textEl = document.getElementById('drWriteText');
+  if (textEl) textEl.value = t.drExecReport || '';
+  const modal = document.getElementById('drWriteModal');
+  if (modal) { modal.style.display = 'flex'; refreshIcons(); }
+}
+function closeDrWriteModal() {
+  const modal = document.getElementById('drWriteModal');
+  if (modal) modal.style.display = 'none';
+  _drWriteTaskId = null;
+}
+function saveDrWrite() {
+  const t = WS.getTask && _drWriteTaskId ? WS.getTask(_drWriteTaskId) : null;
+  if (!t) return;
+  const textEl = document.getElementById('drWriteText');
+  t.drExecReport   = textEl ? textEl.value : '';
+  t.drExecReported = !!(t.drExecReport && t.drExecReport.trim());
+  if (WS.saveTasks) WS.saveTasks();
+  closeDrWriteModal();
+  renderDailyExecReport();
+  showToast('success', '"' + t.title + '" 보고내용이 저장되었습니다.');
+}
+/* openDailyReportModal에서 renderDailyScheduleList 호출 제거용 재정의는 이미 위에 있음 */
+
