@@ -1672,12 +1672,18 @@ function renderAssignmentByTask(targetEl) {
   }).join('');
 
   el.innerHTML =
-    '<table class="task-table">' +
+    '<table class="task-table" style="width:100%;table-layout:fixed">' +
+      '<colgroup>' +
+        '<col style="width:260px">' +
+        '<col>' +
+        '<col style="width:90px">' +
+        '<col style="width:80px">' +
+      '</colgroup>' +
       '<thead><tr>' +
-        '<th>업무명</th>' +
+        '<th style="width:260px">업무명</th>' +
         '<th>담당 직원</th>' +
-        '<th>점수</th>' +
-        '<th>관리</th>' +
+        '<th style="width:90px">점수</th>' +
+        '<th style="width:80px">관리</th>' +
       '</tr></thead>' +
       '<tbody>' + (rows || '<tr><td colspan="4" class="empty-state">데이터가 없습니다.</td></tr>') + '</tbody>' +
     '</table>';
@@ -1708,11 +1714,16 @@ function renderAssignmentByStaff(targetEl) {
   }).join('');
 
   el.innerHTML =
-    '<table class="task-table">' +
+    '<table class="task-table" style="width:100%;table-layout:fixed">' +
+      '<colgroup>' +
+        '<col style="width:260px">' +
+        '<col>' +
+        '<col style="width:80px">' +
+      '</colgroup>' +
       '<thead><tr>' +
-        '<th>직원 정보</th>' +
+        '<th style="width:260px">직원 정보</th>' +
         '<th>배정 업무</th>' +
-        '<th>관리</th>' +
+        '<th style="width:80px">관리</th>' +
       '</tr></thead>' +
       '<tbody>' + rows + '</tbody>' +
     '</table>';
@@ -2037,11 +2048,16 @@ function renderAssignmentByTeam(targetEl) {
   }).join('');
 
   el.innerHTML =
-    '<table class="task-table">' +
+    '<table class="task-table" style="width:100%;table-layout:fixed">' +
+      '<colgroup>' +
+        '<col style="width:260px">' +
+        '<col>' +
+        '<col style="width:80px">' +
+      '</colgroup>' +
       '<thead><tr>' +
-        '<th>팀 정보</th>' +
+        '<th style="width:260px">팀 정보</th>' +
         '<th>배정 업무</th>' +
-        '<th>관리</th>' +
+        '<th style="width:80px">관리</th>' +
       '</tr></thead>' +
       '<tbody>' + rows + '</tbody>' +
     '</table>';
