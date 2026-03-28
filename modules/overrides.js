@@ -818,7 +818,10 @@ function renderPage_RankMgmt() {
 function renderAttendancePill() {
   const u = WS.currentUser;
   if (!u) return;
-  const rec = WS.getAttendance ? WS.getAttendance(u.id) : null;
+  // 올바른 API: getTodayAttendance
+  const rec = typeof WS.getTodayAttendance === 'function'
+    ? WS.getTodayAttendance(u.id)
+    : null;
 
   const now = new Date();
   const hh = String(now.getHours()).padStart(2,'0');
@@ -829,20 +832,20 @@ function renderAttendancePill() {
   const nowEl = document.getElementById('attNowTime');
   if (nowEl) nowEl.textContent = hh + ':' + mi + ':' + ss;
 
-  // 출근 시간 표시
+  // 출근 시간 표시 (checkInRaw = "HH:MM" 24시간 형식)
   const inEl = document.getElementById('attCheckInTime');
-  if (inEl) {
-    const inTime = rec && rec.checkIn ? rec.checkIn.slice(11,16) : '--:--';
-    inEl.textContent = inTime;
-  }
+  if (inEl) inEl.textContent = (rec && rec.checkInRaw) ? rec.checkInRaw : '--:--';
 
-  // 근무 시간 누적 계산 (출근~현재)
+  // 근무 시간 누적 계산 (checkInRaw 기반)
   const workEl = document.getElementById('attWorkTime');
   if (workEl) {
-    if (rec && rec.checkIn) {
-      const checkInDate = new Date(rec.checkIn);
+    if (rec && rec.checkInRaw) {
+      const [chH, chM] = rec.checkInRaw.split(':').map(Number);
+      const checkInDate = new Date(
+        now.getFullYear(), now.getMonth(), now.getDate(), chH, chM, 0
+      );
       const diffMs = now - checkInDate;
-      if (diffMs > 0) {
+      if (diffMs >= 0) {
         const totalMin = Math.floor(diffMs / 60000);
         const wh = Math.floor(totalMin / 60);
         const wm = totalMin % 60;
@@ -868,11 +871,13 @@ function doCheckOut() {
   if (!u) return;
 
   // 근무 총 시간 계산
-  const rec = WS.getAttendance ? WS.getAttendance(u.id) : null;
+  const rec = typeof WS.getTodayAttendance === 'function' ? WS.getTodayAttendance(u.id) : null;
   let totalStr = '0시간 0분';
-  if (rec && rec.checkIn) {
-    const diffMs = new Date() - new Date(rec.checkIn);
-    const totalMin = Math.max(0, Math.floor(diffMs / 60000));
+  if (rec && rec.checkInRaw) {
+    const now = new Date();
+    const [chH, chM] = rec.checkInRaw.split(':').map(Number);
+    const checkInDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), chH, chM, 0);
+    const totalMin = Math.max(0, Math.floor((now - checkInDate) / 60000));
     const wh = Math.floor(totalMin / 60);
     const wm = totalMin % 60;
     totalStr = wh + '시간 ' + wm + '분';
