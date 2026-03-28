@@ -94,7 +94,7 @@
   <div class="main-area">
 
     <!-- ─── 헤더 ─── -->
-    <header class="main-header">
+    <header class="main-header" style="position:relative">
       <div class="header-search">
         <span class="search-icon"><i data-lucide="search" class="icon-sm"></i></span>
         <input type="text" placeholder="업무, 담당자, 키워드 검색..." id="globalSearch" oninput="handleSearch(this.value)">
@@ -116,42 +116,6 @@
           </div>
         </div>
 
-        <!-- 출퇴근 위젯 (새 디자인) -->
-        <div id="attendancePill" style="
-          display:inline-flex;align-items:center;gap:0;
-          background:#2d3a1e;border-radius:50px;overflow:hidden;
-          box-shadow:0 3px 12px rgba(0,0,0,.25);cursor:default;
-          font-family:inherit;user-select:none">
-          <!-- 출근 시간 -->
-          <div style="padding:3px 16px;text-align:center">
-            <div style="font-size:10px;font-weight:700;color:#8fae6a;letter-spacing:.5px">출근</div>
-            <div style="font-size:15px;font-weight:800;color:#e8f5d0;letter-spacing:.5px" id="attCheckInTime">--:--</div>
-          </div>
-          <!-- 현재 시간 (실시간) -->
-          <div style="padding:3px 16px;text-align:center;border-left:1px solid rgba(255,255,255,.08)">
-            <div style="font-size:10px;font-weight:700;color:#8fae6a;letter-spacing:.5px">현재</div>
-            <div style="font-size:15px;font-weight:800;color:#e8f5d0;letter-spacing:.5px;font-variant-numeric:tabular-nums" id="attNowTime">--:--:--</div>
-          </div>
-          <!-- 근무 시간 (누적) -->
-          <div style="padding:3px 16px;text-align:center;border-left:1px solid rgba(255,255,255,.08)">
-            <div style="font-size:10px;font-weight:700;color:#8fae6a;letter-spacing:.5px">근무</div>
-            <div style="font-size:15px;font-weight:800;color:#e8f5d0;letter-spacing:.5px;font-variant-numeric:tabular-nums" id="attWorkTime">--:--</div>
-          </div>
-          <!-- 퇴근 버튼 -->
-          <div onclick="doCheckOut()" style="
-            padding:0 22px;height:100%;min-height:52px;
-            display:flex;align-items:center;gap:8px;
-            background:#4a6228;cursor:pointer;transition:background .15s;
-            font-size:15px;font-weight:800;color:#e8f5d0;letter-spacing:.3px;
-            border-left:1px solid rgba(255,255,255,.08)"
-            onmouseover="this.style.background='#5c7a32'"
-            onmouseout="this.style.background='#4a6228'">
-            퇴근 →
-          </div>
-        </div>
-
-
-
         <!-- 프로필 -->
         <div class="dropdown-wrapper">
           <div class="header-profile" onclick="toggleDropdown('profileMenu')">
@@ -166,6 +130,41 @@
             <div style="border-top:1px solid var(--border-color);margin:4px 0"></div>
             <div class="dropdown-item danger" onclick="logout()"><i data-lucide="log-out" class="icon-sm"></i> 로그아웃</div>
           </div>
+        </div>
+      </div>
+
+      <!-- 출퇴근 위젯 (헤더 중앙 고정) -->
+      <div id="attendancePill" style="
+        position:absolute;left:50%;transform:translateX(-50%);
+        display:inline-flex;align-items:center;gap:0;
+        background:#2d3a1e;border-radius:50px;overflow:hidden;
+        box-shadow:0 3px 12px rgba(0,0,0,.25);cursor:default;
+        font-family:inherit;user-select:none">
+        <!-- 출근 시간 -->
+        <div style="padding:1px 14px;text-align:center">
+          <div style="font-size:10px;font-weight:700;color:#8fae6a;letter-spacing:.5px">출근</div>
+          <div style="font-size:14px;font-weight:800;color:#e8f5d0;letter-spacing:.5px" id="attCheckInTime">--:--</div>
+        </div>
+        <!-- 현재 시간 (실시간) -->
+        <div style="padding:1px 14px;text-align:center;border-left:1px solid rgba(255,255,255,.08)">
+          <div style="font-size:10px;font-weight:700;color:#8fae6a;letter-spacing:.5px">현재</div>
+          <div style="font-size:14px;font-weight:800;color:#e8f5d0;letter-spacing:.5px;font-variant-numeric:tabular-nums" id="attNowTime">--:--:--</div>
+        </div>
+        <!-- 근무 시간 (누적) -->
+        <div style="padding:1px 14px;text-align:center;border-left:1px solid rgba(255,255,255,.08)">
+          <div style="font-size:10px;font-weight:700;color:#8fae6a;letter-spacing:.5px">근무</div>
+          <div style="font-size:14px;font-weight:800;color:#e8f5d0;letter-spacing:.5px;font-variant-numeric:tabular-nums" id="attWorkTime">--:--</div>
+        </div>
+        <!-- 퇴근 버튼 -->
+        <div onclick="doCheckOut()" style="
+          padding:0 20px;height:100%;min-height:42px;
+          display:flex;align-items:center;gap:8px;
+          background:#4a6228;cursor:pointer;transition:background .15s;
+          font-size:14px;font-weight:800;color:#e8f5d0;letter-spacing:.3px;
+          border-left:1px solid rgba(255,255,255,.08)"
+          onmouseover="this.style.background='#5c7a32'"
+          onmouseout="this.style.background='#4a6228'">
+          퇴근 →
         </div>
       </div>
     </header>
