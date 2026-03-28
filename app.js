@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 
 let sidebarTimer = null;
 
@@ -3149,4 +3149,33 @@ function openHqPaymentModal() {
 }
 function _hqPayField(id, label, val) {
   return '<div class="form-group"><label class="form-label hq-label">'+label+'</label><input type="text" class="form-input" id="'+id+'" value="'+val+'"></div>';
+}
+
+/* ── 전화번호 자동 하이픈 ── */
+function formatPhoneInput(el) {
+  var v = el.value.replace(/\D/g, '');
+  if (v.length <= 3) {
+    el.value = v;
+  } else if (v.length <= 7) {
+    el.value = v.slice(0,3) + '-' + v.slice(3);
+  } else if (v.length <= 11) {
+    el.value = v.slice(0,3) + '-' + v.slice(3, v.length <= 10 ? 6 : 7) + '-' + v.slice(v.length <= 10 ? 6 : 7);
+  } else {
+    el.value = v.slice(0,3) + '-' + v.slice(3,7) + '-' + v.slice(7,11);
+  }
+}
+
+/* ── 비밀번호 눈 아이콘 토글 ── */
+function toggleStaffPwd() {
+  var inp = document.getElementById('st_password');
+  var btn = document.getElementById('st_pwd_eye');
+  if (!inp) return;
+  var isHidden = inp.type === 'password';
+  inp.type = isHidden ? 'text' : 'password';
+  if (btn) {
+    btn.innerHTML = isHidden
+      ? '<i data-lucide="eye-off" style="width:15px;height:15px"></i>'
+      : '<i data-lucide="eye" style="width:15px;height:15px"></i>';
+    refreshIcons();
+  }
 }
