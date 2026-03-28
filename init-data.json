@@ -1,0 +1,68 @@
+{
+  "ws_departments": [
+    {"id":1,"name":"개발팀"},
+    {"id":2,"name":"기획팀"},
+    {"id":3,"name":"디자인팀"},
+    {"id":4,"name":"마케팅팀"},
+    {"id":5,"name":"경영지원팀"},
+    {"id":1774355300623,"name":"신사업팀"}
+  ],
+  "ws_ranks": [
+    {"id":1,"name":"사원","level":1},
+    {"id":2,"name":"주임","level":2},
+    {"id":3,"name":"대리","level":3},
+    {"id":4,"name":"과장","level":4},
+    {"id":5,"name":"차장","level":5},
+    {"id":6,"name":"부장","level":6},
+    {"id":7,"name":"이사","level":7},
+    {"id":1774355300624,"name":"인턴","level":0}
+  ],
+  "ws_positions": [
+    {"id":1,"name":"팀원"},
+    {"id":2,"name":"팀장"},
+    {"id":3,"name":"파트장"},
+    {"id":4,"name":"실장"},
+    {"id":5,"name":"본부장"},
+    {"id":6,"name":"CEO"},
+    {"id":1774355300625,"name":"프로젝트 매니저"}
+  ],
+  "ws_task_results": [
+    {"id":1,"name":"파일전송","icon":"refresh-cw","color":"#06b6d4"},
+    {"id":2,"name":"사진전송","icon":"refresh-cw","color":"#06b6d4"},
+    {"id":3,"name":"완료보고","icon":"git-branch","color":"#f59e0b"},
+    {"id":4,"name":"구두보고","icon":"pause-circle","color":"#6b7280"}
+  ],
+  "ws_report_types": [
+    {"id":1,"label":"업무시작","icon":"play-circle","color":"#4f6ef7"},
+    {"id":2,"label":"시장조사","icon":"search","color":"#06b6d4"},
+    {"id":4,"label":"작업완료","icon":"check-circle","color":"#22c55e"},
+    {"id":5,"label":"협의완료","icon":"message-circle","color":"#f59e0b"},
+    {"id":8,"label":"보고서작성","icon":"file-text","color":"#8b5cf6"},
+    {"id":9,"label":"중간보고","icon":"clipboard-list","color":"#4f6ef7"}
+  ],
+  "ws_detail_tasks": [
+    {"id":1774700722481,"name":"종합기획서(안) 작성"},
+    {"id":1774700756929,"name":"영업기획서(안) 작성"},
+    {"id":1774700813826,"name":"내방 고객응대"},
+    {"id":1774700828570,"name":"수신전화 응대"},
+    {"id":1774700842056,"name":"발신전화 업무"}
+  ],
+  "ws_users": [
+    {"id":1,"name":"김지훈","role":"팀장","dept":"개발팀","avatar":"KJ","color":"#4f6ef7","email":"kim@workm.kr","phone":"010-1234-5678","birthday":"1985-05-12","hiredAt":"2020-01-01","resignedAt":null,"address":"서울시 강남구 테헤란로 123","loginId":"admin","password":"1234","status":"근무","note":"앱 개발 관리자","photo":""},
+    {"id":2,"name":"이수진","role":"선임","dept":"개발팀","avatar":"LS","color":"#9747ff","email":"lee@workm.kr","phone":"010-2345-6789","birthday":"1990-08-22","hiredAt":"2021-03-15","resignedAt":null,"address":"경기도 성남시 분당구 판교로 456","loginId":"lee01","password":"1234","status":"근무(퇴근)","note":"Frontend 개발팀 리드","photo":""},
+    {"id":3,"name":"박민수","role":"대리","dept":"마케팅팀","avatar":"PM","color":"#06b6d4","email":"park@workm.kr","phone":"010-3456-7890","birthday":"1992-11-05","hiredAt":"2022-07-01","resignedAt":null,"address":"서울시 마포구 월드컵로 789","loginId":"park02","password":"1234","status":"재직(출장)","note":"일정 관리 및 마케팅 담당","photo":""},
+    {"id":4,"name":"최유리","role":"주임","dept":"디자인팀","avatar":"CY","color":"#f59e0b","email":"choi@workm.kr","phone":"010-4567-8901","birthday":"1991-02-14","hiredAt":"2021-11-10","resignedAt":null,"address":"서울시 서초구 서초대로 321","loginId":"choi03","password":"1234","status":"재직(외근)","note":"UI/UX 디자인 전담","photo":""},
+    {"id":5,"name":"정현수","role":"팀장","dept":"마케팅팀","avatar":"JH","color":"#22c55e","email":"jung@workm.kr","phone":"010-5678-9012","birthday":"1986-09-30","hiredAt":"2020-05-20","resignedAt":null,"address":"인천시 연수구 컨벤시아대로 654","loginId":"jung04","password":"1234","status":"휴직","note":"육아휴직 중 (복직 예정)","photo":""},
+    {"id":6,"name":"한소희","role":"선임","dept":"영업팀","avatar":"HS","color":"#ef4444","email":"han@workm.kr","phone":"010-6789-0123","birthday":"1989-12-25","hiredAt":"2021-06-01","resignedAt":null,"address":"서울시 강남구 학동로 987","loginId":"han05","password":"1234","status":"재직","note":"영업 실적 담당","photo":""}
+  ],
+  "ws_tasks": [
+    {"id":1,"title":"기획","desc":"종합기획서(안) 작성","assignerId":1,"assigneeIds":[2],"status":"progress","priority":"high","progress":65,"dueDate":"2026-03-25","createdAt":"2026-03-10","startedAt":"2026-03-11","isImportant":true,"team":"기획팀, 마케팅팀","score":10,"scoreBase":10,"scoreMin":5,"scoreMax":15,"spentTime":"12h","reportContent":"파일전송","hasAttachment":true,"parentId":null,"processTags":["업무시작","시장조사"],"history":[{"date":"2026-03-10","event":"업무 지시","detail":"김지훈 → 이수진","icon":"clipboard-list","color":"#4f6ef7"}]},
+    {"id":2,"title":"영업","desc":"영업기획서(안) 작성, 내방 고객응대, 수신전화 응대, 발신전화 업무","assignerId":5,"assigneeIds":[6],"status":"delay","priority":"high","progress":30,"dueDate":"2026-03-24","createdAt":"2026-03-05","startedAt":"2026-03-06","isImportant":true,"team":"마케팅팀","score":20,"scoreBase":20,"scoreMin":10,"scoreMax":30,"spentTime":"8h","reportContent":"사진전송","hasAttachment":false,"parentId":null,"processTags":["업무시작","중간보고","작업완료"],"history":[{"date":"2026-03-05","event":"업무 지시","detail":"정현수 → 한소영","icon":"clipboard-list","color":"#4f6ef7"}]},
+    {"id":3,"title":"영업기획","desc":"영업기획서(안) 작성","assignerId":1,"assigneeIds":[3],"status":"progress","priority":"medium","progress":80,"dueDate":"2026-03-30","createdAt":"2026-03-12","startedAt":"2026-03-13","isImportant":false,"team":"개발팀, 마케팅팀","score":10,"scoreBase":10,"scoreMin":5,"scoreMax":15,"spentTime":"15h","reportContent":"구두보고","hasAttachment":true,"parentId":null,"processTags":["업무시작","작업완료"],"history":[{"date":"2026-03-12","event":"업무 지시","detail":"김지훈 → 박민준","icon":"clipboard-list","color":"#4f6ef7"}]},
+    {"id":4,"title":"UX 사용성 개선 리포트","desc":"사용자 인터뷰 5건 진행 후 개선 포인트 정리 및 보고.","assignerId":1,"assigneeIds":[4],"status":"waiting","priority":"low","progress":0,"dueDate":"2026-04-05","createdAt":"2026-03-20","startedAt":null,"isImportant":false,"team":"디자인팀","score":5,"scoreBase":5,"spentTime":"0h","reportContent":"","hasAttachment":false,"parentId":null,"processTags":[],"history":[{"date":"2026-03-20","event":"업무 지시","detail":"김지훈 → 최유리","icon":"clipboard-list","color":"#4f6ef7"}]},
+    {"id":5,"title":"월간 실적 보고서","desc":"2026년 2월 팀별 KPI 달성률 취합 및 경영진 보고 자료 작성.","assignerId":5,"assigneeIds":[1],"status":"progress","priority":"high","progress":45,"dueDate":"2026-03-24","createdAt":"2026-03-18","startedAt":"2026-03-19","isImportant":true,"team":"개발팀","score":12,"scoreBase":12,"spentTime":"5h","reportContent":"","hasAttachment":true,"parentId":null,"processTags":[],"history":[{"date":"2026-03-18","event":"업무 지시","detail":"정현수 → 김지훈","icon":"clipboard-list","color":"#4f6ef7"}]},
+    {"id":6,"title":"고객 피드백 DB 정리","desc":"작년 하반기 CS 문의 내용 카테고리화 및 인사이트 도출.","assignerId":1,"assigneeIds":[2],"status":"done","priority":"low","progress":100,"dueDate":"2026-03-20","createdAt":"2026-03-14","startedAt":"2026-03-15","isImportant":false,"team":"개발팀","score":8,"scoreBase":8,"spentTime":"10h","reportContent":"","hasAttachment":false,"parentId":null,"processTags":[],"history":[{"date":"2026-03-14","event":"업무 지시","detail":"김지훈 → 이수진","icon":"clipboard-list","color":"#4f6ef7"}]},
+    {"id":7,"title":"랜딩페이지 리뉴얼","desc":"신규 브랜드 아이덴티티 기반으로 홈페이지 전면 재설계.","assignerId":5,"assigneeIds":[4],"status":"progress","priority":"medium","progress":55,"dueDate":"2026-04-10","createdAt":"2026-03-15","startedAt":"2026-03-16","isImportant":true,"team":"디자인팀","score":18,"scoreBase":18,"spentTime":"20h","reportContent":"","hasAttachment":true,"parentId":null,"processTags":[],"history":[{"date":"2026-03-15","event":"업무 지시","detail":"정현수 → 최유리","icon":"clipboard-list","color":"#4f6ef7"}]},
+    {"id":8,"title":"보안 취약점 점검","desc":"정기 보안 감사. OWASP Top 10 기준 전수 점검.","assignerId":1,"assigneeIds":[3],"status":"waiting","priority":"high","progress":0,"dueDate":"2026-03-28","createdAt":"2026-03-22","startedAt":null,"isImportant":true,"team":"개발팀","score":15,"scoreBase":15,"spentTime":"0h","reportContent":"","hasAttachment":false,"parentId":null,"processTags":[],"history":[{"date":"2026-03-22","event":"업무 지시","detail":"김지훈 → 박민준","icon":"clipboard-list","color":"#4f6ef7"}]}
+  ]
+}
