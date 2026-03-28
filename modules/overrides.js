@@ -1212,14 +1212,13 @@ function openEditTaskModal(id) {
     setVal('nt_team',      t.team);
     setVal('nt_start',     t.startedAt || '');
     setVal('nt_due',       t.dueDate);
-    // ② 점수 3개 모두 복원 (scoreBase 우선, 없으면 score)
+    // ② 점수 3개 모두 복원
     setVal('nt_score',     t.scoreBase !== undefined ? t.scoreBase : (t.score || ''));
     setVal('nt_score_min', t.scoreMin !== undefined ? t.scoreMin : '');
     setVal('nt_score_max', t.scoreMax !== undefined ? t.scoreMax : '');
-    // ③ 업무결과 select 복원 (기타관리 데이터 기준)
+    // ③ 업무결과 select 복원
     const resultEl = document.getElementById('nt_result');
     if (resultEl) {
-      // 최신 옵션으로 재구성
       const resultOpts = (WS.taskResults || []).map(r =>
         '<option value="' + r.name + '">' + (r.icon ? r.icon + ' ' : '') + r.name + '</option>'
       ).join('');
@@ -1230,8 +1229,60 @@ function openEditTaskModal(id) {
     if (impEl) impEl.checked = !!t.isImportant;
     window._processTags = Array.isArray(t.processTags) ? [...t.processTags] : [];
     if (typeof renderProcessTags === 'function') renderProcessTags();
+    // ④ 팀 선택 체크박스 복원
+    renderTeamCheckboxes(t.team || '');
   }, 0);
 }
+
+/* ── 팀 선택 체크박스 동적 생성 ── */
+function renderTeamCheckboxes(currentTeam) {
+  var container = document.getElementById('nt_teams_checkboxes');
+  if (!container) return;
+  // currentTeam: '개발팀, 마케팅팀' 형태 또는 '개발팀'
+  var selectedArr = (currentTeam || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  var depts = WS.departments || [];
+  if (!depts.length) {
+    container.innerHTML = '<span style="font-size:11px;color:var(--text-muted)">부서 정보 없음 (기타설정에서 추가)</span>';
+    return;
+  }
+  var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
+  container.innerHTML = depts.map(function(d) {
+    var checked = selectedArr.includes(d.name);
+    var uid = 'tc_' + d.id;
+    return '<label for="' + uid + '" style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;cursor:pointer;user-select:none;' +
+      'border:2px solid ' + (checked ? accent : 'var(--border-color)') + ';' +
+      'background:' + (checked ? 'color-mix(in srgb,' + accent + ' 10%,var(--bg-primary))' : 'var(--bg-primary)') + ';' +
+      'transition:all 0.15s">' +
+      '<input type="checkbox" id="' + uid + '" value="' + d.name + '"' + (checked ? ' checked' : '') +
+        ' onchange="updateTeamCheckStyle(this)"' +
+        ' style="width:14px;height:14px;accent-color:' + accent + ';cursor:pointer">' +
+      '<span style="font-size:12px;font-weight:600;color:var(--text-primary)">' + d.name + '</span>' +
+      '</label>';
+  }).join('');
+}
+
+function updateTeamCheckStyle(cb) {
+  var label = cb.closest('label');
+  if (!label) return;
+  var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
+  if (cb.checked) {
+    label.style.borderColor = accent;
+    label.style.background = 'color-mix(in srgb,' + accent + ' 10%,var(--bg-primary))';
+  } else {
+    label.style.borderColor = 'var(--border-color)';
+    label.style.background = 'var(--bg-primary)';
+  }
+}
+
+/* ── openNewTaskModal 래핑: 매번 팀 체크박스 초기화 ── */
+(function() {
+  var _orig = typeof openNewTaskModal === 'function' ? openNewTaskModal : null;
+  if (!_orig) return;
+  window.openNewTaskModal = function(mode, parentId, assigneeId) {
+    _orig.call(window, mode, parentId, assigneeId);
+    setTimeout(function() { renderTeamCheckboxes(''); }, 10);
+  };
+})();
 
 /* saveEditTask – scoreBase/scoreMin/scoreMax도 함께 저장 */
 function saveEditTask() {
@@ -1254,7 +1305,12 @@ function saveEditTask() {
       title,
       desc:           document.getElementById('nt_desc')?.value || t.desc,
       priority:       document.getElementById('nt_priority')?.value || t.priority,
-      team:           document.getElementById('nt_team')?.value || t.team,
+      team: (function() {
+        var cbs = document.querySelectorAll('#nt_teams_checkboxes input[type=checkbox]:checked');
+        var arr = [];
+        cbs.forEach(function(c){ arr.push(c.value); });
+        return arr.length ? arr.join(', ') : (document.getElementById('nt_team')?.value || t.team || '');
+      })(),
       startedAt:      document.getElementById('nt_start')?.value || t.startedAt,
       dueDate:        document.getElementById('nt_due')?.value || t.dueDate,
       reportContent:  document.getElementById('nt_result')?.value || '',
