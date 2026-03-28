@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 
 let sidebarTimer = null;
 
@@ -2159,7 +2159,7 @@ function openStaffModal(id) {
         const _smIds = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
         return _smIds.includes(id);
       });
-      taskContainer.innerHTML = myTasks.map(t => `<span class="task-badge" onclick="closeModalDirect('staffModal');openTaskDetail(${t.id})" style="cursor:pointer">${t.title}</span>`).join('') || '<div style="font-size:11px;color:var(--text-muted)">諛곗젙??업무媛 없습니다.</div>';
+      taskContainer.innerHTML = myTasks.map(t => `<span class="task-badge" onclick="closeModalDirect('staffModal');openTaskDetail(${t.id})" style="cursor:pointer">${t.title}</span>`).join('') || '<div style="font-size:11px;color:var(--text-muted)">諛곗젙??업무媛€ 없습니다.</div>';
       
       // ??업무 諛곗젙 踰꾪듉 ?곕룞
       if(addBtn) {
@@ -2250,6 +2250,50 @@ function handleStaffPhotoUpload(input) {
   };
   reader.readAsDataURL(file);
 }
+
+/* 사진 팝업 열기 */
+function openStaffPhotoPopup() {
+  var popup = document.getElementById('staffPhotoPopup');
+  if(!popup) return;
+  // 팝업 내 미리보기 업데이트
+  var sppPrev = document.getElementById('spp_preview');
+  if(sppPrev) {
+    var currentPhoto = window._staffPhotoBase64 ||
+      (window._editingStaffId ? (WS.getUser(window._editingStaffId)?.photo || '') : '');
+    if(currentPhoto) {
+      sppPrev.style.backgroundImage = 'url(' + currentPhoto + ')';
+      sppPrev.style.backgroundSize = 'cover';
+      sppPrev.style.backgroundPosition = 'center';
+      sppPrev.innerHTML = '';
+    } else {
+      sppPrev.style.backgroundImage = '';
+      sppPrev.innerHTML = '<i data-lucide="user" style="width:40px;height:40px;color:var(--text-muted)"></i>';
+      refreshIcons();
+    }
+  }
+  popup.style.display = 'flex';
+}
+
+/* 사진 삭제 */
+function clearStaffPhoto() {
+  window._staffPhotoBase64 = null;
+  var prev = document.getElementById('st_photo_preview');
+  if(prev) {
+    prev.style.backgroundImage = '';
+    prev.innerHTML = '<i data-lucide="camera" style="width:18px;height:18px;color:var(--text-muted)"></i><span style="font-size:11px;color:var(--text-muted);font-weight:600">사진 등록</span>';
+  }
+  var sppPrev = document.getElementById('spp_preview');
+  if(sppPrev) {
+    sppPrev.style.backgroundImage = '';
+    sppPrev.innerHTML = '<i data-lucide="user" style="width:40px;height:40px;color:var(--text-muted)"></i>';
+  }
+  var fi = document.getElementById('st_photo_file');
+  if(fi) fi.value = '';
+  closeModalDirect('staffPhotoPopup');
+  showToast('info', '사진이 삭제되었습니다.');
+  refreshIcons();
+}
+
 
 function deleteStaff(id) {
   if(id === WS.currentUser?.id) {

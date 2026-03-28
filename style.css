@@ -1132,3 +1132,21 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 @media (max-width: 800px) {
   .hq-payment-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ── 직원 정보 모달 그리드 ── */
+.sm-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.sm-span2 { grid-column: span 2; }
+.sm-section-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  padding: 0 0 8px 2px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 12px;
+}
