@@ -789,7 +789,17 @@
                   업무중요도
                   <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-left:3px">(복수선택)</span>
                 </label>
-                <div id="instrImportancePicks" style="display:flex;flex-wrap:wrap;gap:5px;padding:4px 0;min-height:36px"></div>
+                <div id="instrImportancePicks"
+                  style="display:flex;flex-wrap:nowrap;gap:5px;padding:6px 10px;
+                         min-height:40px;border:1.5px solid var(--border-color);
+                         border-radius:10px;background:var(--bg-secondary);
+                         overflow-x:auto;cursor:grab;align-items:center;
+                         scrollbar-width:none;-webkit-overflow-scrolling:touch;
+                         -ms-overflow-style:none"
+                  onmousedown="_impDragStart(event)"
+                  onmousemove="_impDragMove(event)"
+                  onmouseup="_impDragEnd()"
+                  onmouseleave="_impDragEnd()"></div>
                 <input type="hidden" id="instrImportanceVal">
               </div>
 

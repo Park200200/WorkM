@@ -3372,34 +3372,13 @@ function openInstructionModal(editData) {
     }
   }
 
-  // ── 업무중요도 칩 생성 (ws_instr_importances 기반, 복수선택)
-  window._instrImportances = [];
-  const impPicks = document.getElementById('instrImportancePicks');
-  if (impPicks) {
-    const importances = JSON.parse(localStorage.getItem('ws_instr_importances')) || [];
-    if (importances.length === 0) {
-      impPicks.innerHTML = '<span style="font-size:11px;color:var(--text-muted)">기타설정에서 중요도를 추가하세요</span>';
-    } else {
-      impPicks.innerHTML = importances.map(imp => {
-        const c   = imp.color || '#ef4444';
-        const hasIcon = imp.icon && imp.icon.length > 2;
-        const iconHtml = hasIcon
-          ? `<i data-lucide="${imp.icon}" style="width:10px;height:10px;color:${c}"></i>`
-          : '';
-        return `<span onclick="_toggleInstrImportance('${imp.name}','${c}',this)"
-          data-imp="${imp.name}"
-          style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;
-                 font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;
-                 border:1.5px solid ${c};color:${c};background:transparent"
-          onmouseover="if(!this.classList.contains('imp-on'))this.style.background='${c}22'"
-          onmouseout="if(!this.classList.contains('imp-on'))this.style.background='transparent'">
-          ${iconHtml}${imp.name}
-        </span>`;
-      }).join('');
-    }
-  }
+  // ── 업무중요도: window._instrImportances 초기화 후 _renderImportancePicks() 호출
+  window._instrImportances = editData && editData.importance
+    ? editData.importance.split(',').map(s => s.trim()).filter(Boolean)
+    : [];
   const impVal = document.getElementById('instrImportanceVal');
-  if (impVal) impVal.value = editData ? (editData.importance || '') : '';
+  if (impVal) impVal.value = window._instrImportances.join(', ');
+  _renderImportancePicks();
 
   // ── 수정 모드: 기존 값으로 폼 채우기
   if (editData) {
@@ -3450,22 +3429,7 @@ function openInstructionModal(editData) {
         });
       }
     }
-    // 업무중요도 칩 기존 선택 복원
-    if (editData.importance) {
-      window._instrImportances = editData.importance.split(',').map(s => s.trim()).filter(Boolean);
-      const iPicks = document.getElementById('instrImportancePicks');
-      if (iPicks) {
-        iPicks.querySelectorAll('span[data-imp]').forEach(el => {
-          if (window._instrImportances.includes(el.dataset.imp)) {
-            el.classList.add('imp-on');
-            const bc = el.style.borderColor || '#ef4444';
-            el.style.background = bc;
-            el.style.color = '#ffffff';
-            el.style.fontWeight = '700';
-          }
-        });
-      }
-    }
+    // 업무중요도: _instrImportances가 이미 설정되어 _renderImportancePicks()에서 처리됨
   }
 
   m.style.display = 'flex';
@@ -3538,28 +3502,100 @@ function renderInstrFileList() {
   setTimeout(refreshIcons, 30);
 }
 
-/* 업무중요도 칩 토글 */
-window._instrImportances = [];
-function _toggleInstrImportance(name, color, el) {
+/* ── 업무중요도 드래그 스크롤 ─────────────────────── */
+var _impDragState = { active: false, startX: 0, scrollLeft: 0 };
+function _impDragStart(e) {
+  var el = document.getElementById('instrImportancePicks');
+  if (!el) return;
+  _impDragState.active = true;
+  _impDragState.startX = e.pageX - el.getBoundingClientRect().left;
+  _impDragState.scrollLeft = el.scrollLeft;
+  el.style.cursor = 'grabbing';
+  el.style.userSelect = 'none';
+}
+function _impDragMove(e) {
+  if (!_impDragState.active) return;
+  e.preventDefault();
+  var el = document.getElementById('instrImportancePicks');
+  if (!el) return;
+  var x = e.pageX - el.getBoundingClientRect().left;
+  var walk = (x - _impDragState.startX) * 1.4;
+  el.scrollLeft = _impDragState.scrollLeft - walk;
+}
+function _impDragEnd() {
+  _impDragState.active = false;
+  var el = document.getElementById('instrImportancePicks');
+  if (el) { el.style.cursor = 'grab'; el.style.userSelect = ''; }
+}
+
+/* ── 업무중요도 렌더: 선택→앞[아이콘만], 미선택→뒤[아이콘+텍스트] ── */
+function _renderImportancePicks() {
+  const container = document.getElementById('instrImportancePicks');
+  if (!container) return;
+  const importances = JSON.parse(localStorage.getItem('ws_instr_importances')) || [];
+  if (importances.length === 0) {
+    container.innerHTML = '<span style="font-size:11px;color:var(--text-muted);white-space:nowrap">기타설정에서 중요도를 추가하세요</span>';
+    return;
+  }
+  const selected = window._instrImportances || [];
+  const selItems   = importances.filter(i => selected.includes(i.name));
+  const unselItems = importances.filter(i => !selected.includes(i.name));
+
+  // 선택된 항목: 앞에, 채워진 원형 + 아이콘만
+  const selHtml = selItems.map(imp => {
+    const c = imp.color || '#ef4444';
+    const hasIcon = imp.icon && imp.icon.length > 2;
+    const inner = hasIcon
+      ? `<i data-lucide="${imp.icon}" style="width:12px;height:12px;color:#fff"></i>`
+      : `<span style="width:8px;height:8px;border-radius:50%;background:#fff;display:inline-block"></span>`;
+    return `<span onclick="_toggleInstrImportancePick('${imp.name}')" title="${imp.name} (클릭하여 취소)"
+      style="display:inline-flex;align-items:center;justify-content:center;
+             width:28px;height:28px;border-radius:50%;flex-shrink:0;
+             background:${c};border:2px solid ${c};cursor:pointer;
+             transition:all .15s;box-shadow:0 2px 8px ${c}55">
+      ${inner}
+    </span>`;
+  }).join('');
+
+  // 미선택 항목: 뒤에, 아이콘+텍스트
+  const unselHtml = unselItems.map(imp => {
+    const c = imp.color || '#ef4444';
+    const hasIcon = imp.icon && imp.icon.length > 2;
+    const iconHtml = hasIcon
+      ? `<i data-lucide="${imp.icon}" style="width:10px;height:10px;color:${c}"></i>`
+      : '';
+    return `<span onclick="_toggleInstrImportancePick('${imp.name}')" title="${imp.name}"
+      style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;
+             border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;
+             transition:all .15s;user-select:none;flex-shrink:0;white-space:nowrap;
+             border:1.5px solid ${c};color:${c};background:transparent"
+      onmouseover="this.style.background='${c}22'"
+      onmouseout="this.style.background='transparent'">
+      ${iconHtml}${imp.name}
+    </span>`;
+  }).join('');
+
+  container.innerHTML = selHtml + (selHtml && unselHtml ? '<span style="width:1px;height:24px;background:var(--border-color);flex-shrink:0;margin:0 3px"></span>' : '') + unselHtml;
+  setTimeout(refreshIcons, 30);
+}
+
+/* ── 업무중요도 토글 (새 방식) ─────────────────────── */
+function _toggleInstrImportancePick(name) {
   if (!window._instrImportances) window._instrImportances = [];
   const idx = window._instrImportances.indexOf(name);
   if (idx !== -1) {
-    window._instrImportances.splice(idx, 1);
-    el.classList.remove('imp-on');
-    el.style.background = 'transparent';
-    el.style.color       = color;
-    el.style.fontWeight  = '600';
-    el.style.boxShadow   = 'none';
+    window._instrImportances.splice(idx, 1); // 선택 취소 → 뒤로
   } else {
-    window._instrImportances.push(name);
-    el.classList.add('imp-on');
-    el.style.background  = color;
-    el.style.color       = '#ffffff';
-    el.style.fontWeight  = '700';
-    el.style.boxShadow   = '0 2px 8px ' + color + '55';
+    window._instrImportances.push(name);     // 선택 → 앞으로
   }
   const impVal = document.getElementById('instrImportanceVal');
   if (impVal) impVal.value = window._instrImportances.join(', ');
+  _renderImportancePicks();
+}
+
+/* 구 토글 함수 (하위호환) */
+function _toggleInstrImportance(name, color, el) {
+  _toggleInstrImportancePick(name);
 }
 
 /* 모달 닫기 */
