@@ -793,7 +793,23 @@ function renderPage_RankMgmt() {
   if (deptList)   deptList.innerHTML   = WS.departments.map(d => itemCard('dept', d)).join('') || emptyMsg;
   if (rankList)   rankList.innerHTML   = WS.ranks.sort((a,b)=>a.level-b.level).map(r => itemCard('rank', r)).join('') || emptyMsg;
   if (posList)    posList.innerHTML    = WS.positions.map(p => itemCard('pos', p)).join('') || emptyMsg;
-  if (resultList) resultList.innerHTML = WS.taskResults.map(r => itemCard('result', r)).join('') || emptyMsg;
+  if (resultList) resultList.innerHTML = WS.taskResults.map(r => {
+    var c = r.color || '#22c55e';
+    var hasLucide = r.icon && r.icon.length > 2;
+    var circleInner = hasLucide
+      ? '<i data-lucide="' + r.icon + '" style="width:12px;height:12px;color:' + c + '"></i>'
+      : (r.icon && r.icon.length <= 2 ? '<span style="font-size:12px">' + r.icon + '</span>' : '<span style="width:8px;height:8px;border-radius:50%;background:' + c + ';display:inline-block"></span>');
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:6px">' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:' + c + '22;border:1.5px solid ' + c + '">' + circleInner + '</span>' +
+        '<span style="font-size:13px;font-weight:600;color:var(--text-primary)">' + r.name + '</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:4px">' +
+        '<button onclick="openResultModal(' + r.id + ')" title="수정" style="background:none;border:none;cursor:pointer;padding:3px 6px;font-size:13px">✏️</button>' +
+        '<button onclick="deleteOrgItem(\'result\',' + r.id + ')" title="삭제" style="background:none;border:none;cursor:pointer;padding:3px 6px;font-size:13px">🗑️</button>' +
+      '</div>' +
+    '</div>';
+  }).join('') || emptyMsg;
 
   if (rtList) {
     rtList.innerHTML = WS.reportTypes.map(r =>
@@ -817,12 +833,37 @@ function renderPage_RankMgmt() {
   const posCount    = document.getElementById('posCount');
   const resultCount = document.getElementById('resultCount');
   const rtCount     = document.getElementById('reportTypeCount');
+  const iiCount     = document.getElementById('instrImportanceCount');
 
   if (deptCount)   deptCount.textContent   = WS.departments.length;
   if (rankCount)   rankCount.textContent   = WS.ranks.length;
   if (posCount)    posCount.textContent    = WS.positions.length;
   if (resultCount) resultCount.textContent = WS.taskResults.length;
   if (rtCount)     rtCount.textContent     = WS.reportTypes.length;
+
+  // 지시 중요도 렌더
+  WS.instrImportances = JSON.parse(localStorage.getItem('ws_instr_importances')) || WS.instrImportances || [];
+  var iiList = document.getElementById('instrImportanceList');
+  if (iiList) {
+    iiList.innerHTML = WS.instrImportances.map(function(imp) {
+      var c = imp.color || '#ef4444';
+      var hasLucide = imp.icon && imp.icon.length > 2;
+      var circleInner = hasLucide
+        ? '<i data-lucide="' + imp.icon + '" style="width:12px;height:12px;color:' + c + '"></i>'
+        : '<span style="width:8px;height:8px;border-radius:50%;background:' + c + ';display:inline-block"></span>';
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:6px">' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:' + c + '22;border:1.5px solid ' + c + '">' + circleInner + '</span>' +
+          '<span style="font-size:13px;font-weight:600;color:var(--text-primary)">' + imp.name + '</span>' +
+        '</div>' +
+        '<div style="display:flex;gap:4px">' +
+          '<button onclick="openInstrImportanceModal(' + imp.id + ')" title="수정" style="background:none;border:none;cursor:pointer;padding:3px 6px;font-size:13px">✏️</button>' +
+          '<button onclick="deleteInstrImportance(' + imp.id + ')" title="삭제" style="background:none;border:none;cursor:pointer;padding:3px 6px;font-size:13px">🗑️</button>' +
+        '</div>' +
+      '</div>';
+    }).join('') || emptyMsg;
+  }
+  if (iiCount) iiCount.textContent = (WS.instrImportances || []).length;
 
   // 상세업무 렌더
   WS.detailTasks = JSON.parse(localStorage.getItem('ws_detail_tasks')) || WS.detailTasks || [];
@@ -1662,19 +1703,32 @@ function closeOrgModal() {
   _orgCtx.type = null; _orgCtx.id = null; _orgCtx.mode = 'add';
 }
 
-/* ── resultModal 열기 (추가) ── */
-function openResultModal() {
-  _orgCtx.type = 'result'; _orgCtx.id = null; _orgCtx.mode = 'add';
-  var titleEl = document.getElementById('resultModalTitle');
-  var nameEl  = document.getElementById('resultModalName');
-  var iconEl  = document.getElementById('resultModalIcon');
-  var colorEl = document.getElementById('resultModalColor');
-  var pickerEl= document.getElementById('resultModalColorPicker');
-  if (titleEl) titleEl.textContent = '업무결과 추가';
-  if (nameEl)  nameEl.value = '';
-  if (iconEl)  iconEl.value = '';
-  if (colorEl) colorEl.value = '#22c55e';
-  if (pickerEl) pickerEl.value = '#22c55e';
+/* ── resultModal 열기 (추가/수정) ── */
+function openResultModal(editId) {
+  _orgCtx.type = 'result';
+  _orgCtx.mode = editId ? 'edit' : 'add';
+  _orgCtx.id   = editId || null;
+  var titleEl  = document.getElementById('resultModalTitle');
+  var nameEl   = document.getElementById('resultModalName');
+  var iconEl   = document.getElementById('resultModalIcon');
+  var colorEl  = document.getElementById('resultModalColor');
+  var pickerEl = document.getElementById('resultModalColorPicker');
+  if (editId) {
+    var item = (WS.taskResults || []).find(function(r){ return r.id === editId; });
+    if (item) {
+      if (titleEl) titleEl.textContent = '업무결과 수정';
+      if (nameEl)   nameEl.value  = item.name  || '';
+      if (iconEl)   iconEl.value  = item.icon  || '';
+      if (colorEl)  colorEl.value = item.color || '#22c55e';
+      if (pickerEl) pickerEl.value= item.color || '#22c55e';
+    }
+  } else {
+    if (titleEl) titleEl.textContent = '업무결과 추가';
+    if (nameEl)   nameEl.value  = '';
+    if (iconEl)   iconEl.value  = '';
+    if (colorEl)  colorEl.value = '#22c55e';
+    if (pickerEl) pickerEl.value= '#22c55e';
+  }
   _initResultIconQuickPick();
   _updateResultPreview();
   var m = document.getElementById('resultModal');
@@ -2842,4 +2896,136 @@ function selectOimIcon(iconName) {
   var inp = document.getElementById('oim_icon');
   if (inp) inp.value = iconName;
   renderIconGrid(iconName);
+}
+
+/* ══════════════════════════════════════════════
+   지시 중요도 CRUD (진행보고 유형과 동일한 패턴)
+══════════════════════════════════════════════ */
+if (!WS.instrImportances) WS.instrImportances = JSON.parse(localStorage.getItem('ws_instr_importances')) || [];
+
+function _saveInstrImportances() {
+  localStorage.setItem('ws_instr_importances', JSON.stringify(WS.instrImportances || []));
+}
+
+var _iiCtx = { id: null, mode: 'add' };
+
+var _II_QUICK_ICONS = [
+  { icon:'flag',          color:'#ef4444' },
+  { icon:'alert-triangle',color:'#f97316' },
+  { icon:'alert-circle',  color:'#f59e0b' },
+  { icon:'star',          color:'#eab308' },
+  { icon:'zap',           color:'#8b5cf6' },
+  { icon:'shield',        color:'#3b82f6' },
+  { icon:'check-circle',  color:'#22c55e' },
+  { icon:'clock',         color:'#06b6d4' },
+  { icon:'megaphone',     color:'#ec4899' },
+  { icon:'target',        color:'#10b981' }
+];
+
+function _initIiIconQuickPick() {
+  var container = document.getElementById('iiIconQuickPick');
+  if (!container) return;
+  var q = "'";
+  container.innerHTML = _II_QUICK_ICONS.map(function(qi) {
+    return '<button type="button" onclick="_iiPickIcon(' + q + qi.icon + q + ',' + q + qi.color + q + ')"' +
+      ' style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;' +
+      'border-radius:7px;border:1.5px solid ' + qi.color + '22;background:' + qi.color + '11;cursor:pointer" title="' + qi.icon + '">' +
+      '<i data-lucide="' + qi.icon + '" style="width:14px;height:14px;color:' + qi.color + '"></i>' +
+    '</button>';
+  }).join('');
+  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 30);
+}
+
+function _iiPickIcon(icon, color) {
+  var iconEl   = document.getElementById('iiModalIcon');
+  var colorEl  = document.getElementById('iiModalColor');
+  var pickerEl = document.getElementById('iiModalColorPicker');
+  if (iconEl)   iconEl.value   = icon;
+  if (colorEl)  colorEl.value  = color;
+  if (pickerEl) pickerEl.value = color;
+  previewInstrImportanceIcon();
+}
+
+function previewInstrImportanceIcon() {
+  var icon  = (document.getElementById('iiModalIcon')  || {}).value || 'flag';
+  var color = (document.getElementById('iiModalColor') || {}).value || '#ef4444';
+  var name  = (document.getElementById('iiModalName')  || {}).value || '중요도명';
+  if (!color.startsWith('#')) color = '#ef4444';
+  var prevEl  = document.getElementById('iiModalPreview');
+  var iconEl  = document.getElementById('iiModalPreviewIcon');
+  var nameEl  = document.getElementById('iiModalPreviewName');
+  if (prevEl)  { prevEl.style.background = color + '22'; prevEl.style.borderColor = color; prevEl.style.color = color; }
+  if (iconEl)  {
+    iconEl.style.background  = color + '22';
+    iconEl.style.borderColor = color;
+    iconEl.innerHTML = icon && icon.length > 2
+      ? '<i data-lucide="' + icon + '" style="width:11px;height:11px;color:' + color + '"></i>'
+      : '<span style="width:7px;height:7px;border-radius:50%;background:' + color + ';display:inline-block"></span>';
+  }
+  if (nameEl) nameEl.textContent = name || '중요도명';
+  if (typeof refreshIcons === 'function') refreshIcons();
+}
+
+function openInstrImportanceModal(editId) {
+  _iiCtx.id   = editId || null;
+  _iiCtx.mode = editId ? 'edit' : 'add';
+  var titleEl  = document.getElementById('instrImportanceModalTitle');
+  var nameEl   = document.getElementById('iiModalName');
+  var iconEl   = document.getElementById('iiModalIcon');
+  var colorEl  = document.getElementById('iiModalColor');
+  var pickerEl = document.getElementById('iiModalColorPicker');
+  if (editId) {
+    var item = (WS.instrImportances || []).find(function(x){ return x.id === editId; });
+    if (item) {
+      if (titleEl) titleEl.textContent = '지시 중요도 수정';
+      if (nameEl)   nameEl.value  = item.name  || '';
+      if (iconEl)   iconEl.value  = item.icon  || '';
+      if (colorEl)  colorEl.value = item.color || '#ef4444';
+      if (pickerEl) pickerEl.value= item.color || '#ef4444';
+    }
+  } else {
+    if (titleEl) titleEl.textContent = '지시 중요도 추가';
+    if (nameEl)   nameEl.value  = '';
+    if (iconEl)   iconEl.value  = '';
+    if (colorEl)  colorEl.value = '#ef4444';
+    if (pickerEl) pickerEl.value= '#ef4444';
+  }
+  _initIiIconQuickPick();
+  previewInstrImportanceIcon();
+  var m = document.getElementById('instrImportanceModal');
+  if (m) { m.style.display = 'flex'; setTimeout(function(){ if(nameEl) nameEl.focus(); }, 50); }
+}
+
+function saveInstrImportanceItem() {
+  var name  = (document.getElementById('iiModalName')  || {}).value;
+  var icon  = (document.getElementById('iiModalIcon')  || {}).value;
+  var color = (document.getElementById('iiModalColor') || {}).value;
+  if (!name || !name.trim()) { showToast('error', '이름을 입력하세요'); return; }
+  name  = name.trim();
+  icon  = icon  ? icon.trim()  : '';
+  color = (color && color.startsWith('#')) ? color.trim() : '#ef4444';
+  WS.instrImportances = WS.instrImportances || [];
+  if (_iiCtx.mode === 'add') {
+    WS.instrImportances.push({ id: Date.now(), name: name, icon: icon, color: color });
+    showToast('success', name + ' 추가 완료!');
+  } else {
+    var item = WS.instrImportances.find(function(x){ return x.id === _iiCtx.id; });
+    if (item) { item.name = name; item.icon = icon; item.color = color; }
+    showToast('info', '지시 중요도 수정 완료!');
+  }
+  _saveInstrImportances();
+  closeInstrImportanceModal();
+  renderPage_RankMgmt();
+}
+
+function deleteInstrImportance(id) {
+  WS.instrImportances = (WS.instrImportances || []).filter(function(x){ return x.id !== id; });
+  _saveInstrImportances();
+  showToast('info', '삭제되었습니다.');
+  renderPage_RankMgmt();
+}
+
+function closeInstrImportanceModal() {
+  var m = document.getElementById('instrImportanceModal');
+  if (m) m.style.display = 'none';
 }

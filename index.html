@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -292,6 +292,20 @@
             </div>
             <div class="section-body" id="detailTaskList"></div>
           </div>
+          <!-- 지시 중요도 리스트 -->
+          <div class="section-card">
+            <div class="section-head">
+              <div class="section-title-group">
+                <div class="section-dot" style="background:#ef4444"><i data-lucide="flag"></i></div>
+                <div class="section-title">지시 중요도</div>
+                <span class="section-count" id="instrImportanceCount">0</span>
+              </div>
+              <button class="btn-sm btn-primary" onclick="openInstrImportanceModal()">
+                <i data-lucide="plus" style="width:12px;height:12px"></i> 추가
+              </button>
+            </div>
+            <div class="section-body" id="instrImportanceList"></div>
+          </div>
         </div>
       </div>
 
@@ -469,6 +483,53 @@
           </div>
         </div>
       </div>
+
+      <!-- 지시 중요도 모달 -->
+      <div class="modal-overlay" id="instrImportanceModal" style="display:none" onclick="if(event.target===this)closeInstrImportanceModal()">
+        <div class="modal-box" style="max-width:420px">
+          <div class="modal-head">
+            <div class="modal-title" id="instrImportanceModalTitle">지시 중요도 추가</div>
+            <button class="modal-close" onclick="closeInstrImportanceModal()">✕</button>
+          </div>
+          <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
+            <div class="form-group">
+              <label class="form-label">이름 *</label>
+              <input class="form-input" id="iiModalName" placeholder="예) 긴급" onkeydown="if(event.key==='Enter')saveInstrImportanceItem()">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="form-group" style="margin:0">
+                <label class="form-label">아이콘 <span style="font-size:10px;color:var(--text-muted)">(Lucide 이름)</span></label>
+                <input class="form-input" id="iiModalIcon" placeholder="예) flag" oninput="previewInstrImportanceIcon()">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label class="form-label">색상</label>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <input type="color" id="iiModalColorPicker" value="#ef4444" style="width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border-color);cursor:pointer;padding:2px" oninput="document.getElementById('iiModalColor').value=this.value;previewInstrImportanceIcon()">
+                  <input class="form-input" id="iiModalColor" placeholder="#ef4444" value="#ef4444" style="flex:1" oninput="document.getElementById('iiModalColorPicker').value=this.value||'#ef4444';previewInstrImportanceIcon()">
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-tertiary);border-radius:10px;border:1px solid var(--border-color)">
+              <span style="font-size:11px;color:var(--text-muted);font-weight:600;min-width:36px">미리보기</span>
+              <span id="iiModalPreview" style="display:inline-flex;align-items:center;gap:7px;padding:4px 12px;border-radius:20px;font-size:12.5px;font-weight:700;background:#ef444422;border:1.5px solid #ef4444;color:#ef4444">
+                <span id="iiModalPreviewIcon" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#ef444422;border:1px solid #ef4444">
+                  <i data-lucide="flag" style="width:11px;height:11px;color:#ef4444"></i>
+                </span>
+                <span id="iiModalPreviewName">긴급</span>
+              </span>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px">빠른 아이콘 선택</div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px" id="iiIconQuickPick"></div>
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button class="btn" onclick="closeInstrImportanceModal()">취소</button>
+            <button class="btn btn-blue" onclick="saveInstrImportanceItem()">저장</button>
+          </div>
+        </div>
+      </div>
+
 
 
       <!-- ══════════════════════════════
