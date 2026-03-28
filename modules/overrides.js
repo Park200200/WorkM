@@ -1101,7 +1101,7 @@ function renderDailyScheduleList() {
   }).join('');
 }
 
-/* ③ 금일 업무실행 보고 리스트 (보고완료/보고없음 토글 + 관리 아이콘) */
+/* ③ 금일 업무실행 보고 리스트 */
 function renderDailyExecReport() {
   const me    = WS.currentUser;
   const tbody = document.getElementById('dr_exec_list');
@@ -1116,28 +1116,50 @@ function renderDailyExecReport() {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted)">배정된 업무가 없습니다</td></tr>';
     return;
   }
+
+  // 아이콘 SVG 헬퍼
+  function iconBtn(title, color, hoverBg, svgPath, onclick) {
+    return '<button title="' + title + '" onclick="' + onclick + '" '
+      + 'style="background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;color:' + color + ';transition:.15s"'
+      + ' onmouseover="this.style.background=\'' + hoverBg + '\';this.style.color=\'var(--text-primary)\'"'
+      + ' onmouseout="this.style.background=\'none\'">'
+      + '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + svgPath + '</svg>'
+      + '</button>';
+  }
+
   tbody.innerHTML = myTasks.map(t => {
     const baseScore = t.scoreBase !== undefined ? t.scoreBase : (t.performanceScore || '-');
     const reported  = !!t.drExecReported;
-    // 보고완료/보고없음 토글 버튼
+
+    // 팀리스트: 담당자들의 소속팀(dept) 목록
+    const ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+    const teams = [...new Set(
+      ids.map(id => (WS.getUser ? WS.getUser(id) : null)?.dept).filter(Boolean)
+    )].join(', ') || '-';
+
+    // 업무결과: 보고완료/보고없음 토글
     const repBtn = reported
-      ? '<button class="btn-sm btn-primary" style="font-size:11px;padding:3px 10px;background:var(--accent-green,#22c55e);border:none;border-radius:6px;color:#fff;cursor:pointer;font-weight:700" onclick="drToggleExecReport(' + t.id + ')">보고완료</button>'
-      : '<button class="btn-sm"            style="font-size:11px;padding:3px 10px;border:1.5px solid var(--border-color);border-radius:6px;background:transparent;color:var(--text-secondary);cursor:pointer;font-weight:600" onclick="drToggleExecReport(' + t.id + ')">보고없음</button>';
-    // 관리 – 작성 아이콘
-    const hasReport = !!(t.drExecReport && t.drExecReport.trim());
-    const editIcon = '<button title="보고 작성" onclick="openDrWrite(' + t.id + ')" '
-      + 'style="background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;'
-      + 'color:' + (hasReport ? 'var(--accent-blue)' : 'var(--text-muted)') + ';transition:.15s"'
-      + ' onmouseover="this.style.background=\'var(--bg-secondary)\'"'
-      + ' onmouseout="this.style.background=\'none\'">'
-      + '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
-      + '</button>';
+      ? '<button style="font-size:11px;padding:3px 10px;background:#22c55e;border:none;border-radius:6px;color:#fff;cursor:pointer;font-weight:700;white-space:nowrap" onclick="drToggleExecReport(' + t.id + ')">보고완료</button>'
+      : '<button style="font-size:11px;padding:3px 10px;border:1.5px solid var(--border-color);border-radius:6px;background:transparent;color:var(--text-secondary);cursor:pointer;font-weight:600;white-space:nowrap" onclick="drToggleExecReport(' + t.id + ')">보고없음</button>';
+
+    // 관리: 수정 + 삭제
+    const editBtn = iconBtn(
+      '수정', 'var(--accent-blue)', 'var(--accent-blue-light)',
+      '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+      'openDrWrite(' + t.id + ')'
+    );
+    const delBtn = iconBtn(
+      '삭제', '#ef4444', 'rgba(239,68,68,.12)',
+      '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>',
+      'drDeleteExecReport(' + t.id + ')'
+    );
+
     return '<tr>' +
       '<td style="font-weight:600">' + (t.isImportant ? '⭐ ' : '') + t.title + '</td>' +
-      '<td style="font-size:11.5px;color:var(--text-secondary);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (t.desc || '-') + '</td>' +
       '<td style="text-align:center;font-weight:700;color:var(--accent-blue)">' + baseScore + '</td>' +
+      '<td style="font-size:11px;color:var(--text-secondary)">' + teams + '</td>' +
       '<td style="text-align:center">' + repBtn + '</td>' +
-      '<td style="text-align:center">' + editIcon + '</td>' +
+      '<td style="text-align:center;white-space:nowrap">' + editBtn + delBtn + '</td>' +
     '</tr>';
   }).join('');
 }
@@ -1150,6 +1172,18 @@ function drToggleExecReport(taskId) {
   if (WS.saveTasks) WS.saveTasks();
   renderDailyExecReport();
   showToast('success', t.drExecReported ? '"' + t.title + '" 보고완료 처리' : '"' + t.title + '" 보고없음으로 변경');
+}
+
+/* 보고 삭제 (보고내용 초기화) */
+function drDeleteExecReport(taskId) {
+  const t = WS.getTask ? WS.getTask(taskId) : null;
+  if (!t) return;
+  if (!confirm('"' + t.title + '" 보고내용을 삭제하시겠습니까?')) return;
+  t.drExecReport   = '';
+  t.drExecReported = false;
+  if (WS.saveTasks) WS.saveTasks();
+  renderDailyExecReport();
+  showToast('success', '"' + t.title + '" 보고내용이 삭제되었습니다.');
 }
 
 /* 보고 작성 팝업 열기 */
