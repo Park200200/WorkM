@@ -857,6 +857,31 @@ function renderAttendancePill() {
       workEl.textContent = '--:--';
     }
   }
+
+  // ── 강조색 기반 색상 적용 ──
+  const accent = WS.currentAccent || localStorage.getItem('ws_current_accent') || '#4f6ef7';
+  const [aH, aS] = _hexToHSL(accent);
+  const bgCol  = _hslToHex(aH, Math.min(aS, 55), 14);  // 어두운 배경
+  const btnCol = _hslToHex(aH, Math.min(aS, 65), 24);  // 버튼 (약간 밝음)
+  const txtCol = _hslToHex(aH, 60, 88);                // 흰계열 텍스트
+  const lblCol = _hslToHex(aH, 45, 58);                // 라벨 중간 밝기
+
+  const pill = document.getElementById('attendancePill');
+  if (pill) {
+    pill.style.background = bgCol;
+    // 퇴근 버튼 색
+    const btn = pill.querySelector('[onclick="doCheckOut()"]');
+    if (btn) { btn.style.background = btnCol; btn._accentApplied = true; }
+    // 시간 텍스트 색
+    ['attCheckInTime','attNowTime','attWorkTime'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.color = txtCol;
+    });
+    // 라벨 색 (pill 안의 소형 label div들 - 첫 번째 div 자식)
+    pill.querySelectorAll('[style*="font-size:10px"]').forEach(el => {
+      el.style.color = lblCol;
+    });
+  }
 }
 
 // 1초마다 출퇴근 위젯 업데이트
