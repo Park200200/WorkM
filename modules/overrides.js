@@ -1439,3 +1439,152 @@ window.addEventListener('load', function() {
     });
   }, 500);
 });
+
+/* ══════════════════════════════════════════════════════════════
+   🏗️ 기타설정 CRUD – prompt() 제거, 전용 모달 기반으로 재구현
+   ▸ #orgModal    : 부서/직급/직책 추가·수정
+   ▸ #resultModal : 업무결과 추가·수정
+   근본 원인: openOrgModal이 prompt()를 씀, saveOrgItem/saveResultItem 미정의
+══════════════════════════════════════════════════════════════ */
+
+/* ── 내부 상태 ── */
+var _orgCtx = { type: null, id: null, mode: 'add' }; // add | edit
+
+/* ── orgModal 열기 (추가) ── */
+function openOrgModal(type) {
+  var labels = { dept:'부서', rank:'직급', pos:'직책' };
+  var label  = labels[type] || type;
+  _orgCtx.type = type; _orgCtx.id = null; _orgCtx.mode = 'add';
+  var titleEl = document.getElementById('orgModalTitle');
+  var labelEl = document.getElementById('orgModalLabel');
+  var inputEl = document.getElementById('orgModalInput');
+  if (titleEl) titleEl.textContent = label + ' 추가';
+  if (labelEl) labelEl.textContent = label + ' 이름';
+  if (inputEl) { inputEl.value = ''; inputEl.placeholder = label + ' 이름을 입력하세요'; }
+  var m = document.getElementById('orgModal');
+  if (m) { m.style.display = 'flex'; setTimeout(function(){ if(inputEl) inputEl.focus(); }, 50); }
+}
+
+/* ── orgModal 열기 (수정) ── */
+function editOrgItem(type, id) {
+  var lists  = { dept: WS.departments, rank: WS.ranks, pos: WS.positions, result: WS.taskResults };
+  var labels = { dept:'부서', rank:'직급', pos:'직책', result:'업무결과' };
+  var list   = lists[type];
+  if (!list) return;
+  var item = list.find(function(x){ return x.id === id; });
+  if (!item) return;
+
+  if (type === 'result') {
+    /* 업무결과는 resultModal 사용 */
+    _orgCtx.type = 'result'; _orgCtx.id = id; _orgCtx.mode = 'edit';
+    var titleEl = document.getElementById('resultModalTitle');
+    var nameEl  = document.getElementById('resultModalName');
+    if (titleEl) titleEl.textContent = '업무결과 수정';
+    if (nameEl)  nameEl.value = item.name || '';
+    var m = document.getElementById('resultModal');
+    if (m) { m.style.display = 'flex'; setTimeout(function(){ if(nameEl) nameEl.focus(); }, 50); }
+    return;
+  }
+
+  _orgCtx.type = type; _orgCtx.id = id; _orgCtx.mode = 'edit';
+  var label  = labels[type] || type;
+  var titleEl2 = document.getElementById('orgModalTitle');
+  var labelEl2 = document.getElementById('orgModalLabel');
+  var inputEl2 = document.getElementById('orgModalInput');
+  if (titleEl2) titleEl2.textContent = label + ' 수정';
+  if (labelEl2) labelEl2.textContent = label + ' 이름';
+  if (inputEl2) { inputEl2.value = item.name || ''; }
+  var m2 = document.getElementById('orgModal');
+  if (m2) { m2.style.display = 'flex'; setTimeout(function(){ if(inputEl2){ inputEl2.focus(); inputEl2.select(); } }, 50); }
+}
+
+/* ── orgModal 저장 ── */
+function saveOrgItem() {
+  var inputEl = document.getElementById('orgModalInput');
+  var name = inputEl ? inputEl.value.trim() : '';
+  if (!name) { showToast('error', '이름을 입력하세요'); return; }
+  var type = _orgCtx.type, id = _orgCtx.id, mode = _orgCtx.mode;
+
+  if (mode === 'add') {
+    if (type === 'dept') {
+      WS.departments.push({ id: Date.now(), name: name }); WS.saveDepts();
+    } else if (type === 'rank') {
+      var maxLv = WS.ranks.length ? Math.max.apply(null, WS.ranks.map(function(r){ return r.level || 0; })) : 0;
+      WS.ranks.push({ id: Date.now(), name: name, level: maxLv + 1 }); WS.saveRanks();
+    } else if (type === 'pos') {
+      WS.positions.push({ id: Date.now(), name: name }); WS.savePos();
+    }
+    showToast('success', name + ' 추가 완료!');
+  } else {
+    var lists = { dept: WS.departments, rank: WS.ranks, pos: WS.positions };
+    var list  = lists[type];
+    var item  = list ? list.find(function(x){ return x.id === id; }) : null;
+    if (item) {
+      item.name = name;
+      if (type === 'dept') WS.saveDepts();
+      else if (type === 'rank') WS.saveRanks();
+      else if (type === 'pos') WS.savePos();
+    }
+    showToast('info', '수정 완료!');
+  }
+  closeOrgModal();
+  renderPage_RankMgmt();
+}
+
+/* ── orgModal 닫기 ── */
+function closeOrgModal() {
+  var m = document.getElementById('orgModal');
+  if (m) m.style.display = 'none';
+  _orgCtx.type = null; _orgCtx.id = null; _orgCtx.mode = 'add';
+}
+
+/* ── resultModal 열기 (추가) ── */
+function openResultModal() {
+  _orgCtx.type = 'result'; _orgCtx.id = null; _orgCtx.mode = 'add';
+  var titleEl = document.getElementById('resultModalTitle');
+  var nameEl  = document.getElementById('resultModalName');
+  if (titleEl) titleEl.textContent = '업무결과 추가';
+  if (nameEl)  nameEl.value = '';
+  var m = document.getElementById('resultModal');
+  if (m) { m.style.display = 'flex'; setTimeout(function(){ if(nameEl) nameEl.focus(); }, 50); }
+}
+
+/* ── resultModal 저장 ── */
+function saveResultItem() {
+  var nameEl = document.getElementById('resultModalName');
+  var name   = nameEl ? nameEl.value.trim() : '';
+  if (!name) { showToast('error', '결과명을 입력하세요'); return; }
+  var id   = _orgCtx.id, mode = _orgCtx.mode;
+
+  if (mode === 'add') {
+    WS.taskResults.push({ id: Date.now(), name: name, icon: '' });
+    WS.saveTaskResults();
+    showToast('success', name + ' 추가 완료!');
+  } else {
+    var item = WS.taskResults.find(function(x){ return x.id === id; });
+    if (item) { item.name = name; WS.saveTaskResults(); }
+    showToast('info', '업무결과 수정 완료!');
+  }
+  closeResultModal();
+  renderPage_RankMgmt();
+}
+
+/* ── resultModal 닫기 ── */
+function closeResultModal() {
+  var m = document.getElementById('resultModal');
+  if (m) m.style.display = 'none';
+}
+
+/* ── deleteOrgItem – 확인 후 삭제 및 화면 갱신 ── */
+function deleteOrgItem(type, id) {
+  var labels = { dept:'부서', rank:'직급', pos:'직책', result:'업무결과', reportType:'진행보고 유형' };
+  var label  = labels[type] || type;
+  if (!confirm(label + ' 항목을 삭제하시겠습니까?')) return;
+  if (type === 'dept')   { WS.departments = WS.departments.filter(function(x){ return x.id !== id; }); WS.saveDepts(); }
+  else if (type === 'rank')   { WS.ranks = WS.ranks.filter(function(x){ return x.id !== id; }); WS.saveRanks(); }
+  else if (type === 'pos')    { WS.positions = WS.positions.filter(function(x){ return x.id !== id; }); WS.savePos(); }
+  else if (type === 'result') { WS.taskResults = WS.taskResults.filter(function(x){ return x.id !== id; }); WS.saveTaskResults(); }
+  else if (type === 'reportType') { WS.reportTypes = WS.reportTypes.filter(function(x){ return x.id !== id; }); WS.saveReportTypes(); }
+  renderPage_RankMgmt();
+  showToast('info', label + ' 삭제 완료!');
+}
