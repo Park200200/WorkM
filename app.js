@@ -463,8 +463,8 @@ function buildAssignedByMeBody() {
       importanceBadges = `<span style="font-size:11px;color:var(--text-muted)">-</span>`;
     }
 
-    return `<tr onclick="openTaskDetail(${t.id})" style="cursor:pointer">
-      <td><div style="display:flex;align-items:center;gap:6px">${t.isImportant?'<span class="star-icon"><i data-lucide="star"></i></span>':''}<span style="font-weight:600;font-size:12.5px">${t.title}</span></div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${t.team||''}</div></td>
+    return `<tr style="cursor:pointer">
+      <td onclick="editInstruction(${t.id})" title="클릭하여 수정"><div style="display:flex;align-items:center;gap:6px">${t.isImportant?'<span class="star-icon"><i data-lucide="star"></i></span>':''}<span style="font-weight:600;font-size:12.5px;text-decoration:underline dotted;text-underline-offset:3px">${t.title}</span></div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${t.team||''}</div></td>
       <td><div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,${assignee?.color||'#4f6ef7'},#9747ff)">${assignee?.avatar||'?'}</div></div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${assignee?.name||''}</div></td>
       <td><span class="status-badge status-${t.status}">${WS.getStatusLabel(t.status)}</span></td>
       <td><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ${fillCls}" style="width:${t.progress}%"></div></div><span class="progress-label">${t.progress}%</span></div></td>
@@ -3260,8 +3260,21 @@ function toggleStaffPwd() {
    📢 지시사항 모달
 ══════════════════════════════ */
 
-/* 모달 열기 */
-function openInstructionModal() {
+/* editInstruction: 내가 지시한 업무 클릭 시 수정모달 오픈 */
+function editInstruction(taskId) {
+  // ws_instructions에서 해당 id 찾기
+  const instr = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
+  const found = instr.find(i => i.id === taskId || i.id === Number(taskId));
+  if (found) {
+    openInstructionModal(found);
+  } else {
+    // ws_instructions에 없으면 기존 task 상세 열기
+    openTaskDetail(taskId);
+  }
+}
+
+/* 모달 열기 (editData 있으면 수정모드) */
+function openInstructionModal(editData) {
   const m = document.getElementById('instructionModal');
   if (!m) return;
 
@@ -3274,6 +3287,13 @@ function openInstructionModal() {
         `<option value="${d.id || d.name}">${d.name}</option>`
       ).join('');
   }
+
+  // ── 수정 모드 설정
+  window._instrEditId = editData ? (editData.id || null) : null;
+
+  // ── 모달 타이틀 변경
+  const titleEl = document.getElementById('instructionModalTitle');
+  if (titleEl) titleEl.textContent = window._instrEditId ? '지시사항 수정' : '지시사항 등록';
 
   // ── 담당자 드롭다운 채우기
   const assSel = document.getElementById('instrAssignee');
@@ -3342,8 +3362,15 @@ function openInstructionModal() {
   // ── 날짜 피커 초기화 (커스텀 캘린더 버튼 방식)
   const dueHidden  = document.getElementById('instrDueDate');
   const dueLabelEl = document.getElementById('instrDueDateLabel');
-  if (dueHidden)  dueHidden.value = '';
-  if (dueLabelEl) dueLabelEl.textContent = '날짜를 선택하세요';
+  if (dueHidden)  dueHidden.value = editData ? (editData.dueDate || '') : '';
+  if (dueLabelEl) {
+    if (editData && editData.dueDate) {
+      const [y,mo,d] = editData.dueDate.split('-');
+      dueLabelEl.textContent = `${y}년 ${parseInt(mo)}월 ${parseInt(d)}일`;
+    } else {
+      dueLabelEl.textContent = '날짜를 선택하세요';
+    }
+  }
 
   // ── 업무중요도 칩 생성 (ws_instr_importances 기반, 복수선택)
   window._instrImportances = [];
@@ -3372,7 +3399,74 @@ function openInstructionModal() {
     }
   }
   const impVal = document.getElementById('instrImportanceVal');
-  if (impVal) impVal.value = '';
+  if (impVal) impVal.value = editData ? (editData.importance || '') : '';
+
+  // ── 수정 모드: 기존 값으로 폼 채우기
+  if (editData) {
+    // 업무선택 — taskName으로 매칭
+    if (taskSel) {
+      const taskName = editData.taskName || '';
+      Array.from(taskSel.options).forEach(o => {
+        o.selected = (o.text === taskName || o.value === editData.taskId);
+      });
+    }
+    // 담당자선택
+    const assSel2 = document.getElementById('instrAssignee');
+    if (assSel2) {
+      Array.from(assSel2.options).forEach(o => {
+        o.selected = (String(o.value) === String(editData.assigneeId));
+      });
+    }
+    // 지시내용
+    const contEl = document.getElementById('instrContent');
+    if (contEl) contEl.value = editData.content || '';
+    // 보고내용 칩 기존 선택 복원
+    if (editData.report) {
+      window._instrSelectedReports = editData.report.split(',').map(s => s.trim()).filter(Boolean);
+      const rPicks = document.getElementById('instrReportPicks');
+      if (rPicks) {
+        rPicks.querySelectorAll('span[data-result]').forEach(el => {
+          if (window._instrSelectedReports.includes(el.dataset.result)) {
+            el.classList.add('selected');
+            el.style.background = el.style.borderColor;
+            el.style.color = '#ffffff';
+            el.style.fontWeight = '700';
+          }
+        });
+      }
+    }
+    // 보고절차 칩 기존 선택 복원
+    if (editData.procedure) {
+      window._instrProcedures = editData.procedure.split(' → ').map(s => s.trim()).filter(Boolean);
+      const procTxt = document.getElementById('instrProcedureText');
+      if (procTxt) procTxt.value = editData.procedure;
+      const pPicks = document.getElementById('instrProcedurePicks');
+      if (pPicks) {
+        pPicks.querySelectorAll('span[data-label]').forEach(el => {
+          if (window._instrProcedures.includes(el.dataset.label)) {
+            el.classList.add('active');
+            el.style.fontWeight = '700';
+          }
+        });
+      }
+    }
+    // 업무중요도 칩 기존 선택 복원
+    if (editData.importance) {
+      window._instrImportances = editData.importance.split(',').map(s => s.trim()).filter(Boolean);
+      const iPicks = document.getElementById('instrImportancePicks');
+      if (iPicks) {
+        iPicks.querySelectorAll('span[data-imp]').forEach(el => {
+          if (window._instrImportances.includes(el.dataset.imp)) {
+            el.classList.add('imp-on');
+            const bc = el.style.borderColor || '#ef4444';
+            el.style.background = bc;
+            el.style.color = '#ffffff';
+            el.style.fontWeight = '700';
+          }
+        });
+      }
+    }
+  }
 
   m.style.display = 'flex';
   setTimeout(refreshIcons, 50);
@@ -3505,35 +3599,61 @@ function saveInstruction() {
   const assigneeName = assSel.options[assSel.selectedIndex]?.text  || '';
   const attachments  = fileEl ? Array.from(fileEl.files).map(f => f.name) : [];
 
-  // ── ws_instructions 저장
+  // ── ws_instructions 저장 (신규 or 수정)
   const instr = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
-  const newId = Date.now();
   const curUserId = WS.currentUser ? WS.currentUser.id : 0;
-  const newItem = {
-    id: newId, taskId, taskName,
-    assigneeId: Number(assigneeId), assigneeName,
-    dueDate, content, report, procedure, importance, attachments,
-    status: 'progress', progress: 0, team: '',
-    isImportant: importance.length > 0,
-    author: WS.currentUser ? WS.currentUser.name : '관리자',
-    createdAt: new Date().toISOString()
-  };
-  instr.unshift(newItem);
-  localStorage.setItem('ws_instructions', JSON.stringify(instr));
+  const editId = window._instrEditId || null;
 
-  // ── WS.tasks에도 추가하여 getAssignedByMe()에 반영
-  if (!WS.tasks) WS.tasks = [];
-  WS.tasks.push({
-    id: newId,
-    title: taskName,
-    team: '',
-    assigneeIds: [Number(assigneeId)],
-    assignerId: curUserId,          // ← 현재 유저 ID (숫자)
-    dueDate,
-    status: 'progress',
-    progress: 0,
-    isImportant: newItem.isImportant
-  });
+  if (editId) {
+    // ── 수정 모드: 기존 항목 업데이트
+    const idx = instr.findIndex(i => i.id === editId || i.id === Number(editId));
+    if (idx !== -1) {
+      Object.assign(instr[idx], {
+        taskId, taskName,
+        assigneeId: Number(assigneeId), assigneeName,
+        dueDate, content, report, procedure, importance,
+        isImportant: importance.length > 0,
+        updatedAt: new Date().toISOString()
+      });
+    }
+    localStorage.setItem('ws_instructions', JSON.stringify(instr));
+
+    // WS.tasks 배열 내 해당 항목도 업데이트
+    if (WS.tasks) {
+      const ti = WS.tasks.findIndex(t => t.id === editId || t.id === Number(editId));
+      if (ti !== -1) {
+        Object.assign(WS.tasks[ti], {
+          title: taskName,
+          assigneeIds: [Number(assigneeId)],
+          dueDate,
+          isImportant: importance.length > 0
+        });
+      }
+    }
+  } else {
+    // ── 신규 등록
+    const newId = Date.now();
+    const newItem = {
+      id: newId, taskId, taskName,
+      assigneeId: Number(assigneeId), assigneeName,
+      dueDate, content, report, procedure, importance, attachments,
+      status: 'progress', progress: 0, team: '',
+      isImportant: importance.length > 0,
+      author: WS.currentUser ? WS.currentUser.name : '관리자',
+      createdAt: new Date().toISOString()
+    };
+    instr.unshift(newItem);
+    localStorage.setItem('ws_instructions', JSON.stringify(instr));
+
+    if (!WS.tasks) WS.tasks = [];
+    WS.tasks.push({
+      id: newId, title: taskName, team: '',
+      assigneeIds: [Number(assigneeId)],
+      assignerId: curUserId,
+      dueDate, status: 'progress', progress: 0,
+      isImportant: newItem.isImportant
+    });
+  }
 
   // ── 내가 지시한 업무 리스트 재렌더 (ID: accBody_byMe)
   const byMeEl = document.getElementById('accBody_byMe');
