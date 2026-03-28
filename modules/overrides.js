@@ -1,4 +1,4 @@
-/**
+﻿/**
  * modules/overrides.js
  * app.js 이후에 로드되어 특정 함수를 깨끗한 UTF-8 코드로 교체합니다.
  * 이 파일은 항상 UTF-8로만 저장/편집하세요.
@@ -864,6 +864,32 @@ function renderPage_RankMgmt() {
     }).join('') || emptyMsg;
   }
   if (iiCount) iiCount.textContent = (WS.instrImportances || []).length;
+
+  // 진행상태 렌더
+  WS.taskStatuses = JSON.parse(localStorage.getItem('ws_task_statuses')) || WS.taskStatuses || [];
+  var tsList  = document.getElementById('taskStatusList');
+  var tsCount = document.getElementById('taskStatusCount');
+  if (tsList) {
+    tsList.innerHTML = WS.taskStatuses.map(function(s) {
+      var c = s.color || '#06b6d4';
+      var hasLucide = s.icon && s.icon.length > 2;
+      var circleInner = hasLucide
+        ? '<i data-lucide="' + s.icon + '" style="width:12px;height:12px;color:' + c + '"></i>'
+        : '<span style="width:8px;height:8px;border-radius:50%;background:' + c + ';display:inline-block"></span>';
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:6px">' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:' + c + '22;border:1.5px solid ' + c + '">' + circleInner + '</span>' +
+          '<span style="font-size:13px;font-weight:600;color:var(--text-primary)">' + s.name + '</span>' +
+        '</div>' +
+        '<div style="display:flex;gap:4px">' +
+          '<button onclick="openTaskStatusModal(' + s.id + ')" title="수정" style="background:none;border:none;cursor:pointer;padding:3px 6px;font-size:13px">✏️</button>' +
+          '<button onclick="deleteTaskStatus(' + s.id + ')" title="삭제" style="background:none;border:none;cursor:pointer;padding:3px 6px;font-size:13px">🗑️</button>' +
+        '</div>' +
+      '</div>';
+    }).join('') || emptyMsg;
+    setTimeout(refreshIcons, 50);
+  }
+  if (tsCount) tsCount.textContent = (WS.taskStatuses || []).length;
 
   // 상세업무 렌더
   WS.detailTasks = JSON.parse(localStorage.getItem('ws_detail_tasks')) || WS.detailTasks || [];
@@ -2849,20 +2875,15 @@ function saveOrgItemModal() {
       var newId = Math.max.apply(null, [0].concat(WS.reportTypes.map(function(r){ return r.id; }))) + 1;
       WS.reportTypes.push({ id: newId, label: name, icon: icon, color: color });
     }
-    WS.saveReportTypes();
-    showToast('success', editId ? '진행보고 유형이 수정되었습니다.' : '"' + name + '" 진행보고 유형이 추가되었습니다.');
+    WS.saveReportTypes && WS.saveReportTypes();
+    showToast('success', editId ? '진행보고 유형이 수정되었습니다.' : '진행보고 유형이 추가되었습니다.');
   }
   if (typeof closeModalDirect === 'function') closeModalDirect('orgItemModal');
   if (typeof renderPage_RankMgmt === 'function') renderPage_RankMgmt();
 }
 
-/* updateDetailTaskCheckStyle - updateDetailTaskCheck 별칭 */
 function updateDetailTaskCheckStyle(cb) { updateDetailTaskCheck(cb); }
 
-/* ══════════════════════════════════════════════
-   orgItemModal – 아이콘 그리드 선택 UI
-   selectOimIcon(name) : 그리드 항목 클릭시 호출
-══════════════════════════════════════════════ */
 var _OIM_ICONS = [
   'play-circle','stop-circle','check-circle','x-circle','alert-circle','info',
   'search','wrench','settings','zap','flag','star','bookmark','bell',
@@ -3112,3 +3133,110 @@ function closeInstrImportanceModal() {
   var m = document.getElementById('instrImportanceModal');
   if (m) m.style.display = 'none';
 }
+
+/* ══════════════════════════════
+   📊 진행상태 관리 CRUD
+══════════════════════════════ */
+var _TS_ICONS = [
+  {icon:'activity',label:'활동'},{icon:'refresh-cw',label:'진행'},{icon:'loader',label:'로딩'},
+  {icon:'play-circle',label:'시작'},{icon:'clock',label:'시간'},{icon:'trending-up',label:'상승'},
+  {icon:'check-circle-2',label:'완료'},{icon:'check-circle',label:'체크'},{icon:'circle-check',label:'확인'},
+  {icon:'badge-check',label:'배지'},{icon:'shield-check',label:'보호'},{icon:'star',label:'별'},
+  {icon:'x-circle',label:'취소'},{icon:'ban',label:'금지'},{icon:'slash',label:'슬래시'},
+  {icon:'minus-circle',label:'마이너스'},{icon:'circle-slash',label:'금지원'},{icon:'x-octagon',label:'정지'},
+  {icon:'pause-circle',label:'일시정지'},{icon:'pause',label:'보류'},{icon:'hand',label:'대기'},
+  {icon:'hourglass',label:'모래시계'},{icon:'alarm-clock',label:'알람'},{icon:'lock',label:'잠금'},
+  {icon:'alert-circle',label:'경고'},{icon:'alert-triangle',label:'주의'},{icon:'alert-octagon',label:'오류'},
+  {icon:'thumbs-down',label:'실패'},{icon:'flame',label:'긴급'},{icon:'skull',label:'치명'}
+];
+var _TS_DEFAULTS = [
+  {id:1,name:'진행중',icon:'activity',color:'#06b6d4'},
+  {id:2,name:'완료',icon:'check-circle-2',color:'#22c55e'},
+  {id:3,name:'취소',icon:'x-circle',color:'#ef4444'},
+  {id:4,name:'보류',icon:'pause-circle',color:'#6b7280'},
+  {id:5,name:'실패',icon:'alert-triangle',color:'#f59e0b'}
+];
+var _tsCtx = {mode:'add',id:null};
+function _initTaskStatuses() {
+  if (!WS.taskStatuses) WS.taskStatuses = JSON.parse(localStorage.getItem('ws_task_statuses')) || [];
+  if (WS.taskStatuses.length === 0) {
+    WS.taskStatuses = _TS_DEFAULTS.slice();
+    localStorage.setItem('ws_task_statuses', JSON.stringify(WS.taskStatuses));
+  }
+}
+function _saveTaskStatuses() { localStorage.setItem('ws_task_statuses', JSON.stringify(WS.taskStatuses)); }
+function openTaskStatusModal(editId) {
+  _initTaskStatuses();
+  var m = document.getElementById('taskStatusModal'); if (!m) return;
+  var quickPick = document.getElementById('tsIconQuickPick');
+  if (quickPick) {
+    quickPick.innerHTML = _TS_ICONS.map(function(ic) {
+      return '<span onclick="(function(){document.getElementById(\'tsModalIcon\').value=\''+ic.icon+'\';previewTaskStatusIcon();})()" title="'+ic.label+'" '+
+        'style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:7px;border:1.5px solid var(--border-color);cursor:pointer;background:var(--bg-tertiary);transition:all .15s" '+
+        'onmouseover="this.style.borderColor=\'var(--accent-blue)\';this.style.background=\'rgba(79,110,247,.1)\'" '+
+        'onmouseout="this.style.borderColor=\'var(--border-color)\';this.style.background=\'var(--bg-tertiary)\'">'
+        +'<i data-lucide="'+ic.icon+'" style="width:14px;height:14px;color:var(--text-secondary)"></i></span>';
+    }).join('');
+    setTimeout(refreshIcons, 30);
+  }
+  if (editId) {
+    _tsCtx = {mode:'edit',id:editId};
+    var item = WS.taskStatuses.find(function(x){return x.id===editId;});
+    if (item) {
+      document.getElementById('tsModalName').value = item.name||'';
+      document.getElementById('tsModalIcon').value = item.icon||'';
+      document.getElementById('tsModalColor').value = item.color||'#06b6d4';
+      document.getElementById('tsModalColorPicker').value = item.color||'#06b6d4';
+    }
+    document.getElementById('taskStatusModalTitle').textContent = '진행상태 수정';
+  } else {
+    _tsCtx = {mode:'add',id:null};
+    document.getElementById('tsModalName').value = '';
+    document.getElementById('tsModalIcon').value = '';
+    document.getElementById('tsModalColor').value = '#06b6d4';
+    document.getElementById('tsModalColorPicker').value = '#06b6d4';
+    document.getElementById('taskStatusModalTitle').textContent = '진행상태 추가';
+  }
+  previewTaskStatusIcon();
+  m.style.display = 'flex';
+  setTimeout(function(){var el=document.getElementById('tsModalName');if(el)el.focus();},50);
+}
+function previewTaskStatusIcon() {
+  var icon = (document.getElementById('tsModalIcon')||{}).value||'activity';
+  var color = (document.getElementById('tsModalColor')||{}).value||'#06b6d4';
+  var name = (document.getElementById('tsModalName')||{}).value||'진행중';
+  if (!color.startsWith('#')) color = '#06b6d4';
+  var prev=document.getElementById('tsModalPreview');
+  var prevIcon=document.getElementById('tsModalPreviewIcon');
+  var prevName=document.getElementById('tsModalPreviewName');
+  if (prev){prev.style.background=color+'22';prev.style.borderColor=color;prev.style.color=color;}
+  if (prevIcon){prevIcon.style.background=color+'22';prevIcon.style.borderColor=color;prevIcon.innerHTML='<i data-lucide="'+icon+'" style="width:11px;height:11px;color:'+color+'"></i>';setTimeout(refreshIcons,20);}
+  if (prevName) prevName.textContent=name||'진행중';
+}
+function saveTaskStatusItem() {
+  var name=(document.getElementById('tsModalName')||{}).value;
+  var icon=(document.getElementById('tsModalIcon')||{}).value;
+  var color=(document.getElementById('tsModalColor')||{}).value;
+  if (!name||!name.trim()){showToast('error','상태명을 입력하세요');return;}
+  name=name.trim(); icon=icon?icon.trim():''; color=(color&&color.startsWith('#'))?color.trim():'#06b6d4';
+  _initTaskStatuses();
+  if (_tsCtx.mode==='add') {
+    WS.taskStatuses.push({id:Date.now(),name:name,icon:icon,color:color});
+    showToast('success',name+' 추가 완료!');
+  } else {
+    var item=WS.taskStatuses.find(function(x){return x.id===_tsCtx.id;});
+    if (item){item.name=name;item.icon=icon;item.color=color;}
+    showToast('info','진행상태 수정 완료!');
+  }
+  _saveTaskStatuses();
+  closeTaskStatusModal();
+  renderPage_RankMgmt();
+}
+function deleteTaskStatus(id) {
+  _initTaskStatuses();
+  WS.taskStatuses=WS.taskStatuses.filter(function(x){return x.id!==id;});
+  _saveTaskStatuses();
+  showToast('info','삭제되었습니다.');
+  renderPage_RankMgmt();
+}
+function closeTaskStatusModal() { var m=document.getElementById('taskStatusModal');if(m)m.style.display='none'; }
