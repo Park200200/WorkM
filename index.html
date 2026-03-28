@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -936,6 +936,41 @@
     </div>
     <div class="modal-foot">
       <button class="btn btn-blue" style="width:100%" onclick="closeModalDirect('taskAssignModal')">완료</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════
+     모달 - 기타관리 항목 추가/수정 (공통)
+════════════════════════ -->
+<div class="modal-overlay" id="orgItemModal" style="display:none" onclick="closeModal('orgItemModal',event)">
+  <div class="modal-box" style="max-width:380px">
+    <div class="modal-head">
+      <div class="modal-title" id="oim_title">항목 추가</div>
+      <button class="modal-close" onclick="closeModalDirect('orgItemModal')">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
+      <div class="form-group">
+        <label class="form-label">이름</label>
+        <input class="form-input" id="oim_name" placeholder="이름 입력">
+      </div>
+      <div class="form-group" id="oim_icon_group" style="display:none">
+        <label class="form-label">아이콘 <span style="font-size:10px;color:var(--text-muted)">(Lucide 아이콘명)</span></label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="form-input" id="oim_icon" placeholder="play-circle, search, wrench …" oninput="previewOimIcon()" style="flex:1">
+          <span id="oim_icon_preview" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border-color)">
+            <i id="oim_icon_el" data-lucide="message-square" style="width:16px;height:16px"></i>
+          </span>
+        </div>
+      </div>
+      <div class="form-group" id="oim_color_group" style="display:none">
+        <label class="form-label">색상</label>
+        <input type="color" id="oim_color" value="#4f6ef7" style="width:100%;height:36px;border:none;border-radius:8px;cursor:pointer">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModalDirect('orgItemModal')">취소</button>
+      <button class="btn btn-blue" onclick="saveOrgItemModal()">저장</button>
     </div>
   </div>
 </div>

@@ -2536,3 +2536,84 @@ function renderTaskAssignStaffList(taskId) {
 
   container.innerHTML = html;
 }
+/* ══════════════════════════════════════════════
+   orgItemModal – 상세업무/진행보고유형 추가·수정 공통
+══════════════════════════════════════════════ */
+function openDetailTaskModal(editId) {
+  window._orgItemType   = 'detailTask';
+  window._orgItemEditId = editId || null;
+  var el = document.getElementById('oim_title');
+  if (el) el.textContent = editId ? '상세업무 수정' : '상세업무 추가';
+  var gI = document.getElementById('oim_icon_group'), gC = document.getElementById('oim_color_group');
+  if (gI) gI.style.display = 'none';
+  if (gC) gC.style.display = 'none';
+  WS.detailTasks = JSON.parse(localStorage.getItem('ws_detail_tasks')) || WS.detailTasks || [];
+  var item = editId ? WS.detailTasks.find(function(d){ return d.id === editId; }) : null;
+  var inp = document.getElementById('oim_name');
+  if (inp) { inp.value = item ? (item.name || '') : ''; }
+  if (typeof openModal === 'function') openModal('orgItemModal');
+  setTimeout(function(){ var i2 = document.getElementById('oim_name'); if(i2) i2.focus(); }, 100);
+}
+
+function openReportTypeModal(editId) {
+  window._orgItemType   = 'reportType';
+  window._orgItemEditId = editId || null;
+  var el = document.getElementById('oim_title');
+  if (el) el.textContent = editId ? '진행보고 유형 수정' : '진행보고 유형 추가';
+  var gI = document.getElementById('oim_icon_group'), gC = document.getElementById('oim_color_group');
+  if (gI) gI.style.display = '';
+  if (gC) gC.style.display = '';
+  WS.reportTypes = JSON.parse(localStorage.getItem('ws_report_types')) || WS.reportTypes || [];
+  var item = editId ? WS.reportTypes.find(function(r){ return r.id === editId; }) : null;
+  var nm = document.getElementById('oim_name');
+  var ic = document.getElementById('oim_icon');
+  var cl = document.getElementById('oim_color');
+  if (nm) nm.value = item ? (item.label || item.name || '') : '';
+  if (ic) ic.value = item ? (item.icon || 'message-square') : 'message-square';
+  if (cl) cl.value = item ? (item.color || '#4f6ef7') : '#4f6ef7';
+  previewOimIcon();
+  if (typeof openModal === 'function') openModal('orgItemModal');
+  setTimeout(function(){ var i2 = document.getElementById('oim_name'); if(i2) i2.focus(); }, 100);
+}
+
+function editReportType(id) { openReportTypeModal(id); }
+
+function previewOimIcon() {
+  var icVal = (document.getElementById('oim_icon') || {}).value || 'message-square';
+  var el = document.getElementById('oim_icon_el');
+  if (!el) return;
+  el.setAttribute('data-lucide', icVal.trim() || 'message-square');
+  if (typeof refreshIcons === 'function') refreshIcons();
+}
+
+function saveOrgItemModal() {
+  var name = (document.getElementById('oim_name') || {}).value;
+  if (!name || !name.trim()) { showToast('error', '이름을 입력하세요.'); return; }
+  name = name.trim();
+  var type   = window._orgItemType;
+  var editId = window._orgItemEditId;
+  if (type === 'detailTask') {
+    WS.detailTasks = JSON.parse(localStorage.getItem('ws_detail_tasks')) || [];
+    if (editId) {
+      WS.detailTasks = WS.detailTasks.map(function(d){ return d.id === editId ? Object.assign({}, d, {name: name}) : d; });
+    } else {
+      WS.detailTasks.push({ id: Date.now(), name: name });
+    }
+    _saveDetailTasks();
+    showToast('success', editId ? '상세업무가 수정되었습니다.' : '"' + name + '" 상세업무가 추가되었습니다.');
+  } else if (type === 'reportType') {
+    var icon  = ((document.getElementById('oim_icon')  || {}).value  || 'message-square').trim();
+    var color = ((document.getElementById('oim_color') || {}).value  || '#4f6ef7');
+    WS.reportTypes = JSON.parse(localStorage.getItem('ws_report_types')) || WS.reportTypes || [];
+    if (editId) {
+      WS.reportTypes = WS.reportTypes.map(function(r){ return r.id === editId ? Object.assign({}, r, {label: name, icon: icon, color: color}) : r; });
+    } else {
+      var newId = Math.max.apply(null, [0].concat(WS.reportTypes.map(function(r){ return r.id; }))) + 1;
+      WS.reportTypes.push({ id: newId, label: name, icon: icon, color: color });
+    }
+    WS.saveReportTypes();
+    showToast('success', editId ? '진행보고 유형이 수정되었습니다.' : '"' + name + '" 진행보고 유형이 추가되었습니다.');
+  }
+  if (typeof closeModalDirect === 'function') closeModalDirect('orgItemModal');
+  if (typeof renderPage_RankMgmt === 'function') renderPage_RankMgmt();
+}
