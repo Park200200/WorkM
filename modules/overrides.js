@@ -1661,3 +1661,87 @@ function renderAssignmentByStaff(targetEl) {
     '</table>';
   refreshIcons();
 }
+
+/* ══════════════════════════════════════════════
+   담당직원 배정 모달 – 토글형 체크박스 리스트
+   openTaskAssignModal / renderTaskAssignStaffList / selectTaskAssignee 재정의
+══════════════════════════════════════════════ */
+function openTaskAssignModal(taskId) {
+  var t = WS.getTask(taskId);
+  if (!t) return;
+  window._assigningTaskId = taskId;
+
+  var titleEl = document.getElementById('tam_task_title');
+  var teamEl  = document.getElementById('tam_task_team');
+  if (titleEl) titleEl.textContent = t.title;
+  if (teamEl)  teamEl.textContent  = t.team || '';
+
+  renderTaskAssignStaffList(taskId);
+  if (typeof openModal === 'function') openModal('taskAssignModal');
+  if (typeof refreshIcons === 'function') refreshIcons();
+}
+
+function renderTaskAssignStaffList(taskId) {
+  var t = WS.getTask(taskId);
+  var container = document.getElementById('tam_staff_list');
+  if (!container || !t) return;
+
+  if (!Array.isArray(t.assigneeIds)) {
+    t.assigneeIds = t.assigneeId ? [t.assigneeId] : [];
+  }
+
+  var selectedCount = t.assigneeIds.length;
+  var html = '<div style="margin-bottom:8px;font-size:11px;color:var(--text-muted);text-align:right">' +
+    '선택됨 <strong style="color:var(--accent-blue)">' + selectedCount + '</strong>명</div>';
+
+  html += WS.users.map(function(u) {
+    var isSelected = t.assigneeIds.includes(u.id);
+    var accentColor = (WS.currentAccent && WS.currentAccent[0]) ? WS.currentAccent[0] : 'var(--accent-blue)';
+    return (
+      '<div onclick="selectTaskAssignee(' + taskId + ',' + u.id + ')" ' +
+      'style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;' +
+        'border:2px solid ' + (isSelected ? accentColor : 'transparent') + ';' +
+        'background:' + (isSelected ? 'rgba(79,110,247,0.07)' : 'var(--bg-tertiary)') + ';' +
+        'cursor:pointer;transition:all 0.18s;margin-bottom:6px;user-select:none">' +
+        '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,' + (u.color || '#4f6ef7') + ',#9747ff);' +
+          'color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+          u.avatar +
+        '</div>' +
+        '<div style="flex:1">' +
+          '<div style="font-weight:700;font-size:13px;color:var(--text-primary)">' + u.name + '</div>' +
+          '<div style="font-size:10.5px;color:var(--text-muted)">' + u.role + ' · ' + u.dept + '</div>' +
+        '</div>' +
+        /* 체크박스 스타일 토글 */
+        '<div style="width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.18s;' +
+          'background:' + (isSelected ? accentColor : 'var(--bg-primary)') + ';' +
+          'border:2px solid ' + (isSelected ? accentColor : 'var(--border-color)') + '">' +
+          (isSelected ? '<svg viewBox="0 0 24 24" width="13" height="13" stroke="#fff" stroke-width="3" fill="none"><polyline points="20 6 9 17 4 12"/></svg>' : '') +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+
+  container.innerHTML = html;
+}
+
+function selectTaskAssignee(taskId, staffId) {
+  var t = WS.getTask(taskId);
+  if (!t) return;
+
+  if (!Array.isArray(t.assigneeIds)) {
+    t.assigneeIds = t.assigneeId ? [t.assigneeId] : [];
+  }
+
+  var idx = t.assigneeIds.indexOf(staffId);
+  if (idx !== -1) {
+    t.assigneeIds.splice(idx, 1);
+    showToast('info', '담당자 배정이 해제되었습니다.');
+  } else {
+    t.assigneeIds.push(staffId);
+    var u = WS.getUser(staffId);
+    showToast('success', (u ? u.name : '') + '님이 담당자로 배정되었습니다.');
+  }
+  WS.saveTasks();
+  renderTaskAssignStaffList(taskId);
+  renderPage_Tasks();
+}
