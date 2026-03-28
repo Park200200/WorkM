@@ -1184,6 +1184,95 @@ function saveDrWrite() {
 /* openDailyReportModal에서 renderDailyScheduleList 호출 제거용 재정의는 이미 위에 있음 */
 
 /* ══════════════════════════════════════════════
+   openEditTaskModal – 점수/업무결과 입력값 복원
+   ① WS.taskResults를 localStorage에서 재로드하여 최신 기타관리 데이터 반영
+   ② scoreBase(기본)/scoreMin(최소)/scoreMax(최대) 모두 복원
+   ③ reportContent → nt_result select 복원
+══════════════════════════════════════════════ */
+function openEditTaskModal(id) {
+  const t = WS.getTask(id);
+  if (!t) return;
+  window._editingTaskId = id;
+
+  // ① 업무결과 드롭다운용 최신 데이터 재로드 (기타관리 > 업무결과 반영)
+  WS.taskResults = JSON.parse(localStorage.getItem('ws_task_results')) || WS.taskResults;
+
+  openNewTaskModal('edit');
+
+  setTimeout(function () {
+    function setVal(elId, val) {
+      const el = document.getElementById(elId);
+      if (el) el.value = (val !== undefined && val !== null) ? val : '';
+    }
+    setVal('nt_title',     t.title);
+    setVal('nt_desc',      t.desc);
+    setVal('nt_priority',  t.priority || 'medium');
+    setVal('nt_team',      t.team);
+    setVal('nt_start',     t.startedAt || '');
+    setVal('nt_due',       t.dueDate);
+    // ② 점수 3개 모두 복원 (scoreBase 우선, 없으면 score)
+    setVal('nt_score',     t.scoreBase !== undefined ? t.scoreBase : (t.score || ''));
+    setVal('nt_score_min', t.scoreMin !== undefined ? t.scoreMin : '');
+    setVal('nt_score_max', t.scoreMax !== undefined ? t.scoreMax : '');
+    // ③ 업무결과 select 복원 (기타관리 데이터 기준)
+    const resultEl = document.getElementById('nt_result');
+    if (resultEl) {
+      // 최신 옵션으로 재구성
+      const resultOpts = (WS.taskResults || []).map(r =>
+        '<option value="' + r.name + '">' + (r.icon ? r.icon + ' ' : '') + r.name + '</option>'
+      ).join('');
+      resultEl.innerHTML = '<option value="">-- 선택 --</option>' + resultOpts;
+      resultEl.value = t.reportContent || '';
+    }
+    const impEl = document.getElementById('nt_important');
+    if (impEl) impEl.checked = !!t.isImportant;
+    window._processTags = Array.isArray(t.processTags) ? [...t.processTags] : [];
+    if (typeof renderProcessTags === 'function') renderProcessTags();
+  }, 0);
+}
+
+/* saveEditTask – scoreBase/scoreMin/scoreMax도 함께 저장 */
+function saveEditTask() {
+  const id = window._editingTaskId;
+  if (!id) return;
+  const title = document.getElementById('nt_title')?.value.trim();
+  if (!title) { showToast('error', '제목을 입력하세요'); return; }
+
+  const parseNum = elId => {
+    const v = document.getElementById(elId)?.value;
+    return (v === '' || v === null || v === undefined) ? undefined : (parseInt(v) || 0);
+  };
+
+  WS.tasks = WS.tasks.map(t => {
+    if (t.id !== id) return t;
+    const newScoreBase = parseNum('nt_score');
+    const newScoreMin  = parseNum('nt_score_min');
+    const newScoreMax  = parseNum('nt_score_max');
+    return Object.assign({}, t, {
+      title,
+      desc:           document.getElementById('nt_desc')?.value || t.desc,
+      priority:       document.getElementById('nt_priority')?.value || t.priority,
+      team:           document.getElementById('nt_team')?.value || t.team,
+      startedAt:      document.getElementById('nt_start')?.value || t.startedAt,
+      dueDate:        document.getElementById('nt_due')?.value || t.dueDate,
+      reportContent:  document.getElementById('nt_result')?.value || '',
+      score:          newScoreBase !== undefined ? newScoreBase : (t.score || 0),
+      scoreBase:      newScoreBase !== undefined ? newScoreBase : t.scoreBase,
+      scoreMin:       newScoreMin  !== undefined ? newScoreMin  : t.scoreMin,
+      scoreMax:       newScoreMax  !== undefined ? newScoreMax  : t.scoreMax,
+      isImportant:    document.getElementById('nt_important')?.checked ?? t.isImportant,
+      processTags:    window._processTags || t.processTags,
+    });
+  });
+  WS.saveTasks();
+  window._editingTaskId = null;
+  window._processTags   = [];
+  if (typeof closeModalDirect === 'function') closeModalDirect('newTaskModal');
+  if (typeof renderPage_Tasks === 'function') renderPage_Tasks();
+  showToast('success', '업무가 저장되었습니다.');
+}
+
+/* ══════════════════════════════════════════════
    renderTaskListView – 업무목록 탭 그리드
    컬럼: 업무제목(+팀) / 업무설명 / 기본점수 / 업무결과 / 관리
 ══════════════════════════════════════════════ */
