@@ -1577,16 +1577,15 @@ function closeResultModal() {
   if (m) m.style.display = 'none';
 }
 
-/* ── deleteOrgItem – 확인 후 삭제 및 화면 갱신 ── */
+/* ── deleteOrgItem – confirm 없이 즉시 삭제 ── */
 function deleteOrgItem(type, id) {
   var labels = { dept:'부서', rank:'직급', pos:'직책', result:'업무결과', reportType:'진행보고 유형' };
   var label  = labels[type] || type;
-  if (!confirm(label + ' 항목을 삭제하시겠습니까?')) return;
-  if (type === 'dept')   { WS.departments = WS.departments.filter(function(x){ return x.id !== id; }); WS.saveDepts(); }
-  else if (type === 'rank')   { WS.ranks = WS.ranks.filter(function(x){ return x.id !== id; }); WS.saveRanks(); }
-  else if (type === 'pos')    { WS.positions = WS.positions.filter(function(x){ return x.id !== id; }); WS.savePos(); }
-  else if (type === 'result') { WS.taskResults = WS.taskResults.filter(function(x){ return x.id !== id; }); WS.saveTaskResults(); }
-  else if (type === 'reportType') { WS.reportTypes = WS.reportTypes.filter(function(x){ return x.id !== id; }); WS.saveReportTypes(); }
+  if (type === 'dept')       { WS.departments = WS.departments.filter(function(x){ return x.id !== id; }); WS.saveDepts(); }
+  else if (type === 'rank')  { WS.ranks = WS.ranks.filter(function(x){ return x.id !== id; }); WS.saveRanks(); }
+  else if (type === 'pos')   { WS.positions = WS.positions.filter(function(x){ return x.id !== id; }); WS.savePos(); }
+  else if (type === 'result'){ WS.taskResults = WS.taskResults.filter(function(x){ return x.id !== id; }); WS.saveTaskResults(); }
+  else if (type === 'reportType'){ WS.reportTypes = WS.reportTypes.filter(function(x){ return x.id !== id; }); WS.saveReportTypes(); }
   renderPage_RankMgmt();
   showToast('info', label + ' 삭제 완료!');
 }
