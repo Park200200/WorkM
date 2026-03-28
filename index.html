@@ -946,21 +946,9 @@
       </div>
     </section>
 
-<script>
-/* 캐시 무효화: 매 로드마다 타임스탬프 적용, 역순 삽입으로 실행 순서 보장 */
-(function(){
-  var ts = Date.now();
-  var ref = document.currentScript;
-  var parent = ref.parentNode;
-  // 역순으로 삽입 → DOM에서 올바른 순서(data→app→overrides)가 됨
-  ['modules/overrides.js','app.js','data.js'].forEach(function(src){
-    var s = document.createElement('script');
-    s.src = src + '?v=' + ts;
-    s.async = false; // 실행 순서 보장
-    parent.insertBefore(s, ref.nextSibling);
-  });
-})();
-</script>
+<script src="data.js?v=20260328j"></script>
+<script src="app.js?v=20260328j"></script>
+<script src="modules/overrides.js?v=20260328j"></script>
 
 <!-- ── 커스텀 날짜 픽커 팝업 ── -->
 <div id="customDatePicker" style="display:none;position:fixed;z-index:9999">
