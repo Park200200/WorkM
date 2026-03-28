@@ -2042,20 +2042,17 @@ function renderTaskAssignStaffList(taskId) {
     t.assigneeIds = t.assigneeId ? [t.assigneeId] : [];
   }
 
-  // CSS 변수에서 강조색 가져오기
-  var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
-
   var selectedCount = t.assigneeIds.length;
   var html = '<div style="margin-bottom:8px;font-size:11px;color:var(--text-muted);text-align:right">' +
-    '선택됨 <strong style="color:' + accentColor + '">' + selectedCount + '</strong>명</div>';
+    '선택됨 <strong style="color:var(--accent-primary)">' + selectedCount + '</strong>명</div>';
 
   html += WS.users.map(function(u) {
     var isSelected = t.assigneeIds.includes(u.id);
     return (
       '<div onclick="selectTaskAssignee(' + taskId + ',' + u.id + ')" ' +
       'style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;' +
-        'border:2px solid ' + (isSelected ? accentColor : 'transparent') + ';' +
-        'background:' + (isSelected ? 'color-mix(in srgb,' + accentColor + ' 9%,var(--bg-primary))' : 'var(--bg-tertiary)') + ';' +
+        'border:2px solid ' + (isSelected ? 'var(--accent-primary)' : 'transparent') + ';' +
+        'background:' + (isSelected ? 'color-mix(in srgb,var(--accent-primary) 10%,var(--bg-primary))' : 'var(--bg-tertiary)') + ';' +
         'cursor:pointer;transition:all 0.18s;margin-bottom:6px;user-select:none">' +
         '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,' + (u.color || '#4f6ef7') + ',#9747ff);' +
           'color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
@@ -2066,8 +2063,7 @@ function renderTaskAssignStaffList(taskId) {
           '<div style="font-size:10.5px;color:var(--text-muted)">' + u.role + ' · ' + u.dept + '</div>' +
         '</div>' +
         '<div style="width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.18s;' +
-          'background:' + (isSelected ? accentColor : 'var(--bg-primary)') + ';' +
-          'border:2px solid ' + (isSelected ? accentColor : 'var(--border-color)') + '">' +
+          (isSelected ? 'background:var(--accent-primary);border:2px solid var(--accent-primary)' : 'background:var(--bg-primary);border:2px solid var(--border-color)') + '">' +
           (isSelected ? '<svg viewBox="0 0 24 24" width="13" height="13" stroke="#fff" stroke-width="3" fill="none"><polyline points="20 6 9 17 4 12"/></svg>' : '') +
         '</div>' +
       '</div>'
