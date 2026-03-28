@@ -431,26 +431,38 @@ function buildAssignedByMeBody() {
   const tasks = WS.getAssignedByMe();
   if(tasks.length===0) return '<div class="empty-state"><div class="es-icon"><i data-lucide="inbox"></i></div><div class="es-text">지시한 업무가 없습니다</div></div>';
 
-  // 지시 중요도 목록 로드
-  const importances = JSON.parse(localStorage.getItem('ws_instr_importances')) || [];
-
-  // 중요도 아이콘 배지 HTML 생성
-  const importanceBadges = importances.length > 0
-    ? importances.map(imp => {
-        const c = imp.color || '#ef4444';
-        const hasIcon = imp.icon && imp.icon.length > 2;
-        const inner = hasIcon
-          ? `<i data-lucide="${imp.icon}" style="width:12px;height:12px;color:${c}"></i>`
-          : `<span style="width:7px;height:7px;border-radius:50%;background:${c};display:inline-block"></span>`;
-        return `<span title="${imp.name}" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${c}22;border:1.5px solid ${c};cursor:default;flex-shrink:0">${inner}</span>`;
-      }).join('')
-    : `<span style="font-size:11px;color:var(--text-muted)">-</span>`;
+  // 전체 지시 중요도 목록 로드
+  const allImportances = JSON.parse(localStorage.getItem('ws_instr_importances')) || [];
 
   const rows = tasks.map(t => {
     const _ids2 = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
     const assignee = WS.getUser(_ids2[0]);
     const dd = WS.getDdayBadge(t.dueDate);
     const fillCls = t.status==='delay'?'delay':t.status==='done'?'done':'';
+
+    // ── 이 task에 지정된 중요도만 필터링하여 배지 생성
+    const taskImpNames = t.importance
+      ? t.importance.split(',').map(s => s.trim()).filter(Boolean)
+      : [];
+
+    let importanceBadges;
+    if (taskImpNames.length > 0) {
+      // importance 텍스트와 일치하는 항목만 표시
+      const matched = taskImpNames.map(name => {
+        const imp = allImportances.find(i => i.name === name);
+        const c = imp ? (imp.color || '#ef4444') : '#9ca3af';
+        const icon = imp ? imp.icon : '';
+        const hasIcon = icon && icon.length > 2;
+        const inner = hasIcon
+          ? `<i data-lucide="${icon}" style="width:12px;height:12px;color:${c}"></i>`
+          : `<span style="width:7px;height:7px;border-radius:50%;background:${c};display:inline-block"></span>`;
+        return `<span title="${name}" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${c}22;border:1.5px solid ${c};cursor:default;flex-shrink:0">${inner}</span>`;
+      }).join('');
+      importanceBadges = matched || `<span style="font-size:11px;color:var(--text-muted)">-</span>`;
+    } else {
+      importanceBadges = `<span style="font-size:11px;color:var(--text-muted)">-</span>`;
+    }
+
     return `<tr onclick="openTaskDetail(${t.id})" style="cursor:pointer">
       <td><div style="display:flex;align-items:center;gap:6px">${t.isImportant?'<span class="star-icon"><i data-lucide="star"></i></span>':''}<span style="font-weight:600;font-size:12.5px">${t.title}</span></div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${t.team||''}</div></td>
       <td><div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,${assignee?.color||'#4f6ef7'},#9747ff)">${assignee?.avatar||'?'}</div></div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${assignee?.name||''}</div></td>
@@ -462,6 +474,7 @@ function buildAssignedByMeBody() {
   }).join('');
   return `<div style="padding:8px"><table class="task-table"><thead><tr><th>업무명</th><th>담당자</th><th>상태</th><th>진행률</th><th>마감일</th><th>지시중요도</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
+
 
 
 /* ?? ?뱀뀡2: 내가 吏?쒕컺? 업무 ?? */
