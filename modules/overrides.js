@@ -804,6 +804,23 @@ function renderPage_RankMgmt() {
   if (resultCount) resultCount.textContent = WS.taskResults.length;
   if (rtCount)     rtCount.textContent     = WS.reportTypes.length;
 
+  // 상세업무 렌더
+  WS.detailTasks = JSON.parse(localStorage.getItem('ws_detail_tasks')) || WS.detailTasks || [];
+  var dtList  = document.getElementById('detailTaskList');
+  var dtCount = document.getElementById('detailTaskCount');
+  if (dtList) {
+    dtList.innerHTML = WS.detailTasks.map(function(d) {
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:6px">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--text-primary)">' + d.name + '</div>' +
+        '<div style="display:flex;gap:4px">' +
+          '<button onclick="editDetailTask(' + d.id + ')" title="수정" style="background:none;border:none;cursor:pointer;padding:3px 6px;font-size:13px">✏️</button>' +
+          '<button onclick="deleteDetailTask(' + d.id + ')" title="삭제" style="background:none;border:none;cursor:pointer;padding:3px 6px;font-size:13px">🗑️</button>' +
+        '</div>' +
+      '</div>';
+    }).join('') || emptyMsg;
+  }
+  if (dtCount) dtCount.textContent = (WS.detailTasks || []).length;
+
   // 결과 드롭다운 채우기
   const resultSel = document.getElementById('nt_result');
   if (resultSel) {
@@ -1368,9 +1385,7 @@ function renderTaskListView(targetEl) {
               (t.isImportant ? '<span class="star-icon"><i data-lucide="star"></i></span>' : '') +
               ' ' + t.title +
             '</div>' +
-            '<button class="btn-sub-add" onclick="openNewTaskModal(' + t.id + ')" title="하위 업무 추가">' +
-              '<i data-lucide="plus" style="width:12px;height:12px"></i>' +
-            '</button>' +
+
           '</div>' +
           (teamStr ? '<div style="font-size:11px;color:var(--text-muted);padding-left:' + indent + 'px;margin-top:2px">' + teamStr + '</div>' : '') +
         '</td>' +
@@ -1795,6 +1810,44 @@ function renderTaskAssignStaffList(taskId) {
   container.innerHTML = html;
 }
 
+/* ══════════════════════════════════════════════
+   상세업무 CRUD (기타설정 > 기타관리)
+   localStorage key: ws_detail_tasks
+   WS.detailTasks: [{id, name}]
+══════════════════════════════════════════════ */
+function _saveDetailTasks() {
+  WS.detailTasks = WS.detailTasks || [];
+  localStorage.setItem('ws_detail_tasks', JSON.stringify(WS.detailTasks));
+}
+
+function openDetailTaskModal(editId) {
+  WS.detailTasks = JSON.parse(localStorage.getItem('ws_detail_tasks')) || [];
+  var existing = editId ? WS.detailTasks.find(function(d){ return d.id === editId; }) : null;
+  var cur = existing ? existing.name : '';
+  var name = window.prompt(editId ? '상세업무 이름 수정' : '추가할 상세업무 이름을 입력하세요', cur);
+  if (name === null) return;
+  name = name.trim();
+  if (!name) { showToast('error', '상세업무 이름을 입력하세요.'); return; }
+  if (editId) {
+    WS.detailTasks = WS.detailTasks.map(function(d){ return d.id === editId ? Object.assign({}, d, {name: name}) : d; });
+    showToast('success', '상세업무가 수정되었습니다.');
+  } else {
+    var newId = Date.now();
+    WS.detailTasks.push({ id: newId, name: name });
+    showToast('success', '"' + name + '" 상세업무가 추가되었습니다.');
+  }
+  _saveDetailTasks();
+  renderPage_RankMgmt();
+}
+
+function editDetailTask(id) { openDetailTaskModal(id); }
+
+function deleteDetailTask(id) {
+  WS.detailTasks = (WS.detailTasks || []).filter(function(d){ return d.id !== id; });
+  _saveDetailTasks();
+  renderPage_RankMgmt();
+  showToast('info', '상세업무가 삭제되었습니다.');
+}
 /* ══════════════════════════════════════════════
    진행보고 순서 설정 UI
    ① renderProcessOrderUI  – 두 박스 모두 렌더
