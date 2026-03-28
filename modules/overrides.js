@@ -1039,3 +1039,104 @@ function _getSelectedCollaboratorIds() {
   ).map(cb => parseInt(cb.value)).filter(Boolean);
 }
 
+/* ══════════════════════════════════════════════
+   일보작성 모달 – openDailyReportModal 재정의
+   ① 금일 업무 리스트 (기존 renderDailyReportTasks)
+   ② 금일 스케줄 리스트
+   ③ 금일 업무실행 보고 리스트
+══════════════════════════════════════════════ */
+function openDailyReportModal() {
+  const modal = document.getElementById('dailyReportModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  refreshIcons();
+
+  const now  = new Date();
+  const days = ['일','월','화','수','목','금','토'];
+  const dateStr = now.getFullYear() + '년 ' + (now.getMonth()+1) + '월 ' + now.getDate() + '일 (' + days[now.getDay()] + ')';
+  const dateLabelEl = document.getElementById('dr_date_label');
+  if (dateLabelEl) dateLabelEl.textContent = dateStr;
+
+  function updateDrTime() {
+    const t = new Date();
+    const p = n => String(n).padStart(2,'0');
+    const el = document.getElementById('dr_live_time');
+    if (el) el.textContent = p(t.getHours()) + ':' + p(t.getMinutes()) + ':' + p(t.getSeconds());
+  }
+  updateDrTime();
+  if (window._drLiveTimer) clearInterval(window._drLiveTimer);
+  window._drLiveTimer = setInterval(updateDrTime, 1000);
+
+  renderDailyReportTasks();
+  renderDailyScheduleList();
+  renderDailyExecReport();
+}
+
+/* ② 금일 스케줄 리스트 */
+function renderDailyScheduleList() {
+  const me    = WS.currentUser;
+  const tbody  = document.getElementById('dr_sched_list');
+  const countEl = document.getElementById('dr_sched_count');
+  if (!tbody || !me) return;
+
+  const schedules = (WS.tasks || []).filter(t => t.assignerId === me.id);
+  if (countEl) countEl.textContent = schedules.length + '건';
+
+  if (schedules.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted)">금일 등록된 스케줄이 없습니다</td></tr>';
+    return;
+  }
+  tbody.innerHTML = schedules.map(t => {
+    const ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : [];
+    const collab = ids.filter(id => id !== me.id)
+      .map(id => (WS.getUser ? WS.getUser(id) : null)?.name).filter(Boolean).join(', ') || '-';
+    const st = WS.getStatusLabel ? WS.getStatusLabel(t.status) : (t.status || '-');
+    return '<tr>' +
+      '<td style="font-weight:600">' + (t.isImportant ? '⭐ ' : '') + t.title + '</td>' +
+      '<td style="font-size:11px">' + collab + '</td>' +
+      '<td style="font-size:11px">' + (t.dueDate || t.startDate || '-') + '</td>' +
+      '<td style="font-size:11px;color:var(--text-secondary)">' + (t.desc || '-') + '</td>' +
+      '<td><span class="status-badge status-' + (t.status||'waiting') + '">' + st + '</span></td>' +
+    '</tr>';
+  }).join('');
+}
+
+/* ③ 금일 업무실행 보고 리스트 */
+function renderDailyExecReport() {
+  const me    = WS.currentUser;
+  const tbody = document.getElementById('dr_exec_list');
+  if (!tbody || !me) return;
+
+  const myTasks = (WS.tasks || []).filter(t => {
+    const ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+    return ids.includes(me.id);
+  });
+
+  if (myTasks.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">배정된 업무가 없습니다</td></tr>';
+    return;
+  }
+  tbody.innerHTML = myTasks.map(t => {
+    const baseScore = t.scoreBase !== undefined ? t.scoreBase : (t.performanceScore || '-');
+    const saved = t.drExecReport || '';
+    return '<tr>' +
+      '<td style="font-weight:600">' + (t.isImportant ? '⭐ ' : '') + t.title + '</td>' +
+      '<td style="font-size:11.5px;color:var(--text-secondary)">' + (t.desc || '-') + '</td>' +
+      '<td style="text-align:center;font-weight:700;color:var(--accent-blue)">' + baseScore + '</td>' +
+      '<td><textarea data-tid="' + t.id + '" class="form-input dr-exec-input" rows="2" ' +
+        'placeholder="금일 진행 상황을 입력하세요..." ' +
+        'style="font-size:11.5px;resize:vertical;min-height:44px;width:100%">' + saved + '</textarea></td>' +
+    '</tr>';
+  }).join('');
+}
+
+/* 보고 저장 */
+function drSaveExecReport() {
+  let cnt = 0;
+  document.querySelectorAll('.dr-exec-input').forEach(ta => {
+    const t = WS.getTask ? WS.getTask(parseInt(ta.dataset.tid)) : null;
+    if (t) { t.drExecReport = ta.value; cnt++; }
+  });
+  if (cnt > 0 && WS.saveTasks) WS.saveTasks();
+  showToast('success', cnt + '건 보고내용이 저장되었습니다.');
+}
