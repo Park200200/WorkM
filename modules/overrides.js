@@ -1224,7 +1224,7 @@ function openEditTaskModal(id) {
       if (el) el.value = (val !== undefined && val !== null) ? val : '';
     }
     setVal('nt_title',     t.title);
-    setVal('nt_desc',      t.desc);
+    // setVal('nt_desc', ...) 제거 - 체크박스로 대체
     setVal('nt_priority',  t.priority || 'medium');
     setVal('nt_team',      t.team);
     setVal('nt_start',     t.startedAt || '');
@@ -1247,7 +1247,9 @@ function openEditTaskModal(id) {
     window._processTags = Array.isArray(t.processTags) ? [...t.processTags] : [];
     // ④ 팀 선택 체크박스 복원
     renderTeamCheckboxes(t.team || '');
-    // ⑤ 진행보고 순서 복원
+    // ⑤ 상세업무 체크박스 복원
+    if (typeof renderDetailTaskCheckboxes === 'function') renderDetailTaskCheckboxes(t.desc || '');
+    // ⑥ 진행보고 순서 복원
     if (typeof renderProcessOrderUI === 'function') {
       renderProcessOrderUI(Array.isArray(t.processTags) ? t.processTags : []);
     }
@@ -1300,7 +1302,10 @@ function updateTeamCheckStyle(cb) {
   if (!_orig) return;
   window.openNewTaskModal = function(mode, parentId, assigneeId) {
     _orig.call(window, mode, parentId, assigneeId);
-    setTimeout(function() { renderTeamCheckboxes(''); }, 10);
+    setTimeout(function() {
+      renderTeamCheckboxes('');
+      if (typeof renderDetailTaskCheckboxes === 'function') renderDetailTaskCheckboxes('');
+    }, 10);
   };
 })();
 
@@ -1323,7 +1328,7 @@ function saveEditTask() {
     const newScoreMax  = parseNum('nt_score_max');
     return Object.assign({}, t, {
       title,
-      desc:           document.getElementById('nt_desc')?.value || t.desc,
+      desc: (typeof _getSelectedDetailTasks === 'function' ? _getSelectedDetailTasks() : '') || t.desc || '',
       priority:       document.getElementById('nt_priority')?.value || t.priority,
       team: (function() {
         var cbs = document.querySelectorAll('#nt_teams_checkboxes input[type=checkbox]:checked');
@@ -1849,12 +1854,49 @@ function deleteDetailTask(id) {
   showToast('info', '상세업무가 삭제되었습니다.');
 }
 /* ══════════════════════════════════════════════
-   진행보고 순서 설정 UI
-   ① renderProcessOrderUI  – 두 박스 모두 렌더
-   ② addProcessOrder       – 더블클릭으로 순서에 추가
-   ③ removeProcessOrder    – 클릭으로 순서에서 제거
-   ④ openNewTaskModal 래핑  – 모달 열릴 때 자동 초기화
+   상세 업무 리스트 체크박스 UI
 ══════════════════════════════════════════════ */
+function renderDetailTaskCheckboxes(currentDesc) {
+  var container = document.getElementById('nt_desc_checkboxes');
+  if (!container) return;
+  WS.detailTasks = JSON.parse(localStorage.getItem('ws_detail_tasks')) || WS.detailTasks || [];
+  var selected = (currentDesc || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
+  if (!WS.detailTasks.length) {
+    container.innerHTML = '<div style="padding:10px;font-size:11px;color:var(--text-muted)">상세업무 없음 (기타설정에서 추가)</div>';
+    return;
+  }
+  container.innerHTML = WS.detailTasks.map(function(d) {
+    var checked = selected.includes(d.name);
+    var uid = 'dtcb_' + d.id;
+    return '<label for="' + uid + '" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;cursor:pointer;user-select:none;' +
+      'background:' + (checked ? 'color-mix(in srgb,' + accent + ' 8%,var(--bg-primary))' : 'transparent') + ';' +
+      'transition:background 0.15s" onchange="updateDetailTaskCheck(this.querySelector(\'input\'))">' +
+      '<input type="checkbox" id="' + uid + '" value="' + d.name + '"' + (checked ? ' checked' : '') +
+        ' style="width:14px;height:14px;accent-color:' + accent + ';cursor:pointer;flex-shrink:0">' +
+      '<span style="font-size:12.5px;font-weight:600;color:var(--text-primary)">' + d.name + '</span>' +
+      '</label>';
+  }).join('');
+}
+
+function updateDetailTaskCheck(cb) {
+  if (!cb) return;
+  var label = cb.closest('label');
+  if (!label) return;
+  var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
+  label.style.background = cb.checked ? 'color-mix(in srgb,' + accent + ' 8%,var(--bg-primary))' : 'transparent';
+}
+
+function _getSelectedDetailTasks() {
+  var cbs = document.querySelectorAll('#nt_desc_checkboxes input[type=checkbox]:checked');
+  var arr = [];
+  cbs.forEach(function(c){ arr.push(c.value); });
+  return arr.join(', ');
+}
+
+/* ══════════════════════════════════════════════
+   진행보고 순서 설정 UI
+*/
 
 /* 전역 진행 순서 배열 (저장 시 processTags에 매핑) */
 window._processOrder = window._processOrder || [];
@@ -1899,8 +1941,9 @@ function _renderProcessTypeList() {
     return;
   }
   list.innerHTML = types.map(function(t) {
-    var alreadyAdded = window._processOrder.indexOf(t.name) !== -1;
-    return '<div ondblclick="addProcessOrder(\'' + t.name.replace(/'/g, "\\'") + '\')" ' +
+    var tName = t.label || t.name || '';
+    var alreadyAdded = window._processOrder.indexOf(tName) !== -1;
+    return '<div ondblclick="addProcessOrder(\'' + tName.replace(/'/g, "\\'") + '\')" ' +
       'style="padding:8px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;' +
       'color:var(--text-primary);display:flex;align-items:center;gap:8px;transition:all 0.15s;' +
       'opacity:' + (alreadyAdded ? '0.35' : '1') + ';' +
@@ -1909,7 +1952,7 @@ function _renderProcessTypeList() {
       'onmouseleave="this.style.background=\'var(--bg-primary)\'" ' +
       'id="ptype_' + t.id + '">' +
       (t.icon ? '<span style="font-size:14px">' + t.icon + '</span>' : '<span style="width:16px;height:16px;border-radius:50%;background:var(--bg-tertiary);display:inline-block"></span>') +
-      '<span>' + t.name + '</span>' +
+      '<span>' + tName + '</span>' +
       (alreadyAdded ? '<span style="font-size:10px;color:var(--text-muted);margin-left:auto">추가됨</span>' : '') +
     '</div>';
   }).join('');
