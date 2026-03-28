@@ -596,41 +596,119 @@
 
       <!-- 지시사항 모달 -->
       <div class="modal-overlay" id="instructionModal" style="display:none" onclick="if(event.target===this)closeInstructionModal()">
-        <div class="modal-box" style="max-width:640px;width:96vw;max-height:88vh;display:flex;flex-direction:column">
+        <div class="modal-box" style="max-width:580px;width:96vw;max-height:92vh;display:flex;flex-direction:column">
           <div class="modal-head">
             <div style="display:flex;align-items:center;gap:10px">
-              <i data-lucide="megaphone" style="width:18px;height:18px;color:var(--accent-blue)"></i>
-              <div class="modal-title">지시사항</div>
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;background:var(--accent-blue);box-shadow:0 2px 10px var(--accent-blue)44">
+                <i data-lucide="megaphone" style="width:16px;height:16px;color:#fff"></i>
+              </span>
+              <div class="modal-title" id="instructionModalTitle">지시사항 등록</div>
             </div>
             <button class="modal-close" onclick="closeInstructionModal()">✕</button>
           </div>
-          <div class="modal-body" style="padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:14px">
-            <!-- 작성 폼 -->
-            <div style="background:var(--bg-tertiary);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px">
-              <div style="font-size:13px;font-weight:700;color:var(--text-secondary);margin-bottom:2px">새 지시사항 등록</div>
-              <div class="form-group" style="margin-bottom:0">
-                <input class="form-input" id="instrTitle" placeholder="제목을 입력하세요" style="margin-bottom:8px">
-                <textarea class="form-textarea" id="instrContent" rows="3" placeholder="지시 내용을 입력하세요..." style="width:100%;resize:vertical;min-height:80px"></textarea>
+
+          <div class="modal-body" style="overflow-y:auto;display:flex;flex-direction:column;gap:14px">
+
+            <!-- 업무선택 + 담당자선택 2열 -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div class="form-group" style="margin:0">
+                <label class="form-label">
+                  <i data-lucide="briefcase" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+                  업무선택 *
+                </label>
+                <select class="form-input" id="instrTask" style="cursor:pointer">
+                  <option value="">-- 업무를 선택하세요 --</option>
+                </select>
               </div>
-              <div style="display:flex;justify-content:flex-end">
-                <button class="btn btn-blue" onclick="saveInstruction()">
-                  <i data-lucide="plus" style="width:13px;height:13px;margin-right:4px;vertical-align:middle"></i>등록
+              <div class="form-group" style="margin:0">
+                <label class="form-label">
+                  <i data-lucide="user" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+                  담당자선택 *
+                </label>
+                <select class="form-input" id="instrAssignee" style="cursor:pointer">
+                  <option value="">-- 담당자를 선택하세요 --</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 지시완료일 -->
+            <div class="form-group" style="margin:0">
+              <label class="form-label">
+                <i data-lucide="calendar" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+                지시완료일 *
+              </label>
+              <input type="date" class="form-input" id="instrDueDate" style="cursor:pointer">
+            </div>
+
+            <!-- 지시내용 -->
+            <div class="form-group" style="margin:0">
+              <label class="form-label">
+                <i data-lucide="file-text" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+                지시내용 *
+              </label>
+              <textarea class="form-textarea" id="instrContent" rows="4"
+                placeholder="지시 내용을 상세히 입력하세요..."
+                style="width:100%;resize:vertical;min-height:90px;line-height:1.6"></textarea>
+            </div>
+
+            <!-- 보고내용 (업무결과 리스트에서 선택) -->
+            <div class="form-group" style="margin:0">
+              <label class="form-label">
+                <i data-lucide="clipboard-check" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+                보고내용
+                <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-left:4px">(기타설정 > 업무결과 선택)</span>
+              </label>
+              <!-- 업무결과 칩 선택 영역 (JS에서 WS.taskResults 기반 생성) -->
+              <div id="instrReportPicks" style="display:flex;flex-wrap:wrap;gap:7px;min-height:36px;padding:4px 0"></div>
+              <!-- 선택된 값 표시 (hidden input 역할) -->
+              <input type="hidden" id="instrReport">
+            </div>
+
+            <!-- 보고절차 -->
+            <div class="form-group" style="margin:0">
+              <label class="form-label">
+                <i data-lucide="list-ordered" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+                보고절차
+              </label>
+              <div style="display:flex;flex-wrap:wrap;gap:7px" id="instrProcedurePicks">
+                <!-- JS에서 ws_report_types 기반으로 동적 생성 -->
+              </div>
+              <input class="form-input" id="instrProcedureText" placeholder="직접 입력 또는 위 항목 선택"
+                style="margin-top:8px" readonly>
+            </div>
+
+            <!-- 첨부파일 -->
+            <div class="form-group" style="margin:0">
+              <label class="form-label">
+                <i data-lucide="paperclip" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+                첨부파일
+              </label>
+              <div style="position:relative">
+                <input type="file" id="instrFile" multiple accept="*/*" style="display:none"
+                  onchange="renderInstrFileList()">
+                <button onclick="document.getElementById('instrFile').click()"
+                  style="display:flex;align-items:center;gap:7px;width:100%;padding:9px 14px;border-radius:10px;border:1.5px dashed var(--border-color);background:var(--bg-tertiary);cursor:pointer;color:var(--text-secondary);font-size:13px;transition:border-color .2s"
+                  onmouseover="this.style.borderColor='var(--accent-blue)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                  <i data-lucide="upload" style="width:14px;height:14px;opacity:.6"></i>
+                  파일 선택 (여러 개 가능)
                 </button>
+                <div id="instrFileList" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
               </div>
             </div>
-            <!-- 목록 -->
-            <div id="instructionList" style="display:flex;flex-direction:column;gap:8px">
-              <div style="text-align:center;padding:30px;color:var(--text-muted)">
-                <i data-lucide="inbox" style="width:28px;height:28px;display:block;margin:0 auto 8px;opacity:.4"></i>
-                등록된 지시사항이 없습니다
-              </div>
-            </div>
-          </div>
+
+          </div><!-- /modal-body -->
+
           <div class="modal-foot">
-            <button class="btn" onclick="closeInstructionModal()">닫기</button>
+            <button class="btn" onclick="closeInstructionModal()">
+              <i data-lucide="x" style="width:13px;height:13px;margin-right:4px;vertical-align:middle"></i>닫기
+            </button>
+            <button class="btn btn-blue" onclick="saveInstruction()">
+              <i data-lucide="send" style="width:13px;height:13px;margin-right:4px;vertical-align:middle"></i>저장
+            </button>
           </div>
         </div>
       </div>
+
 
       <!-- ══════════════════════════════
            👤 개인설정 페이지

@@ -3230,63 +3230,223 @@ function toggleStaffPwd() {
 /* ══════════════════════════════
    📢 지시사항 모달
 ══════════════════════════════ */
+
+/* 모달 열기 */
 function openInstructionModal() {
-  renderInstructionList();
-  document.getElementById('instructionModal').style.display = 'flex';
-  refreshIcons();
+  const m = document.getElementById('instructionModal');
+  if (!m) return;
+
+  // ── 업무 드롭다운 채우기
+  const taskSel = document.getElementById('instrTask');
+  if (taskSel) {
+    taskSel.innerHTML = '<option value="">-- 업무를 선택하세요 --</option>' +
+      (WS.tasks || []).map(t =>
+        `<option value="${t.id}">${t.title}</option>`
+      ).join('');
+  }
+
+  // ── 담당자 드롭다운 채우기
+  const assSel = document.getElementById('instrAssignee');
+  if (assSel) {
+    assSel.innerHTML = '<option value="">-- 담당자를 선택하세요 --</option>' +
+      (WS.users || []).map(u =>
+        `<option value="${u.id}">${u.name} (${u.dept || ''})</option>`
+      ).join('');
+  }
+
+  // ── 보고절차 칩 생성 (진행보고 유형 기반)
+  const pickWrap = document.getElementById('instrProcedurePicks');
+  if (pickWrap) {
+    const types = WS.reportTypes || [];
+    pickWrap.innerHTML = types.map(rt => {
+      const c = rt.color || '#4f6ef7';
+      return `<span onclick="_toggleInstrProcedure('${rt.label}',this)"
+        data-label="${rt.label}"
+        style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;
+               font-size:11.5px;font-weight:600;cursor:pointer;transition:all .15s;
+               border:1.5px solid ${c};color:${c};background:transparent"
+        onmouseover="this.style.background='${c}22'" onmouseout="if(!this.classList.contains('active'))this.style.background='transparent'">
+        <i data-lucide="${rt.icon||'circle'}" style="width:11px;height:11px;color:${c}"></i>
+        ${rt.label}
+      </span>`;
+    }).join('');
+  }
+
+  // ── 보고내용 칩 생성 (업무결과 리스트 기반, 단일 선택)
+  const reportPicks = document.getElementById('instrReportPicks');
+  if (reportPicks) {
+    const results = JSON.parse(localStorage.getItem('ws_task_results')) || WS.taskResults || [];
+    if (results.length === 0) {
+      reportPicks.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">기타설정 > 업무결과에서 항목을 추가하세요</span>';
+    } else {
+      reportPicks.innerHTML = results.map(r => {
+        const c = r.color || '#6b7280';
+        const hasLucide = r.icon && r.icon.length > 2;
+        const iconHtml = hasLucide
+          ? `<i data-lucide="${r.icon}" style="width:11px;height:11px;color:${c}"></i>`
+          : (r.icon ? `<span>${r.icon}</span>` : '');
+        return `<span onclick="_selectInstrReport('${r.name}',this)"
+          data-result="${r.name}"
+          style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;
+                 font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;
+                 border:1.5px solid ${c};color:${c};background:transparent"
+          onmouseover="if(!this.classList.contains('selected'))this.style.background='${c}22'"
+          onmouseout="if(!this.classList.contains('selected'))this.style.background='transparent'">
+          ${iconHtml}${r.name}
+        </span>`;
+      }).join('');
+    }
+  }
+
+  // ── 폼 초기화
+  const reportInput = document.getElementById('instrReport');
+  if (reportInput) reportInput.value = '';
+  window._instrSelectedReport = '';
+  const fields = ['instrContent','instrProcedureText'];
+  fields.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  const fileInput = document.getElementById('instrFile');
+  if (fileInput) fileInput.value = '';
+  const fileList = document.getElementById('instrFileList');
+  if (fileList) fileList.innerHTML = '';
+
+  // ── 오늘 날짜 기본값
+  const dueEl = document.getElementById('instrDueDate');
+  if (dueEl) dueEl.value = new Date().toISOString().slice(0,10);
+
+  m.style.display = 'flex';
+  setTimeout(refreshIcons, 50);
 }
+
+/* 보고절차 칩 토글 */
+window._instrProcedures = [];
+function _toggleInstrProcedure(label, el) {
+  if (!window._instrProcedures) window._instrProcedures = [];
+  const idx = window._instrProcedures.indexOf(label);
+  if (idx === -1) {
+    window._instrProcedures.push(label);
+    el.classList.add('active');
+    el.style.background = el.style.borderColor + '22';
+    var c = el.style.borderColor || '#4f6ef7';
+    el.style.background = c.replace('#','') + '22';
+    el.style.fontWeight = '700';
+  } else {
+    window._instrProcedures.splice(idx,1);
+    el.classList.remove('active');
+    el.style.background = 'transparent';
+    el.style.fontWeight = '600';
+  }
+  const txt = document.getElementById('instrProcedureText');
+  if (txt) txt.value = window._instrProcedures.join(' → ');
+}
+
+/* 보고내용 단일 선택 (업무결과 리스트 기반) */
+window._instrSelectedReport = '';
+function _selectInstrReport(name, el) {
+  // 기존 선택 모두 해제
+  const wrap = document.getElementById('instrReportPicks');
+  if (wrap) {
+    wrap.querySelectorAll('span[data-result]').forEach(function(s) {
+      s.classList.remove('selected');
+      s.style.background  = 'transparent';
+      s.style.fontWeight  = '600';
+      s.style.boxShadow   = 'none';
+    });
+  }
+  // 현재 클릭한 항목 활성화
+  if (window._instrSelectedReport === name) {
+    // 이미 선택된 항목을 다시 클릭 → 선택 해제
+    window._instrSelectedReport = '';
+    const inp = document.getElementById('instrReport');
+    if (inp) inp.value = '';
+  } else {
+    window._instrSelectedReport = name;
+    el.classList.add('selected');
+    el.style.background = el.style.borderColor + '33';
+    el.style.fontWeight = '700';
+    el.style.boxShadow  = '0 0 0 2px ' + el.style.borderColor + '66';
+    const inp = document.getElementById('instrReport');
+    if (inp) inp.value = name;
+  }
+}
+
+/* 첨부파일 목록 렌더 */
+function renderInstrFileList() {
+  const fileInput = document.getElementById('instrFile');
+  const listEl    = document.getElementById('instrFileList');
+  if (!fileInput || !listEl) return;
+  const files = Array.from(fileInput.files);
+  listEl.innerHTML = files.map((f, i) =>
+    `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;
+      background:var(--bg-tertiary);border:1px solid var(--border-color);font-size:11.5px;color:var(--text-secondary)">
+      <i data-lucide="file" style="width:11px;height:11px"></i>
+      ${f.name}
+    </span>`
+  ).join('');
+  setTimeout(refreshIcons, 30);
+}
+
+/* 모달 닫기 */
 function closeInstructionModal() {
-  document.getElementById('instructionModal').style.display = 'none';
+  const m = document.getElementById('instructionModal');
+  if (m) m.style.display = 'none';
+  window._instrProcedures = [];
 }
+
+/* 저장 */
 function saveInstruction() {
-  const title = document.getElementById('instrTitle').value.trim();
-  const content = document.getElementById('instrContent').value.trim();
-  if (!title) { showToast('error', '제목을 입력하세요.'); return; }
+  const taskSel  = document.getElementById('instrTask');
+  const assSel   = document.getElementById('instrAssignee');
+  const dueEl    = document.getElementById('instrDueDate');
+  const contEl   = document.getElementById('instrContent');
+  const repEl    = document.getElementById('instrReport');
+  const procEl   = document.getElementById('instrProcedureText');
+  const fileEl   = document.getElementById('instrFile');
+
+  const taskId   = taskSel   ? taskSel.value   : '';
+  const assigneeId = assSel  ? assSel.value    : '';
+  const dueDate  = dueEl     ? dueEl.value     : '';
+  const content  = contEl    ? contEl.value.trim() : '';
+  const report   = repEl     ? repEl.value.trim()  : '';
+  const procedure= procEl    ? procEl.value    : '';
+
+  if (!taskId)   { showToast('error', '업무를 선택하세요.');    return; }
+  if (!assigneeId){ showToast('error', '담당자를 선택하세요.'); return; }
+  if (!dueDate)  { showToast('error', '지시완료일을 입력하세요.'); return; }
+  if (!content)  { showToast('error', '지시내용을 입력하세요.'); return; }
+
+  const taskName     = taskSel.options[taskSel.selectedIndex]?.text || '';
+  const assigneeName = assSel.options[assSel.selectedIndex]?.text  || '';
+
+  // 첨부파일 이름 목록 (실제 업로드는 서버 없으므로 이름만 저장)
+  const attachments = fileEl
+    ? Array.from(fileEl.files).map(f => f.name)
+    : [];
+
   const instructions = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
   instructions.unshift({
-    id: Date.now(),
-    title,
+    id:           Date.now(),
+    taskId:       Number(taskId),
+    taskName,
+    assigneeId:   Number(assigneeId),
+    assigneeName,
+    dueDate,
     content,
-    author: WS.currentUser.name,
-    date: new Date().toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
+    report,
+    procedure,
+    attachments,
+    author:       WS.currentUser ? WS.currentUser.name : '관리자',
+    createdAt:    new Date().toISOString()
   });
   localStorage.setItem('ws_instructions', JSON.stringify(instructions));
-  document.getElementById('instrTitle').value = '';
-  document.getElementById('instrContent').value = '';
-  renderInstructionList();
-  showToast('success', '지시사항이 등록되었습니다.');
+
+  showToast('success', `지시사항이 저장되었습니다.`);
+  closeInstructionModal();
 }
+
+/* 삭제 */
 function deleteInstruction(id) {
   let instructions = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
   instructions = instructions.filter(i => i.id !== id);
   localStorage.setItem('ws_instructions', JSON.stringify(instructions));
-  renderInstructionList();
-}
-function renderInstructionList() {
-  const el = document.getElementById('instructionList');
-  if (!el) return;
-  const instructions = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
-  if (instructions.length === 0) {
-    el.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text-muted)">
-      <i data-lucide="inbox" style="width:28px;height:28px;display:block;margin:0 auto 8px;opacity:.4"></i>
-      등록된 지시사항이 없습니다
-    </div>`;
-    refreshIcons();
-    return;
-  }
-  el.innerHTML = instructions.map(instr => `
-    <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:10px;padding:14px 16px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
-        <div style="font-size:13.5px;font-weight:700;color:var(--text-primary)">${instr.title}</div>
-        <button onclick="deleteInstruction(${instr.id})" style="flex-shrink:0;width:24px;height:24px;border-radius:6px;border:1px solid var(--border-color);background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px" title="삭제">✕</button>
-      </div>
-      ${instr.content ? `<div style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:8px;white-space:pre-wrap">${instr.content}</div>` : ''}
-      <div style="font-size:11px;color:var(--text-muted)">
-        <i data-lucide="user" style="width:11px;height:11px;vertical-align:middle;margin-right:3px"></i>${instr.author}
-        &nbsp;·&nbsp;
-        <i data-lucide="clock" style="width:11px;height:11px;vertical-align:middle;margin-right:3px"></i>${instr.date}
-      </div>
-    </div>
-  `).join('');
-  refreshIcons();
+  showToast('info', '삭제되었습니다.');
 }
