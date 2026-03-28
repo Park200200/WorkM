@@ -799,32 +799,31 @@
             </span>
           </div>
 
-          <div class="hq-payment-grid" id="hqPaymentGrid">
-            <!-- JS로 렌더링 -->
-            <div class="hq-pay-card">
-              <div class="hq-pay-label">DB관리요금</div>
-              <div class="hq-pay-amount"><span id="hq_pay_db_mgmt">200,000</span> <span class="hq-pay-unit">원</span></div>
-              <div class="hq-pay-sub"><span id="hq_pay_db_mgmt_cnt">123,901</span> 건</div>
+          <div class="hq-payment-grid" id="hqPaymentGrid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px">
+            <div class="hq-pay-card" style="background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:10px;padding:14px 16px">
+              <div class="hq-pay-label" style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:6px">DB관리요금</div>
+              <div class="hq-pay-amount" style="font-size:18px;font-weight:800;color:var(--text-primary);display:flex;align-items:baseline;gap:2px"><span id="hq_pay_db_mgmt">200,000</span> <span style="font-size:13px;font-weight:600;color:var(--text-secondary)">원</span></div>
+              <div class="hq-pay-sub" style="font-size:11px;color:var(--text-muted);margin-top:4px"><span id="hq_pay_db_mgmt_cnt">123,901</span> 건</div>
             </div>
-            <div class="hq-pay-card">
-              <div class="hq-pay-label">DB사용요금</div>
-              <div class="hq-pay-amount"><span id="hq_pay_db_use">17,500</span> <span class="hq-pay-unit">원</span></div>
-              <div class="hq-pay-sub"><span id="hq_pay_db_use_cnt">35,001</span> 건</div>
+            <div class="hq-pay-card" style="background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:10px;padding:14px 16px">
+              <div class="hq-pay-label" style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:6px">DB사용요금</div>
+              <div class="hq-pay-amount" style="font-size:18px;font-weight:800;color:var(--text-primary);display:flex;align-items:baseline;gap:2px"><span id="hq_pay_db_use">17,500</span> <span style="font-size:13px;font-weight:600;color:var(--text-secondary)">원</span></div>
+              <div class="hq-pay-sub" style="font-size:11px;color:var(--text-muted);margin-top:4px"><span id="hq_pay_db_use_cnt">35,001</span> 건</div>
             </div>
-            <div class="hq-pay-card">
-              <div class="hq-pay-label">AI사용요금</div>
-              <div class="hq-pay-amount"><span id="hq_pay_ai">103,000</span> <span class="hq-pay-unit">원</span></div>
-              <div class="hq-pay-sub"><span id="hq_pay_ai_cnt">206</span> 건</div>
+            <div class="hq-pay-card" style="background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:10px;padding:14px 16px">
+              <div class="hq-pay-label" style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:6px">AI사용요금</div>
+              <div class="hq-pay-amount" style="font-size:18px;font-weight:800;color:var(--text-primary);display:flex;align-items:baseline;gap:2px"><span id="hq_pay_ai">103,000</span> <span style="font-size:13px;font-weight:600;color:var(--text-secondary)">원</span></div>
+              <div class="hq-pay-sub" style="font-size:11px;color:var(--text-muted);margin-top:4px"><span id="hq_pay_ai_cnt">206</span> 건</div>
             </div>
-            <div class="hq-pay-card">
-              <div class="hq-pay-label">수수료비용</div>
-              <div class="hq-pay-amount"><span id="hq_pay_fee">1,930,200</span> <span class="hq-pay-unit">원</span></div>
-              <div class="hq-pay-sub"><span id="hq_pay_fee_rate">7</span>%</div>
+            <div class="hq-pay-card" style="background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:10px;padding:14px 16px">
+              <div class="hq-pay-label" style="font-size:11.5px;font-weight:600;color:var(--text-secondary);margin-bottom:6px">수수료비용</div>
+              <div class="hq-pay-amount" style="font-size:18px;font-weight:800;color:var(--text-primary);display:flex;align-items:baseline;gap:2px"><span id="hq_pay_fee">1,930,200</span> <span style="font-size:13px;font-weight:600;color:var(--text-secondary)">원</span></div>
+              <div class="hq-pay-sub" style="font-size:11px;color:var(--text-muted);margin-top:4px"><span id="hq_pay_fee_rate">7</span>%</div>
             </div>
-            <div class="hq-pay-card hq-pay-card--total">
-              <div class="hq-pay-label">결제 예정 금액</div>
-              <div class="hq-pay-amount"><span id="hq_pay_total">2,250,700</span> <span class="hq-pay-unit">원</span></div>
-              <div class="hq-pay-sub">VAT 별도</div>
+            <div class="hq-pay-card hq-pay-card--total" style="background:rgba(151,71,255,.08);border:1.5px solid rgba(151,71,255,.3);border-radius:10px;padding:14px 16px">
+              <div class="hq-pay-label" style="font-size:11.5px;font-weight:600;color:var(--accent-purple);margin-bottom:6px">결제 예정 금액</div>
+              <div class="hq-pay-amount" style="font-size:18px;font-weight:800;color:var(--accent-purple);display:flex;align-items:baseline;gap:2px"><span id="hq_pay_total">2,250,700</span> <span style="font-size:13px;font-weight:600;color:var(--accent-purple);opacity:.8">원</span></div>
+              <div class="hq-pay-sub" style="font-size:11px;color:var(--text-muted);margin-top:4px">VAT 별도</div>
             </div>
           </div>
 
