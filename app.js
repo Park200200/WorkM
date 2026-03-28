@@ -3495,6 +3495,7 @@ function saveInstruction() {
   // ── ws_instructions 저장
   const instr = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
   const newId = Date.now();
+  const curUserId = WS.currentUser ? WS.currentUser.id : 0;
   const newItem = {
     id: newId, taskId, taskName,
     assigneeId: Number(assigneeId), assigneeName,
@@ -3507,24 +3508,32 @@ function saveInstruction() {
   instr.unshift(newItem);
   localStorage.setItem('ws_instructions', JSON.stringify(instr));
 
-  // ── WS.tasks에도 추가하여 buildAssignedByMeBody에 바로 반영
+  // ── WS.tasks에도 추가하여 getAssignedByMe()에 반영
   if (!WS.tasks) WS.tasks = [];
   WS.tasks.push({
-    id: newId, title: taskName, team: '',
+    id: newId,
+    title: taskName,
+    team: '',
     assigneeIds: [Number(assigneeId)],
-    assignerId: WS.currentUser ? WS.currentUser.id : 0,
-    dueDate, status: 'progress', progress: 0,
+    assignerId: curUserId,          // ← 현재 유저 ID (숫자)
+    dueDate,
+    status: 'progress',
+    progress: 0,
     isImportant: newItem.isImportant
   });
 
-  // ── 내가 지시한 업무 리스트 재렌더
-  const byMeEl = document.getElementById('byMeBody');
+  // ── 내가 지시한 업무 리스트 재렌더 (ID: accBody_byMe)
+  const byMeEl = document.getElementById('accBody_byMe');
   if (byMeEl && typeof buildAssignedByMeBody === 'function') {
     byMeEl.innerHTML = buildAssignedByMeBody();
     setTimeout(refreshIcons, 50);
   }
-  const byMeCount = document.getElementById('byMeCount');
-  if (byMeCount) byMeCount.textContent = WS.getAssignedByMe ? WS.getAssignedByMe().length : '';
+  // ── 카운트 배지 업데이트
+  const accCard = document.getElementById('accCard_byMe');
+  if (accCard) {
+    const badge = accCard.querySelector('.section-count');
+    if (badge) badge.textContent = WS.getAssignedByMe().length + '건';
+  }
 
   showToast('success', '지시사항이 등록되었습니다.');
   closeInstructionModal();
