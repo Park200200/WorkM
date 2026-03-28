@@ -1354,3 +1354,88 @@ function renderTaskListView(targetEl) {
     '</table>';
   refreshIcons();
 }
+
+/* ══════════════════════════════════════════════════════════════
+   🛡️ 악순환 방지: 모달 State 오염 방어 코드
+   원인: newTaskModal 같은 modal-overlay가 닫히지 않고 남아
+         다른 페이지의 CRUD(기타설정 등) 버튼을 차단하는 문제
+   해결책:
+   ① closeAllModals – 모든 모달 강제 닫기
+   ② showPage 후크  – 페이지 이동 시 자동 closeAllModals
+   ③ Escape 키     – 언제나 Esc 로 모달 닫기
+   ④ openOrgModal  – 열기 전 task 모달 먼저 정리
+══════════════════════════════════════════════════════════════ */
+
+/** 모든 modal-overlay를 닫고 타이머/상태 초기화 */
+function closeAllModals() {
+  // 모든 overlay 숨기기
+  document.querySelectorAll('.modal-overlay').forEach(function(m) {
+    m.style.display = 'none';
+  });
+  // 업무 관련 글로벌 상태 초기화
+  if (window._editingTaskId !== undefined) window._editingTaskId = null;
+  if (window._processTags !== undefined)   window._processTags   = [];
+  // 보고 작성 팝업 상태 초기화
+  if (window._drWriteTaskId !== undefined) window._drWriteTaskId = null;
+  // 일보 타이머 정리
+  if (window._drLiveTimer) { clearInterval(window._drLiveTimer); window._drLiveTimer = null; }
+}
+
+/* ② showPage 후크 – 원본 showPage를 래핑하여 모달 자동 정리 */
+(function() {
+  var _origShowPage = typeof showPage === 'function' ? showPage : null;
+  if (!_origShowPage) return;
+  window.showPage = function(pid) {
+    try { closeAllModals(); } catch(e) {}
+    _origShowPage.call(window, pid);
+  };
+})();
+
+/* ③ Escape 키로 언제나 모달 닫기 */
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Escape') return;
+  // 열린 modal-overlay 가 있으면 닫기
+  var hasOpen = false;
+  document.querySelectorAll('.modal-overlay').forEach(function(m) {
+    if (m.style.display !== 'none' && m.style.display !== '') hasOpen = true;
+  });
+  if (hasOpen) closeAllModals();
+});
+
+/* ④ openOrgModal 보강 – 기타설정 CRUD 모달이 newTaskModal에 막히지 않도록 */
+(function() {
+  var _origOpenOrgModal = typeof openOrgModal === 'function' ? openOrgModal : null;
+  if (!_origOpenOrgModal) {
+    // openOrgModal이 나중에 정의될 경우를 위한 폴백
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('[onclick*="openOrgModal"]');
+      if (!btn) return;
+      // newTaskModal 이 막고 있으면 먼저 닫기
+      var ntm = document.getElementById('newTaskModal');
+      if (ntm && ntm.style.display !== 'none') {
+        ntm.style.display = 'none';
+        if (window._editingTaskId) window._editingTaskId = null;
+      }
+    });
+    return;
+  }
+  window.openOrgModal = function() {
+    // newTaskModal 이 열려있으면 닫고 진행
+    var ntm = document.getElementById('newTaskModal');
+    if (ntm && ntm.style.display !== 'none') {
+      ntm.style.display = 'none';
+      if (window._editingTaskId) window._editingTaskId = null;
+    }
+    _origOpenOrgModal.apply(window, arguments);
+  };
+})();
+
+/* ⑤ 페이지 로드 완료 후 혹시 남은 모달 정리 */
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    document.querySelectorAll('.modal-overlay').forEach(function(m) {
+      if (m.id !== 'newTaskModal' && m.id !== 'dailyReportModal') return; // 앱 초기 모달만 정리
+      m.style.display = 'none';
+    });
+  }, 500);
+});
