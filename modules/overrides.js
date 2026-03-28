@@ -2909,29 +2909,112 @@ function _saveInstrImportances() {
 
 var _iiCtx = { id: null, mode: 'add' };
 
-var _II_QUICK_ICONS = [
-  { icon:'flag',          color:'#ef4444' },
-  { icon:'alert-triangle',color:'#f97316' },
-  { icon:'alert-circle',  color:'#f59e0b' },
-  { icon:'star',          color:'#eab308' },
-  { icon:'zap',           color:'#8b5cf6' },
-  { icon:'shield',        color:'#3b82f6' },
-  { icon:'check-circle',  color:'#22c55e' },
-  { icon:'clock',         color:'#06b6d4' },
-  { icon:'megaphone',     color:'#ec4899' },
-  { icon:'target',        color:'#10b981' }
+var _II_ICON_CATEGORIES = [
+  { label:'긴급', color:'#ef4444', items:[
+    {icon:'zap',color:'#ef4444'},{icon:'flame',color:'#ef4444'},{icon:'alert-triangle',color:'#f97316'},
+    {icon:'alert-circle',color:'#ef4444'},{icon:'alert-octagon',color:'#dc2626'},{icon:'bell-ring',color:'#f97316'},
+    {icon:'megaphone',color:'#f97316'},{icon:'alarm-clock',color:'#ef4444'},{icon:'timer',color:'#f97316'},
+    {icon:'ban',color:'#ef4444'},{icon:'bomb',color:'#dc2626'},{icon:'skull',color:'#dc2626'},
+    {icon:'activity',color:'#ef4444'},{icon:'octagon',color:'#ef4444'},{icon:'siren',color:'#ef4444'}
+  ]},
+  { label:'중요', color:'#f59e0b', items:[
+    {icon:'star',color:'#eab308'},{icon:'crown',color:'#f59e0b'},{icon:'gem',color:'#8b5cf6'},
+    {icon:'trophy',color:'#f59e0b'},{icon:'award',color:'#8b5cf6'},{icon:'medal',color:'#f59e0b'},
+    {icon:'bookmark',color:'#ef4444'},{icon:'flag',color:'#ef4444'},{icon:'heart',color:'#ec4899'},
+    {icon:'badge-check',color:'#3b82f6'},{icon:'ribbon',color:'#8b5cf6'},{icon:'sparkles',color:'#eab308'},
+    {icon:'sun',color:'#eab308'},{icon:'wand-2',color:'#8b5cf6'},{icon:'hand-metal',color:'#f59e0b'}
+  ]},
+  { label:'보안', color:'#3b82f6', items:[
+    {icon:'shield',color:'#3b82f6'},{icon:'lock',color:'#3b82f6'},{icon:'key',color:'#94a3b8'},
+    {icon:'fingerprint',color:'#6366f1'},{icon:'scan',color:'#06b6d4'},{icon:'eye',color:'#3b82f6'},
+    {icon:'eye-off',color:'#64748b'},{icon:'shield-check',color:'#22c55e'},{icon:'shield-alert',color:'#f59e0b'},
+    {icon:'shield-off',color:'#ef4444'},{icon:'scan-face',color:'#6366f1'},{icon:'camera',color:'#3b82f6'},
+    {icon:'user-check',color:'#22c55e'},{icon:'file-lock',color:'#3b82f6'},{icon:'webhook',color:'#6366f1'}
+  ]},
+  { label:'확인', color:'#22c55e', items:[
+    {icon:'check-circle',color:'#22c55e'},{icon:'check-square',color:'#22c55e'},{icon:'clipboard-check',color:'#10b981'},
+    {icon:'search',color:'#6366f1'},{icon:'list-checks',color:'#22c55e'},{icon:'file-search',color:'#6366f1'},
+    {icon:'zoom-in',color:'#3b82f6'},{icon:'glasses',color:'#64748b'},{icon:'microscope',color:'#06b6d4'},
+    {icon:'file-check',color:'#22c55e'},{icon:'scan-search',color:'#3b82f6'},{icon:'check-check',color:'#10b981'},
+    {icon:'circle-check',color:'#22c55e'},{icon:'binoculars',color:'#6366f1'},{icon:'inspect',color:'#6366f1'}
+  ]},
+  { label:'완벽', color:'#8b5cf6', items:[
+    {icon:'target',color:'#ef4444'},{icon:'rocket',color:'#6366f1'},{icon:'trending-up',color:'#22c55e'},
+    {icon:'bar-chart',color:'#3b82f6'},{icon:'thumbs-up',color:'#22c55e'},{icon:'percent',color:'#8b5cf6'},
+    {icon:'infinity',color:'#8b5cf6'},{icon:'diamond',color:'#06b6d4'},{icon:'sparkle',color:'#eab308'},
+    {icon:'wand',color:'#8b5cf6'},{icon:'star-half',color:'#eab308'},{icon:'rainbow',color:'#ec4899'},
+    {icon:'repeat',color:'#06b6d4'},{icon:'refresh-cw',color:'#3b82f6'},{icon:'rotate-cw',color:'#22c55e'}
+  ]},
+  { label:'대충', color:'#94a3b8', items:[
+    {icon:'minus-circle',color:'#94a3b8'},{icon:'more-horizontal',color:'#64748b'},{icon:'minus',color:'#94a3b8'},
+    {icon:'skip-forward',color:'#94a3b8'},{icon:'fast-forward',color:'#94a3b8'},{icon:'wind',color:'#94a3b8'},
+    {icon:'cloud',color:'#94a3b8'},{icon:'meh',color:'#94a3b8'},{icon:'shuffle',color:'#94a3b8'},
+    {icon:'rotate-ccw',color:'#94a3b8'},{icon:'eraser',color:'#94a3b8'},{icon:'trash-2',color:'#ef4444'},
+    {icon:'x-circle',color:'#ef4444'},{icon:'circle-slash',color:'#ef4444'},{icon:'undo',color:'#94a3b8'}
+  ]},
+  { label:'일반', color:'#64748b', items:[
+    {icon:'info',color:'#3b82f6'},{icon:'tag',color:'#8b5cf6'},{icon:'hash',color:'#64748b'},
+    {icon:'list',color:'#64748b'},{icon:'file-text',color:'#64748b'},{icon:'clipboard',color:'#94a3b8'},
+    {icon:'folder',color:'#f59e0b'},{icon:'briefcase',color:'#64748b'},{icon:'layers',color:'#3b82f6'},
+    {icon:'grid',color:'#64748b'},{icon:'layout',color:'#6366f1'},{icon:'box',color:'#f59e0b'},
+    {icon:'package',color:'#f59e0b'},{icon:'send',color:'#3b82f6'},{icon:'message-circle',color:'#06b6d4'}
+  ]}
 ];
+
+var _iiActiveCat = 0;
 
 function _initIiIconQuickPick() {
   var container = document.getElementById('iiIconQuickPick');
   if (!container) return;
-  var q = "'";
-  container.innerHTML = _II_QUICK_ICONS.map(function(qi) {
-    return '<button type="button" onclick="_iiPickIcon(' + q + qi.icon + q + ',' + q + qi.color + q + ')"' +
-      ' style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;' +
-      'border-radius:7px;border:1.5px solid ' + qi.color + '22;background:' + qi.color + '11;cursor:pointer" title="' + qi.icon + '">' +
-      '<i data-lucide="' + qi.icon + '" style="width:14px;height:14px;color:' + qi.color + '"></i>' +
-    '</button>';
+  container.style.cssText = 'display:flex;flex-direction:column;gap:8px';
+
+  // 카테고리 탭 렌더
+  var tabHtml = '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:2px">' +
+    _II_ICON_CATEGORIES.map(function(cat, idx) {
+      var active = idx === _iiActiveCat;
+      return '<button type="button" onclick="_iiSetCategory(' + idx + ')" id="iiCatTab' + idx + '" ' +
+        'style="padding:3px 9px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid ' + cat.color + ';' +
+        'background:' + (active ? cat.color : cat.color + '18') + ';' +
+        'color:' + (active ? '#fff' : cat.color) + ';transition:all 0.15s">' +
+        cat.label +
+        '</button>';
+    }).join('') + '</div>';
+
+  // 아이콘 그리드 렌더
+  var cat = _II_ICON_CATEGORIES[_iiActiveCat];
+  var gridHtml = '<div id="iiIconGrid" style="display:flex;flex-wrap:wrap;gap:5px;max-height:120px;overflow-y:auto;padding:2px 0">' +
+    cat.items.map(function(qi) {
+      return '<button type="button" onclick="_iiPickIcon(\'' + qi.icon + '\',\'' + qi.color + '\')" ' +
+        'style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;' +
+        'border-radius:8px;border:1.5px solid ' + qi.color + '33;background:' + qi.color + '18;cursor:pointer;flex-shrink:0" title="' + qi.icon + '">' +
+        '<i data-lucide="' + qi.icon + '" style="width:15px;height:15px;color:' + qi.color + '"></i>' +
+        '</button>';
+    }).join('') + '</div>';
+
+  container.innerHTML = tabHtml + gridHtml;
+  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 30);
+}
+
+function _iiSetCategory(idx) {
+  _iiActiveCat = idx;
+  // 탭 스타일 업데이트
+  _II_ICON_CATEGORIES.forEach(function(cat, i) {
+    var tab = document.getElementById('iiCatTab' + i);
+    if (!tab) return;
+    var active = i === idx;
+    tab.style.background = active ? cat.color : cat.color + '18';
+    tab.style.color       = active ? '#fff'    : cat.color;
+  });
+  // 그리드 업데이트
+  var grid = document.getElementById('iiIconGrid');
+  if (!grid) return;
+  var cat = _II_ICON_CATEGORIES[idx];
+  grid.innerHTML = cat.items.map(function(qi) {
+    return '<button type="button" onclick="_iiPickIcon(\'' + qi.icon + '\',\'' + qi.color + '\')" ' +
+      'style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;' +
+      'border-radius:8px;border:1.5px solid ' + qi.color + '33;background:' + qi.color + '18;cursor:pointer;flex-shrink:0" title="' + qi.icon + '">' +
+      '<i data-lucide="' + qi.icon + '" style="width:15px;height:15px;color:' + qi.color + '"></i>' +
+      '</button>';
   }).join('');
   if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 30);
 }
