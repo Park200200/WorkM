@@ -276,8 +276,10 @@ function renderPage_Tasks(filter) {
 
   if (vMode === 'assignment') {
     const aMode = window._assignmentMode || 'task';
-    if (aMode === 'task')  renderAssignmentByTask();
-    else                   renderAssignmentByStaff();
+    if (aMode === 'task')       renderAssignmentByTask();
+    else if (aMode === 'staff') renderAssignmentByStaff();
+    else if (aMode === 'team')  renderAssignmentByTeam();
+    else                        renderAssignmentByTask();
   } else {
     renderTaskListView();
   }
@@ -1744,4 +1746,163 @@ function selectTaskAssignee(taskId, staffId) {
   WS.saveTasks();
   renderTaskAssignStaffList(taskId);
   renderPage_Tasks();
+}
+
+/* ══════════════════════════════════════════════
+   deleteTask – confirm() 제거, 즉시 삭제 + 토스트
+══════════════════════════════════════════════ */
+function deleteTask(id) {
+  var task = WS.getTask(id);
+  if (!task) return;
+  var title = task.title || '업무';
+  WS.tasks = WS.tasks.filter(function(t) { return t.id !== id; });
+  WS.saveTasks();
+  renderPage_Tasks();
+  showToast('info', '"' + title + '" 삭제 완료');
+}
+
+/* ══════════════════════════════════════════════
+   createNewTask – due 자동설정 + 모달 닫기 보장
+══════════════════════════════════════════════ */
+function createNewTask() {
+  var titleEl = document.getElementById('nt_title');
+  var title = titleEl ? titleEl.value.trim() : '';
+  if (!title) { showToast('error', '업무 제목을 입력하세요'); return; }
+
+  // due 자동 설정 (hidden input)
+  var dueEl = document.getElementById('nt_due');
+  if (dueEl && !dueEl.value) dueEl.value = new Date().toISOString().split('T')[0];
+  var due = dueEl ? dueEl.value : new Date().toISOString().split('T')[0];
+
+  // 팀 선택 (체크박스 복수 선택)
+  var teamChecks = document.querySelectorAll('#nt_teams_checkboxes input[type=checkbox]:checked');
+  var teamArr = [];
+  teamChecks.forEach(function(cb) { teamArr.push(cb.value); });
+  var teamStr = teamArr.join(', ') || (document.getElementById('nt_team') ? document.getElementById('nt_team').value : '');
+
+  var scoreEl = document.getElementById('nt_score');
+  var resultEl = document.getElementById('nt_result');
+  var descEl = document.getElementById('nt_desc');
+  var startEl = document.getElementById('nt_start');
+  var impEl = document.getElementById('nt_important');
+
+  var nt = {
+    id: Date.now(),
+    title: title,
+    desc: descEl ? descEl.value : '',
+    assignerId: WS.currentUser ? WS.currentUser.id : 1,
+    assigneeIds: [],
+    status: 'waiting',
+    priority: (document.getElementById('nt_priority') ? document.getElementById('nt_priority').value : 'medium') || 'medium',
+    progress: 0,
+    dueDate: due,
+    createdAt: new Date().toISOString().split('T')[0],
+    startedAt: startEl ? startEl.value : null,
+    isImportant: impEl ? impEl.checked : false,
+    team: teamStr,
+    score: scoreEl ? (parseInt(scoreEl.value) || 0) : 0,
+    scoreBase: scoreEl ? (parseInt(scoreEl.value) || 0) : 0,
+    scoreMin: document.getElementById('nt_score_min') ? (parseInt(document.getElementById('nt_score_min').value) || undefined) : undefined,
+    scoreMax: document.getElementById('nt_score_max') ? (parseInt(document.getElementById('nt_score_max').value) || undefined) : undefined,
+    reportContent: resultEl ? resultEl.value : '',
+    processTags: window._processTags || [],
+    parentId: window._newParentId || null,
+    spentTime: '0h',
+    history: [{ date: new Date().toISOString().split('T')[0], event: '업무 등록', detail: WS.currentUser ? WS.currentUser.name : '', icon: 'clipboard-list', color: '#4f6ef7' }]
+  };
+
+  WS.tasks.push(nt);
+  WS.saveTasks();
+  window._newParentId = null;
+  window._processTags = [];
+
+  if (typeof closeModalDirect === 'function') closeModalDirect('newTaskModal');
+  if (typeof renderDashboard === 'function') renderDashboard();
+  if (typeof renderPage_Tasks === 'function') renderPage_Tasks();
+  if (typeof renderPage_Settings === 'function') renderPage_Settings();
+  showToast('success', '"' + title + '" 업무가 등록되었습니다.');
+}
+
+/* ══════════════════════════════════════════════
+   setAssignmentMode – 팀별 모드 추가
+══════════════════════════════════════════════ */
+function setAssignmentMode(mode, el) {
+  window._assignmentMode = mode;
+  // 칩 active 상태
+  document.querySelectorAll('#assignmentSubFilter .chip').forEach(function(c) { c.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  // 직원 관리버튼 표시
+  var sma = document.getElementById('staffManageActions');
+  if (sma) sma.style.display = (mode === 'staff') ? 'flex' : 'none';
+  renderPage_Tasks();
+}
+
+/* ══════════════════════════════════════════════
+   renderAssignmentByTeam – 팀별 탭 리스트
+   컬럼: 팀 정보 / 배정 업무 / 관리
+══════════════════════════════════════════════ */
+function renderAssignmentByTeam(targetEl) {
+  var el = targetEl || document.getElementById('taskListArea');
+  if (!el) return;
+
+  var depts = WS.departments || [];
+  if (!depts.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:40px;text-align:center;color:var(--text-muted)">팀(부서) 정보가 없습니다.</div>';
+    return;
+  }
+
+  var rows = depts.map(function(dept) {
+    // 해당 팀에 배정된 업무 찾기
+    var teamTasks = WS.tasks.filter(function(t) {
+      return t.team && t.team.indexOf(dept.name) !== -1;
+    });
+    var badges = teamTasks.map(function(t) {
+      return '<span class="task-badge" style="font-size:11px;padding:3px 8px;border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);margin:2px;display:inline-block">' + t.title + '</span>';
+    }).join('');
+
+    // 팀 멤버 찾기
+    var members = WS.users.filter(function(u) { return u.dept === dept.name; });
+    var memberAvatars = members.map(function(u) {
+      return '<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,' + (u.color || '#4f6ef7') + ',#9747ff);color:#fff;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-right:2px" title="' + u.name + '">' + u.avatar + '</div>';
+    }).join('');
+
+    return '<tr>' +
+      '<td style="width:220px">' +
+        '<div style="display:flex;flex-direction:column;gap:6px">' +
+          '<div style="font-weight:800;font-size:13.5px;color:var(--text-primary)">' + dept.name + '</div>' +
+          '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">' +
+            memberAvatars +
+            '<span style="font-size:11px;color:var(--text-muted)">' + members.length + '명</span>' +
+          '</div>' +
+        '</div>' +
+      '</td>' +
+      '<td>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:4px">' +
+          (badges || '<span style="color:var(--text-muted);font-size:11px">배정된 업무 없음</span>') +
+        '</div>' +
+        '<div style="font-size:10px;color:var(--text-muted);margin-top:4px">' + teamTasks.length + '건</div>' +
+      '</td>' +
+      '<td style="width:80px;text-align:center">' +
+        '<button class="btn-icon-sm edit" onclick="openTeamAssignPanel(\'' + dept.name + '\')" title="팀 업무 관리" style="background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;color:var(--text-muted)">' +
+          '<i data-lucide="settings-2" style="width:15px;height:15px"></i>' +
+        '</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+
+  el.innerHTML =
+    '<table class="task-table">' +
+      '<thead><tr>' +
+        '<th>팀 정보</th>' +
+        '<th>배정 업무</th>' +
+        '<th>관리</th>' +
+      '</tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>';
+  refreshIcons();
+}
+
+/* 팀별 관리 (향후 확장용) */
+function openTeamAssignPanel(deptName) {
+  showToast('info', '"' + deptName + '" 팀 관리 기능은 준비 중입니다.');
 }
