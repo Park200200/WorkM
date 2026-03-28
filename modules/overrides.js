@@ -1905,3 +1905,174 @@ function renderAssignmentByTeam(targetEl) {
 function openTeamAssignPanel(deptName) {
   showToast('info', '"' + deptName + '" 팀 관리 기능은 준비 중입니다.');
 }
+
+/* ══════════════════════════════════════════════
+   직원관리 CRUD 재정의
+   ① openStaffModal – WS 배열 안전 처리
+   ② deleteStaff    – confirm() 제거
+   ③ saveStaff      – 한글 토스트 수정
+══════════════════════════════════════════════ */
+function openStaffModal(id) {
+  window._editingStaffId = id || null;
+
+  var titleEl = document.getElementById('staffModalTitle');
+  if (titleEl) titleEl.textContent = id ? '직원 정보 상세' : '직원 등록';
+
+  // 셀렉트 옵션 안전 채우기
+  var deptSel = document.getElementById('st_dept');
+  var roleSel = document.getElementById('st_role');
+  var posSel  = document.getElementById('st_pos');
+  if (deptSel) deptSel.innerHTML = (WS.departments || []).map(function(d){ return '<option value="' + d.name + '">' + d.name + '</option>'; }).join('');
+  if (roleSel) roleSel.innerHTML = (WS.ranks || []).map(function(r){ return '<option value="' + r.name + '">' + r.name + '</option>'; }).join('');
+  if (posSel)  posSel.innerHTML  = (WS.positions || []).map(function(p){ return '<option value="' + p.name + '">' + p.name + '</option>'; }).join('');
+
+  var fields = ['name','dept','role','pos','phone','address','email','status','birthday','hiredAt','resignedAt','loginId','password','avatar','color','note'];
+
+  if (id) {
+    var u = WS.getUser(id);
+    if (!u) return;
+    fields.forEach(function(f) {
+      var el = document.getElementById('st_' + f);
+      if (el) el.value = u[f] || '';
+    });
+    ['birthday','hiredAt','resignedAt'].forEach(function(f) {
+      var lbl = document.getElementById('st_' + f + '_label');
+      if (lbl) lbl.textContent = u[f] || '날짜 미입력';
+    });
+    // 사진 미리보기
+    var prev = document.getElementById('st_photo_preview');
+    if (prev) {
+      if (u.photo) {
+        prev.style.backgroundImage = 'url(' + u.photo + ')';
+        prev.style.backgroundSize = 'cover';
+        prev.style.backgroundPosition = 'center';
+        prev.innerHTML = '';
+      } else {
+        prev.style.backgroundImage = '';
+        prev.innerHTML = '<i data-lucide="camera" style="width:28px;height:28px;color:var(--text-muted)"></i><span style="font-size:10px;color:var(--text-muted);margin-top:6px;text-align:center;line-height:1.3">사진<br>등록</span>';
+      }
+    }
+    // 담당 업무
+    var taskSection   = document.getElementById('staffTasksSection');
+    var taskContainer = document.getElementById('st_tasks_container');
+    var addBtn        = document.getElementById('st_add_task_btn');
+    if (taskSection) taskSection.style.display = 'block';
+    if (taskContainer) {
+      var myTasks = WS.tasks.filter(function(t) {
+        var ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+        return ids.includes(id);
+      });
+      taskContainer.innerHTML = myTasks.map(function(t) {
+        return '<span class="task-badge" onclick="closeModalDirect(\'staffModal\');openTaskDetail(' + t.id + ')" style="cursor:pointer">' + t.title + '</span>';
+      }).join('') || '<div style="font-size:11px;color:var(--text-muted)">배정된 업무가 없습니다.</div>';
+    }
+    if (addBtn) addBtn.onclick = function() { closeModalDirect('staffModal'); openNewTaskModal(null, id); };
+  } else {
+    fields.forEach(function(f) {
+      var el = document.getElementById('st_' + f);
+      if (el) el.value = (f === 'color') ? '#4f6ef7' : (f === 'status') ? '재직' : '';
+    });
+    ['birthday','hiredAt','resignedAt'].forEach(function(f) {
+      var lbl = document.getElementById('st_' + f + '_label');
+      if (lbl) lbl.textContent = '날짜 미입력';
+    });
+    var taskSection2 = document.getElementById('staffTasksSection');
+    if (taskSection2) taskSection2.style.display = 'none';
+    var prev2 = document.getElementById('st_photo_preview');
+    if (prev2) {
+      prev2.style.backgroundImage = '';
+      prev2.innerHTML = '<i data-lucide="camera" style="width:28px;height:28px;color:var(--text-muted)"></i><span style="font-size:10px;color:var(--text-muted);margin-top:6px;text-align:center;line-height:1.3">사진<br>등록</span>';
+    }
+    var fileInput = document.getElementById('st_photo_file');
+    if (fileInput) fileInput.value = '';
+  }
+
+  if (typeof openModal === 'function') openModal('staffModal');
+  if (typeof refreshIcons === 'function') refreshIcons();
+}
+
+function deleteStaff(id) {
+  if (id === (WS.currentUser && WS.currentUser.id)) {
+    showToast('error', '본인 계정은 삭제할 수 없습니다.');
+    return;
+  }
+  WS.deleteUser(id);
+  if (typeof renderPage_StaffMgmt === 'function') renderPage_StaffMgmt();
+  if (typeof renderPage_Tasks === 'function') renderPage_Tasks();
+  showToast('info', '직원이 삭제되었습니다.');
+}
+
+function saveStaff() {
+  var nameEl = document.getElementById('st_name');
+  var name = nameEl ? nameEl.value.trim() : '';
+  if (!name) { showToast('error', '이름을 입력하세요'); return; }
+
+  var fields = ['name','role','dept','pos','phone','address','email','status','birthday','hiredAt','resignedAt','loginId','password','avatar','color','note'];
+  var data = {};
+  fields.forEach(function(f) {
+    var el = document.getElementById('st_' + f);
+    if (el) data[f] = el.value;
+  });
+  data.photo = window._staffPhotoBase64 || (window._editingStaffId ? ((WS.getUser(window._editingStaffId) || {}).photo || '') : '');
+  if (!data.avatar) data.avatar = name.substring(0, 2);
+
+  if (window._editingStaffId) {
+    WS.updateUser(window._editingStaffId, data);
+    showToast('success', '직원 정보가 수정되었습니다.');
+  } else {
+    WS.addUser(data);
+    showToast('success', '새 직원이 등록되었습니다.');
+  }
+  if (typeof closeModalDirect === 'function') closeModalDirect('staffModal');
+  window._staffPhotoBase64 = null;
+  if (typeof renderPage_StaffMgmt === 'function') renderPage_StaffMgmt();
+  if (typeof renderPage_Tasks === 'function') renderPage_Tasks();
+  if (typeof initHeader === 'function') initHeader();
+}
+
+/* ══════════════════════════════════════════════
+   renderTaskAssignStaffList – 체크박스에 강조색(--accent-primary) 적용
+══════════════════════════════════════════════ */
+function renderTaskAssignStaffList(taskId) {
+  var t = WS.getTask(taskId);
+  var container = document.getElementById('tam_staff_list');
+  if (!container || !t) return;
+
+  if (!Array.isArray(t.assigneeIds)) {
+    t.assigneeIds = t.assigneeId ? [t.assigneeId] : [];
+  }
+
+  // CSS 변수에서 강조색 가져오기
+  var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
+
+  var selectedCount = t.assigneeIds.length;
+  var html = '<div style="margin-bottom:8px;font-size:11px;color:var(--text-muted);text-align:right">' +
+    '선택됨 <strong style="color:' + accentColor + '">' + selectedCount + '</strong>명</div>';
+
+  html += WS.users.map(function(u) {
+    var isSelected = t.assigneeIds.includes(u.id);
+    return (
+      '<div onclick="selectTaskAssignee(' + taskId + ',' + u.id + ')" ' +
+      'style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;' +
+        'border:2px solid ' + (isSelected ? accentColor : 'transparent') + ';' +
+        'background:' + (isSelected ? 'color-mix(in srgb,' + accentColor + ' 9%,var(--bg-primary))' : 'var(--bg-tertiary)') + ';' +
+        'cursor:pointer;transition:all 0.18s;margin-bottom:6px;user-select:none">' +
+        '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,' + (u.color || '#4f6ef7') + ',#9747ff);' +
+          'color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+          u.avatar +
+        '</div>' +
+        '<div style="flex:1">' +
+          '<div style="font-weight:700;font-size:13px;color:var(--text-primary)">' + u.name + '</div>' +
+          '<div style="font-size:10.5px;color:var(--text-muted)">' + u.role + ' · ' + u.dept + '</div>' +
+        '</div>' +
+        '<div style="width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.18s;' +
+          'background:' + (isSelected ? accentColor : 'var(--bg-primary)') + ';' +
+          'border:2px solid ' + (isSelected ? accentColor : 'var(--border-color)') + '">' +
+          (isSelected ? '<svg viewBox="0 0 24 24" width="13" height="13" stroke="#fff" stroke-width="3" fill="none"><polyline points="20 6 9 17 4 12"/></svg>' : '') +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+
+  container.innerHTML = html;
+}
