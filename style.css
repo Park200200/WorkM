@@ -1186,7 +1186,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   cursor: pointer;
   transition: background .15s;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 400;
   color: #fff !important;
   letter-spacing: .3px;
   border-left: 1px solid var(--border-color);
