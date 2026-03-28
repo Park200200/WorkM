@@ -2927,6 +2927,7 @@ function _dpSelect(dt) {
 function renderPage_HQInfo() {
   loadHqInfo();
   renderHqHistory();
+  loadHqPayment();
   refreshIcons();
 }
 function loadHqInfo() {
@@ -3025,4 +3026,83 @@ function openHqDaumPostcode() {
     document.getElementById('hq_zip').value=data.zonecode;
     document.getElementById('hq_addr1').value=data.roadAddress||data.jibunAddress;
   }}).open();
+}
+
+/* ── 결제 정보 로드/저장 ── */
+function loadHqPayment() {
+  var d = JSON.parse(localStorage.getItem('ws_hq_payment') || '{}');
+  var setTxt = function(id, val) { var el=document.getElementById(id); if(el) el.textContent = val||el.textContent; };
+  setTxt('hq_pay_db_mgmt',     d.dbMgmt    || '200,000');
+  setTxt('hq_pay_db_mgmt_cnt', d.dbMgmtCnt || '123,901');
+  setTxt('hq_pay_db_use',      d.dbUse     || '17,500');
+  setTxt('hq_pay_db_use_cnt',  d.dbUseCnt  || '35,001');
+  setTxt('hq_pay_ai',          d.ai        || '103,000');
+  setTxt('hq_pay_ai_cnt',      d.aiCnt     || '206');
+  setTxt('hq_pay_fee',         d.fee       || '1,930,200');
+  setTxt('hq_pay_fee_rate',    d.feeRate   || '7');
+  setTxt('hq_pay_total',       d.total     || '2,250,700');
+}
+
+function saveHqPayment() {
+  var get = function(id) { var el=document.getElementById(id); return el?el.value.trim():''; };
+  var data = {
+    dbMgmt:    get('hqpm_db_mgmt'),    dbMgmtCnt: get('hqpm_db_mgmt_cnt'),
+    dbUse:     get('hqpm_db_use'),     dbUseCnt:  get('hqpm_db_use_cnt'),
+    ai:        get('hqpm_ai'),         aiCnt:     get('hqpm_ai_cnt'),
+    fee:       get('hqpm_fee'),        feeRate:   get('hqpm_fee_rate'),
+    total:     get('hqpm_total')
+  };
+  localStorage.setItem('ws_hq_payment', JSON.stringify(data));
+  closeModalDirect('hqPaymentModal');
+  loadHqPayment();
+  showToast('success', '<i data-lucide="check-circle-2"></i> 결제 정보가 저장되었습니다.');
+  refreshIcons();
+}
+
+function openHqPaymentModal() {
+  var d = JSON.parse(localStorage.getItem('ws_hq_payment') || '{}');
+  var modal = document.getElementById('hqPaymentModal');
+  if(!modal) {
+    // 모달 동적 생성
+    var el = document.createElement('div');
+    el.className = 'modal-overlay';
+    el.id = 'hqPaymentModal';
+    el.style.display = 'none';
+    el.setAttribute('onclick', "if(event.target===this)closeModalDirect('hqPaymentModal')");
+    el.innerHTML = [
+      '<div class="modal-box" style="max-width:480px">',
+        '<div class="modal-head">',
+          '<div style="display:flex;align-items:center;gap:8px">',
+            '<i data-lucide="credit-card" style="width:16px;height:16px;color:var(--accent-blue)"></i>',
+            '<div class="modal-title">결제 정보 수정</div>',
+          '</div>',
+          '<button class="modal-close" onclick="closeModalDirect(\'hqPaymentModal\')">✕</button>',
+        '</div>',
+        '<div class="modal-body">',
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">',
+            _hqPayField('hqpm_db_mgmt',    'DB관리요금 (원)',   d.dbMgmt    || '200,000'),
+            _hqPayField('hqpm_db_mgmt_cnt','DB관리요금 (건수)', d.dbMgmtCnt || '123,901'),
+            _hqPayField('hqpm_db_use',     'DB사용요금 (원)',   d.dbUse     || '17,500'),
+            _hqPayField('hqpm_db_use_cnt', 'DB사용요금 (건수)', d.dbUseCnt  || '35,001'),
+            _hqPayField('hqpm_ai',         'AI사용요금 (원)',   d.ai        || '103,000'),
+            _hqPayField('hqpm_ai_cnt',     'AI사용요금 (건수)', d.aiCnt     || '206'),
+            _hqPayField('hqpm_fee',        '수수료비용 (원)',   d.fee       || '1,930,200'),
+            _hqPayField('hqpm_fee_rate',   '수수료율 (%)',      d.feeRate   || '7'),
+            _hqPayField('hqpm_total',      '결제 예정 금액 (원)', d.total   || '2,250,700'),
+          '</div>',
+        '</div>',
+        '<div class="modal-foot">',
+          '<button class="btn" onclick="closeModalDirect(\'hqPaymentModal\')">취소</button>',
+          '<button class="btn btn-blue" onclick="saveHqPayment()">저장</button>',
+        '</div>',
+      '</div>'
+    ].join('');
+    document.body.appendChild(el);
+    refreshIcons();
+    modal = el;
+  }
+  modal.style.display = 'flex';
+}
+function _hqPayField(id, label, val) {
+  return '<div class="form-group"><label class="form-label hq-label">'+label+'</label><input type="text" class="form-input" id="'+id+'" value="'+val+'"></div>';
 }
