@@ -986,13 +986,18 @@ function openNewTaskModal(mode = null, parentId = null, assigneeId = null) {
   if (dueLbl)   dueLbl.textContent   = todayLabel;
   const scoreEl = document.getElementById('nt_score');
   if(scoreEl) scoreEl.value = '';
-  const resultEl = document.getElementById('nt_result');
-  if (resultEl) {
-    const resultOpts = (WS.taskResults || []).map(r =>
-      `<option value="${r.name}">${r.icon ? r.icon + ' ' : ''}${r.name}</option>`
-    ).join('');
-    resultEl.innerHTML = `<option value="">-- 선택 --</option>${resultOpts}`;
-    resultEl.value = '';
+  // 업무결과 드롭다운 – 기타설정(WS.taskResults)과 항상 연동
+  if (typeof renderResultSelect === 'function') {
+    renderResultSelect('');
+  } else {
+    const resultEl = document.getElementById('nt_result');
+    if (resultEl) {
+      const resultOpts = (WS.taskResults || []).map(r =>
+        `<option value="${r.name}">${r.name}</option>`
+      ).join('');
+      resultEl.innerHTML = `<option value="">-- 선택 --</option>${resultOpts}`;
+      resultEl.value = '';
+    }
   }
 
   // simple 모드: 제목·버튼 변경
@@ -2414,7 +2419,24 @@ function renderPage_RankMgmt() {
 
   function itemCard(type, item) {
     const label = item.level !== undefined ? `<span style="font-size:10px;color:var(--text-muted)">Lv.${item.level}</span>` : '';
-    const icon  = item.icon ? `<span style="margin-right:4px">${item.icon}</span>` : '';
+
+    // 업무결과: lucide 아이콘 + 컬러 배지 형태로 렌더링
+    if (type === 'result' && item.icon && item.color) {
+      const c = item.color;
+      const iconBadge = `<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${c}22;border:1.5px solid ${c};margin-right:7px;flex-shrink:0">
+        <i data-lucide="${item.icon}" style="width:12px;height:12px;color:${c}"></i>
+      </span>`;
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:6px">
+          <div style="display:flex;align-items:center;font-size:13px;font-weight:600;color:var(--text-primary)">${iconBadge}<span style="color:${c};font-weight:700">${item.name}</span></div>
+          <div style="display:flex;gap:4px">
+            <button onclick="editOrgItem('${type}',${item.id})" style="background:none;border:none;cursor:pointer;padding:3px;color:var(--text-muted)"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>
+            <button onclick="deleteOrgItem('${type}',${item.id})" style="background:none;border:none;cursor:pointer;padding:3px;color:#ef4444"><i data-lucide="trash-2" style="width:13px;height:13px"></i></button>
+          </div>
+        </div>`;
+    }
+
+    const icon = item.icon ? `<span style="margin-right:4px">${item.icon}</span>` : '';
     return `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:6px">
         <div style="font-size:13px;font-weight:600;color:var(--text-primary)">${icon}${item.name} ${label}</div>
@@ -2430,6 +2452,7 @@ function renderPage_RankMgmt() {
   const posList    = document.getElementById('posList');
   const resultList = document.getElementById('resultList');
   const rtList     = document.getElementById('reportTypeList');
+  const dtList     = document.getElementById('detailTaskList');
 
   if(deptList)   deptList.innerHTML   = WS.departments.map(d => itemCard('dept', d)).join('') || '<div style="color:var(--text-muted);font-size:12px;padding:8px">항목 없음</div>';
   if(rankList)   rankList.innerHTML   = WS.ranks.sort((a,b)=>a.level-b.level).map(r => itemCard('rank', r)).join('') || '<div style="color:var(--text-muted);font-size:12px;padding:8px">항목 없음</div>';
@@ -2448,20 +2471,31 @@ function renderPage_RankMgmt() {
         <button onclick="deleteOrgItem('reportType',${r.id})" style="background:none;border:none;cursor:pointer;padding:3px;color:#ef4444"><i data-lucide="trash-2" style="width:13px;height:13px"></i></button>
       </div>
     </div>`).join('') || '<div style="color:var(--text-muted);font-size:12px;padding:8px">항목 없음</div>';
+  if(dtList)     dtList.innerHTML     = WS.detailTasks.map(d => itemCard('detailTask', d)).join('') || '<div style="color:var(--text-muted);font-size:12px;padding:8px">항목 없음</div>';
 
   const deptCount   = document.getElementById('deptCount');
   const rankCount   = document.getElementById('rankCount');
   const posCount    = document.getElementById('posCount');
   const resultCount = document.getElementById('resultCount');
   const rtCount     = document.getElementById('reportTypeCount');
+  const dtCount     = document.getElementById('detailTaskCount');
 
   if(deptCount)   deptCount.textContent   = WS.departments.length;
   if(rankCount)   rankCount.textContent   = WS.ranks.length;
   if(posCount)    posCount.textContent    = WS.positions.length;
   if(resultCount) resultCount.textContent = WS.taskResults.length;
   if(rtCount)     rtCount.textContent     = WS.reportTypes.length;
+  if(dtCount)     dtCount.textContent     = WS.detailTasks.length;
 
   refreshIcons();
+}
+
+function openDetailTaskModal() {
+  const name = prompt('새 상세업무 이름을 입력하세요.');
+  if (!name || !name.trim()) return;
+  WS.addDetailTask(name.trim());
+  renderPage_RankMgmt();
+  showToast('success', `상세업무 "${name.trim()}" 추가 완료!`);
 }
 
 function openOrgModal(type) {
@@ -2555,6 +2589,7 @@ function deleteOrgItem(type, id) {
   else if (type === 'pos')    { WS.positions = WS.positions.filter(x => x.id !== id); WS.savePos(); }
   else if (type === 'result') { WS.taskResults = WS.taskResults.filter(x => x.id !== id); WS.saveTaskResults(); }
   else if (type === 'reportType') { WS.reportTypes = WS.reportTypes.filter(x => x.id !== id); WS.saveReportTypes(); }
+  else if (type === 'detailTask') { WS.deleteDetailTask(id); }
   renderPage_RankMgmt();
   showToast('info', `${label} 삭제 완료!`);
 }
@@ -3165,6 +3200,18 @@ function formatPhoneInput(el) {
   }
 }
 
+/* 사업자번호 자동 하이픈 (000-00-00000) */
+function formatBizNoInput(el) {
+  var v = el.value.replace(/\D/g, '');
+  if (v.length <= 3) {
+    el.value = v;
+  } else if (v.length <= 5) {
+    el.value = v.slice(0,3) + '-' + v.slice(3);
+  } else {
+    el.value = v.slice(0,3) + '-' + v.slice(3,5) + '-' + v.slice(5,10);
+  }
+}
+
 /* ── 비밀번호 눈 아이콘 토글 ── */
 function toggleStaffPwd() {
   var inp = document.getElementById('st_password');
@@ -3178,4 +3225,68 @@ function toggleStaffPwd() {
       : '<i data-lucide="eye" style="width:15px;height:15px"></i>';
     refreshIcons();
   }
+}
+
+/* ══════════════════════════════
+   📢 지시사항 모달
+══════════════════════════════ */
+function openInstructionModal() {
+  renderInstructionList();
+  document.getElementById('instructionModal').style.display = 'flex';
+  refreshIcons();
+}
+function closeInstructionModal() {
+  document.getElementById('instructionModal').style.display = 'none';
+}
+function saveInstruction() {
+  const title = document.getElementById('instrTitle').value.trim();
+  const content = document.getElementById('instrContent').value.trim();
+  if (!title) { showToast('error', '제목을 입력하세요.'); return; }
+  const instructions = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
+  instructions.unshift({
+    id: Date.now(),
+    title,
+    content,
+    author: WS.currentUser.name,
+    date: new Date().toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
+  });
+  localStorage.setItem('ws_instructions', JSON.stringify(instructions));
+  document.getElementById('instrTitle').value = '';
+  document.getElementById('instrContent').value = '';
+  renderInstructionList();
+  showToast('success', '지시사항이 등록되었습니다.');
+}
+function deleteInstruction(id) {
+  let instructions = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
+  instructions = instructions.filter(i => i.id !== id);
+  localStorage.setItem('ws_instructions', JSON.stringify(instructions));
+  renderInstructionList();
+}
+function renderInstructionList() {
+  const el = document.getElementById('instructionList');
+  if (!el) return;
+  const instructions = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
+  if (instructions.length === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text-muted)">
+      <i data-lucide="inbox" style="width:28px;height:28px;display:block;margin:0 auto 8px;opacity:.4"></i>
+      등록된 지시사항이 없습니다
+    </div>`;
+    refreshIcons();
+    return;
+  }
+  el.innerHTML = instructions.map(instr => `
+    <div style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:10px;padding:14px 16px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
+        <div style="font-size:13.5px;font-weight:700;color:var(--text-primary)">${instr.title}</div>
+        <button onclick="deleteInstruction(${instr.id})" style="flex-shrink:0;width:24px;height:24px;border-radius:6px;border:1px solid var(--border-color);background:transparent;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px" title="삭제">✕</button>
+      </div>
+      ${instr.content ? `<div style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:8px;white-space:pre-wrap">${instr.content}</div>` : ''}
+      <div style="font-size:11px;color:var(--text-muted)">
+        <i data-lucide="user" style="width:11px;height:11px;vertical-align:middle;margin-right:3px"></i>${instr.author}
+        &nbsp;·&nbsp;
+        <i data-lucide="clock" style="width:11px;height:11px;vertical-align:middle;margin-right:3px"></i>${instr.date}
+      </div>
+    </div>
+  `).join('');
+  refreshIcons();
 }

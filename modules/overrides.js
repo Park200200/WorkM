@@ -1,4 +1,4 @@
-﻿/**
+/**
  * modules/overrides.js
  * app.js 이후에 로드되어 특정 함수를 깨끗한 UTF-8 코드로 교체합니다.
  * 이 파일은 항상 UTF-8로만 저장/편집하세요.
@@ -728,8 +728,11 @@ function renderPage_RankMgmt() {
   }
   if (!WS.taskResults || !WS.taskResults.length) {
     WS.taskResults = [
-      {id:1,name:'정상완료'},{id:2,name:'진행중'},
-      {id:3,name:'부분완료'},{id:4,name:'보류'},{id:5,name:'취소'}
+      {id:1, name:'정상완료', icon:'check-circle',   color:'#22c55e'},
+      {id:2, name:'진행중',   icon:'refresh-cw',    color:'#06b6d4'},
+      {id:3, name:'부분완료', icon:'git-branch',    color:'#f59e0b'},
+      {id:4, name:'보류',     icon:'pause-circle',  color:'#6b7280'},
+      {id:5, name:'취소',     icon:'x-circle',      color:'#ef4444'},
     ];
     WS.saveTaskResults && WS.saveTaskResults();
   }
@@ -751,14 +754,27 @@ function renderPage_RankMgmt() {
   function itemCard(type, item) {
     const label = item.level !== undefined
       ? '<span style="font-size:10px;color:var(--text-muted)">Lv.' + item.level + '</span>' : '';
+    const editBtn   = '<button onclick="editOrgItem(\'' + type + '\',' + item.id + ')" title="수정" style="background:none;border:none;cursor:pointer;padding:3px 6px;font-size:13px">✏️</button>';
+    const deleteBtn = '<button onclick="deleteOrgItem(\'' + type + '\',' + item.id + ')" title="삭제" style="background:none;border:none;cursor:pointer;padding:3px 6px;font-size:13px">🗑️</button>';
+
+    // 업무결과: lucide 아이콘 + 컴러 배지 표시
+    if (type === 'result' && item.icon && item.color && item.icon.length > 2) {
+      var c = item.color;
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:6px">' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:' + c + '22;border:1.5px solid ' + c + '">' +
+            '<i data-lucide="' + item.icon + '" style="width:12px;height:12px;color:' + c + '"></i>' +
+          '</span>' +
+          '<span style="font-size:13px;font-weight:700;color:' + c + '">' + item.name + '</span>' +
+        '</div>' +
+        '<div style="display:flex;gap:4px">' + editBtn + deleteBtn + '</div>' +
+      '</div>';
+    }
+    // 이모지 아이콘 (단순 텍스트) 또는 아이콘 없음
+    var iconPart = (item.icon && item.icon.length <= 2) ? '<span style="margin-right:4px">' + item.icon + '</span>' : '';
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;background:var(--bg-tertiary);margin-bottom:6px">' +
-      '<div style="font-size:13px;font-weight:600;color:var(--text-primary)">' + item.name + ' ' + label + '</div>' +
-      '<div style="display:flex;gap:4px">' +
-        '<button onclick="editOrgItem(\'' + type + '\',' + item.id + ')" title="수정" ' +
-          'style="background:none;border:none;cursor:pointer;padding:3px 6px;font-size:13px">✏️</button>' +
-        '<button onclick="deleteOrgItem(\'' + type + '\',' + item.id + ')" title="삭제" ' +
-          'style="background:none;border:none;cursor:pointer;padding:3px 6px;font-size:13px">🗑️</button>' +
-      '</div>' +
+      '<div style="font-size:13px;font-weight:600;color:var(--text-primary)">' + iconPart + item.name + ' ' + label + '</div>' +
+      '<div style="display:flex;gap:4px">' + editBtn + deleteBtn + '</div>' +
     '</div>';
   }
 
@@ -821,14 +837,34 @@ function renderPage_RankMgmt() {
   }
   if (dtCount) dtCount.textContent = (WS.detailTasks || []).length;
 
-  // 결과 드롭다운 채우기
-  const resultSel = document.getElementById('nt_result');
-  if (resultSel) {
-    resultSel.innerHTML = '<option value="">-- 선택 --</option>' +
-      WS.taskResults.map(r => '<option value="' + r.name + '">' + r.name + '</option>').join('');
+  // 결과 드롭다운 채우기 (공통 함수 사용)
+  renderResultSelect('');
+
+  // 기존 데이터 마이그레이션: icon/color 없는 항목에 기본값 부여
+  var _defaultResultMeta = {
+    '정상완료': { icon:'check-circle',  color:'#22c55e' },
+    '진행중':   { icon:'refresh-cw',    color:'#06b6d4' },
+    '부분완료': { icon:'git-branch',    color:'#f59e0b' },
+    '보류':     { icon:'pause-circle',  color:'#6b7280' },
+    '취소':     { icon:'x-circle',      color:'#ef4444' },
+  };
+  var _migrated = false;
+  (WS.taskResults || []).forEach(function(r) {
+    if ((!r.icon || r.icon.length <= 2) && !r.color && _defaultResultMeta[r.name]) {
+      r.icon  = _defaultResultMeta[r.name].icon;
+      r.color = _defaultResultMeta[r.name].color;
+      _migrated = true;
+    }
+  });
+  if (_migrated && WS.saveTaskResults) {
+    WS.saveTaskResults();
+    // 마이그레이션 후 resultList 재렌더
+    var _rl = document.getElementById('resultList');
+    if (_rl) _rl.innerHTML = WS.taskResults.map(function(r){ return itemCard('result', r); }).join('') || emptyMsg;
   }
 
   refreshIcons();
+  setTimeout(function() { if (typeof refreshIcons === 'function') refreshIcons(); }, 80);
 }
 
 /* ══════════════════════════════════════════════
@@ -1233,15 +1269,8 @@ function openEditTaskModal(id) {
     setVal('nt_score',     t.scoreBase !== undefined ? t.scoreBase : (t.score || ''));
     setVal('nt_score_min', t.scoreMin !== undefined ? t.scoreMin : '');
     setVal('nt_score_max', t.scoreMax !== undefined ? t.scoreMax : '');
-    // ③ 업무결과 select 복원
-    const resultEl = document.getElementById('nt_result');
-    if (resultEl) {
-      const resultOpts = (WS.taskResults || []).map(r =>
-        '<option value="' + r.name + '">' + (r.icon ? r.icon + ' ' : '') + r.name + '</option>'
-      ).join('');
-      resultEl.innerHTML = '<option value="">-- 선택 --</option>' + resultOpts;
-      resultEl.value = t.reportContent || '';
-    }
+    // ③ 업무결과 select – 기타설정과 연동된 공통 함수로 복원
+    renderResultSelect(t.reportContent || '');
     const impEl = document.getElementById('nt_important');
     if (impEl) impEl.checked = !!t.isImportant;
     window._processTags = Array.isArray(t.processTags) ? [...t.processTags] : [];
@@ -1296,12 +1325,14 @@ function updateTeamCheckStyle(cb) {
   }
 }
 
-/* ── openNewTaskModal 래핑: 매번 팀 체크박스 초기화 ── */
+/* ── openNewTaskModal 래핑: 매번 팀 체크박스 초기화 (edit 모드 제외) ── */
 (function() {
   var _orig = typeof openNewTaskModal === 'function' ? openNewTaskModal : null;
   if (!_orig) return;
   window.openNewTaskModal = function(mode, parentId, assigneeId) {
     _orig.call(window, mode, parentId, assigneeId);
+    // edit 모드는 openEditTaskModal에서 기존 값을 복원하므로 초기화 생략
+    if (mode === 'edit') return;
     setTimeout(function() {
       renderTeamCheckboxes('');
       if (typeof renderDetailTaskCheckboxes === 'function') renderDetailTaskCheckboxes('');
@@ -1372,10 +1403,8 @@ function renderTaskListView(targetEl) {
       const indent = level * 24;
       const baseScore = t.scoreBase !== undefined ? t.scoreBase : (t.score || 0);
       const teamStr   = t.team || '';
-      // 업무결과: reportContent (새 업무 추가에서 선택한 값)
-      const resultStr = t.reportContent
-        ? '<span class="report-status-badge">' + t.reportContent + '</span>'
-        : '<span style="color:var(--text-muted);font-size:11px">-</span>';
+      // 업무결과: 기타설정과 연동된 아이콘+컴러 배지
+      var resultStr = _buildResultBadge(t.reportContent);
       // 업무설명
       const descStr = t.desc
         ? '<span style="font-size:11.5px;color:var(--text-secondary)">' + t.desc + '</span>'
@@ -1387,8 +1416,7 @@ function renderTaskListView(targetEl) {
           '<div class="tree-node" style="padding-left:' + indent + 'px">' +
             (level > 0 ? '<div class="tree-line"></div>' : '') +
             '<div class="tree-title">' +
-              (t.isImportant ? '<span class="star-icon"><i data-lucide="star"></i></span>' : '') +
-              ' ' + t.title +
+              t.title +
             '</div>' +
 
           '</div>' +
@@ -1434,7 +1462,9 @@ function renderTaskListView(targetEl) {
       '</tbody>' +
     '</table>';
   refreshIcons();
+  setTimeout(function() { if (typeof refreshIcons === 'function') refreshIcons(); }, 60);
 }
+
 
 /* ══════════════════════════════════════════════════════════════
    🛡️ 악순환 방지: 모달 State 오염 방어 코드
@@ -1560,8 +1590,17 @@ function editOrgItem(type, id) {
     _orgCtx.type = 'result'; _orgCtx.id = id; _orgCtx.mode = 'edit';
     var titleEl = document.getElementById('resultModalTitle');
     var nameEl  = document.getElementById('resultModalName');
+    var iconEl  = document.getElementById('resultModalIcon');
+    var colorEl = document.getElementById('resultModalColor');
+    var pickerEl= document.getElementById('resultModalColorPicker');
     if (titleEl) titleEl.textContent = '업무결과 수정';
-    if (nameEl)  nameEl.value = item.name || '';
+    if (nameEl)  nameEl.value  = item.name  || '';
+    if (iconEl)  iconEl.value  = item.icon  || '';
+    var itemColor = item.color || '#22c55e';
+    if (colorEl)  colorEl.value  = itemColor;
+    if (pickerEl) pickerEl.value = itemColor;
+    _initResultIconQuickPick();
+    _updateResultPreview();
     var m = document.getElementById('resultModal');
     if (m) { m.style.display = 'flex'; setTimeout(function(){ if(nameEl) nameEl.focus(); }, 50); }
     return;
@@ -1624,26 +1663,39 @@ function openResultModal() {
   _orgCtx.type = 'result'; _orgCtx.id = null; _orgCtx.mode = 'add';
   var titleEl = document.getElementById('resultModalTitle');
   var nameEl  = document.getElementById('resultModalName');
+  var iconEl  = document.getElementById('resultModalIcon');
+  var colorEl = document.getElementById('resultModalColor');
+  var pickerEl= document.getElementById('resultModalColorPicker');
   if (titleEl) titleEl.textContent = '업무결과 추가';
   if (nameEl)  nameEl.value = '';
+  if (iconEl)  iconEl.value = '';
+  if (colorEl) colorEl.value = '#22c55e';
+  if (pickerEl) pickerEl.value = '#22c55e';
+  _initResultIconQuickPick();
+  _updateResultPreview();
   var m = document.getElementById('resultModal');
   if (m) { m.style.display = 'flex'; setTimeout(function(){ if(nameEl) nameEl.focus(); }, 50); }
 }
 
 /* ── resultModal 저장 ── */
 function saveResultItem() {
-  var nameEl = document.getElementById('resultModalName');
-  var name   = nameEl ? nameEl.value.trim() : '';
+  var nameEl  = document.getElementById('resultModalName');
+  var iconEl  = document.getElementById('resultModalIcon');
+  var colorEl = document.getElementById('resultModalColor');
+  var name    = nameEl  ? nameEl.value.trim()  : '';
+  var icon    = iconEl  ? iconEl.value.trim()  : '';
+  var color   = colorEl ? colorEl.value.trim() : '#22c55e';
   if (!name) { showToast('error', '결과명을 입력하세요'); return; }
-  var id   = _orgCtx.id, mode = _orgCtx.mode;
+  if (!color || !color.startsWith('#')) color = '#22c55e';
+  var id = _orgCtx.id, mode = _orgCtx.mode;
 
   if (mode === 'add') {
-    WS.taskResults.push({ id: Date.now(), name: name, icon: '' });
+    WS.taskResults.push({ id: Date.now(), name: name, icon: icon, color: color });
     WS.saveTaskResults();
     showToast('success', name + ' 추가 완료!');
   } else {
     var item = WS.taskResults.find(function(x){ return x.id === id; });
-    if (item) { item.name = name; WS.saveTaskResults(); }
+    if (item) { item.name = name; item.icon = icon; item.color = color; WS.saveTaskResults(); }
     showToast('info', '업무결과 수정 완료!');
   }
   closeResultModal();
@@ -1655,6 +1707,126 @@ function closeResultModal() {
   var m = document.getElementById('resultModal');
   if (m) m.style.display = 'none';
 }
+
+/* ── renderResultSelect: 업무결과 select를 WS.taskResults와 동기화 ──
+   항상 localStorage에서 최신 데이터를 로드하여 드롭다운을 업데이트합니다 */
+function renderResultSelect(currentValue) {
+  // 로컬스토리지에서 항상 최신 데이터 로드
+  WS.taskResults = JSON.parse(localStorage.getItem('ws_task_results')) || WS.taskResults || [];
+  var sel = document.getElementById('nt_result');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- 선택 --</option>' +
+    WS.taskResults.map(function(r) {
+      // icon이 lucide 이름이면 무시, 이모지면 그대로 출력
+      var prefix = (r.icon && r.icon.length <= 2) ? r.icon + ' ' : '';
+      return '<option value="' + r.name + '">' + prefix + r.name + '</option>';
+    }).join('');
+  if (currentValue) sel.value = currentValue;
+}
+
+/* ── 업무결과 리스트에서 아이콘+컴러 맞는 WS.taskResult 가져오기 ── */
+function _getResultDef(name) {
+  var list = JSON.parse(localStorage.getItem('ws_task_results')) || WS.taskResults || [];
+  return list.find(function(r) { return r.name === name; }) || null;
+}
+
+/* ── 결과 배지 HTML 생성 (아이콘 유무에 따라 다르게 표시) ── */
+function _buildResultBadge(reportContent) {
+  if (!reportContent) return '<span style="color:var(--text-muted);font-size:11px">-</span>';
+  var def = _getResultDef(reportContent);
+  if (def && def.icon && def.color && def.icon.length > 2) {
+    // lucide 아이콘 + 컴러 배지
+    var c = def.color;
+    return '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;' +
+      'background:' + c + '22;border:1.5px solid ' + c + ';font-size:11.5px;font-weight:700;color:' + c + '">' +
+      '<span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:' + c + '22;border:1px solid ' + c + '">' +
+      '<i data-lucide="' + def.icon + '" style="width:10px;height:10px;color:' + c + '"></i></span>' +
+      reportContent + '</span>';
+  }
+  // 이모지 or 아이콘 없음
+  var iconPart = (def && def.icon && def.icon.length <= 2) ? def.icon + ' ' : '';
+  return '<span class="report-status-badge">' + iconPart + reportContent + '</span>';
+}
+
+/* ── 업무결과 아이콘 미리보기 ── */
+var _RESULT_QUICK_ICONS = [
+  { icon:'check-circle',    color:'#22c55e' },
+  { icon:'refresh-cw',      color:'#06b6d4' },
+  { icon:'git-branch',      color:'#f59e0b' },
+  { icon:'pause-circle',    color:'#6b7280' },
+  { icon:'x-circle',        color:'#ef4444' },
+  { icon:'check-circle-2',  color:'#4f6ef7' },
+  { icon:'alert-triangle',  color:'#f97316' },
+  { icon:'clock',           color:'#8b5cf6' },
+  { icon:'flag',            color:'#ec4899' },
+  { icon:'star',            color:'#eab308' },
+  { icon:'thumbs-up',       color:'#14b8a6' },
+  { icon:'thumbs-down',     color:'#f43f5e' },
+];
+
+function _initResultIconQuickPick() {
+  var wrap = document.getElementById('resultIconQuickPick');
+  if (!wrap) return;
+  wrap.innerHTML = _RESULT_QUICK_ICONS.map(function(item) {
+    return '<span onclick="_selectResultIcon(\'' + item.icon + '\',\'' + item.color + '\')" ' +
+      'title="' + item.icon + '" ' +
+      'style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;' +
+      'border:1.5px solid ' + item.color + ';background:' + item.color + '22;cursor:pointer;' +
+      'transition:transform 0.15s" onmouseover="this.style.transform=\'scale(1.15)\'" onmouseout="this.style.transform=\'\'"> ' +
+      '<i data-lucide="' + item.icon + '" style="width:14px;height:14px;color:' + item.color + '"></i>' +
+      '</span>';
+  }).join('');
+  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
+}
+
+function _selectResultIcon(iconName, color) {
+  var iconEl   = document.getElementById('resultModalIcon');
+  var colorEl  = document.getElementById('resultModalColor');
+  var pickerEl = document.getElementById('resultModalColorPicker');
+  if (iconEl)   iconEl.value  = iconName;
+  if (colorEl)  colorEl.value = color;
+  if (pickerEl) pickerEl.value = color;
+  _updateResultPreview();
+}
+
+function previewResultIcon() { _updateResultPreview(); }
+
+function syncResultColorPicker(val) {
+  var p = document.getElementById('resultModalColorPicker');
+  if (p && /^#[0-9a-fA-F]{6}$/.test(val)) p.value = val;
+  _updateResultPreview();
+}
+
+function _updateResultPreview() {
+  var nameEl  = document.getElementById('resultModalName');
+  var iconEl  = document.getElementById('resultModalIcon');
+  var colorEl = document.getElementById('resultModalColor');
+  var name    = (nameEl  && nameEl.value.trim())  || '미리보기';
+  var icon    = (iconEl  && iconEl.value.trim())  || 'check-circle';
+  var color   = (colorEl && colorEl.value.trim()) || '#22c55e';
+  if (!/^#[0-9a-fA-F]{3,6}$/.test(color)) color = '#22c55e';
+
+  var prev     = document.getElementById('resultModalPreview');
+  var prevIcon = document.getElementById('resultModalPreviewIcon');
+  var prevName = document.getElementById('resultModalPreviewName');
+  if (prev) {
+    prev.style.background  = color + '22';
+    prev.style.border      = '1.5px solid ' + color;
+    prev.style.color       = color;
+  }
+  if (prevIcon) {
+    prevIcon.style.background = color + '22';
+    prevIcon.style.border     = '1px solid ' + color;
+    prevIcon.innerHTML = '<i data-lucide="' + icon + '" style="width:11px;height:11px;color:' + color + '"></i>';
+    if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
+  }
+  if (prevName) prevName.textContent = name;
+}
+
+/* 결과명 입력 시 미리보기 이름 실시간 반영 */
+document.addEventListener('input', function(e) {
+  if (e.target && e.target.id === 'resultModalName') _updateResultPreview();
+});
 
 /* ── deleteOrgItem – confirm 없이 즉시 삭제 ── */
 function deleteOrgItem(type, id) {
@@ -1983,14 +2155,18 @@ function removeProcessOrder(idx) {
   _renderProcessTypeList();
 }
 
-/* openNewTaskModal 래핑: 모달 열리면 진행보고 순서 UI 초기화 */
+/* openNewTaskModal 래핑: 모달 열리면 진행보고 순서 UI 초기화
+   단, 'edit' 모드일 때는 openEditTaskModal에서 복원하므로 초기화 생략 */
 (function() {
   var _prev = typeof window.openNewTaskModal === 'function' ? window.openNewTaskModal : null;
   if (!_prev) return;
   window.openNewTaskModal = function(mode, parentId, assigneeId) {
     _prev.call(window, mode, parentId, assigneeId);
+    // edit 모드는 openEditTaskModal의 setTimeout에서 값을 복원하므로 초기화 생략
+    if (mode === 'edit') return;
     setTimeout(function() {
       renderTeamCheckboxes('');
+      if (typeof renderDetailTaskCheckboxes === 'function') renderDetailTaskCheckboxes('');
       renderProcessOrderUI([]);
     }, 10);
   };

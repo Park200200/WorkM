@@ -87,6 +87,24 @@ const WS = {
   ],
   saveReportTypes() { localStorage.setItem('ws_report_types', JSON.stringify(this.reportTypes)); },
 
+  // 상세업무 목록
+  detailTasks: JSON.parse(localStorage.getItem('ws_detail_tasks')) || [],
+  saveDetailTasks() { localStorage.setItem('ws_detail_tasks', JSON.stringify(this.detailTasks)); },
+  addDetailTask(name) {
+    const id = Date.now();
+    this.detailTasks.push({ id, name: name.trim() });
+    this.saveDetailTasks();
+    return id;
+  },
+  deleteDetailTask(id) {
+    this.detailTasks = this.detailTasks.filter(d => d.id !== id);
+    this.saveDetailTasks();
+  },
+  updateDetailTask(id, name) {
+    const item = this.detailTasks.find(d => d.id === id);
+    if (item) { item.name = name.trim(); this.saveDetailTasks(); }
+  },
+
   // 사용자 목록
   users: JSON.parse(localStorage.getItem('ws_users')) || [
     { id:1, name:'김지훈', role:'팀장', dept:'개발팀', avatar:'KJ', color:'#4f6ef7',
