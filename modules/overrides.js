@@ -1,4 +1,4 @@
-/**
+﻿/**
  * modules/overrides.js
  * app.js 이후에 로드되어 특정 함수를 깨끗한 UTF-8 코드로 교체합니다.
  * 이 파일은 항상 UTF-8로만 저장/편집하세요.
@@ -1951,11 +1951,11 @@ function _renderProcessTypeList() {
       'onmouseenter="if(this.style.opacity !== \'0.35\')this.style.background=\'var(--bg-tertiary)\'" ' +
       'onmouseleave="this.style.background=\'var(--bg-primary)\'" ' +
       'id="ptype_' + t.id + '">' +
-      (t.icon ? '<span style="font-size:14px">' + t.icon + '</span>' : '<span style="width:16px;height:16px;border-radius:50%;background:var(--bg-tertiary);display:inline-block"></span>') +
+      (t.icon ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:'+(t.color||'#4f6ef7')+'22;border:1.5px solid '+(t.color||'#4f6ef7')+';flex-shrink:0"><i data-lucide="' + t.icon + '" style="width:12px;height:12px;color:'+(t.color||'#4f6ef7')+'"></i></span>' : '<span style="width:22px;height:22px;border-radius:50%;background:var(--bg-tertiary);display:inline-block;flex-shrink:0"></span>') +
       '<span>' + tName + '</span>' +
       (alreadyAdded ? '<span style="font-size:10px;color:var(--text-muted);margin-left:auto">추가됨</span>' : '') +
     '</div>';
-  }).join('');
+  }).join(''); if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
 }
 
 function addProcessOrder(typeName) {
