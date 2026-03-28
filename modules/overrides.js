@@ -1228,9 +1228,12 @@ function openEditTaskModal(id) {
     const impEl = document.getElementById('nt_important');
     if (impEl) impEl.checked = !!t.isImportant;
     window._processTags = Array.isArray(t.processTags) ? [...t.processTags] : [];
-    if (typeof renderProcessTags === 'function') renderProcessTags();
     // ④ 팀 선택 체크박스 복원
     renderTeamCheckboxes(t.team || '');
+    // ⑤ 진행보고 순서 복원
+    if (typeof renderProcessOrderUI === 'function') {
+      renderProcessOrderUI(Array.isArray(t.processTags) ? t.processTags : []);
+    }
   }, 0);
 }
 
@@ -1792,6 +1795,105 @@ function renderTaskAssignStaffList(taskId) {
   container.innerHTML = html;
 }
 
+/* ══════════════════════════════════════════════
+   진행보고 순서 설정 UI
+   ① renderProcessOrderUI  – 두 박스 모두 렌더
+   ② addProcessOrder       – 더블클릭으로 순서에 추가
+   ③ removeProcessOrder    – 클릭으로 순서에서 제거
+   ④ openNewTaskModal 래핑  – 모달 열릴 때 자동 초기화
+══════════════════════════════════════════════ */
+
+/* 전역 진행 순서 배열 (저장 시 processTags에 매핑) */
+window._processOrder = window._processOrder || [];
+
+function renderProcessOrderUI(selectedArr) {
+  window._processOrder = Array.isArray(selectedArr) ? selectedArr.slice() : [];
+  _renderProcessSelected();
+  _renderProcessTypeList();
+}
+
+/* 선택된 순서 박스 */
+function _renderProcessSelected() {
+  var box = document.getElementById('nt_process_selected');
+  if (!box) return;
+  var placeholder = document.getElementById('nt_process_placeholder');
+  var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
+
+  if (!window._processOrder.length) {
+    box.innerHTML = '<span id="nt_process_placeholder" style="font-size:11px;color:var(--text-muted);padding:2px 0">아래 목록에서 더블클릭으로 순서 추가</span>';
+    return;
+  }
+
+  box.innerHTML = window._processOrder.map(function(name, idx) {
+    return '<span onclick="removeProcessOrder(' + idx + ')" ' +
+      'style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;' +
+      'background:' + accent + ';color:#fff;font-size:11.5px;font-weight:700;cursor:pointer;user-select:none;' +
+      'transition:opacity 0.15s" title="클릭 시 제거">' +
+      '<span style="font-size:10px;opacity:0.8;font-weight:400">' + (idx + 1) + '.</span> ' +
+      name +
+      ' <span style="font-size:10px;opacity:0.7">✕</span></span>';
+  }).join('');
+}
+
+/* 진행보고 유형 목록 박스 */
+function _renderProcessTypeList() {
+  var list = document.getElementById('nt_process_type_list');
+  if (!list) return;
+  var types = WS.reportTypes || [];
+  if (!types.length) {
+    list.innerHTML = '<div style="padding:12px;text-align:center;font-size:11px;color:var(--text-muted)">등록된 진행보고 유형이 없습니다.<br><span style="font-size:10px">(본사관리 → 기타설정에서 추가)</span></div>';
+    return;
+  }
+  list.innerHTML = types.map(function(t) {
+    var alreadyAdded = window._processOrder.indexOf(t.name) !== -1;
+    return '<div ondblclick="addProcessOrder(\'' + t.name.replace(/'/g, "\\'") + '\')" ' +
+      'style="padding:8px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;' +
+      'color:var(--text-primary);display:flex;align-items:center;gap:8px;transition:all 0.15s;' +
+      'opacity:' + (alreadyAdded ? '0.35' : '1') + ';' +
+      'background:var(--bg-primary)" ' +
+      'onmouseenter="if(this.style.opacity !== \'0.35\')this.style.background=\'var(--bg-tertiary)\'" ' +
+      'onmouseleave="this.style.background=\'var(--bg-primary)\'" ' +
+      'id="ptype_' + t.id + '">' +
+      (t.icon ? '<span style="font-size:14px">' + t.icon + '</span>' : '<span style="width:16px;height:16px;border-radius:50%;background:var(--bg-tertiary);display:inline-block"></span>') +
+      '<span>' + t.name + '</span>' +
+      (alreadyAdded ? '<span style="font-size:10px;color:var(--text-muted);margin-left:auto">추가됨</span>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function addProcessOrder(typeName) {
+  if (!window._processOrder) window._processOrder = [];
+  if (window._processOrder.indexOf(typeName) !== -1) {
+    showToast('info', '"' + typeName + '"은 이미 추가되었습니다.');
+    return;
+  }
+  window._processOrder.push(typeName);
+  // _processOrder를 _processTags에도 동기화
+  window._processTags = window._processOrder.slice();
+  _renderProcessSelected();
+  _renderProcessTypeList();
+}
+
+function removeProcessOrder(idx) {
+  if (!window._processOrder) return;
+  window._processOrder.splice(idx, 1);
+  window._processTags = window._processOrder.slice();
+  _renderProcessSelected();
+  _renderProcessTypeList();
+}
+
+/* openNewTaskModal 래핑: 모달 열리면 진행보고 순서 UI 초기화 */
+(function() {
+  var _prev = typeof window.openNewTaskModal === 'function' ? window.openNewTaskModal : null;
+  if (!_prev) return;
+  window.openNewTaskModal = function(mode, parentId, assigneeId) {
+    _prev.call(window, mode, parentId, assigneeId);
+    setTimeout(function() {
+      renderTeamCheckboxes('');
+      renderProcessOrderUI([]);
+    }, 10);
+  };
+})();
 /* ══════════════════════════════════════════════
    [ 근본 원인 종합 수정 ]
    ① WS.getUser / WS.getTask ID 타입 안전화

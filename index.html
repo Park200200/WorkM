@@ -660,15 +660,25 @@
           </div>
         </div>
       </div>
-      <!-- 과정등록 (태그 입력) -->
+      <!-- 진행보고 순서 설정 -->
       <div class="form-group">
-        <label class="form-label">과정등록</label>
-        <div class="tag-input-wrap" id="nt_process_wrap" onclick="document.getElementById('nt_process_input').focus()">
-          <div class="tag-list" id="nt_process_tags"></div>
-          <input class="tag-input" id="nt_process_input" placeholder="입력 후 Enter"
-            onkeydown="addProcessTag(event)">
+        <label class="form-label">진행보고 순서 설정</label>
+        <!-- ① 선택된 진행 순서 박스 -->
+        <div style="font-size:11px;color:var(--text-secondary);font-weight:600;margin-bottom:5px">
+          선택된 진행 순서 <span style="font-weight:400;color:var(--text-muted)">(항목 클릭 시 제거)</span>
         </div>
-        <div style="font-size:10.5px;color:var(--text-muted);margin-top:4px">Enter 또는 쉼표로 과정을 추가 / 태그의 ✕로 삭제</div>
+        <div id="nt_process_selected"
+          style="min-height:52px;background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:10px;padding:8px 10px;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start">
+          <span id="nt_process_placeholder" style="font-size:11px;color:var(--text-muted);padding:2px 0">아래 목록에서 더블클릭으로 순서 추가</span>
+        </div>
+        <!-- ② 진행보고 유형 목록 -->
+        <div style="font-size:11px;color:var(--text-secondary);font-weight:600;margin-bottom:5px">
+          진행보고 유형 <span style="font-weight:400;color:var(--text-muted)">(더블클릭으로 순서에 추가)</span>
+        </div>
+        <div id="nt_process_type_list"
+          style="max-height:130px;overflow-y:auto;background:var(--bg-primary);border:1.5px solid var(--border-color);border-radius:10px;padding:6px">
+          <!-- overrides.js에서 WS.reportTypes 기반으로 동적 생성 -->
+        </div>
       </div>
       <!-- 중요 업무 -->
       <div class="form-group" id="nt_row_important" style="display:flex;align-items:center;gap:10px">
