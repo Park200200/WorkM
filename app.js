@@ -465,7 +465,7 @@ function buildAssignedByMeBody() {
 
     return `<tr style="cursor:pointer">
       <td onclick="editInstruction(${t.id})" title="클릭하여 수정"><div style="display:flex;align-items:center;gap:6px">${t.isImportant?'<span class="star-icon"><i data-lucide="star"></i></span>':''}<span style="font-weight:600;font-size:12.5px;text-decoration:underline dotted;text-underline-offset:3px">${t.title}</span></div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${t.team||''}</div></td>
-      <td onclick="event.stopPropagation();openTaskChatChannel('${t.title}')" title="클릭하여 메시지 채널 열기" style="cursor:pointer"><div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,${assignee?.color||'#4f6ef7'},#9747ff)">${assignee?.avatar||'?'}</div></div><div style="font-size:11px;color:var(--accent-blue);margin-top:2px;font-weight:600;text-decoration:underline dotted;text-underline-offset:2px">${assignee?.name||''}</div></td>
+      <td onclick="event.stopPropagation();openTaskChatChannel('${t.title}',${t.id})" title="클릭하여 메시지 채널 열기" style="cursor:pointer"><div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,${assignee?.color||'#4f6ef7'},#9747ff)">${assignee?.avatar||'?'}</div></div><div style="font-size:11px;color:var(--currentAccent,#4f6ef7);margin-top:2px;font-weight:600;text-decoration:underline dotted;text-underline-offset:2px">${assignee?.name||''}</div></td>
       <td><span class="status-badge status-${t.status}">${WS.getStatusLabel(t.status)}</span></td>
       <td><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ${fillCls}" style="width:${t.progress}%"></div></div><span class="progress-label">${t.progress}%</span></div></td>
       <td><span class="dday-badge ${dd.cls}">${dd.label}</span></td>
@@ -655,25 +655,37 @@ function buildChatWidget() {
     <div class="chat-widget">
       <div class="chat-header">
         <div class="section-dot" style="background:var(--accent-blue)"><i data-lucide="message-square"></i></div>
-        <h3 id="chatChannelTitle" style="color:var(--accent-blue);font-size:13px">
-          <span id="chatChannelTaskName" style="display:none;font-weight:900;margin-right:3px"></span>
-          <span id="chatChannelSuffix">실시간 메시지 채널</span>
+        <h3 id="chatChannelTitle" style="font-size:13px;display:flex;align-items:baseline;gap:4px">
+          <span id="chatChannelTaskName" style="display:none;color:var(--currentAccent,#4f6ef7);font-weight:900"></span>
+          <span id="chatChannelSuffix" style="color:var(--accent-purple,#9747ff);font-weight:700">실시간 메시지 채널</span>
         </h3>
-        <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:58%">
-          ${(WS.users || []).map(u => {
-            const isMe = WS.currentUser && String(u.id) === String(WS.currentUser.id);
-            const bg = `linear-gradient(135deg,${u.color||'#4f6ef7'},#9747ff)`;
-            const ring = isMe ? '0 0 0 2px #22c55e' : '0 0 0 1.5px var(--border-color)';
-            return `<div title="${u.name}" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;cursor:default">
-              <div style="width:26px;height:26px;border-radius:50%;background:${bg};box-shadow:${ring};
-                          display:flex;align-items:center;justify-content:center;
-                          font-size:10px;font-weight:800;color:#fff;position:relative">
-                ${u.avatar || u.name.charAt(0)}
-                ${isMe ? '<span style="position:absolute;bottom:-1px;right:-1px;width:7px;height:7px;border-radius:50%;background:#22c55e;border:1.5px solid var(--bg-primary)"></span>' : ''}
-              </div>
-              <span style="font-size:8.5px;font-weight:${isMe?'800':'600'};color:${isMe?'var(--accent-blue)':'var(--text-muted)'};white-space:nowrap;max-width:36px;overflow:hidden;text-overflow:ellipsis;line-height:1">${u.name}</span>
-            </div>`;
-          }).join('')}
+        <div id="chatMemberList" style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:58%">
+          ${(function(){
+            // 활성 채널이 있으면 해당 업무 담당자만, 없으면 전체
+            var users = [];
+            if (_activeChatTask && _activeChatTask.assigneeIds) {
+              var ids = _activeChatTask.assigneeIds;
+              users = (WS.users || []).filter(function(u){ return ids.some(function(id){ return String(id) === String(u.id); }); });
+            } else {
+              users = WS.users || [];
+            }
+            return users.map(function(u) {
+              var isMe = WS.currentUser && String(u.id) === String(WS.currentUser.id);
+              var bg = 'linear-gradient(135deg,' + (u.color||'#4f6ef7') + ',#9747ff)';
+              var ring = isMe ? '0 0 0 2px #22c55e' : '0 0 0 1.5px var(--border-color)';
+              return '<div title="' + u.name + '" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;cursor:default">' +
+                '<div style="width:26px;height:26px;border-radius:50%;background:' + bg + ';box-shadow:' + ring + ';' +
+                'display:flex;align-items:center;justify-content:center;' +
+                'font-size:10px;font-weight:800;color:#fff;position:relative">' +
+                (u.avatar || u.name.charAt(0)) +
+                (isMe ? '<span style="position:absolute;bottom:-1px;right:-1px;width:7px;height:7px;border-radius:50%;background:#22c55e;border:1.5px solid var(--bg-primary)"></span>' : '') +
+                '</div>' +
+                '<span style="font-size:8.5px;font-weight:' + (isMe?'800':'600') + ';' +
+                'color:' + (isMe?'var(--currentAccent,#4f6ef7)':'var(--text-muted)') + ';' +
+                'white-space:nowrap;max-width:36px;overflow:hidden;text-overflow:ellipsis;line-height:1">' + u.name + '</span>' +
+                '</div>';
+            }).join('');
+          })()}
         </div>
       </div>
       <div class="chat-body" id="chatBody">
@@ -702,35 +714,40 @@ function sendMessage() {
 
 /* ── 내가 지시한 업무 담당자 클릭 → 실시간 메시지 채널 활성화 */
 var _activeChatTaskTitle = null;
-function openTaskChatChannel(taskTitle) {
+var _activeChatTask = null; // 담당자 필터링용
+function openTaskChatChannel(taskTitle, taskId) {
   var nameEl   = document.getElementById('chatChannelTaskName');
   var suffixEl = document.getElementById('chatChannelSuffix');
-  var widget   = document.querySelector('.chat-widget');
   var inputEl  = document.getElementById('chatInput');
   var chatBody = document.getElementById('chatBody');
 
   // 같은 업무 재클릭 → 원래 채널명으로 토글
   if (_activeChatTaskTitle === taskTitle) {
     _activeChatTaskTitle = null;
+    _activeChatTask = null;
     if (nameEl)   { nameEl.textContent = ''; nameEl.style.display = 'none'; }
     if (suffixEl) { suffixEl.textContent = '실시간 메시지 채널'; }
-    if (widget)   { widget.style.boxShadow = ''; }
     if (inputEl)  { inputEl.placeholder = '메시지를 입력하세요...'; }
+    // 우측 사용자 목록 전체로 복귀
+    _updateChatMemberList();
     return;
   }
 
   _activeChatTaskTitle = taskTitle;
+  // taskId로 해당 업무 담당자 정보 찾기
+  if (taskId) {
+    _activeChatTask = WS.tasks && WS.tasks.find(function(t){ return String(t.id) === String(taskId); });
+  } else {
+    // taskTitle로 시도
+    _activeChatTask = WS.tasks && WS.tasks.find(function(t){ return t.title === taskTitle; });
+  }
 
   // 헤더 타이틀: "업무명 : 실시간 메시지 채널"
   if (nameEl) { nameEl.textContent = taskTitle + ' :'; nameEl.style.display = 'inline'; }
   if (suffixEl) { suffixEl.textContent = '실시간 메시지 채널'; }
 
-  // 채팅 위젯 강조 글로우
-  if (widget) {
-    widget.style.transition = 'box-shadow .3s';
-    widget.style.boxShadow = '0 0 0 2px var(--accent-blue)';
-    setTimeout(function() { if (widget) widget.style.boxShadow = '0 0 0 1.5px var(--accent-blue)88'; }, 500);
-  }
+  // 우측 사용자 목록 → 해당 업무 담당자만
+  _updateChatMemberList();
 
   // 입력창 placeholder + 포커스
   if (inputEl) {
@@ -742,6 +759,40 @@ function openTaskChatChannel(taskTitle) {
   if (chatBody) chatBody.scrollTop = chatBody.scrollHeight;
 
   showToast('info', '"' + taskTitle + '" 메시지 채널이 활성화되었습니다.', 2500);
+}
+
+/* 채팅 헤더 우측 담당자 목록 동적 업데이트 */
+function _updateChatMemberList() {
+  var container = document.getElementById('chatMemberList');
+  if (!container) return;
+
+  var users = [];
+  if (_activeChatTask) {
+    var ids = Array.isArray(_activeChatTask.assigneeIds)
+      ? _activeChatTask.assigneeIds
+      : (_activeChatTask.assigneeId ? [_activeChatTask.assigneeId] : []);
+    users = (WS.users || []).filter(function(u){
+      return ids.some(function(id){ return String(id) === String(u.id); });
+    });
+  } else {
+    users = WS.users || [];
+  }
+
+  container.innerHTML = users.map(function(u) {
+    var isMe = WS.currentUser && String(u.id) === String(WS.currentUser.id);
+    var bg = 'linear-gradient(135deg,' + (u.color||'#4f6ef7') + ',#9747ff)';
+    var ring = isMe ? '0 0 0 2px #22c55e' : '0 0 0 1.5px var(--border-color)';
+    return '<div title="' + u.name + '" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0">' +
+      '<div style="width:26px;height:26px;border-radius:50%;background:' + bg + ';box-shadow:' + ring + ';' +
+      'display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;position:relative">' +
+      (u.avatar || u.name.charAt(0)) +
+      (isMe ? '<span style="position:absolute;bottom:-1px;right:-1px;width:7px;height:7px;border-radius:50%;background:#22c55e;border:1.5px solid var(--bg-primary)"></span>' : '') +
+      '</div>' +
+      '<span style="font-size:8.5px;font-weight:' + (isMe?'800':'600') + ';' +
+      'color:' + (isMe?'var(--currentAccent,#4f6ef7)':'var(--text-muted)') + ';' +
+      'white-space:nowrap;max-width:36px;overflow:hidden;text-overflow:ellipsis;line-height:1">' + u.name + '</span>' +
+      '</div>';
+  }).join('');
 }
 
 /* ?€?€ ?뱀뀡5: 媛꾪듃李⑦듃 (留덇컧??기준) ?€?€ */
