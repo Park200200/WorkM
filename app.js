@@ -646,7 +646,6 @@ function buildAssignedByMeBody() {
       <td onclick="editInstruction(${t.id})" title="클릭하여 수정">
         <div style="display:flex;align-items:center;gap:4px">
           ${firstImpIcon}
-          ${t.isImportant?'<span class="star-icon"><i data-lucide="star"></i></span>':''}
           <span style="font-weight:600;font-size:12.5px;text-decoration:underline dotted;text-underline-offset:3px">${t.title}</span>
         </div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${t.team||''}</div>
@@ -655,7 +654,7 @@ function buildAssignedByMeBody() {
       <td>${_renderStatusBadge(t.status)}</td>
       <td><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ${fillCls}" style="width:${t.progress}%"></div></div><span class="progress-label">${t.progress}%</span></div></td>
       <td><span class="dday-badge ${dd.cls}">${dd.label}</span></td>
-      <td onclick="event.stopPropagation()"><div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">${importanceBadges}</div></td>
+      <td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:flex-start;flex-wrap:wrap;max-width:120px">${importanceBadges}</div></td>
     </tr>`;
   }).join('');
   return `<div style="padding:8px"><table class="task-table"><thead><tr><th>업무명</th><th>담당자</th><th>상태</th><th>진행률</th><th>마감일</th><th>지시중요도</th></tr></thead><tbody>${rows}</tbody></table></div>`;
