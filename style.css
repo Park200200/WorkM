@@ -1,4 +1,4 @@
-/* ====================================================
+﻿/* ====================================================
    WorkSys - ?낅Т愿由??쒖뒪??怨듯넻 CSS
    ==================================================== */
 @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
@@ -792,7 +792,7 @@ tr:hover .btn-sub-add { opacity: 1; }
 }
 .acc-card:last-child { margin-bottom: 0; }
 .acc-card.open {
-  flex: 1;                 /* ?대┛ 移대뱶媛 ?⑥? 怨듦컙 紐⑤몢 李⑥? */
+  flex: 1;                 /* ?대┛ 移대뱶媛€ ?⑥? 怨듦컙 紐⑤몢 李⑥? */
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-md);
@@ -837,7 +837,10 @@ tr:hover .btn-sub-add { opacity: 1; }
 /* ??? ?꾩퐫?붿뼵 ?대? ?뚯씠釉??낅Т紐?以꾨컮轅?諛⑹? */
 .acc-body .task-table td:first-child span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; display: inline-block; }
 .acc-body .task-table { table-layout: fixed; width: 100%; }
-.acc-body .task-table th:first-child, .acc-body .task-table td:first-child { width: 35%; }
+.acc-body .task-table th:first-child, .acc-body .task-table td:first-child { width: 25%; }
+/* 담당자~지시중요도 컬럼 padding 10px 축소 */
+.acc-body .task-table th:not(:first-child) { padding: 7px 3px; }
+.acc-body .task-table td:not(:first-child) { padding: 9px 3px; }
 
 /* ??? 吏곴툒愿由??섏씠吏 ??? */
 .rank-mgmt-grid {
