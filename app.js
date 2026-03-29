@@ -656,7 +656,7 @@ function buildAssignedByMeBody() {
       <td>
         <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
           <span style="font-size:11px;font-weight:700;color:var(--text-primary)">${t.progress}%</span>
-          <div class="progress-bar" style="width:70px"><div class="progress-fill ${fillCls}" style="width:${t.progress}%"></div></div>
+          <div style="width:70px;height:5px;background:var(--bg-secondary);border-radius:100px;overflow:hidden"><div style="width:${t.progress}%;height:100%;border-radius:100px;background:${t.status==='done'?'#22c55e':t.status==='delay'?'#ef4444':'var(--accent-blue)'};transition:width .4s"></div></div>
         </div>
       </td>
       <td><span class="dday-badge ${dd.cls}">${dd.label}</span></td>
