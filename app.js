@@ -654,9 +654,11 @@ function buildAssignedByMeBody() {
       <td onclick="event.stopPropagation();openTaskChatChannel('${t.title}',${t.id})" title="클릭하여 메시지 채널 열기" style="cursor:pointer"><div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,${assignee?.color||'#4f6ef7'},#9747ff)">${assignee?.avatar||'?'}</div></div><div style="font-size:11px;color:var(--currentAccent,#4f6ef7);margin-top:2px;font-weight:600;text-decoration:underline dotted;text-underline-offset:2px">${assignee?.name||''}</div></td>
       <td>${_renderStatusBadge(t.status)}</td>
       <td>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
-          <span style="font-size:11px;font-weight:700;color:var(--text-primary)">${t.progress}%</span>
-          <div style="width:70px;height:5px;background:var(--bg-secondary);border-radius:100px;overflow:hidden"><div style="width:${t.progress}%;height:100%;border-radius:100px;background:${t.status==='done'?'#22c55e':t.status==='delay'?'#ef4444':'var(--accent-blue)'};transition:width .4s"></div></div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <div style="position:relative;width:60px;height:6px;background:var(--border-color);border-radius:100px;overflow:hidden;flex-shrink:0">
+            <div style="position:absolute;left:0;top:0;width:${t.progress}%;height:100%;border-radius:100px;background:${t.status==='done'?'#22c55e':t.status==='delay'?'#ef4444':'var(--accent-blue)'};transition:width .4s"></div>
+          </div>
+          <span style="font-size:10.5px;font-weight:700;color:var(--text-primary);min-width:28px;text-align:right">${t.progress}%</span>
         </div>
       </td>
       <td><span class="dday-badge ${dd.cls}">${dd.label}</span></td>
