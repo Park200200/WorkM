@@ -387,7 +387,7 @@ function buildReceivedBody() {
     const dd = WS.getDdayBadge(t.dueDate);
     const fillCls = t.status==='delay'?'delay':t.status==='done'?'done':'';
     const sampleTag = t._sample ? '<span style="font-size:9px;background:#9747ff22;color:#9747ff;border-radius:4px;padding:0 4px;margin-left:4px">샘플</span>' : '';
-    return '<tr style="cursor:pointer" onclick="' + (t._sample ? '' : 'openTaskDetail(' + t.id + ')') + '">' +
+    return '<tr style="cursor:pointer" onclick="' + (t._sample ? '' : 'openReceivedTaskDetail(' + t.id + ')') + '">' +
       '<td><div style="display:flex;align-items:center;gap:6px">' +
       (t.isImportant ? '<span class="star-icon"><i data-lucide="star"></i></span>' : '') +
       '<span style="font-weight:600;font-size:12.5px">' + t.title + '</span>' + sampleTag + '</div>' +
@@ -422,7 +422,7 @@ function buildScheduleBody() {
     const dd = WS.getDdayBadge(t.dueDate);
     const fillCls = t.status==='delay'?'delay':t.status==='done'?'done':'';
     const sampleTag = t._sample ? '<span style="font-size:9px;background:#06b6d422;color:#06b6d4;border-radius:4px;padding:0 4px;margin-left:4px">샘플</span>' : '';
-    return '<tr style="cursor:pointer" onclick="' + (t._sample ? '' : 'openTaskDetail(' + t.id + ')') + '">' +
+    return '<tr style="cursor:pointer" onclick="' + (t._sample ? '' : 'openReceivedTaskDetail(' + t.id + ')') + '">' +
       '<td><div style="display:flex;align-items:center;gap:6px">' +
       (t.isImportant ? '<span class="star-icon"><i data-lucide="star"></i></span>' : '') +
       '<span style="font-weight:600;font-size:12.5px">' + t.title + '</span>' + sampleTag + '</div>' +
@@ -460,7 +460,7 @@ function buildDueTodayBody() {
     const assigner = t.assignerId ? WS.getUser(t.assignerId) : null;
     const fillCls = t.status==='delay'?'delay':t.status==='done'?'done':'';
     const sampleTag = t._sample ? '<span style="font-size:9px;background:#ef444422;color:#ef4444;border-radius:4px;padding:0 4px;margin-left:4px">샘플</span>' : '';
-    return '<tr style="cursor:pointer" onclick="' + (t._sample ? '' : 'openTaskDetail(' + t.id + ')') + '">' +
+    return '<tr style="cursor:pointer" onclick="' + (t._sample ? '' : 'openReceivedTaskDetail(' + t.id + ')') + '">' +
       '<td><div style="display:flex;align-items:center;gap:6px">' +
       '<i data-lucide="alert-circle" style="width:12px;height:12px;color:#ef4444;flex-shrink:0"></i>' +
       '<span style="font-weight:700;font-size:12.5px;color:#ef4444">' + t.title + '</span>' + sampleTag + '</div>' +
@@ -1040,10 +1040,168 @@ function changeStatus(taskId, newStatus) {
   WS.changeTaskStatus(taskId, newStatus);
   renderDashboard();
   renderPage_Tasks();
-  showToast('success', `업무 상태媛 "${WS.getStatusLabel(newStatus)}"?쇰줈 蹂寃쎈릺됩니다.`);
+  showToast('success', `업무 상태媛€ "${WS.getStatusLabel(newStatus)}"?쇰줈 蹂€寃쎈릺됩니다.`);
 }
 
-/* ?? 업무 상세 紐⑤떖 ?? */
+/* ── 내가 지시받은 업무 클릭 → 지시받은 업무 전용 상세 모달 */
+function openReceivedTaskDetail(taskId) {
+  const t = WS.getTask(taskId);
+  if (!t) return;
+
+  // ws_instructions에서 지시 정보 가져오기
+  const instrList = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
+  const instr = instrList.find(i => i.id === t.id || i.id === Number(t.id));
+
+  // 지시자
+  const assigner = WS.getUser(t.assignerId);
+  const assignerName = assigner ? assigner.name : (instr && instr.assignerName ? instr.assignerName : '-');
+
+  // 지시일 (지시사항 등록일 또는 startDate)
+  const instrDate = (instr && instr.createdAt) ? new Date(instr.createdAt).toLocaleDateString('ko-KR') :
+                    (t.startDate ? t.startDate : '-');
+
+  // 마감일 포맷
+  const dueStr = t.dueDate ? new Date(t.dueDate).toLocaleDateString('ko-KR') : '-';
+  const dd = WS.getDdayBadge(t.dueDate);
+  const fillCls = t.status==='delay'?'delay':t.status==='done'?'done':'';
+  const progress = t.progress || 0;
+
+  // 지시중요도 아이콘 목록
+  const allImportances = JSON.parse(localStorage.getItem('ws_instr_importances') || '[]');
+  const importanceStr = (instr && instr.importance) ? instr.importance : (t.importance || '');
+  const impNames = importanceStr ? importanceStr.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  const impIcons = impNames.map(name => {
+    const imp = allImportances.find(i => i.name === name);
+    if (!imp || !imp.icon) return '';
+    const c = imp.color || '#ef4444';
+    return `<span title="${name}" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${c}18;border:1.5px solid ${c}">
+      <i data-lucide="${imp.icon}" style="width:12px;height:12px;color:${c}"></i></span>`;
+  }).join('');
+
+  // 지시내용
+  const instrContent = (instr && instr.content) ? instr.content : (t.desc || t.description || '-');
+
+  document.getElementById('tdModalTitle').innerHTML =
+    `${t.title} <span style="font-size:13px;font-weight:700;background:var(--accent-blue);color:#fff;border-radius:20px;padding:2px 10px;vertical-align:middle;margin-left:6px">${progress}%</span>`;
+
+  document.getElementById('tdModalBody').innerHTML = `
+    <!-- 📋 지시받은 업무 상세 카드 -->
+    <div style="background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:14px;padding:16px;margin-bottom:18px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <div>
+          <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">지시자 및 업무명</div>
+          <div style="font-size:13px;font-weight:700;color:var(--accent-blue);margin-bottom:3px">${assignerName} → ${t.title}</div>
+          <div style="font-size:15px;font-weight:800;color:var(--text-primary)">${t.title}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          ${_renderStatusBadge(t.status)}
+          ${impIcons}
+          <span class="dday-badge ${dd.cls}">${dd.label}</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
+        <div style="background:var(--bg-secondary);border-radius:10px;padding:10px 12px">
+          <div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">지시일</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text-primary)">${instrDate}</div>
+        </div>
+        <div style="background:var(--bg-secondary);border-radius:10px;padding:10px 12px">
+          <div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">마감일</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text-primary)">${dueStr}</div>
+        </div>
+        <div style="background:var(--bg-secondary);border-radius:10px;padding:10px 12px">
+          <div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">진행율</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+            <div style="flex:1;height:5px;background:var(--border-color);border-radius:100px;overflow:hidden">
+              <div style="width:${progress}%;height:100%;background:${t.status==='done'?'#22c55e':t.status==='delay'?'#ef4444':'var(--accent-blue)'};border-radius:100px;transition:width .4s"></div>
+            </div>
+            <span style="font-size:12px;font-weight:800;color:var(--accent-blue)">${progress}%</span>
+          </div>
+        </div>
+        <div style="background:var(--bg-secondary);border-radius:10px;padding:10px 12px">
+          <div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">보고내용</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text-primary)">${t.reportContent||'-'}</div>
+        </div>
+      </div>
+      <!-- 지시내용 (readonly) -->
+      <div style="border-top:1px solid var(--border-color);padding-top:12px">
+        <label class="form-label" style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+          <i data-lucide="file-text" style="width:12px;height:12px"></i> 지시내용
+        </label>
+        <div style="background:var(--bg-secondary);border:1.5px solid var(--border-color);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--text-primary);min-height:72px;line-height:1.6;white-space:pre-wrap">${instrContent}</div>
+      </div>
+    </div>
+
+    <!-- 📊 진행율 설정 -->
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        <i data-lucide="sliders-horizontal" style="width:13px;height:13px"></i> 진행율 설정
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <input type="range" min="${t.progress}" max="100" value="${progress}" id="progressSlider_${t.id}"
+          style="flex:1;accent-color:var(--accent-blue)"
+          oninput="const _min=parseInt(this.min);if(parseInt(this.value)<_min)this.value=_min;document.getElementById('progVal_${t.id}').textContent=this.value+'%'; document.getElementById('progBar_live_${t.id}').style.width=this.value+'%'">
+        <span id="progVal_${t.id}" style="font-size:15px;font-weight:800;color:var(--accent-blue);min-width:40px;text-align:right">${progress}%</span>
+      </div>
+      <div class="progress-bar" style="margin-top:8px;height:8px;border-radius:6px">
+        <div class="progress-fill ${fillCls}" id="progBar_live_${t.id}" style="width:${progress}%;border-radius:6px"></div>
+      </div>
+    </div>
+
+    <!-- 📝 진행보고 입력 -->
+    <div style="margin-bottom:18px;background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:14px;padding:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        <i data-lucide="message-square-plus" style="width:13px;height:13px"></i> 진행보고 추가
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="reportIconChips">
+        ${(WS.reportTypes||[]).map(ic => `
+          <button type="button"
+            onclick="document.querySelectorAll('#reportIconChips .ricon-chip').forEach(b=>b.classList.remove('active'));this.classList.add('active');document.getElementById('td_reportIconVal').value='${ic.icon}|${ic.label}|${ic.color}';"
+            class="ricon-chip" style="display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:20px;border:1.5px solid var(--border-color);background:var(--bg-secondary);font-size:11.5px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all .15s;white-space:nowrap">
+            <i data-lucide="${ic.icon}" style="width:12px;height:12px"></i>${ic.label}
+          </button>`).join('')}
+      </div>
+      <style>.ricon-chip.active { background:var(--accent-blue)!important; color:#fff!important; border-color:var(--accent-blue)!important; }</style>
+      <input type="hidden" id="td_reportIconVal" value="message-square|진행보고|#4f6ef7">
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <textarea id="td_reportText" placeholder="진행 내용을 입력하세요..." rows="2"
+          class="form-input" style="flex:1;resize:none;font-size:13px"></textarea>
+        <button onclick="addProgressReport(${t.id})" class="btn btn-blue" style="height:auto;padding:8px 14px;white-space:nowrap;align-self:stretch">
+          <i data-lucide="plus" style="width:14px;height:14px"></i> 추가
+        </button>
+      </div>
+    </div>
+
+    <input type="hidden" id="td_report" value="${t.reportContent||''}">
+    <input type="hidden" id="td_score"  value="${t.score||0}">
+    <input type="hidden" id="td_title"  value="${t.title}">
+    <input type="hidden" id="td_desc"   value="${instrContent}">
+
+    <!-- 📜 업무 히스토리 -->
+    <div style="border-top:1px solid var(--border-color);padding-top:14px" id="historySection_${t.id}">
+      <button class="btn" style="width:100%;justify-content:space-between;background:var(--bg-tertiary);border:none;font-size:12px;font-weight:700;height:36px"
+        onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.chev').textContent=this.nextElementSibling.style.display==='none'?'▼':'▲'">
+        <span style="display:flex;align-items:center;gap:6px">
+          <i data-lucide="history" style="width:14px;height:14px"></i> 업무 히스토리
+          <span style="font-size:10px;background:var(--bg-card);border-radius:8px;padding:1px 7px;color:var(--text-muted)">${(t.history||[]).length}건</span>
+        </span>
+        <span class="chev">▼</span>
+      </button>
+      <div style="display:none;margin-top:8px" id="historyList_${t.id}"></div>
+    </div>
+  `;
+
+  // 모달 열기
+  const m = document.getElementById('taskDetailModal');
+  if (m) {
+    m.style.display = 'flex';
+    window._currentDetailTaskId = t.id;
+    if (window.lucide) lucide.createIcons();
+    // 히스토리 로딩
+    if (typeof renderTaskHistory === 'function') renderTaskHistory(t.id);
+  }
+}
+
+/* ?€?€ 업무 상세 紐⑤떖 ?€?€ */
 function openTaskDetail(taskId) {
   const t = WS.getTask(taskId);
   if (!t) return;
@@ -1061,11 +1219,11 @@ function openTaskDetail(taskId) {
     <div style="background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:14px;padding:16px;margin-bottom:18px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
         <div>
-          <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">업무명</div>
+          <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">업조명</div>
           <div style="font-size:15px;font-weight:800;color:var(--text-primary)">${t.isImportant?'⭐':''}${t.title}</div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-          <span class="status-badge status-${t.status}">${WS.getStatusLabel(t.status)}</span>
+          ${_renderStatusBadge(t.status)}
           <span class="priority-badge priority-${t.priority}">${WS.getPriorityLabel(t.priority)}</span>
           <span class="dday-badge ${dd.cls}">${dd.label}</span>
         </div>
