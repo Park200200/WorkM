@@ -974,7 +974,11 @@ function _updateChatMemberList() {
   if (!container) return;
 
   var users = [];
-  if (_activeChatTask) {
+  if (_activeChatAssignerOverride) {
+    // 지시자 override: 해당 지시자만 우측에 표시
+    var au = (WS.users || []).find(function(u){ return String(u.id) === String(_activeChatAssignerOverride); });
+    users = au ? [au] : [];
+  } else if (_activeChatTask) {
     var ids = Array.isArray(_activeChatTask.assigneeIds)
       ? _activeChatTask.assigneeIds
       : (_activeChatTask.assigneeId ? [_activeChatTask.assigneeId] : []);
