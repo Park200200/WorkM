@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 
 let sidebarTimer = null;
 
@@ -1185,7 +1185,7 @@ function openReceivedTaskDetail(taskId) {
         </span>
         <span class="chev">▼</span>
       </button>
-      <div style="display:none;margin-top:8px" id="historyList_${t.id}"></div>
+      <div style="display:block;margin-top:8px" id="historyList_${t.id}"></div>
     </div>
   `;
 
@@ -1198,6 +1198,36 @@ function openReceivedTaskDetail(taskId) {
     // 히스토리 로딩
     if (typeof renderTaskHistory === 'function') renderTaskHistory(t.id);
   }
+}
+/* -- 업무 히스토리 렌더링 */
+function renderTaskHistory(taskId) {
+  const t = WS.getTask(taskId);
+  const el = document.getElementById('historyList_' + taskId);
+  if (!el || !t) return;
+  const history = t.history || [];
+  if (history.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-muted)">히스토리가 없습니다</div>';
+    return;
+  }
+  el.innerHTML = history.slice().reverse().map(function(h) {
+    const icon = h.icon || 'clock';
+    const color = h.color || '#4f6ef7';
+    const dateStr = h.date ? new Date(h.date).toLocaleString('ko-KR', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    const user = h.userId ? WS.getUser(h.userId) : null;
+    return '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-color)">'
+      + '<div style="width:30px;height:30px;border-radius:50%;background:' + color + '18;border:1.5px solid ' + color + ';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+      + '<i data-lucide="' + icon + '" style="width:13px;height:13px;color:' + color + '"></i></div>'
+      + '<div style="flex:1">'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">'
+      + '<span style="font-size:11px;font-weight:700;color:var(--text-primary)">' + (h.label||h.type||'업무보고') + '</span>'
+      + (user ? '<span style="font-size:10px;color:var(--text-muted)">' + user.name + '</span>' : '')
+      + '<span style="font-size:10px;color:var(--text-muted);margin-left:auto">' + dateStr + '</span></div>'
+      + '<div style="font-size:12px;color:var(--text-secondary);line-height:1.5">' + (h.content||h.text||'') + '</div>'
+      + '</div></div>';
+  }).join('');
+  const countEl = document.getElementById('historyCount_' + taskId);
+  if (countEl) countEl.textContent = history.length + '건';
+  if (window.lucide) lucide.createIcons();
 }
 
 /* ?€?€ 업무 상세 紐⑤떖 ?€?€ */
