@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 
 let sidebarTimer = null;
 
@@ -1233,17 +1233,28 @@ function renderTaskHistory(taskId) {
   el.innerHTML = history.slice().reverse().map(function(h) {
     const icon = h.icon || 'clock';
     const color = h.color || '#4f6ef7';
-    const dateStr = h.date ? new Date(h.date).toLocaleString('ko-KR', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-    const user = h.userId ? WS.getUser(h.userId) : null;
-    return '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-color)">'
-      + '<div style="width:30px;height:30px;border-radius:50%;background:' + color + '18;border:1.5px solid ' + color + ';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
-      + '<i data-lucide="' + icon + '" style="width:13px;height:13px;color:' + color + '"></i></div>'
-      + '<div style="flex:1">'
-      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">'
-      + '<span style="font-size:11px;font-weight:700;color:var(--text-primary)">' + (h.label||h.type||'업무보고') + '</span>'
-      + (user ? '<span style="font-size:10px;color:var(--text-muted)">' + user.name + '</span>' : '')
-      + '<span style="font-size:10px;color:var(--text-muted);margin-left:auto">' + dateStr + '</span></div>'
-      + '<div style="font-size:12px;color:var(--text-secondary);line-height:1.5">' + (h.content||h.text||'') + '</div>'
+    // 날짜 포맷: '2026.03.29' 또는 ISO 문자열 모두 처리
+    let dateStr = h.date || '';
+    if (dateStr) {
+      const d = new Date(dateStr.replace(/\./g, '-'));
+      if (!isNaN(d)) dateStr = (d.getMonth()+1) + '/' + d.getDate() + ' ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2,'0');
+    }
+    const eventLabel = h.event || h.label || h.type || '업무보고';
+    const detailText = h.detail || h.content || h.text || '';
+    const progressVal = (h.progress !== undefined && h.progress !== null) ? h.progress : null;
+    const barColor = progressVal >= 100 ? '#22c55e' : (progressVal >= 50 ? '#4f6ef7' : '#f59e0b');
+    return '<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-color)">'
+      + '<div style="width:32px;height:32px;border-radius:50%;background:' + color + '18;border:1.5px solid ' + color + ';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+      + '<i data-lucide="' + icon + '" style="width:14px;height:14px;color:' + color + '"></i></div>'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'
+      + '<span style="font-size:11px;font-weight:700;color:' + color + ';background:' + color + '12;border-radius:10px;padding:1px 8px">' + eventLabel + '</span>'
+      + '<span style="font-size:10px;color:var(--text-muted);margin-left:auto;flex-shrink:0">' + dateStr + '</span></div>'
+      + (detailText ? '<div style="font-size:12.5px;color:var(--text-primary);line-height:1.6;margin-bottom:4px">' + detailText + '</div>' : '')
+      + (progressVal !== null ? '<div style="display:flex;align-items:center;gap:6px">'
+        + '<div style="flex:1;height:5px;background:var(--border-color);border-radius:100px;overflow:hidden">'
+        + '<div style="width:' + progressVal + '%;height:100%;background:' + barColor + ';border-radius:100px"></div></div>'
+        + '<span style="font-size:10.5px;font-weight:700;color:' + barColor + ';flex-shrink:0">' + progressVal + '%</span></div>' : '')
       + '</div></div>';
   }).join('');
   const countEl = document.getElementById('historyCount_' + taskId);
@@ -1336,21 +1347,6 @@ function openTaskDetail(taskId) {
         ${(WS.reportTypes||[]).map(ic => `
           <button type="button"
             onclick="document.querySelectorAll('#reportIconChips .ricon-chip').forEach(b=>b.classList.remove('active'));this.classList.add('active');document.getElementById('td_reportIconVal').value='${ic.icon}|${ic.label}|${ic.color}';"
-            class="ricon-chip" style="display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:20px;border:1.5px solid var(--border-color);background:var(--bg-secondary);font-size:11.5px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all .15s;white-space:nowrap">
-            <i data-lucide="${ic.icon}" style="width:12px;height:12px"></i>${ic.label}
-          </button>`).join('')}
-      </div>
-      <style>
-        .ricon-chip.active { background:var(--accent-blue)!important; color:#fff!important; border-color:var(--accent-blue)!important; }
-      </style>
-      <input type="hidden" id="td_reportIconVal" value="message-square|진행보고|#4f6ef7">
-      <!-- 내용 입력 -->
-      <div style="display:flex;gap:8px;align-items:flex-end">
-        <textarea id="td_reportText" placeholder="진행 내용을 입력하세요..." rows="2"
-          class="form-input" style="flex:1;resize:none;font-size:13px"></textarea>
-        <button onclick="addProgressReport(${t.id})" class="btn btn-blue" style="height:auto;padding:8px 14px;white-space:nowrap;align-self:stretch">
-          <i data-lucide="plus" style="width:14px;height:14px"></i> 추가
-        </button>
       </div>
     </div>
 
@@ -1411,11 +1407,11 @@ function addProgressReport(taskId) {
 
   if (todayIdx !== -1) {
     // 당일 항목 업데이트
-    t.history[todayIdx] = { date: dateStr, event: label, detail: text, icon, color };
+    t.history[todayIdx] = { date: dateStr, event: label, detail: text, icon, color, progress: t.progress||0 };
     isUpdate = true;
   } else {
     // 신규 추가
-    t.history.push({ date: dateStr, event: label, detail: text, icon, color });
+    t.history.push({ date: dateStr, event: label, detail: text, icon, color, progress: t.progress||0 });
   }
   WS.saveTasks();
 
