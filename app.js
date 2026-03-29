@@ -591,13 +591,15 @@ function buildAssignedByMe() {
   </div>`;
 }
 
-/* ?꾩퐫?붿뼵??Body ?꾩슜 踰꾩쟾 */
+/* ── 아코디언용 Body 적용 버전 */
 function buildAssignedByMeBody() {
   const tasks = WS.getAssignedByMe();
   if(tasks.length===0) return '<div class="empty-state"><div class="es-icon"><i data-lucide="inbox"></i></div><div class="es-text">지시한 업무가 없습니다</div></div>';
 
   // 전체 지시 중요도 목록 로드
-  const allImportances = JSON.parse(localStorage.getItem('ws_instr_importances')) || [];
+  const allImportances = JSON.parse(localStorage.getItem('ws_instr_importances') || '[]');
+  // ws_instructions에서 importance 매핑용으로 로드
+  const instrList = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
 
   const rows = tasks.map(t => {
     const _ids2 = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
@@ -605,14 +607,18 @@ function buildAssignedByMeBody() {
     const dd = WS.getDdayBadge(t.dueDate);
     const fillCls = t.status==='delay'?'delay':t.status==='done'?'done':'';
 
-    // ── 이 task에 지정된 중요도만 필터링하여 배지 생성
-    const taskImpNames = t.importance
-      ? t.importance.split(',').map(s => s.trim()).filter(Boolean)
+    // ws_instructions에서 해당 업무의 importance 가져오기 (ws_tasks보다 우선)
+    const instrRecord = instrList.find(i => i.id === t.id || i.id === Number(t.id) || i.taskId === String(t.id));
+    const importanceStr = (instrRecord && instrRecord.importance) ? instrRecord.importance
+                        : (t.importance ? t.importance : '');
+
+    // ── 중요도 배지 생성
+    const taskImpNames = importanceStr
+      ? importanceStr.split(',').map(s => s.trim()).filter(Boolean)
       : [];
 
     let importanceBadges;
     if (taskImpNames.length > 0) {
-      // importance 텍스트와 일치하는 항목만 표시
       const matched = taskImpNames.map(name => {
         const imp = allImportances.find(i => i.name === name);
         const c = imp ? (imp.color || '#ef4444') : '#9ca3af';
@@ -621,17 +627,25 @@ function buildAssignedByMeBody() {
         const inner = hasIcon
           ? `<i data-lucide="${icon}" style="width:12px;height:12px;color:${c}"></i>`
           : `<span style="width:7px;height:7px;border-radius:50%;background:${c};display:inline-block"></span>`;
-        return `<span title="${name}" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${c}22;border:1.5px solid ${c};cursor:default;flex-shrink:0">${inner}</span>`;
+        return `<span title="${name}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:12px;background:${c}18;border:1.5px solid ${c};font-size:10.5px;font-weight:700;color:${c};cursor:default;flex-shrink:0">${inner}${name}</span>`;
       }).join('');
       importanceBadges = matched || `<span style="font-size:11px;color:var(--text-muted)">-</span>`;
     } else {
       importanceBadges = `<span style="font-size:11px;color:var(--text-muted)">-</span>`;
     }
 
+    // 업무명 앞 첫 번째 중요도 아이콘
+    const firstImpIcon = taskImpNames.length > 0 ? (() => {
+      const imp = allImportances.find(i => i.name === taskImpNames[0]);
+      if (!imp || !imp.icon || imp.icon.length <= 2) return '';
+      const c = imp.color || '#ef4444';
+      return `<i data-lucide="${imp.icon}" style="width:13px;height:13px;color:${c};flex-shrink:0;margin-right:2px"></i>`;
+    })() : '';
+
     return `<tr style="cursor:pointer">
       <td onclick="editInstruction(${t.id})" title="클릭하여 수정">
         <div style="display:flex;align-items:center;gap:4px">
-          ${_getFirstImportanceIcon(t.importance)}
+          ${firstImpIcon}
           ${t.isImportant?'<span class="star-icon"><i data-lucide="star"></i></span>':''}
           <span style="font-weight:600;font-size:12.5px;text-decoration:underline dotted;text-underline-offset:3px">${t.title}</span>
         </div>
