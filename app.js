@@ -3578,7 +3578,8 @@ function openInstructionModal(editData) {
   }
 
   // ── 수정 모드 설정
-  window._instrEditId = editData ? (editData.id || null) : null;
+  window._instrEditId   = editData ? (editData.id || null) : null;
+  window._instrEditData = editData || null; // 수정모드에서 이름 복원용
   var isEdit = !!window._instrEditId;
 
   // ── 업무/담당자 입력 영역 표시 제어
@@ -3614,6 +3615,22 @@ function openInstructionModal(editData) {
     if (titleEl) titleEl.textContent = '지시사항 등록';
     var hSec = document.getElementById('instrHistorySection');
     if (hSec) hSec.style.display = 'none';
+  }
+
+  // ── 현재상태 드롭다운 채우기 (ws_task_statuses)
+  var statusSel = document.getElementById('instrStatus');
+  if (statusSel) {
+    var taskStatuses = JSON.parse(localStorage.getItem('ws_task_statuses') || '[]');
+    statusSel.innerHTML = '<option value="">상태 선택</option>' +
+      taskStatuses.map(function(s) {
+        return '<option value="' + (s.id || s.name) + '">' + s.name + '</option>';
+      }).join('');
+    // 수정 모드: 기존 상태 복원
+    if (editData && (editData.status || editData.taskStatus)) {
+      statusSel.value = editData.status || editData.taskStatus || '';
+    } else {
+      statusSel.value = '';
+    }
   }
 
   // ── 담당자 드롭다운 채우기
@@ -4037,21 +4054,32 @@ function saveInstruction() {
   const fileEl   = document.getElementById('instrFile');
   const impVal   = document.getElementById('instrImportanceVal');
 
-  const taskId     = taskSel ? taskSel.value : '';
+  const taskId     = taskSel ? taskSel.value : (window._instrEditId ? String(window._instrEditId) : '');
   const assigneeId = assSel  ? assSel.value  : '';
   const dueDate    = dueEl   ? dueEl.value   : '';
   const content    = contEl  ? contEl.value.trim() : '';
   const report     = repEl   ? repEl.value.trim()  : '';
   const procedure  = procEl  ? procEl.value   : '';
   const importance = impVal  ? impVal.value   : '';
+  const statusEl   = document.getElementById('instrStatus');
+  const taskStatus = statusEl ? statusEl.value : '';
 
-  if (!taskId)    { showToast('error', '업무를 선택하세요.');    return; }
-  if (!assigneeId){ showToast('error', '담당자를 선택하세요.'); return; }
+  const isEditMode = !!window._instrEditId;
+  if (!isEditMode && !taskId)    { showToast('error', '업무를 선택하세요.');    return; }
+  if (!isEditMode && !assigneeId){ showToast('error', '담당자를 선택하세요.'); return; }
   if (!dueDate)   { showToast('error', '지시완료일을 선택하세요.'); return; }
   if (!content)   { showToast('error', '지시내용을 입력하세요.'); return; }
 
-  const taskName     = taskSel.options[taskSel.selectedIndex]?.text || '';
-  const assigneeName = assSel.options[assSel.selectedIndex]?.text  || '';
+  // 이름 구하기 (수정모드에서는 select가 숨견a 수 있음)
+  var taskName = '';
+  var assigneeName = '';
+  if (taskSel && taskSel.selectedIndex >= 0) taskName = taskSel.options[taskSel.selectedIndex].text;
+  if (assSel  && assSel.selectedIndex  >= 0) assigneeName = assSel.options[assSel.selectedIndex].text;
+  // 수정모드에서 editData의 이름 활용
+  if (isEditMode && window._instrEditData) {
+    if (!taskName)     taskName     = window._instrEditData.taskName     || '';
+    if (!assigneeName) assigneeName = window._instrEditData.assigneeName || '';
+  }
   const attachments = [
     ...(window._instrExistingFiles || []),
     ...(window._instrFileArr || []).map(f => f.name)
@@ -4071,6 +4099,8 @@ function saveInstruction() {
         taskId, taskName,
         assigneeId: Number(assigneeId), assigneeName,
         dueDate, content, report, procedure, importance, attachments,
+        status: taskStatus || instr[idx].status || 'progress',
+        taskStatus,
         isImportant: importance.length > 0,
         updatedAt: new Date().toISOString()
       });
@@ -4081,7 +4111,8 @@ function saveInstruction() {
         taskId, taskName,
         assigneeId: Number(assigneeId), assigneeName,
         dueDate, content, report, procedure, importance, attachments,
-        status: 'progress', progress: 0, team: '',
+        status: taskStatus || 'progress', taskStatus,
+        progress: 0, team: '',
         isImportant: importance.length > 0,
         author: WS.currentUser ? WS.currentUser.name : '관리자',
         updatedAt: new Date().toISOString()
@@ -4093,10 +4124,10 @@ function saveInstruction() {
     if (WS.tasks) {
       const ti = WS.tasks.findIndex(t => t.id === editId || t.id === Number(editId));
       if (ti !== -1) {
-        Object.assign(WS.tasks[ti], {
+      Object.assign(WS.tasks[ti], {
           title: taskName,
           assigneeIds: [Number(assigneeId)],
-          dueDate,
+          dueDate, status: taskStatus || WS.tasks[ti].status || 'progress',
           isImportant: importance.length > 0
         });
       }
@@ -4108,7 +4139,8 @@ function saveInstruction() {
       id: newId, taskId, taskName,
       assigneeId: Number(assigneeId), assigneeName,
       dueDate, content, report, procedure, importance, attachments,
-      status: 'progress', progress: 0, team: '',
+      status: taskStatus || 'progress', taskStatus,
+      progress: 0, team: '',
       isImportant: importance.length > 0,
       author: WS.currentUser ? WS.currentUser.name : '관리자',
       createdAt: new Date().toISOString()

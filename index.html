@@ -864,8 +864,8 @@
               </div>
             </div>
 
-            <!-- 지시완료일 + 업무중요도 2열 -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <!-- 지시완료일 + 업무중요도 + 현재상태 3열 -->
+            <div style="display:grid;grid-template-columns:180px 1fr 160px;gap:12px">
 
               <!-- 지시완료일: 커스텀 날짜 피커 -->
               <div class="form-group" style="margin:0">
@@ -906,6 +906,17 @@
                   onmouseup="_impDragEnd()"
                   onmouseleave="_impDragEnd()"></div>
                 <input type="hidden" id="instrImportanceVal">
+              </div>
+
+              <!-- 현재상태 선택 -->
+              <div class="form-group" style="margin:0">
+                <label class="form-label">
+                  <i data-lucide="activity" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+                  현재상태
+                </label>
+                <select class="form-input" id="instrStatus" style="cursor:pointer;font-size:12.5px">
+                  <option value="">-- 상태 선택 --</option>
+                </select>
               </div>
 
             </div>
