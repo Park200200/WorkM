@@ -815,8 +815,35 @@
 
           <div class="modal-body" style="overflow-y:auto;display:flex;flex-direction:column;gap:14px">
 
-            <!-- 업무선택 + 담당자선택 2열 -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <!-- [수정 모드 전용] 읽기전용 담당자/업무명 + 진행율 -->
+            <div id="instrEditHeader" style="display:none">
+              <div style="display:flex;align-items:stretch;gap:10px">
+                <div style="flex:1;background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:10px;
+                             padding:10px 14px;display:flex;flex-direction:column;justify-content:center;gap:2px">
+                  <div style="font-size:10.5px;color:var(--text-muted);font-weight:600;margin-bottom:2px">
+                    <i data-lucide="user" style="width:10px;height:10px;vertical-align:middle;margin-right:3px"></i>
+                    담당자 및 업무명
+                  </div>
+                  <div id="instrEditHeaderLabel" style="font-size:13px;font-weight:700;color:var(--text-primary);line-height:1.4"></div>
+                </div>
+                <div style="min-width:130px;background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:10px;
+                             padding:10px 14px;display:flex;flex-direction:column;justify-content:center;gap:6px">
+                  <div style="font-size:10.5px;color:var(--text-muted);font-weight:600">
+                    <i data-lucide="activity" style="width:10px;height:10px;vertical-align:middle;margin-right:3px"></i>
+                    현재 진행율
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div style="flex:1;height:6px;background:var(--bg-secondary);border-radius:100px;overflow:hidden">
+                      <div id="instrEditProgressBar" style="height:100%;border-radius:100px;background:linear-gradient(90deg,#4f6ef7,#9747ff);transition:width .4s"></div>
+                    </div>
+                    <span id="instrEditProgressLabel" style="font-size:12px;font-weight:800;color:var(--accent-blue);min-width:34px;text-align:right">0%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 업무선택 + 담당자선택 2열 (신규 등록시에만 표시) -->
+            <div id="instrNewFields" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
               <div class="form-group" style="margin:0">
                 <label class="form-label">
                   <i data-lucide="briefcase" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
@@ -936,6 +963,25 @@
                   파일 선택 (여러 개 가능)
                 </button>
                 <div id="instrFileList" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+              </div>
+            </div>
+
+            <!-- [수정 모드 전용] 업무 히스토리 섹션 -->
+            <div id="instrHistorySection" style="display:none">
+              <div style="border-top:1.5px solid var(--border-color);padding-top:14px">
+                <div onclick="_toggleInstrHistory()" style="display:flex;align-items:center;justify-content:space-between;
+                     cursor:pointer;padding:6px 0;user-select:none"
+                     onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
+                  <div style="display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:var(--text-primary)">
+                    <i data-lucide="clock" style="width:13px;height:13px;color:var(--accent-blue)"></i>
+                    업무 히스토리
+                    <span id="instrHistoryCount" style="font-size:11px;font-weight:600;color:var(--text-muted)"></span>
+                  </div>
+                  <i data-lucide="chevron-down" id="instrHistoryChevron" style="width:14px;height:14px;color:var(--text-muted);transition:transform .2s"></i>
+                </div>
+                <div id="instrHistoryList" style="display:flex;flex-direction:column;gap:0;margin-top:4px;overflow:hidden;max-height:260px;overflow-y:auto">
+                  <!-- JS에서 렌더 -->
+                </div>
               </div>
             </div>
 

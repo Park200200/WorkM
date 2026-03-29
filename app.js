@@ -3579,10 +3579,42 @@ function openInstructionModal(editData) {
 
   // ── 수정 모드 설정
   window._instrEditId = editData ? (editData.id || null) : null;
+  var isEdit = !!window._instrEditId;
+
+  // ── 업무/담당자 입력 영역 표시 제어
+  var newFields  = document.getElementById('instrNewFields');
+  var editHeader = document.getElementById('instrEditHeader');
+  if (newFields)  newFields.style.display  = isEdit ? 'none' : 'grid';
+  if (editHeader) editHeader.style.display  = isEdit ? 'block' : 'none';
 
   // ── 모달 타이틀 변경
-  const titleEl = document.getElementById('instructionModalTitle');
-  if (titleEl) titleEl.textContent = window._instrEditId ? '지시사항 수정' : '지시사항 등록';
+  var titleEl = document.getElementById('instructionModalTitle');
+  if (isEdit) {
+    // 담당자 이름 구하기
+    var assigneeName = editData.assigneeName || '';
+    if (!assigneeName && editData.assigneeId) {
+      var aUser = WS.getUser ? WS.getUser(editData.assigneeId) : WS.users.find(function(u){ return String(u.id) === String(editData.assigneeId); });
+      if (aUser) assigneeName = aUser.name;
+    }
+    var headerLabel = (assigneeName || '') + ' : ' + (editData.taskName || editData.title || '');
+    if (titleEl) titleEl.textContent = headerLabel;
+    // 읽기전용 헤더 레이블
+    var hLabel = document.getElementById('instrEditHeaderLabel');
+    if (hLabel) hLabel.textContent = headerLabel;
+    // 진행율 (WS.tasks에서 찾기)
+    var task = WS.getTask ? WS.getTask(editData.id) : WS.tasks.find(function(t){ return t.id === editData.id || t.id === Number(editData.id); });
+    var progress = (task && task.progress != null) ? task.progress : (editData.progress || 0);
+    var bar = document.getElementById('instrEditProgressBar');
+    var lbl = document.getElementById('instrEditProgressLabel');
+    if (bar) bar.style.width = progress + '%';
+    if (lbl) lbl.textContent = progress + '%';
+    // 히스토리 섹션
+    _renderInstrHistory(task || editData);
+  } else {
+    if (titleEl) titleEl.textContent = '지시사항 등록';
+    var hSec = document.getElementById('instrHistorySection');
+    if (hSec) hSec.style.display = 'none';
+  }
 
   // ── 담당자 드롭다운 채우기
   const assSel = document.getElementById('instrAssignee');
@@ -3725,6 +3757,50 @@ function openInstructionModal(editData) {
 
   m.style.display = 'flex';
   setTimeout(refreshIcons, 50);
+}
+
+/* 히스토리 렌더 */
+function _renderInstrHistory(task) {
+  var hSec  = document.getElementById('instrHistorySection');
+  var hList = document.getElementById('instrHistoryList');
+  var hCnt  = document.getElementById('instrHistoryCount');
+  var hChev = document.getElementById('instrHistoryChevron');
+  if (!hSec || !hList) return;
+
+  var history = (task && task.history) ? task.history.slice().reverse() : [];
+  if (history.length === 0) {
+    hSec.style.display = 'none';
+    return;
+  }
+  hSec.style.display = 'block';
+  if (hCnt) hCnt.textContent = history.length + '건';
+  if (hChev) hChev.style.transform = 'rotate(0deg)';
+
+  hList.innerHTML = history.map(function(h) {
+    var c     = h.color || '#4f6ef7';
+    var icon  = h.icon  || 'clock';
+    var bg    = c + '22';
+    return '<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 4px;border-bottom:1px solid var(--border-color)">' +
+      '<div style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:' + bg + ';border:1.5px solid ' + c + ';flex-shrink:0;margin-top:2px">' +
+        '<i data-lucide="' + icon + '" style="width:14px;height:14px;color:' + c + '"></i>' +
+      '</div>' +
+      '<div>' +
+        '<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:2px">' + (h.date || '') + '</div>' +
+        '<div style="font-size:12.5px;font-weight:700;color:var(--text-primary);margin-bottom:2px">' + (h.event || '') + '</div>' +
+        '<div style="font-size:11.5px;color:var(--text-secondary)">' + (h.detail || '') + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  setTimeout(refreshIcons, 30);
+}
+
+var _instrHistoryOpen = true;
+function _toggleInstrHistory() {
+  _instrHistoryOpen = !_instrHistoryOpen;
+  var hList = document.getElementById('instrHistoryList');
+  var hChev = document.getElementById('instrHistoryChevron');
+  if (hList) hList.style.maxHeight = _instrHistoryOpen ? '260px' : '0';
+  if (hChev) hChev.style.transform = _instrHistoryOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
 }
 
 /* 보고절차 칩 토글 */
