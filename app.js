@@ -410,7 +410,7 @@ function buildReceivedBody() {
     var barColor = t.status==='done'?'#22c55e':t.status==='delay'?'#ef4444':'var(--accent-blue)';
     var progressCell = '<div style="display:flex;align-items:center;gap:5px"><div style="position:relative;width:60px;height:6px;background:var(--border-color);border-radius:100px;overflow:hidden;flex-shrink:0"><div style="position:absolute;left:0;top:0;width:' + t.progress + '%;height:100%;border-radius:100px;background:' + barColor + ';transition:width .4s"></div></div><span style="font-size:10.5px;font-weight:700;color:var(--text-primary);min-width:28px;text-align:right">' + t.progress + '%</span></div>';
     var assignerCell = assigner
-      ? '<td onclick="event.stopPropagation();openTaskChatChannel(\'' + t.title + '\',' + t.id + ')" title="클릭하여 메시지 채널 열기" style="cursor:pointer"><div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,' + (assigner.color||'#9747ff') + ',#4f6ef7)">' + (assigner.avatar||'?') + '</div></div><div style="font-size:11px;color:var(--currentAccent,#9747ff);margin-top:2px;font-weight:600;text-decoration:underline dotted;text-underline-offset:2px">' + assigner.name + '</div></td>'
+      ? '<td onclick="event.stopPropagation();openTaskChatChannel(\'' + t.title + '\',' + t.id + ',' + (t.assignerId||'') + ')" title="클릭하여 메시지 채널 열기" style="cursor:pointer"><div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,' + (assigner.color||'#9747ff') + ',#4f6ef7)">' + (assigner.avatar||'?') + '</div></div><div style="font-size:11px;color:var(--currentAccent,#9747ff);margin-top:2px;font-weight:600;text-decoration:underline dotted;text-underline-offset:2px">' + assigner.name + '</div></td>'
       : '<td><div style="font-size:11px;color:var(--text-muted)">지시자</div></td>';
     return '<tr style="cursor:pointer" onclick="' + (t._sample ? '' : 'openReceivedTaskDetail(' + t.id + ')') + '">'
       + '<td style="width:25%"><div style="display:flex;align-items:center;gap:6px">'
@@ -418,9 +418,9 @@ function buildReceivedBody() {
       + '<span style="font-weight:600;font-size:12.5px">' + t.title + '</span>' + sampleTag + '</div>'
       + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>'
       + assignerCell
-      + '<td>' + _renderStatusBadge(t.status) + '</td>'
-      + '<td>' + progressCell + '</td>'
-      + '<td><span class="dday-badge ' + dd.cls + '">' + dd.label + '</span></td>'
+      + '<td style="pointer-events:none">' + _renderStatusBadge(t.status) + '</td>'
+      + '<td style="pointer-events:none">' + progressCell + '</td>'
+      + '<td style="pointer-events:none"><span class="dday-badge ' + dd.cls + '">' + dd.label + '</span></td>'
       + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">' + importanceBadges + '</div></td>'
       + '</tr>';
   }).join('');
@@ -873,11 +873,17 @@ function buildChatWidget() {
         </h3>
         <div id="chatMemberList" style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:58%">
           ${(function(){
-            // 활성 채널이 있으면 해당 업무 담당자만, 없으면 전체
             var users = [];
-            if (_activeChatTask && _activeChatTask.assigneeIds) {
-              var ids = _activeChatTask.assigneeIds;
-              users = (WS.users || []).filter(function(u){ return ids.some(function(id){ return String(id) === String(u.id); }); });
+            if (_activeChatAssignerOverride) {
+              var assignerUser = (WS.users || []).find(function(u){ return String(u.id) === String(_activeChatAssignerOverride); });
+              users = assignerUser ? [assignerUser] : [];
+            } else if (_activeChatTask) {
+              var ids = Array.isArray(_activeChatTask.assigneeIds)
+                ? _activeChatTask.assigneeIds
+                : (_activeChatTask.assigneeId ? [_activeChatTask.assigneeId] : []);
+              users = (WS.users || []).filter(function(u){
+                return ids.some(function(id){ return String(id) === String(u.id); });
+              });
             } else {
               users = WS.users || [];
             }
@@ -927,13 +933,15 @@ function sendMessage() {
 /* ── 내가 지시한 업무 담당자 클릭 → 실시간 메시지 채널 활성화 */
 var _activeChatTaskTitle = null;
 var _activeChatTask = null;
-function openTaskChatChannel(taskTitle, taskId) {
+var _activeChatAssignerOverride = null;
+function openTaskChatChannel(taskTitle, taskId, assignerIdOverride) {
   var nameEl   = document.getElementById('chatChannelTaskName');
   var suffixEl = document.getElementById('chatChannelSuffix');
   var inputEl  = document.getElementById('chatInput');
   var chatBody = document.getElementById('chatBody');
 
   _activeChatTaskTitle = taskTitle;
+  _activeChatAssignerOverride = assignerIdOverride || null;
   // taskId로 해당 업무 담당자 정보 찾기
   if (taskId) {
     _activeChatTask = WS.tasks && WS.tasks.find(function(t){ return String(t.id) === String(taskId); });
