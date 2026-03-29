@@ -291,50 +291,49 @@ function renderStats() {
 function renderDashGrid() {
   const el = document.getElementById('dashGrid');
   if(!el) return;
-  window._dashAccordion = window._dashAccordion || 'byMe'; // 湲곕낯 열린?덈뒗 탭
 
   el.innerHTML = `
     ${buildGantt()}
     <div class="dash-main-grid">
-      <!-- 醫뚯륫: 梨꾪똿李?-->
+      <!-- 좌측: 채팅 위젯 -->
       <div class="dash-chat-area">
         ${buildChatWidget()}
       </div>
-      <!-- ?곗륫: ?꾩퐫?붿뼵 3탭 -->
+      <!-- 우측: 아코디언 4탭 -->
       <div class="dash-left-col" id="dashAccordionCol">
-        ${buildAccordionCard('byMe',  '#4f6ef7', 'send',         '내가 지시한 업무',     getByMeCount(),   buildAssignedByMeBody())}
-        ${buildAccordionCard('toMe',  '#9747ff', 'download',     '나에게 배정된 업무',   getToMeCount(),   buildAssignedToMeBody())}
-        ${buildAccordionCard('today', '#ef4444', 'alert-circle', '오늘 완료해야 할 업무', getTodayCount(), buildTodayTasksBody())}
+        ${buildAccordionCard('byMe',     '#4f6ef7', 'send',         '내가 지시한 업무',      getByMeCount(),       buildAssignedByMeBody())}
+        ${buildAccordionCard('received', '#9747ff', 'download',     '내가 지시받은 업무',    getReceivedCount(),   buildReceivedBody())}
+        ${buildAccordionCard('schedule', '#06b6d4', 'calendar',     '계획한 스케쥴 업무',    getScheduleCount(),   buildScheduleBody())}
+        ${buildAccordionCard('dueToday', '#ef4444', 'alert-circle', '오늘이 시한인 업무',    getDueTodayCount(),   buildDueTodayBody())}
       </div>
     </div>
   `;
 
-  // 梨꾪똿李?다크濡??섎떒
   const chatBody = document.getElementById('chatBody');
   if(chatBody) chatBody.scrollTop = chatBody.scrollHeight;
-  // ?꾩퐫?붿뼵 ?믪씠 초기화  syncAccordionHeight();
   refreshIcons();
 }
 
-function getByMeCount()  { return WS.getAssignedByMe().length; }
-function getToMeCount()  { return WS.getAssignedToMe().length; }
-function getTodayCount() { return WS.getTodayTasks().length; }
+function getByMeCount()       { return WS.getAssignedByMe().length; }
+function getReceivedCount()   { return WS.getAssignedToMe().length; }
+function getScheduleCount()   { return (WS.tasks||[]).filter(function(t){ return t.isSchedule || (!t.assignerId && !t.assigneeId && !t.assigneeIds); }).length; }
+function getDueTodayCount()   {
+  var today2 = new Date(); today2.setHours(0,0,0,0);
+  return (WS.tasks||[]).filter(function(t){
+    var d = new Date(t.dueDate); d.setHours(0,0,0,0);
+    return d.getTime() === today2.getTime() && t.status !== 'done';
+  }).length;
+}
 
 function buildAccordionCard(key, color, icon, title, count, bodyHTML) {
-  const isOpen = window._dashAccordion === key;
-  const countBadge = key === 'today' && count > 0
-    ? `<span class="section-count" style="background:rgba(239,68,68,.12);color:#ef4444">${count}건</span>`
-    : `<span class="section-count">${count}건</span>`;
-
   return `
-    <div class="acc-card ${isOpen ? 'open' : ''}" id="accCard_${key}">
-      <div class="acc-head" onclick="toggleDashAccordion('${key}')">
+    <div class="acc-card open" id="accCard_${key}">
+      <div class="acc-head">
         <div class="section-title-group">
           <div class="section-dot" style="background:${color}"><i data-lucide="${icon}"></i></div>
           <div class="section-title">${title}</div>
-          ${countBadge}
+          <span class="section-count">${count}건</span>
         </div>
-        <span class="acc-chevron"><i data-lucide="${isOpen ? 'chevron-up' : 'chevron-down'}"></i></span>
       </div>
       <div class="acc-body" id="accBody_${key}">
         ${bodyHTML}
@@ -343,28 +342,94 @@ function buildAccordionCard(key, color, icon, title, count, bodyHTML) {
   `;
 }
 
-function toggleDashAccordion(key) {
-  // ?대? ?대┛ 탭瑜??대┃되면 臾댁떆 ????긽 1媛쒕뒗 열린 없음
-  if (window._dashAccordion === key) return;
-  window._dashAccordion = key;
-  // DOM 吏곸젒 업데이트 (전체 ?щ젋??없이)
-  document.querySelectorAll('.acc-card').forEach(card => {
-    const k = card.id.replace('accCard_','');
-    const isOpen = k === key;
-    card.classList.toggle('open', isOpen);
-    const chev = card.querySelector('.acc-chevron');
-    if(chev) chev.innerHTML = `<i data-lucide="${isOpen?'chevron-up':'chevron-down'}"></i>`;
+/* ── 내가 지시받은 업무 Body (테이블 스타일) */
+function buildReceivedBody() {
+  const tasks = WS.getAssignedToMe().sort(function(a,b){
+    const po={high:0,medium:1,low:2};
+    return (po[a.priority]||1)-(po[b.priority]||1);
   });
-  refreshIcons();
+  if(tasks.length===0) return '<div class="empty-state"><div class="es-icon"><i data-lucide="sparkles"></i></div><div class="es-text">지시받은 업무가 없습니다</div></div>';
+  const rows = tasks.map(function(t) {
+    const assigner = WS.getUser(t.assignerId);
+    const dd = WS.getDdayBadge(t.dueDate);
+    const fillCls = t.status==='delay'?'delay':t.status==='done'?'done':'';
+    return '<tr style="cursor:pointer" onclick="openTaskDetail(' + t.id + ')">' +
+      '<td><div style="display:flex;align-items:center;gap:6px">' +
+      (t.isImportant ? '<span class="star-icon"><i data-lucide="star"></i></span>' : '') +
+      '<span style="font-weight:600;font-size:12.5px">' + t.title + '</span></div>' +
+      '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>' +
+      '<td><div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,' + (assigner?.color||'#9747ff') + ',#4f6ef7)">' + (assigner?.avatar||'?') + '</div></div>' +
+      '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (assigner?.name||'') + '</div></td>' +
+      '<td><span class="status-badge status-' + t.status + '">' + WS.getStatusLabel(t.status) + '</span></td>' +
+      '<td><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ' + fillCls + '" style="width:' + t.progress + '%"></div></div><span class="progress-label">' + t.progress + '%</span></div></td>' +
+      '<td><span class="dday-badge ' + dd.cls + '">' + dd.label + '</span></td>' +
+      '<td><div style="display:flex;gap:4px">' +
+      '<button class="qa-btn done" style="padding:2px 6px;font-size:10px" onclick="event.stopPropagation();changeStatus(' + t.id + ',\'done\')">완료</button>' +
+      '<button class="qa-btn delay" style="padding:2px 6px;font-size:10px" onclick="event.stopPropagation();changeStatus(' + t.id + ',\'delay\')">지연</button>' +
+      '</div></td>' +
+      '</tr>';
+  }).join('');
+  return '<div style="padding:8px"><table class="task-table"><thead><tr><th>업무명</th><th>지시자</th><th>상태</th><th>진행률</th><th>마감일</th><th>처리</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
-function syncAccordionHeight() {
-  /* flex ?덉씠?꾩썐?쇰줈 ?泥?- no-op */
+/* ── 계획한 스케쥴 업무 Body (테이블 스타일) */
+function buildScheduleBody() {
+  const tasks = (WS.tasks||[]).filter(function(t){
+    return t.isSchedule || (!t.assignerId && !(t.assigneeId||'') && !(t.assigneeIds&&t.assigneeIds.length));
+  });
+  if(tasks.length===0) return '<div class="empty-state"><div class="es-icon"><i data-lucide="calendar"></i></div><div class="es-text">계획된 스케쥴 업무가 없습니다</div></div>';
+  const rows = tasks.map(function(t) {
+    const dd = WS.getDdayBadge(t.dueDate);
+    const fillCls = t.status==='delay'?'delay':t.status==='done'?'done':'';
+    return '<tr style="cursor:pointer" onclick="openTaskDetail(' + t.id + ')">' +
+      '<td><div style="display:flex;align-items:center;gap:6px">' +
+      (t.isImportant ? '<span class="star-icon"><i data-lucide="star"></i></span>' : '') +
+      '<span style="font-weight:600;font-size:12.5px">' + t.title + '</span></div>' +
+      '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>' +
+      '<td><div style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;background:var(--accent-blue-light);font-size:10.5px;font-weight:700;color:var(--accent-blue)"><i data-lucide="calendar" style="width:10px;height:10px"></i> 스케쥴</div></td>' +
+      '<td><span class="status-badge status-' + t.status + '">' + WS.getStatusLabel(t.status) + '</span></td>' +
+      '<td><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ' + fillCls + '" style="width:' + t.progress + '%"></div></div><span class="progress-label">' + t.progress + '%</span></div></td>' +
+      '<td><span class="dday-badge ' + dd.cls + '">' + dd.label + '</span></td>' +
+      '<td><div style="display:flex;gap:4px">' +
+      '<button class="qa-btn done" style="padding:2px 6px;font-size:10px" onclick="event.stopPropagation();changeStatus(' + t.id + ',\'done\')">완료</button>' +
+      '</div></td>' +
+      '</tr>';
+  }).join('');
+  return '<div style="padding:8px"><table class="task-table"><thead><tr><th>업무명</th><th>구분</th><th>상태</th><th>진행률</th><th>마감일</th><th>처리</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
+/* ── 오늘이 시한인 업무 Body (테이블 스타일) */
+function buildDueTodayBody() {
+  var today2 = new Date(); today2.setHours(0,0,0,0);
+  const tasks = (WS.tasks||[]).filter(function(t){
+    var d = new Date(t.dueDate); d.setHours(0,0,0,0);
+    return d.getTime() === today2.getTime() && t.status !== 'done';
+  });
+  if(tasks.length===0) return '<div class="empty-state"><div class="es-icon"><i data-lucide="party-popper"></i></div><div class="es-text">오늘 마감인 업무가 없습니다!</div></div>';
+  const rows = tasks.map(function(t) {
+    var ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+    const assignee = WS.getUser(ids[0]);
+    const assigner = WS.getUser(t.assignerId);
+    const fillCls = t.status==='delay'?'delay':t.status==='done'?'done':'';
+    return '<tr style="cursor:pointer" onclick="openTaskDetail(' + t.id + ')">' +
+      '<td><div style="display:flex;align-items:center;gap:6px">' +
+      '<i data-lucide="alert-circle" style="width:12px;height:12px;color:#ef4444;flex-shrink:0"></i>' +
+      '<span style="font-weight:700;font-size:12.5px;color:#ef4444">' + t.title + '</span></div>' +
+      '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>' +
+      '<td>' + (assignee ? '<div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,' + (assignee.color||'#4f6ef7') + ',#9747ff)">' + (assignee.avatar||'?') + '</div></div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + assignee.name + '</div>' : (assigner ? '<div style="font-size:11px;color:var(--text-muted)">from ' + assigner.name + '</div>' : '-')) + '</td>' +
+      '<td><span class="status-badge status-' + t.status + '">' + WS.getStatusLabel(t.status) + '</span></td>' +
+      '<td><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ' + fillCls + '" style="width:' + t.progress + '%"></div></div><span class="progress-label">' + t.progress + '%</span></div></td>' +
+      '<td><span class="dday-badge dday-today">D-DAY</span></td>' +
+      '<td><div style="display:flex;gap:4px">' +
+      '<button class="qa-btn done" style="padding:2px 6px;font-size:10px" onclick="event.stopPropagation();changeStatus(' + t.id + ',\'done\')">완료</button>' +
+      '<button class="qa-btn delay" style="padding:2px 6px;font-size:10px" onclick="event.stopPropagation();changeStatus(' + t.id + ',\'delay\')">지연</button>' +
+      '</div></td>' +
+      '</tr>';
+  }).join('');
+  return '<div style="padding:8px"><table class="task-table"><thead><tr><th>업무명</th><th>담당자</th><th>상태</th><th>진행률</th><th>마감</th><th>처리</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
 
-
-/* ?? ?뱀뀡1: 내가 吏?쒗븳 업무 ?? */
+/* ?€?€ ?뱀뀡1: 내가 吏€?쒗븳 업무 ?€?€ */
 function buildAssignedByMe() {
   const tasks = WS.getAssignedByMe();
   const rows = tasks.map(t => {
@@ -475,9 +540,7 @@ function buildAssignedByMeBody() {
   return `<div style="padding:8px"><table class="task-table"><thead><tr><th>업무명</th><th>담당자</th><th>상태</th><th>진행률</th><th>마감일</th><th>지시중요도</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
-
-
-/* ?? ?뱀뀡2: 내가 吏?쒕컺? 업무 ?? */
+/* ?€?€ ?뱀뀡2: 내가 吏€?쒕컺?€ 업무 ?€?€ */
 function buildAssignedToMe() {
   const tasks = WS.getAssignedToMe().sort((a,b)=>{
     const po={high:0,medium:1,low:2};
@@ -526,12 +589,12 @@ function buildAssignedToMe() {
         <span style="font-size:11px;color:var(--text-muted)">우선순위 정렬</span>
       </div>
     </div>
-    ${tasks.length===0?'<div class="empty-state"><div class="es-icon"><i data-lucide="sparkles"></i></div><div class="es-text">吏?쒕컺? 업무媛 없습니다</div></div>':
+    ${tasks.length===0?'<div class="empty-state"><div class="es-icon"><i data-lucide="sparkles"></i></div><div class="es-text">吏€?쒕컺?€ 업무媛€ 없습니다</div></div>':
     `<div class="section-body">${cards}</div>`}
   </div>`;
 }
 
-/* ?? ?뱀뀡3: 오늘 완료해야 ??업무 ?? */
+/* ?€?€ ?뱀뀡3: 오늘 완료해야 ??업무 ?€?€ */
 function buildTodayTasks() {
   const tasks = WS.getTodayTasks();
   const all_today = WS.tasks.filter(t=>{const d=WS.getDday(t.dueDate);return d<=0&&t.status!=='done';});
@@ -581,15 +644,15 @@ function buildTodayTasks() {
       </div>
     </div>
     ${banner}
-    ${tasks.length===0?'<div class="empty-state"><div class="es-icon"><i data-lucide="party-popper"></i></div><div class="es-text">오늘 留덇컧 업무媛 없습니다!</div></div>':
+    ${tasks.length===0?'<div class="empty-state"><div class="es-icon"><i data-lucide="party-popper"></i></div><div class="es-text">오늘 留덇컧 업무媛€ 없습니다!</div></div>':
     `<div class="section-body">${cards}</div>`}
   </div>`;
 }
 
-/* ?꾩퐫?붿뼵??Body ?꾩슜 - 吏?쒕컺? 업무 */
+/* ?꾩퐫?붿뼵??Body ?꾩슜 - 吏€?쒕컺?€ 업무 */
 function buildAssignedToMeBody() {
   const tasks = WS.getAssignedToMe().sort((a,b)=>{const po={high:0,medium:1,low:2};return po[a.priority]-po[b.priority];});
-  if(tasks.length===0) return '<div class="empty-state"><div class="es-icon"><i data-lucide="sparkles"></i></div><div class="es-text">吏?쒕컺? 업무媛 없습니다</div></div>';
+  if(tasks.length===0) return '<div class="empty-state"><div class="es-icon"><i data-lucide="sparkles"></i></div><div class="es-text">吏€?쒕컺?€ 업무媛€ 없습니다</div></div>';
   const cards = tasks.map(t => {
     const assigner = WS.getUser(t.assignerId);
     const dd = WS.getDdayBadge(t.dueDate);
@@ -612,7 +675,7 @@ function buildAssignedToMeBody() {
 /* ?꾩퐫?붿뼵??Body ?꾩슜 - 오늘 완료 업무 */
 function buildTodayTasksBody() {
   const tasks = WS.getTodayTasks();
-  if(tasks.length===0) return '<div class="empty-state"><div class="es-icon"><i data-lucide="party-popper"></i></div><div class="es-text">오늘 留덇컧 업무媛 없습니다!</div></div>';
+  if(tasks.length===0) return '<div class="empty-state"><div class="es-icon"><i data-lucide="party-popper"></i></div><div class="es-text">오늘 留덇컧 업무媛€ 없습니다!</div></div>';
   const cards = tasks.map(t => {
     const assigner = WS.getUser(t.assignerId);
     const dday = WS.getDday(t.dueDate);
@@ -714,31 +777,18 @@ function sendMessage() {
 
 /* ── 내가 지시한 업무 담당자 클릭 → 실시간 메시지 채널 활성화 */
 var _activeChatTaskTitle = null;
-var _activeChatTask = null; // 담당자 필터링용
+var _activeChatTask = null;
 function openTaskChatChannel(taskTitle, taskId) {
   var nameEl   = document.getElementById('chatChannelTaskName');
   var suffixEl = document.getElementById('chatChannelSuffix');
   var inputEl  = document.getElementById('chatInput');
   var chatBody = document.getElementById('chatBody');
 
-  // 같은 업무 재클릭 → 원래 채널명으로 토글
-  if (_activeChatTaskTitle === taskTitle) {
-    _activeChatTaskTitle = null;
-    _activeChatTask = null;
-    if (nameEl)   { nameEl.textContent = ''; nameEl.style.display = 'none'; }
-    if (suffixEl) { suffixEl.textContent = '실시간 메시지 채널'; }
-    if (inputEl)  { inputEl.placeholder = '메시지를 입력하세요...'; }
-    // 우측 사용자 목록 전체로 복귀
-    _updateChatMemberList();
-    return;
-  }
-
   _activeChatTaskTitle = taskTitle;
   // taskId로 해당 업무 담당자 정보 찾기
   if (taskId) {
     _activeChatTask = WS.tasks && WS.tasks.find(function(t){ return String(t.id) === String(taskId); });
   } else {
-    // taskTitle로 시도
     _activeChatTask = WS.tasks && WS.tasks.find(function(t){ return t.title === taskTitle; });
   }
 
