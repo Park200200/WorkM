@@ -742,8 +742,9 @@ tr:hover .btn-sub-add { opacity: 1; }
 .dash-left-col {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  height: 100%;
+  gap: 6px;
+  height: 600px;
+  overflow: hidden;
 }
 .dash-chat-area {
   display: flex;
@@ -819,7 +820,7 @@ tr:hover .btn-sub-add { opacity: 1; }
   transition: max-height 0.3s ease;
   border-top: 0px solid var(--border-color);
 }
-/* ?대┝: flex濡??⑥? 怨듦컙 梨꾩슦湲?*/
+/* 열린 카드: flex로 남은 공간 채우기 */
 .acc-card.open .acc-body {
   flex: 1;
   max-height: none;         /* max-height ?쒓굅 */
