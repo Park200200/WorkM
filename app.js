@@ -655,19 +655,23 @@ function buildChatWidget() {
     <div class="chat-widget">
       <div class="chat-header">
         <div class="section-dot" style="background:var(--accent-blue)"><i data-lucide="message-square"></i></div>
-        <h3 id="chatChannelTitle"><span id="chatChannelTaskName" style="display:none;color:var(--accent-blue);margin-right:4px"></span><span id="chatChannelSuffix">실시간 메시지 채널</span></h3>
-        <div style="margin-left:auto; display:flex; align-items:center; gap:6px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; max-width:55%">
+        <h3 id="chatChannelTitle" style="color:var(--accent-blue);font-size:13px">
+          <span id="chatChannelTaskName" style="display:none;font-weight:900;margin-right:3px"></span>
+          <span id="chatChannelSuffix">실시간 메시지 채널</span>
+        </h3>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:58%">
           ${(WS.users || []).map(u => {
             const isMe = WS.currentUser && String(u.id) === String(WS.currentUser.id);
             const bg = `linear-gradient(135deg,${u.color||'#4f6ef7'},#9747ff)`;
-            return `<div title="${u.name}" style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0;
-                      padding:2px 7px 2px 2px;border-radius:20px;
-                      background:var(--bg-tertiary);border:1px solid var(--border-color)">
-              <div style="width:20px;height:20px;border-radius:50%;background:${bg};
-                           display:flex;align-items:center;justify-content:center;
-                           font-size:9px;font-weight:700;color:#fff;flex-shrink:0">${u.avatar||u.name.charAt(0)}</div>
-              <span style="font-size:10.5px;font-weight:${isMe?'800':'600'};color:${isMe?'var(--accent-blue)':'var(--text-secondary)'};white-space:nowrap">${u.name}</span>
-              ${isMe ? '<span style="width:5px;height:5px;border-radius:50%;background:#22c55e;flex-shrink:0"></span>' : ''}
+            const ring = isMe ? '0 0 0 2px #22c55e' : '0 0 0 1.5px var(--border-color)';
+            return `<div title="${u.name}" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;cursor:default">
+              <div style="width:26px;height:26px;border-radius:50%;background:${bg};box-shadow:${ring};
+                          display:flex;align-items:center;justify-content:center;
+                          font-size:10px;font-weight:800;color:#fff;position:relative">
+                ${u.avatar || u.name.charAt(0)}
+                ${isMe ? '<span style="position:absolute;bottom:-1px;right:-1px;width:7px;height:7px;border-radius:50%;background:#22c55e;border:1.5px solid var(--bg-primary)"></span>' : ''}
+              </div>
+              <span style="font-size:8.5px;font-weight:${isMe?'800':'600'};color:${isMe?'var(--accent-blue)':'var(--text-muted)'};white-space:nowrap;max-width:36px;overflow:hidden;text-overflow:ellipsis;line-height:1">${u.name}</span>
             </div>`;
           }).join('')}
         </div>
