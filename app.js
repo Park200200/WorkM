@@ -1233,28 +1233,32 @@ function renderTaskHistory(taskId) {
   el.innerHTML = history.slice().reverse().map(function(h) {
     const icon = h.icon || 'clock';
     const color = h.color || '#4f6ef7';
-    // 날짜 포맷: '2026.03.29' 또는 ISO 문자열 모두 처리
-    let dateStr = h.date || '';
-    if (dateStr) {
-      const d = new Date(dateStr.replace(/\./g, '-'));
-      if (!isNaN(d)) dateStr = (d.getMonth()+1) + '/' + d.getDate() + ' ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2,'0');
-    }
-    const eventLabel = h.event || h.label || h.type || '업무보고';
-    const detailText = h.detail || h.content || h.text || '';
-    const progressVal = (h.progress !== undefined && h.progress !== null) ? h.progress : null;
-    const barColor = progressVal >= 100 ? '#22c55e' : (progressVal >= 50 ? '#4f6ef7' : '#f59e0b');
-    return '<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-color)">'
+    const label = h.event || h.label || h.type || '업무보고';
+    const detail = h.detail || h.content || h.text || '';
+    const prog = (h.progress !== undefined && h.progress !== null) ? h.progress : null;
+    // 날짜 포맷: h.date가 'YYYY.MM.DD' 형식
+    const dateStr = h.date || '';
+    const user = h.userId ? WS.getUser(h.userId) : null;
+    // 진행율 바
+    const barColor = prog !== null ? (prog >= 100 ? '#22c55e' : prog < 30 ? '#ef4444' : '#4f6ef7') : color;
+    const progressBar = prog !== null
+      ? '<div style="display:flex;align-items:center;gap:5px;margin-top:5px">'
+        + '<div style="flex:1;height:4px;background:var(--border-color);border-radius:100px;overflow:hidden">'
+        + '<div style="width:' + prog + '%;height:100%;background:' + barColor + ';border-radius:100px"></div></div>'
+        + '<span style="font-size:10px;font-weight:700;color:' + barColor + ';min-width:26px;text-align:right">' + prog + '%</span>'
+        + '</div>'
+      : '';
+    return '<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-color)">'
       + '<div style="width:32px;height:32px;border-radius:50%;background:' + color + '18;border:1.5px solid ' + color + ';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
       + '<i data-lucide="' + icon + '" style="width:14px;height:14px;color:' + color + '"></i></div>'
       + '<div style="flex:1;min-width:0">'
       + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'
-      + '<span style="font-size:11px;font-weight:700;color:' + color + ';background:' + color + '12;border-radius:10px;padding:1px 8px">' + eventLabel + '</span>'
-      + '<span style="font-size:10px;color:var(--text-muted);margin-left:auto;flex-shrink:0">' + dateStr + '</span></div>'
-      + (detailText ? '<div style="font-size:12.5px;color:var(--text-primary);line-height:1.6;margin-bottom:4px">' + detailText + '</div>' : '')
-      + (progressVal !== null ? '<div style="display:flex;align-items:center;gap:6px">'
-        + '<div style="flex:1;height:5px;background:var(--border-color);border-radius:100px;overflow:hidden">'
-        + '<div style="width:' + progressVal + '%;height:100%;background:' + barColor + ';border-radius:100px"></div></div>'
-        + '<span style="font-size:10.5px;font-weight:700;color:' + barColor + ';flex-shrink:0">' + progressVal + '%</span></div>' : '')
+      + '<span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;color:' + color + ';background:' + color + '15;border-radius:8px;padding:1px 7px">'
+      + '<i data-lucide="' + icon + '" style="width:10px;height:10px"></i>' + label + '</span>'
+      + (user ? '<span style="font-size:10px;color:var(--text-muted)">' + user.name + '</span>' : '')
+      + '<span style="font-size:10px;color:var(--text-muted);margin-left:auto">' + dateStr + '</span></div>'
+      + (detail ? '<div style="font-size:12px;color:var(--text-primary);line-height:1.6;white-space:pre-wrap">' + detail + '</div>' : '')
+      + progressBar
       + '</div></div>';
   }).join('');
   const countEl = document.getElementById('historyCount_' + taskId);
@@ -1334,21 +1338,6 @@ function openTaskDetail(taskId) {
       </div>
       <div class="progress-bar" style="margin-top:8px;height:8px;border-radius:6px">
         <div class="progress-fill ${fillCls}" id="progBar_live_${t.id}" style="width:${progress}%;border-radius:6px"></div>
-      </div>
-    </div>
-
-    <!-- 📝 진행보고 입력 -->
-    <div style="margin-bottom:18px;background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:14px;padding:14px">
-      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px">
-        <i data-lucide="message-square-plus" style="width:13px;height:13px"></i> 진행보고 추가
-      </div>
-      <!-- 아이콘(유형) 선택 -->
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="reportIconChips">
-        ${(WS.reportTypes||[]).map(ic => `
-          <button type="button"
-            onclick="document.querySelectorAll('#reportIconChips .ricon-chip').forEach(b=>b.classList.remove('active'));this.classList.add('active');document.getElementById('td_reportIconVal').value='${ic.icon}|${ic.label}|${ic.color}';"
-      </div>
-    </div>
 
     <!-- hidden 변경 -->
     <input type="hidden" id="td_report" value="${t.reportContent||''}">
@@ -1405,13 +1394,15 @@ function addProgressReport(taskId) {
   const todayIdx = t.history.findIndex(h => h.date === dateStr);
   let isUpdate = false;
 
+  const progress = (function(){ var s = document.getElementById('progressSlider_' + taskId); return s ? parseInt(s.value) : (t.progress||0); })();
+
   if (todayIdx !== -1) {
     // 당일 항목 업데이트
-    t.history[todayIdx] = { date: dateStr, event: label, detail: text, icon, color, progress: t.progress||0 };
+    t.history[todayIdx] = { date: dateStr, event: label, detail: text, icon, color, progress };
     isUpdate = true;
   } else {
     // 신규 추가
-    t.history.push({ date: dateStr, event: label, detail: text, icon, color, progress: t.progress||0 });
+    t.history.push({ date: dateStr, event: label, detail: text, icon, color, progress });
   }
   WS.saveTasks();
 
