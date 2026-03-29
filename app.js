@@ -483,14 +483,39 @@ function buildDueTodayBody() {
 function _renderStatusBadge(statusKey) {
   var statuses = [];
   try { statuses = JSON.parse(localStorage.getItem('ws_task_statuses')) || []; } catch(e) {}
-  var found = statuses.find(function(s){ return String(s.id) === String(statusKey) || s.key === statusKey || s.label === statusKey; });
-  var label = found ? found.label : WS.getStatusLabel(statusKey);
+
+  // 영문 statusKey → 한글 명칭 매핑 (ws_task_statuses가 한글 name으로 저장됨)
+  var keyMap = { 'progress':'진행', 'done':'완료', 'waiting':'대기', 'delay':'지연', 'hold':'보류', 'cancel':'취소' };
+  var targetName = keyMap[statusKey] || statusKey;
+
+  var found = statuses.find(function(s){
+    return String(s.id) === String(statusKey) ||
+           s.key === statusKey ||
+           s.name === targetName ||
+           s.name === statusKey ||
+           s.label === targetName ||
+           s.label === statusKey;
+  });
+
+  var label = found ? (found.name || found.label || targetName) : WS.getStatusLabel(statusKey);
   var icon  = found && found.icon ? found.icon : null;
   var color = found && found.color ? found.color : null;
+
+  // 폴백: ws_task_statuses에 없으면 기본 아이콘/색상 사용
+  if (!icon) {
+    var icoFb = { 'progress':'activity','done':'check-circle-2','waiting':'clock','delay':'alert-triangle','hold':'pause-circle','cancel':'x-circle' };
+    icon = icoFb[statusKey] || null;
+  }
+  if (!color) {
+    var clrFb = { 'progress':'#06b6d4','done':'#22c55e','waiting':'#9ca3af','delay':'#ef4444','hold':'#f59e0b','cancel':'#6b7280' };
+    color = clrFb[statusKey] || null;
+  }
+
   var iconHtml = icon ? '<i data-lucide="' + icon + '" style="width:11px;height:11px;vertical-align:middle;margin-right:3px"></i>' : '';
   var colorStyle = color ? 'border-left:2.5px solid ' + color + ';color:' + color + ';background:' + color + '18' : '';
   return '<span class="status-badge status-' + statusKey + '" style="' + colorStyle + ';display:inline-flex;align-items:center">' + iconHtml + label + '</span>';
 }
+
 
 /* ── 첫 번째 중요도 아이콘 업무명 앞에 표시 */
 function _getFirstImportanceIcon(taskImportance) {
