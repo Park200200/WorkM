@@ -864,8 +864,8 @@
               </div>
             </div>
 
-            <!-- 지시완료일 + 업무중요도 + 현재상태 3열 -->
-            <div style="display:grid;grid-template-columns:180px 1fr 160px;gap:12px">
+            <!-- 지시완료일 + 업무중요도 2열 -->
+            <div style="display:grid;grid-template-columns:180px 1fr;gap:12px">
 
               <!-- 지시완료일: 커스텀 날짜 피커 -->
               <div class="form-group" style="margin:0">
@@ -908,17 +908,21 @@
                 <input type="hidden" id="instrImportanceVal">
               </div>
 
-              <!-- 현재상태 선택 -->
-              <div class="form-group" style="margin:0">
-                <label class="form-label">
-                  <i data-lucide="activity" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
-                  현재상태
-                </label>
-                <select class="form-input" id="instrStatus" style="cursor:pointer;font-size:12.5px">
-                  <option value="">-- 상태 선택 --</option>
-                </select>
-              </div>
+            </div>
 
+            <!-- 현재상태 선택 (칩 방식, 다음 줄) -->
+            <div class="form-group" style="margin:0">
+              <label class="form-label">
+                <i data-lucide="activity" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+                현재상태
+              </label>
+              <div id="instrStatusPicks"
+                style="display:flex;flex-wrap:wrap;gap:7px;padding:7px 10px;
+                       min-height:42px;border:1.5px solid var(--border-color);
+                       border-radius:10px;background:var(--bg-secondary);align-items:center">
+                <!-- JS에서 ws_task_statuses 기반으로 렌더 -->
+              </div>
+              <input type="hidden" id="instrStatus">
             </div>
 
             <!-- 지시내용 -->

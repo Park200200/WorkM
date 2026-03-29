@@ -3617,21 +3617,9 @@ function openInstructionModal(editData) {
     if (hSec) hSec.style.display = 'none';
   }
 
-  // ── 현재상태 드롭다운 채우기 (ws_task_statuses)
-  var statusSel = document.getElementById('instrStatus');
-  if (statusSel) {
-    var taskStatuses = JSON.parse(localStorage.getItem('ws_task_statuses') || '[]');
-    statusSel.innerHTML = '<option value="">상태 선택</option>' +
-      taskStatuses.map(function(s) {
-        return '<option value="' + (s.id || s.name) + '">' + s.name + '</option>';
-      }).join('');
-    // 수정 모드: 기존 상태 복원
-    if (editData && (editData.status || editData.taskStatus)) {
-      statusSel.value = editData.status || editData.taskStatus || '';
-    } else {
-      statusSel.value = '';
-    }
-  }
+  // ── 현재상태 칩 렌더 (ws_task_statuses)
+  var savedStatus = editData ? (editData.status || editData.taskStatus || '') : '';
+  _renderInstrStatusPicks(savedStatus);
 
   // ── 담당자 드롭다운 채우기
   const assSel = document.getElementById('instrAssignee');
@@ -3818,6 +3806,46 @@ function _toggleInstrHistory() {
   var hChev = document.getElementById('instrHistoryChevron');
   if (hList) hList.style.maxHeight = _instrHistoryOpen ? '260px' : '0';
   if (hChev) hChev.style.transform = _instrHistoryOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
+}
+
+/* ── 현재상태 칩 렌더 (단일 선택) */
+function _renderInstrStatusPicks(selectedVal) {
+  var container = document.getElementById('instrStatusPicks');
+  var hiddenInp = document.getElementById('instrStatus');
+  if (!container) return;
+
+  var statuses = JSON.parse(localStorage.getItem('ws_task_statuses') || '[]');
+  if (statuses.length === 0) {
+    container.innerHTML = '<span style="font-size:11px;color:var(--text-muted)">' +
+      '\uc9c4\ud589\uc0c1\ud0dc \uc5c6\uc74c \u2014 \ubcf8\uc0ac\uad00\ub9ac \u003e \uae30\ud0c0\uc124\uc815\uc5d0\uc11c \ucd94\uac00\ud558\uc138\uc694</span>';
+    return;
+  }
+
+  // 현재 선택값 (hidden input 또는 인자)
+  var cur = hiddenInp ? (hiddenInp.value || selectedVal || '') : (selectedVal || '');
+
+  container.innerHTML = statuses.map(function(st) {
+    var c = st.color || '#06b6d4';
+    var key = st.id || st.name;
+    var isSelected = (cur === key || cur === st.name);
+    var iconHtml = st.icon ? '<i data-lucide="' + st.icon + '" style="width:10px;height:10px;color:' + (isSelected ? '#fff' : c) + '"></i>' : '';
+    if (isSelected) {
+      return '<span onclick="_instrToggleStatus(\'' + key + '\')" title="\ucde8\uc18c"\n        style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;\n               font-size:11.5px;font-weight:700;cursor:pointer;transition:all .15s;user-select:none;\n               background:' + c + ';border:1.5px solid ' + c + ';color:#fff">' + iconHtml + st.name + '</span>';
+    } else {
+      return '<span onclick="_instrToggleStatus(\'' + key + '\')" title="' + st.name + '"\n        style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;\n               font-size:11.5px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;\n               border:1.5px solid ' + c + ';color:' + c + ';background:transparent"\n        onmouseover="this.style.background=\'' + c + '22\'" onmouseout="this.style.background=\'transparent\'">' + iconHtml + st.name + '</span>';
+    }
+  }).join('');
+
+  if (hiddenInp && selectedVal !== undefined) hiddenInp.value = selectedVal || '';
+  setTimeout(refreshIcons, 30);
+}
+
+function _instrToggleStatus(key) {
+  var hiddenInp = document.getElementById('instrStatus');
+  var cur = hiddenInp ? hiddenInp.value : '';
+  var newVal = (cur === key) ? '' : key; // 같은 거 클릭 → 취소
+  if (hiddenInp) hiddenInp.value = newVal;
+  _renderInstrStatusPicks(newVal);
 }
 
 /* 보고절차 칩 토글 */
