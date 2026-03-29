@@ -465,7 +465,12 @@ function buildAssignedByMeBody() {
 
     return `<tr style="cursor:pointer">
       <td onclick="editInstruction(${t.id})" title="클릭하여 수정"><div style="display:flex;align-items:center;gap:6px">${t.isImportant?'<span class="star-icon"><i data-lucide="star"></i></span>':''}<span style="font-weight:600;font-size:12.5px;text-decoration:underline dotted;text-underline-offset:3px">${t.title}</span></div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${t.team||''}</div></td>
-      <td><div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,${assignee?.color||'#4f6ef7'},#9747ff)">${assignee?.avatar||'?'}</div></div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${assignee?.name||''}</div></td>
+      <td onclick="event.stopPropagation();openTaskChannel(${t.id},'${(t.title||'').replace(/'/g,"'")}')" title="클릭하면 채널 열기" style="cursor:pointer">
+        <div class="avatar-group">
+          <div class="avatar" style="background:linear-gradient(135deg,${assignee?.color||'#4f6ef7'},#9747ff);transition:transform .15s" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">${assignee?.avatar||'?'}</div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${assignee?.name||''}</div>
+      </td>
       <td><span class="status-badge status-${t.status}">${WS.getStatusLabel(t.status)}</span></td>
       <td><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ${fillCls}" style="width:${t.progress}%"></div></div><span class="progress-label">${t.progress}%</span></div></td>
       <td><span class="dday-badge ${dd.cls}">${dd.label}</span></td>
@@ -609,10 +614,10 @@ function buildAssignedToMeBody() {
   return `<div class="section-body" style="padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:12px">${cards}</div>`;
 }
 
-/* ?꾩퐫?붿뼵??Body ?꾩슜 - 오늘 완료 업무 */
+/* 섹션: 오늘 완료 업무 */
 function buildTodayTasksBody() {
   const tasks = WS.getTodayTasks();
-  if(tasks.length===0) return '<div class="empty-state"><div class="es-icon"><i data-lucide="party-popper"></i></div><div class="es-text">오늘 留덇컧 업무媛 없습니다!</div></div>';
+  if(tasks.length===0) return '<div class="empty-state"><div class="es-icon"><i data-lucide="party-popper"></i></div><div class="es-text">오늘 마감 업무가 없습니다!</div></div>';
   const cards = tasks.map(t => {
     const assigner = WS.getUser(t.assignerId);
     const dday = WS.getDday(t.dueDate);
@@ -630,10 +635,188 @@ function buildTodayTasksBody() {
   return `<div class="section-body" style="padding:8px">${cards}</div>`;
 }
 
+/* ════════════════════════════════════════════════
+   💬 채팅 위젯 (채널 방식)
+════════════════════════════════════════════════ */
+window._activeChatChannel = null;
 
-/* ?? ?뱀뀡4: ?ㅼ떆媛????위젯 ?? */
+function _getChatChannels() {
+  return JSON.parse(localStorage.getItem('ws_chat_channels') || '[]');
+}
+function _saveChatChannels(chs) {
+  localStorage.setItem('ws_chat_channels', JSON.stringify(chs));
+}
+
+/* 업무 채널 열기 (없으면 생성) */
+function openTaskChannel(taskId, title) {
+  var channels = _getChatChannels();
+  var key = 'task_' + taskId;
+  var ch = channels.find(function(c){ return c.id === key; });
+  if (!ch) {
+    ch = { id: key, taskId: taskId, title: title, messages: [], createdAt: new Date().toISOString() };
+    channels.unshift(ch);
+    _saveChatChannels(channels);
+  }
+  window._activeChatChannel = key;
+  // 채팅 위젯 갱신
+  var chatArea = document.querySelector('.dash-chat-area');
+  if (chatArea) {
+    chatArea.innerHTML = buildChatWidget();
+    setTimeout(function() {
+      var cb = document.getElementById('chatBody');
+      if (cb) cb.scrollTop = cb.scrollHeight;
+      refreshIcons();
+    }, 30);
+  }
+  // 기본 채널로도 자동 스크롤
+  showToast('info', '"' + title + '" 채널이 활성화되었습니다.');
+}
+
+/* 채널 전환 */
+function openChannel(channelId) {
+  window._activeChatChannel = channelId;
+  var chatArea = document.querySelector('.dash-chat-area');
+  if (chatArea) {
+    chatArea.innerHTML = buildChatWidget();
+    setTimeout(function() {
+      var cb = document.getElementById('chatBody');
+      if (cb) cb.scrollTop = cb.scrollHeight;
+      refreshIcons();
+    }, 30);
+  }
+}
+
+/* 채널 메시지 전송 */
+function sendChannelMessage() {
+  var input = document.getElementById('chatInput');
+  var text = input ? input.value.trim() : '';
+  if (!text) return;
+  var key = window._activeChatChannel;
+  if (!key) { sendMessage(); return; } // 기본 채널 폴백
+  var channels = _getChatChannels();
+  var ch = channels.find(function(c){ return c.id === key; });
+  if (!ch) { sendMessage(); return; }
+  var now = new Date();
+  var timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  ch.messages.push({
+    id: Date.now(),
+    senderId: WS.currentUser ? WS.currentUser.id : 0,
+    text: text,
+    time: timeStr
+  });
+  _saveChatChannels(channels);
+  if (input) input.value = '';
+  // 메시지 목록만 갱신
+  var cb = document.getElementById('chatBody');
+  if (cb) {
+    cb.innerHTML = _buildChatMessages(ch.messages);
+    cb.scrollTop = cb.scrollHeight;
+    refreshIcons();
+  }
+}
+
+function _buildChatMessages(msgs) {
+  if (!msgs || msgs.length === 0) {
+    return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;opacity:.5">' +
+      '<i data-lucide="message-circle" style="width:32px;height:32px"></i>' +
+      '<div style="font-size:12px">첫 메시지를 보내세요</div></div>';
+  }
+  return msgs.map(function(m) {
+    var isMe = WS.currentUser && m.senderId === WS.currentUser.id;
+    var sender = WS.getUser(m.senderId);
+    var bg = isMe ? 'linear-gradient(135deg,var(--accent-blue),#9747ff)' : 'linear-gradient(135deg,' + (sender ? sender.color : '#4f6ef7') + ',#9747ff)';
+    if (isMe) {
+      return '<div style="display:flex;justify-content:flex-end;gap:8px;padding:4px 0;align-items:flex-end">' +
+        '<div style="font-size:10px;color:var(--text-muted);flex-shrink:0">' + m.time + '</div>' +
+        '<div style="max-width:72%;padding:8px 12px;border-radius:14px 14px 4px 14px;font-size:12.5px;line-height:1.5;' +
+        'background:linear-gradient(135deg,var(--accent-blue),#9747ff);color:#fff;font-weight:500">' + m.text + '</div>' +
+        '</div>';
+    } else {
+      return '<div style="display:flex;gap:8px;padding:4px 0;align-items:flex-start">' +
+        '<div style="width:28px;height:28px;border-radius:50%;background:' + bg + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">' +
+        (sender ? (sender.avatar || '?') : '?') + '</div>' +
+        '<div>' +
+          '<div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">' + (sender ? sender.name : '') + ' · ' + m.time + '</div>' +
+          '<div style="max-width:72%;padding:8px 12px;border-radius:4px 14px 14px 14px;font-size:12.5px;line-height:1.5;background:var(--bg-tertiary);color:var(--text-primary)">' + m.text + '</div>' +
+        '</div>' +
+        '</div>';
+    }
+  }).join('');
+}
+
 function buildChatWidget() {
-  const msgs = WS.messages;
+  var channels = _getChatChannels();
+  var activeKey = window._activeChatChannel;
+
+  // 기본 채널이 없으면 공용 채널 추가
+  var generalCh = channels.find(function(c){ return c.id === 'general'; });
+  if (!generalCh) {
+    var legacyMsgs = WS.messages || [];
+    generalCh = {
+      id: 'general', title: '전체 채널', messages: legacyMsgs.map(function(m){ return m; }),
+      createdAt: new Date().toISOString()
+    };
+    channels.push(generalCh);
+    _saveChatChannels(channels);
+  }
+
+  if (!activeKey) { activeKey = 'general'; window._activeChatChannel = 'general'; }
+  var activeCh = channels.find(function(c){ return c.id === activeKey; }) || generalCh;
+
+  // 채널 목록 HTML
+  var channelListHtml = channels.map(function(ch) {
+    var isActive = ch.id === activeKey;
+    var taskIcon = ch.id === 'general' ? 'hash' : 'briefcase';
+    var unread = (!isActive && ch.messages && ch.messages.length > 0) ? ch.messages.length : 0;
+    return '<div onclick="openChannel(\'' + ch.id + '\')" style="' +
+      'display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:8px;cursor:pointer;' +
+      'transition:background .15s;background:' + (isActive ? 'var(--accent-blue)22' : 'transparent') + ';' +
+      'border-left:3px solid ' + (isActive ? 'var(--accent-blue)' : 'transparent') + ';' +
+      'margin-bottom:2px" ' +
+      'onmouseover="if(!this.classList.contains(\'active\'))this.style.background=\'var(--bg-tertiary)\'" ' +
+      'onmouseout="this.style.background=\'' + (isActive ? 'var(--accent-blue)22' : 'transparent') + '\'">' +
+      '<i data-lucide="' + taskIcon + '" style="width:12px;height:12px;color:' + (isActive ? 'var(--accent-blue)' : 'var(--text-muted)') + ';flex-shrink:0"></i>' +
+      '<span style="font-size:12px;font-weight:' + (isActive ? '700' : '500') + ';color:' + (isActive ? 'var(--accent-blue)' : 'var(--text-secondary)') + ';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + ch.title + '</span>' +
+      (unread > 0 ? '<span style="font-size:9px;background:var(--accent-blue);color:#fff;border-radius:10px;padding:1px 5px;font-weight:700">' + unread + '</span>' : '') +
+      '</div>';
+  }).join('');
+
+  var msgs = activeCh ? activeCh.messages || [] : [];
+  var msgsHtml = _buildChatMessages(msgs);
+
+  return '<div class="chat-widget" style="display:flex;flex-direction:row;height:100%;overflow:hidden">' +
+    /* 채널 목록 사이드바 */
+    '<div style="width:140px;flex-shrink:0;border-right:1.5px solid var(--border-color);display:flex;flex-direction:column;overflow:hidden">' +
+      '<div style="padding:10px 10px 6px;font-size:10px;font-weight:800;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase">채널</div>' +
+      '<div style="flex:1;overflow-y:auto;padding:0 6px 8px;scrollbar-width:none">' + channelListHtml + '</div>' +
+    '</div>' +
+    /* 대화창 */
+    '<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">' +
+      '<div class="chat-header" style="padding:10px 14px;border-bottom:1.5px solid var(--border-color);flex-shrink:0">' +
+        '<div class="section-dot" style="background:var(--accent-blue);width:24px;height:24px"><i data-lucide="' + (activeCh && activeCh.id === 'general' ? 'hash' : 'briefcase') + '" style="width:12px;height:12px"></i></div>' +
+        '<div>' +
+          '<div style="font-size:12.5px;font-weight:700;color:var(--text-primary)">' + (activeCh ? activeCh.title : '채널 선택') + '</div>' +
+          '<div style="font-size:10px;color:var(--text-muted)">실시간 메시지 채널</div>' +
+        '</div>' +
+        '<div style="margin-left:auto;display:flex;align-items:center;gap:4px">' +
+          '<span class="status-indicator online"></span>' +
+          '<span style="font-size:11px;font-weight:700;color:var(--text-muted)">온라인</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="chat-body" id="chatBody" style="flex:1;overflow-y:auto;padding:12px">' + msgsHtml + '</div>' +
+      '<div class="chat-input-area">' +
+        '<input type="text" class="chat-input" id="chatInput" placeholder="메시지를 입력하세요..." onkeypress="if(event.key===\'Enter\')sendChannelMessage()">' +
+        '<button class="send-btn" onclick="sendChannelMessage()"><i data-lucide="send" class="icon-sm"></i></button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function sendMessage() {
+  // 기존 호환성 유지 → sendChannelMessage 호출
+  sendChannelMessage();
+}
+
   const list = msgs.map(m => {
     const isMe = m.senderId === WS.currentUser.id;
     const sender = WS.getUser(m.senderId);
