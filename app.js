@@ -1091,7 +1091,6 @@ function openReceivedTaskDetail(taskId) {
         <div>
           <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">지시자 및 업무명</div>
           <div style="font-size:13px;font-weight:700;color:var(--accent-blue);margin-bottom:3px">${assignerName} → ${t.title}</div>
-          <div style="font-size:15px;font-weight:800;color:var(--text-primary)">${t.title}</div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
           ${_renderStatusBadge(t.status)}
