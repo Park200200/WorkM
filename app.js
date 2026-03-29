@@ -3638,26 +3638,17 @@ function openInstructionModal(editData) {
   window._instrEditData = editData || null; // 수정모드에서 이름 복원용
   var isEdit = !!window._instrEditId;
 
-  // ── 업무/담당자 입력 영역 표시 제어
+  // ── 업무/담당자 드롭다운 항상 표시; 수정모드에서는 진행율 바 추가 표시
   var newFields  = document.getElementById('instrNewFields');
   var editHeader = document.getElementById('instrEditHeader');
-  if (newFields)  newFields.style.display  = isEdit ? 'none' : 'grid';
-  if (editHeader) editHeader.style.display  = isEdit ? 'block' : 'none';
+  if (newFields)  newFields.style.display  = 'grid';             // 항상 표시
+  if (editHeader) editHeader.style.display  = isEdit ? 'block' : 'none'; // 수정모드에서만 진행율바 표시
 
   // ── 모달 타이틀 변경
   var titleEl = document.getElementById('instructionModalTitle');
   if (isEdit) {
-    // 담당자 이름 구하기
-    var assigneeName = editData.assigneeName || '';
-    if (!assigneeName && editData.assigneeId) {
-      var aUser = WS.getUser ? WS.getUser(editData.assigneeId) : WS.users.find(function(u){ return String(u.id) === String(editData.assigneeId); });
-      if (aUser) assigneeName = aUser.name;
-    }
-    var headerLabel = (assigneeName || '') + ' : ' + (editData.taskName || editData.title || '');
-    if (titleEl) titleEl.textContent = headerLabel;
-    // 읽기전용 헤더 레이블
-    var hLabel = document.getElementById('instrEditHeaderLabel');
-    if (hLabel) hLabel.textContent = headerLabel;
+    var taskName2 = editData.taskName || editData.title || '';
+    if (titleEl) titleEl.textContent = taskName2 ? taskName2 + ' 수정' : '지시사항 수정';
     // 진행율 (WS.tasks에서 찾기)
     var task = WS.getTask ? WS.getTask(editData.id) : WS.tasks.find(function(t){ return t.id === editData.id || t.id === Number(editData.id); });
     var progress = (task && task.progress != null) ? task.progress : (editData.progress || 0);
