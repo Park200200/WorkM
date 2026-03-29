@@ -627,7 +627,8 @@ function buildAssignedByMeBody() {
         const inner = hasIcon
           ? `<i data-lucide="${icon}" style="width:12px;height:12px;color:${c}"></i>`
           : `<span style="width:7px;height:7px;border-radius:50%;background:${c};display:inline-block"></span>`;
-        return `<span title="${name}" style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:12px;background:${c}18;border:1.5px solid ${c};font-size:10.5px;font-weight:700;color:${c};cursor:default;flex-shrink:0">${inner}${name}</span>`;
+        // 아이콘만 표시 (마우스오버 시 이름 표시)
+        return `<span title="${name}" data-tooltip="${name}" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${c}18;border:1.5px solid ${c};cursor:default;flex-shrink:0">${inner}</span>`;
       }).join('');
       importanceBadges = matched || `<span style="font-size:11px;color:var(--text-muted)">-</span>`;
     } else {
@@ -643,7 +644,7 @@ function buildAssignedByMeBody() {
     })() : '';
 
     return `<tr style="cursor:pointer">
-      <td onclick="editInstruction(${t.id})" title="클릭하여 수정">
+      <td onclick="editInstruction(${t.id})" title="클릭하여 수정" style="width:25%">
         <div style="display:flex;align-items:center;gap:4px">
           ${firstImpIcon}
           <span style="font-weight:600;font-size:12.5px;text-decoration:underline dotted;text-underline-offset:3px">${t.title}</span>
@@ -652,12 +653,17 @@ function buildAssignedByMeBody() {
       </td>
       <td onclick="event.stopPropagation();openTaskChatChannel('${t.title}',${t.id})" title="클릭하여 메시지 채널 열기" style="cursor:pointer"><div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,${assignee?.color||'#4f6ef7'},#9747ff)">${assignee?.avatar||'?'}</div></div><div style="font-size:11px;color:var(--currentAccent,#4f6ef7);margin-top:2px;font-weight:600;text-decoration:underline dotted;text-underline-offset:2px">${assignee?.name||''}</div></td>
       <td>${_renderStatusBadge(t.status)}</td>
-      <td><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ${fillCls}" style="width:${t.progress}%"></div></div><span class="progress-label">${t.progress}%</span></div></td>
+      <td>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+          <span style="font-size:11px;font-weight:700;color:var(--text-primary)">${t.progress}%</span>
+          <div class="progress-bar" style="width:70px"><div class="progress-fill ${fillCls}" style="width:${t.progress}%"></div></div>
+        </div>
+      </td>
       <td><span class="dday-badge ${dd.cls}">${dd.label}</span></td>
-      <td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:flex-start;flex-wrap:wrap;max-width:120px">${importanceBadges}</div></td>
+      <td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">${importanceBadges}</div></td>
     </tr>`;
   }).join('');
-  return `<div style="padding:8px"><table class="task-table"><thead><tr><th>업무명</th><th>담당자</th><th>상태</th><th>진행률</th><th>마감일</th><th>지시중요도</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<div style="padding:8px"><table class="task-table"><thead><tr><th style="width:25%">업무명</th><th>담당자</th><th>상태</th><th>진행률</th><th>마감일</th><th>지시중요도</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 /* ?€?€ ?뱀뀡2: 내가 吏€?쒕컺?€ 업무 ?€?€ */
