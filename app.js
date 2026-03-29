@@ -2758,6 +2758,7 @@ function openDailyReportModal() {
 
   // 내 업무 렌더링
   renderDailyReportTasks();
+  renderDrExecList();
 }
 
 function closeDailyReportModal() {
@@ -2768,55 +2769,48 @@ function closeDailyReportModal() {
 
 function renderDailyReportTasks() {
   const me = WS.currentUser;
-  // 나에게 배정된 업무 (완료 제외 우선, 완료도 포함)
   const myTasks = WS.tasks.filter(t => {
     const ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
     return ids.includes(me.id);
   });
 
   const countEl = document.getElementById('dr_task_count');
-  if (countEl) countEl.textContent = `${myTasks.length}건`;
+  if (countEl) countEl.textContent = myTasks.length + '\uac74';
 
   const tbody = document.getElementById('dr_task_list');
   if (!tbody) return;
 
   if (myTasks.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text-muted)">
-      <i data-lucide="inbox" style="width:28px;height:28px;margin-bottom:8px;display:block;margin-inline:auto"></i>
-      금일 담당 업무가 없습니다
-    </td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text-muted)">' +
+      '<i data-lucide="inbox" style="width:28px;height:28px;margin-bottom:8px;display:block;margin-inline:auto"></i>' +
+      '\uae08\uc77c \ub2f4\ub2f9 \uc5c5\ubb34\uac00 \uc5c6\uc2b5\ub2c8\ub2e4</td></tr>';
     refreshIcons();
     return;
   }
 
-  tbody.innerHTML = myTasks.map(t => {
-    const assigner = WS.getUser(t.assignerId);
-    const ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
-    const assigneeNames = ids.map(i => WS.getUser(i)?.name).filter(Boolean).join(', ');
-    const dd = WS.getDdayBadge(t.dueDate);
-    const reported = t.drReported ? '✅' : '';
-    return `<tr>
-      <td style="font-weight:600">${t.isImportant ? '⭐' : ''}${t.title}</td>
-      <td style="font-size:11px">${assigner?.name || '-'}</td>
-      <td style="font-size:11px">${assigneeNames || '-'}</td>
-      <td style="font-size:11px">${t.startDate || '-'}</td>
-      <td><span class="dday-badge ${dd.cls}" style="font-size:10px">${dd.label}</span></td>
-      <td>
-        <div class="progress-wrap" style="min-width:80px">
-          <div class="progress-bar"><div class="progress-fill" style="width:${t.progress||0}%"></div></div>
-          <span class="progress-label">${t.progress||0}%</span>
-        </div>
-      </td>
-      <td><span class="status-badge status-${t.status}">${WS.getStatusLabel(t.status)}</span></td>
-      <td style="text-align:center">${t.isImportant ? '⭐' : '-'}</td>
-      <td style="text-align:center">
-        <button class="btn-sm ${t.drReported ? 'btn-primary' : ''}"
-          style="font-size:11px;padding:3px 8px"
-          onclick="drToggleReport(${t.id})">
-          ${t.drReported ? '보고완료' : '보고'}
-        </button>
-      </td>
-    </tr>`;
+  tbody.innerHTML = myTasks.map(function(t) {
+    var assigner = WS.getUser(t.assignerId);
+    var isMySchedule = !t.assignerId || String(t.assignerId) === String(me.id) || t.source === 'schedule';
+    var assignerLabel = isMySchedule
+      ? '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:10px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);font-size:10px;font-weight:700;color:#6366f1"><i data-lucide="calendar" style="width:9px;height:9px"></i>\uc2a4\ucf00\uc904</span>'
+      : (assigner ? assigner.name : '-');
+    var ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+    var collaborators = ids.filter(function(id){ return String(id) !== String(me.id); }).map(function(i){ var u=WS.getUser(i); return u?u.name:null; }).filter(Boolean);
+    var dd = WS.getDdayBadge(t.dueDate);
+    var reportBadge = t.drReported
+      ? '<span onclick="drToggleReport(' + t.id + ')" title="\ud074\ub9ad\ud558\uc5ec \ucde8\uc18c" style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:12px;background:#22c55e;color:#fff;font-size:10.5px;font-weight:800;cursor:pointer" onmouseover="this.style.opacity=\'.7\'" onmouseout="this.style.opacity=\'1\'"><i data-lucide="check" style="width:9px;height:9px"></i>OK</span>'
+      : '<span onclick="drToggleReport(' + t.id + ')" title="\ud074\ub9ad\ud558\uc5ec \ubcf4\uace0" style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:12px;background:var(--bg-tertiary);border:1.5px solid var(--border-color);color:var(--text-muted);font-size:10.5px;font-weight:700;cursor:pointer" onmouseover="this.style.borderColor=\'#ef4444\';this.style.color=\'#ef4444\'" onmouseout="this.style.borderColor=\'var(--border-color)\';this.style.color=\'var(--text-muted)\'"><i data-lucide="x" style="width:9px;height:9px"></i>NO</span>';
+    return '<tr>' +
+      '<td style="font-weight:600">' + (t.isImportant ? '\u2b50' : '') + t.title + '</td>' +
+      '<td style="font-size:11px">' + assignerLabel + '</td>' +
+      '<td style="font-size:11px">' + (collaborators.join(', ') || '-') + '</td>' +
+      '<td style="font-size:11px">' + (t.startDate || '-') + '</td>' +
+      '<td><span class="dday-badge ' + dd.cls + '" style="font-size:10px">' + dd.label + '</span></td>' +
+      '<td><div class="progress-wrap" style="min-width:80px"><div class="progress-bar"><div class="progress-fill" style="width:' + (t.progress||0) + '%"></div></div><span class="progress-label">' + (t.progress||0) + '%</span></div></td>' +
+      '<td><span class="status-badge status-' + t.status + '">' + WS.getStatusLabel(t.status) + '</span></td>' +
+      '<td style="text-align:center">' + (t.isImportant ? '\u2b50' : '-') + '</td>' +
+      '<td style="text-align:center">' + reportBadge + '</td>' +
+      '</tr>';
   }).join('');
   refreshIcons();
 }
@@ -2837,10 +2831,223 @@ function drToggleAllReport() {
     return ids.includes(me.id);
   });
   const allReported = myTasks.every(t => t.drReported);
-  myTasks.forEach(t => { t.drReported = !allReported; });
+  myTasks.forEach(function(t) { t.drReported = !allReported; });
   WS.saveTasks();
   renderDailyReportTasks();
-  showToast('success', allReported ? '일괄 보고 취소' : '일괄 보고 완료 처리');
+  showToast('success', allReported ? '\uc77c\uad04 \ubcf4\uace0 \ucde8\uc18c' : '\uc77c\uad04 \ubcf4\uace0 \uc644\ub8cc \uc815\ub9ac');
+}
+
+/* ======================================================
+   \uD83D\uDCCB \uae08\uc77c \uc5c5\ubb34\uc2e4\ud589 \ubcf4\uace0 CRUD
+====================================================== */
+var _drExecReports = [];
+var _drExecEditId  = null;
+var _drExecFiles   = [];
+var _drExecImps    = [];
+var _drImpDragState = { active:false, startX:0, scrollLeft:0 };
+
+function _loadDrExecReports() {
+  _drExecReports = JSON.parse(localStorage.getItem('ws_dr_exec_reports') || '[]');
+}
+function _saveDrExecReports() {
+  localStorage.setItem('ws_dr_exec_reports', JSON.stringify(_drExecReports));
+}
+
+function drOpenExecForm(editId) {
+  _loadDrExecReports();
+  _drExecEditId = editId || null;
+  _drExecFiles  = [];
+  _drExecImps   = [];
+
+  var me = WS.currentUser;
+  var myTasks = WS.tasks.filter(function(t) {
+    var ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+    return ids.includes(me.id);
+  });
+  var sel = document.getElementById('drExecTaskSel');
+  if (sel) {
+    sel.innerHTML = '<option value="">\uc5c5\ubb34 \uc120\ud0dd</option>' +
+      myTasks.map(function(t){ return '<option value="' + t.id + '">' + t.title + '</option>'; }).join('');
+  }
+
+  _renderDrImpPicks();
+
+  if (editId) {
+    var rep = _drExecReports.find(function(r){ return r.id === editId; });
+    if (rep) {
+      if (sel) sel.value = rep.taskId;
+      var cont = document.getElementById('drExecContent');
+      if (cont) cont.value = rep.content || '';
+      _drExecImps = Array.isArray(rep.importance) ? rep.importance.slice() : (rep.importance ? rep.importance.split(',').map(function(s){return s.trim();}).filter(Boolean) : []);
+      _renderDrImpPicks();
+      _renderDrExecFileList(rep.attachments || []);
+    }
+    document.getElementById('drExecFormTitle').textContent = '\uc5c5\ubb34\ubcf4\uace0 \uc218\uc815';
+  } else {
+    var cont2 = document.getElementById('drExecContent');
+    if (cont2) cont2.value = '';
+    var fl = document.getElementById('drExecFileList');
+    if (fl) fl.innerHTML = '';
+    document.getElementById('drExecFormTitle').textContent = '\uc5c5\ubb34\ubcf4\uace0 \ub4f1\ub85d';
+  }
+
+  var form = document.getElementById('drExecForm');
+  if (form) { form.style.display = 'block'; form.scrollIntoView({ behavior:'smooth', block:'center' }); }
+  setTimeout(refreshIcons, 40);
+}
+
+function drCloseExecForm() {
+  var form = document.getElementById('drExecForm');
+  if (form) form.style.display = 'none';
+  _drExecEditId = null; _drExecFiles = []; _drExecImps = [];
+  var fi = document.getElementById('drExecFile');
+  if (fi) fi.value = '';
+}
+
+function drSaveExecReport() {
+  var sel  = document.getElementById('drExecTaskSel');
+  var cont = document.getElementById('drExecContent');
+  if (!sel || !sel.value)            { showToast('error', '\uc5c5\ubb34\ub97c \uc120\ud0dd\ud558\uc138\uc694'); return; }
+  if (!cont || !cont.value.trim())   { showToast('error', '\uc2e4\ud589\ub0b4\uc6a9\uc744 \uc785\ub825\ud558\uc138\uc694'); return; }
+
+  var taskId   = sel.value;
+  var taskName = sel.options[sel.selectedIndex].text;
+  var content  = cont.value.trim();
+  var attachments = _drExecFiles.map(function(f){ return f.name; });
+  var importance  = _drExecImps.slice();
+  var score = importance.length * 10 + Math.min(50, Math.round(content.length * 0.2));
+
+  _loadDrExecReports();
+  if (_drExecEditId) {
+    var rep = _drExecReports.find(function(r){ return r.id === _drExecEditId; });
+    if (rep) {
+      rep.taskId = taskId; rep.taskName = taskName; rep.content = content;
+      if (attachments.length) rep.attachments = attachments;
+      rep.importance = importance; rep.score = score;
+    }
+    showToast('info', '\uc5c5\ubb34\ubcf4\uace0 \uc218\uc815 \uc644\ub8cc');
+  } else {
+    _drExecReports.push({ id: Date.now(), taskId:taskId, taskName:taskName, content:content, attachments:attachments, importance:importance, score:score, date:new Date().toISOString().slice(0,10) });
+    showToast('success', '\uc5c5\ubb34\ubcf4\uace0 \ub4f1\ub85d \uc644\ub8cc!');
+  }
+  _saveDrExecReports();
+  drCloseExecForm();
+  renderDrExecList();
+}
+
+function renderDrExecList() {
+  _loadDrExecReports();
+  var tbody = document.getElementById('dr_exec_list');
+  var cntEl = document.getElementById('dr_exec_count');
+  if (!tbody) return;
+  if (cntEl) cntEl.textContent = _drExecReports.length ? _drExecReports.length + '\uac74' : '';
+
+  if (_drExecReports.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted)">' +
+      '<i data-lucide="inbox" style="width:20px;height:20px;display:block;margin:0 auto 6px;opacity:.4"></i>' +
+      '\ub4f1\ub85d\ub41c \uc5c5\ubb34\ubcf4\uace0\uac00 \uc5c6\uc2b5\ub2c8\ub2e4</td></tr>';
+    refreshIcons();
+    return;
+  }
+
+  var importances = JSON.parse(localStorage.getItem('ws_instr_importances') || '[]');
+  tbody.innerHTML = _drExecReports.map(function(r) {
+    var impHtml = (r.importance || []).map(function(name) {
+      var imp = importances.find(function(i){ return i.name === name; });
+      var c = imp && imp.color ? imp.color : '#6b7280';
+      var icon = imp && imp.icon ? imp.icon : '';
+      return '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:' + c + ';border:1.5px solid ' + c + ';margin-right:2px" title="' + name + '">' +
+        (icon ? '<i data-lucide="' + icon + '" style="width:11px;height:11px;color:#fff"></i>' : '') + '</span>';
+    }).join('');
+    var filesHtml = (r.attachments || []).map(function(f) {
+      return '<span style="font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:3px"><i data-lucide="paperclip" style="width:9px;height:9px"></i>' + f + '</span>';
+    }).join('');
+    return '<tr>' +
+      '<td style="font-weight:600">' + r.taskName + '</td>' +
+      '<td style="font-size:11px;color:var(--text-secondary);max-width:200px">' + r.content + '</td>' +
+      '<td style="font-size:10.5px">' + (filesHtml || '<span style="color:var(--text-muted)">-</span>') + '</td>' +
+      '<td style="text-align:center">' + (impHtml || '-') + '</td>' +
+      '<td style="text-align:center"><span style="font-size:13px;font-weight:800;color:var(--accent-blue)">' + (r.score || 0) + '</span></td>' +
+      '<td style="text-align:center"><div style="display:flex;gap:4px;justify-content:center">' +
+        '<button onclick="drOpenExecForm(' + r.id + ')" title="\uc218\uc815" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 5px">\u270f\ufe0f</button>' +
+        '<button onclick="drDeleteExecReport(' + r.id + ')" title="\uc0ad\uc81c" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 5px">\uD83D\uDDD1\uFE0F</button>' +
+      '</div></td></tr>';
+  }).join('');
+  refreshIcons();
+}
+
+function drDeleteExecReport(id) {
+  _loadDrExecReports();
+  _drExecReports = _drExecReports.filter(function(r){ return r.id !== id; });
+  _saveDrExecReports();
+  showToast('info', '\uc5c5\ubb34\ubcf4\uace0\uac00 \uc0ad\uc81c\ub418\uc5c8\uc2b5\ub2c8\ub2e4');
+  renderDrExecList();
+}
+
+function _drExecFileChange(input) {
+  Array.from(input.files).forEach(function(f) {
+    if (!_drExecFiles.some(function(ef){ return ef.name===f.name && ef.size===f.size; })) _drExecFiles.push(f);
+  });
+  input.value = '';
+  _renderDrExecFileList();
+}
+
+function _renderDrExecFileList(existingNames) {
+  var listEl = document.getElementById('drExecFileList');
+  if (!listEl) return;
+  var existHtml = (existingNames || []).map(function(name) {
+    return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:16px;background:var(--bg-tertiary);border:1px solid var(--border-color);font-size:11px;color:var(--text-secondary)"><i data-lucide="file" style="width:10px;height:10px"></i>' + name + '</span>';
+  }).join('');
+  var newHtml = _drExecFiles.map(function(f, i) {
+    return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:16px;background:rgba(79,110,247,.08);border:1px solid rgba(79,110,247,.3);font-size:11px;color:var(--text-primary)"><i data-lucide="file-plus" style="width:10px;height:10px;color:var(--accent-blue)"></i>' + f.name + '<button onclick="_drExecFiles.splice(' + i + ',1);_renderDrExecFileList()" style="background:none;border:none;cursor:pointer;padding:0;display:inline-flex;color:var(--text-muted)" onmouseover="this.style.color=\'#ef4444\'" onmouseout="this.style.color=\'var(--text-muted)\'"><i data-lucide="x" style="width:9px;height:9px"></i></button></span>';
+  }).join('');
+  listEl.innerHTML = existHtml + newHtml;
+  setTimeout(refreshIcons, 30);
+}
+
+function _renderDrImpPicks() {
+  var container = document.getElementById('drExecImpPicks');
+  if (!container) return;
+  var importances = JSON.parse(localStorage.getItem('ws_instr_importances') || '[]');
+  if (importances.length === 0) {
+    container.innerHTML = '<span style="font-size:11px;color:var(--text-muted);white-space:nowrap">\uc911\uc694\ub3c4 \uc5c6\uc74c</span>';
+    return;
+  }
+  var selItems   = importances.filter(function(i){ return _drExecImps.includes(i.name); });
+  var unselItems = importances.filter(function(i){ return !_drExecImps.includes(i.name); });
+  var selHtml = selItems.map(function(imp) {
+    var c = imp.color||'#ef4444';
+    var inner = imp.icon && imp.icon.length>2 ? '<i data-lucide="' + imp.icon + '" style="width:11px;height:11px;color:#fff"></i>' : '';
+    return '<span onclick="_drToggleImp(\'' + imp.name + '\')" title="' + imp.name + '" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:' + c + ';border:2px solid ' + c + ';cursor:pointer;flex-shrink:0">' + inner + '</span>';
+  }).join('');
+  var unselHtml = unselItems.map(function(imp) {
+    var c = imp.color||'#ef4444';
+    var iconHtml = imp.icon && imp.icon.length>2 ? '<i data-lucide="' + imp.icon + '" style="width:9px;height:9px;color:' + c + '"></i>' : '';
+    return '<span onclick="_drToggleImp(\'' + imp.name + '\')" title="' + imp.name + '" style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:16px;font-size:10.5px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;border:1.5px solid ' + c + ';color:' + c + '" onmouseover="this.style.background=\'' + c + '22\'" onmouseout="this.style.background=\'\'">' + iconHtml + imp.name + '</span>';
+  }).join('');
+  container.innerHTML = selHtml + (selHtml&&unselHtml ? '<span style="width:1px;height:20px;background:var(--border-color);flex-shrink:0;margin:0 2px"></span>' : '') + unselHtml;
+  setTimeout(refreshIcons, 30);
+}
+
+function _drToggleImp(name) {
+  var idx = _drExecImps.indexOf(name);
+  if (idx !== -1) _drExecImps.splice(idx, 1); else _drExecImps.push(name);
+  _renderDrImpPicks();
+}
+
+function _drImpDragStart(e) {
+  var el = document.getElementById('drExecImpPicks'); if (!el) return;
+  _drImpDragState = { active:true, startX: e.pageX - el.getBoundingClientRect().left, scrollLeft: el.scrollLeft };
+  el.style.cursor = 'grabbing';
+}
+function _drImpDragMove(e) {
+  if (!_drImpDragState.active) return; e.preventDefault();
+  var el = document.getElementById('drExecImpPicks'); if (!el) return;
+  el.scrollLeft = _drImpDragState.scrollLeft - (e.pageX - el.getBoundingClientRect().left - _drImpDragState.startX) * 1.4;
+}
+function _drImpDragEnd() {
+  _drImpDragState.active = false;
+  var el = document.getElementById('drExecImpPicks'); if (el) el.style.cursor = 'grab';
 }
 
 /* ════════════════════════════════════════════════
