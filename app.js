@@ -3821,8 +3821,12 @@ function _renderInstrStatusPicks(selectedVal) {
     return;
   }
 
-  // 현재 선택값 (hidden input 또는 인자)
-  var cur = hiddenInp ? (hiddenInp.value || selectedVal || '') : (selectedVal || '');
+  // 현재 선택값: 없으면 첫 번째 항목 자동 선택 (필수)
+  var cur = (hiddenInp && hiddenInp.value) ? hiddenInp.value
+           : (selectedVal && selectedVal !== '') ? selectedVal
+           : (statuses[0].id || statuses[0].name);
+  // hidden input 즉시 동기화
+  if (hiddenInp) hiddenInp.value = cur;
 
   container.innerHTML = statuses.map(function(st) {
     var c = st.color || '#06b6d4';
@@ -3830,22 +3834,27 @@ function _renderInstrStatusPicks(selectedVal) {
     var isSelected = (cur === key || cur === st.name);
     var iconHtml = st.icon ? '<i data-lucide="' + st.icon + '" style="width:10px;height:10px;color:' + (isSelected ? '#fff' : c) + '"></i>' : '';
     if (isSelected) {
-      return '<span onclick="_instrToggleStatus(\'' + key + '\')" title="\ucde8\uc18c"\n        style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;\n               font-size:11.5px;font-weight:700;cursor:pointer;transition:all .15s;user-select:none;\n               background:' + c + ';border:1.5px solid ' + c + ';color:#fff">' + iconHtml + st.name + '</span>';
+      // 선택됨 → 색상 채움 + 그림자
+      return '<span onclick="_instrToggleStatus(\'' + key + '\')"' +
+        ' style="display:inline-flex;align-items:center;gap:4px;padding:4px 13px;border-radius:20px;' +
+        'font-size:11.5px;font-weight:700;cursor:default;transition:all .15s;user-select:none;' +
+        'background:' + c + ';border:1.5px solid ' + c + ';color:#fff;' +
+        'box-shadow:0 2px 8px ' + c + '66">' + iconHtml + st.name + '</span>';
     } else {
       return '<span onclick="_instrToggleStatus(\'' + key + '\')" title="' + st.name + '"\n        style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;\n               font-size:11.5px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;\n               border:1.5px solid ' + c + ';color:' + c + ';background:transparent"\n        onmouseover="this.style.background=\'' + c + '22\'" onmouseout="this.style.background=\'transparent\'">' + iconHtml + st.name + '</span>';
     }
   }).join('');
 
-  if (hiddenInp && selectedVal !== undefined) hiddenInp.value = selectedVal || '';
   setTimeout(refreshIcons, 30);
 }
 
 function _instrToggleStatus(key) {
   var hiddenInp = document.getElementById('instrStatus');
   var cur = hiddenInp ? hiddenInp.value : '';
-  var newVal = (cur === key) ? '' : key; // 같은 거 클릭 → 취소
-  if (hiddenInp) hiddenInp.value = newVal;
-  _renderInstrStatusPicks(newVal);
+  // 같은 항목 클릭 시 취소하지 않음 (반드시 하나 선택 유지)
+  if (cur === key) return;
+  if (hiddenInp) hiddenInp.value = key;
+  _renderInstrStatusPicks(key);
 }
 
 /* 보고절차 칩 토글 */
