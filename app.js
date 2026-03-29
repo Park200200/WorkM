@@ -846,7 +846,24 @@ function buildTodayTasksBody() {
 /* ?? ?뱀뀡4: ?ㅼ떆媛????위젯 ?? */
 function buildChatWidget() {
   const msgs = WS.messages;
-  const list = msgs.map(m => {
+
+  // 헤더 우측 멤버 ID (나 + 채널 상대방)만 필터링
+  var _memberIds = [];
+  if (WS.currentUser) _memberIds.push(String(WS.currentUser.id));
+  if (_activeChatAssignerOverride) {
+    _memberIds.push(String(_activeChatAssignerOverride));
+  } else if (_activeChatTask) {
+    var _cIds = Array.isArray(_activeChatTask.assigneeIds)
+      ? _activeChatTask.assigneeIds
+      : (_activeChatTask.assigneeId ? [_activeChatTask.assigneeId] : []);
+    _cIds.forEach(function(id){ _memberIds.push(String(id)); });
+  }
+  // 채널 미선택 시 전체 표시
+  var filtered = (_memberIds.length > 1)
+    ? msgs.filter(function(m){ return _memberIds.indexOf(String(m.senderId)) !== -1; })
+    : msgs;
+
+  const list = filtered.map(m => {
     const isMe = m.senderId === WS.currentUser.id;
     const sender = WS.getUser(m.senderId);
     return `
