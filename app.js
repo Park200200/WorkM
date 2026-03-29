@@ -3354,10 +3354,12 @@ function openInstructionModal(editData) {
   window._instrSelectedReports = [];
   const fields = ['instrContent','instrProcedureText'];
   fields.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  // ── 첸부파일 배열 초기화
+  window._instrFileArr = [];
+  window._instrExistingFiles = editData ? (editData.attachments || []).slice() : [];
   const fileInput = document.getElementById('instrFile');
   if (fileInput) fileInput.value = '';
-  const fileList = document.getElementById('instrFileList');
-  if (fileList) fileList.innerHTML = '';
+  renderInstrFileList();
 
   // ── 날짜 피커 초기화 (커스텀 캘린더 버튼 방식)
   const dueHidden  = document.getElementById('instrDueDate');
@@ -3487,19 +3489,69 @@ function _selectInstrReport(name, el) {
 }
 
 /* 첨부파일 목록 렌더 */
+/* _onInstrFileChange: 파일 선택 시 _instrFileArr에 누적 추가 */
+function _onInstrFileChange(input) {
+  if (!window._instrFileArr) window._instrFileArr = [];
+  Array.from(input.files).forEach(f => {
+    // 중복 방지 (같은 이름+크기 파일은 재추가 안 함)
+    const dup = window._instrFileArr.some(ef => ef.name === f.name && ef.size === f.size);
+    if (!dup) window._instrFileArr.push(f);
+  });
+  input.value = ''; // 리셋: 같은 파일 재선택 가능
+  renderInstrFileList();
+}
+
+/* renderInstrFileList: 첨부파일 목록 렌더 (X 삭제 버튼 포함) */
 function renderInstrFileList() {
-  const fileInput = document.getElementById('instrFile');
-  const listEl    = document.getElementById('instrFileList');
-  if (!fileInput || !listEl) return;
-  const files = Array.from(fileInput.files);
-  listEl.innerHTML = files.map((f, i) =>
+  const listEl = document.getElementById('instrFileList');
+  if (!listEl) return;
+  if (!window._instrFileArr)       window._instrFileArr = [];
+  if (!window._instrExistingFiles) window._instrExistingFiles = [];
+
+  const existingHtml = window._instrExistingFiles.map((name, i) =>
     `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;
-      background:var(--bg-tertiary);border:1px solid var(--border-color);font-size:11.5px;color:var(--text-secondary)">
+      background:var(--bg-tertiary);border:1px solid var(--border-color);
+      font-size:11.5px;color:var(--text-secondary)">
       <i data-lucide="file" style="width:11px;height:11px"></i>
-      ${f.name}
+      <span style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
+      <button onclick="_removeExistingFile(${i})" title="\uc0ad\uc81c"
+        style="background:none;border:none;cursor:pointer;padding:0;margin-left:2px;
+               display:inline-flex;align-items:center;color:var(--text-muted);transition:color .15s"
+        onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--text-muted)'">
+        <i data-lucide="x" style="width:11px;height:11px"></i>
+      </button>
     </span>`
   ).join('');
+
+  const newHtml = window._instrFileArr.map((f, i) =>
+    `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;
+      background:rgba(79,110,247,.08);border:1px solid rgba(79,110,247,.3);
+      font-size:11.5px;color:var(--text-primary)">
+      <i data-lucide="file-plus" style="width:11px;height:11px;color:var(--accent-blue)"></i>
+      <span style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
+      <button onclick="_removeNewFile(${i})" title="\uc0ad\uc81c"
+        style="background:none;border:none;cursor:pointer;padding:0;margin-left:2px;
+               display:inline-flex;align-items:center;color:var(--text-muted);transition:color .15s"
+        onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--text-muted)'">
+        <i data-lucide="x" style="width:11px;height:11px"></i>
+      </button>
+    </span>`
+  ).join('');
+
+  listEl.innerHTML = existingHtml + newHtml;
   setTimeout(refreshIcons, 30);
+}
+
+function _removeNewFile(idx) {
+  if (!window._instrFileArr) return;
+  window._instrFileArr.splice(idx, 1);
+  renderInstrFileList();
+}
+
+function _removeExistingFile(idx) {
+  if (!window._instrExistingFiles) return;
+  window._instrExistingFiles.splice(idx, 1);
+  renderInstrFileList();
 }
 
 /* ── 업무중요도 드래그 스크롤 ─────────────────────── */
@@ -3605,6 +3657,8 @@ function closeInstructionModal() {
   window._instrProcedures = [];
   window._instrSelectedReports = [];
   window._instrImportances = [];
+  window._instrFileArr = [];
+  window._instrExistingFiles = [];
 }
 
 /* 저장 */
@@ -3633,7 +3687,10 @@ function saveInstruction() {
 
   const taskName     = taskSel.options[taskSel.selectedIndex]?.text || '';
   const assigneeName = assSel.options[assSel.selectedIndex]?.text  || '';
-  const attachments  = fileEl ? Array.from(fileEl.files).map(f => f.name) : [];
+  const attachments = [
+    ...(window._instrExistingFiles || []),
+    ...(window._instrFileArr || []).map(f => f.name)
+  ];
 
   // ── ws_instructions 저장 (신규 or 수정)
   const instr = JSON.parse(localStorage.getItem('ws_instructions') || '[]');

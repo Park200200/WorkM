@@ -850,7 +850,7 @@
               </label>
               <div style="position:relative">
                 <input type="file" id="instrFile" multiple accept="*/*" style="display:none"
-                  onchange="renderInstrFileList()">
+                  onchange="_onInstrFileChange(this)">
                 <button onclick="document.getElementById('instrFile').click()"
                   style="display:flex;align-items:center;gap:7px;width:100%;padding:9px 14px;border-radius:10px;border:1.5px dashed var(--border-color);background:var(--bg-tertiary);cursor:pointer;color:var(--text-secondary);font-size:13px;transition:border-color .2s"
                   onmouseover="this.style.borderColor='var(--accent-blue)'" onmouseout="this.style.borderColor='var(--border-color)'">
