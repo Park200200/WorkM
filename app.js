@@ -3529,17 +3529,37 @@ function toggleStaffPwd() {
    📢 지시사항 모달
 ══════════════════════════════ */
 
-/* editInstruction: 내가 지시한 업무 클릭 시 수정모달 오픈 */
+/* editInstruction: 내가 지시한 업무 클릭 시 instructionModal로 수정 */
 function editInstruction(taskId) {
-  // ws_instructions에서 해당 id 찾기
+  // 1) ws_instructions에서 먼저 찾기
   const instr = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
-  const found = instr.find(i => i.id === taskId || i.id === Number(taskId));
-  if (found) {
-    openInstructionModal(found);
-  } else {
-    // ws_instructions에 없으면 기존 task 상세 열기
-    openTaskDetail(taskId);
+  const fromInstr = instr.find(i => i.id === taskId || i.id === Number(taskId));
+  if (fromInstr) {
+    openInstructionModal(fromInstr);
+    return;
   }
+
+  // 2) WS.tasks에서 찾아 instructionModal 형식으로 변환
+  const task = WS.getTask ? WS.getTask(taskId) : WS.tasks.find(t => t.id === taskId || t.id === Number(taskId));
+  if (task) {
+    const adaptedData = {
+      id:          task.id,
+      taskId:      task.taskId   || String(task.id),
+      taskName:    task.taskName || task.title,
+      assigneeId:  Array.isArray(task.assigneeIds) ? task.assigneeIds[0] : task.assigneeId,
+      dueDate:     task.dueDate   || '',
+      content:     task.content   || task.description || '',
+      report:      task.report    || '',
+      procedure:   task.procedure || '',
+      importance:  task.importance || '',
+      attachments: task.attachments || [],
+      _fromTasks:  true  // 출처 표시 (필요 시 저장 시 구분용)
+    };
+    openInstructionModal(adaptedData);
+    return;
+  }
+
+  showToast('error', '해당 지시사항을 찾을 수 없습니다.');
 }
 
 /* 모달 열기 (editData 있으면 수정모드) */
@@ -3967,14 +3987,27 @@ function saveInstruction() {
   const editId = window._instrEditId || null;
 
   if (editId) {
-    // ── 수정 모드: 기존 항목 업데이트
+    // ── 수정 모드: ws_instructions에서 찾기
     const idx = instr.findIndex(i => i.id === editId || i.id === Number(editId));
     if (idx !== -1) {
+      // ws_instructions에 있는 경우 - 업데이트
       Object.assign(instr[idx], {
         taskId, taskName,
         assigneeId: Number(assigneeId), assigneeName,
-        dueDate, content, report, procedure, importance,
+        dueDate, content, report, procedure, importance, attachments,
         isImportant: importance.length > 0,
+        updatedAt: new Date().toISOString()
+      });
+    } else {
+      // ws_instructions에 없는 경우 (WS.tasks 기반) - 새로 추가
+      instr.unshift({
+        id: editId,
+        taskId, taskName,
+        assigneeId: Number(assigneeId), assigneeName,
+        dueDate, content, report, procedure, importance, attachments,
+        status: 'progress', progress: 0, team: '',
+        isImportant: importance.length > 0,
+        author: WS.currentUser ? WS.currentUser.name : '관리자',
         updatedAt: new Date().toISOString()
       });
     }
