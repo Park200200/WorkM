@@ -465,7 +465,7 @@ function buildAssignedByMeBody() {
 
     return `<tr style="cursor:pointer">
       <td onclick="editInstruction(${t.id})" title="클릭하여 수정"><div style="display:flex;align-items:center;gap:6px">${t.isImportant?'<span class="star-icon"><i data-lucide="star"></i></span>':''}<span style="font-weight:600;font-size:12.5px;text-decoration:underline dotted;text-underline-offset:3px">${t.title}</span></div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${t.team||''}</div></td>
-      <td><div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,${assignee?.color||'#4f6ef7'},#9747ff)">${assignee?.avatar||'?'}</div></div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${assignee?.name||''}</div></td>
+      <td onclick="event.stopPropagation();openTaskChatChannel('${t.title}')" title="클릭하여 메시지 채널 열기" style="cursor:pointer"><div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,${assignee?.color||'#4f6ef7'},#9747ff)">${assignee?.avatar||'?'}</div></div><div style="font-size:11px;color:var(--accent-blue);margin-top:2px;font-weight:600;text-decoration:underline dotted;text-underline-offset:2px">${assignee?.name||''}</div></td>
       <td><span class="status-badge status-${t.status}">${WS.getStatusLabel(t.status)}</span></td>
       <td><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ${fillCls}" style="width:${t.progress}%"></div></div><span class="progress-label">${t.progress}%</span></div></td>
       <td><span class="dday-badge ${dd.cls}">${dd.label}</span></td>
@@ -655,7 +655,7 @@ function buildChatWidget() {
     <div class="chat-widget">
       <div class="chat-header">
         <div class="section-dot" style="background:var(--accent-blue)"><i data-lucide="message-square"></i></div>
-        <h3>실시간 메시지 채널</h3>
+        <h3 id="chatChannelTitle"><span id="chatChannelTaskName" style="display:none;color:var(--accent-blue);margin-right:4px"></span><span id="chatChannelSuffix">실시간 메시지 채널</span></h3>
         <div style="margin-left:auto; display:flex; align-items:center; gap:4px">
           <span class="status-indicator online"></span>
         <span style="font-size:11px; font-weight:700; color:var(--text-muted)">동료</span>
@@ -680,11 +680,56 @@ function sendMessage() {
   WS.addMessage(text);
   input.value = '';
   
-  // 利됱떆 ?뚮뜑留?(??쒕낫??전체瑜?洹몃━湲곕낫??梨꾪똿 ?곸뿭留?업데이트되면 醫뗭?留??⑥닚???꾪빐 전체 由щ젋??
+  // 利됱떆 ?뚮뜑留?(?€?쒕낫??전체瑜?洹몃━湲곕낫??梨꾪똿 ?곸뿭留?업데이트되면 醫뗭?留??⑥닚???꾪빐 전체 由щ젋??
   renderDashboard();
 }
 
-/* ?? ?뱀뀡5: 媛꾪듃李⑦듃 (留덇컧??기준) ?? */
+
+/* ── 내가 지시한 업무 담당자 클릭 → 실시간 메시지 채널 활성화 */
+var _activeChatTaskTitle = null;
+function openTaskChatChannel(taskTitle) {
+  var nameEl   = document.getElementById('chatChannelTaskName');
+  var suffixEl = document.getElementById('chatChannelSuffix');
+  var widget   = document.querySelector('.chat-widget');
+  var inputEl  = document.getElementById('chatInput');
+  var chatBody = document.getElementById('chatBody');
+
+  // 같은 업무 재클릭 → 원래 채널명으로 토글
+  if (_activeChatTaskTitle === taskTitle) {
+    _activeChatTaskTitle = null;
+    if (nameEl)   { nameEl.textContent = ''; nameEl.style.display = 'none'; }
+    if (suffixEl) { suffixEl.textContent = '실시간 메시지 채널'; }
+    if (widget)   { widget.style.boxShadow = ''; }
+    if (inputEl)  { inputEl.placeholder = '메시지를 입력하세요...'; }
+    return;
+  }
+
+  _activeChatTaskTitle = taskTitle;
+
+  // 헤더 타이틀: "업무명 : 실시간 메시지 채널"
+  if (nameEl) { nameEl.textContent = taskTitle + ' :'; nameEl.style.display = 'inline'; }
+  if (suffixEl) { suffixEl.textContent = '실시간 메시지 채널'; }
+
+  // 채팅 위젯 강조 글로우
+  if (widget) {
+    widget.style.transition = 'box-shadow .3s';
+    widget.style.boxShadow = '0 0 0 2px var(--accent-blue)';
+    setTimeout(function() { if (widget) widget.style.boxShadow = '0 0 0 1.5px var(--accent-blue)88'; }, 500);
+  }
+
+  // 입력창 placeholder + 포커스
+  if (inputEl) {
+    inputEl.placeholder = '[' + taskTitle + '] 메시지를 입력하세요...';
+    inputEl.focus();
+  }
+
+  // 스크롤 최하단
+  if (chatBody) chatBody.scrollTop = chatBody.scrollHeight;
+
+  showToast('info', '"' + taskTitle + '" 메시지 채널이 활성화되었습니다.', 2500);
+}
+
+/* ?€?€ ?뱀뀡5: 媛꾪듃李⑦듃 (留덇컧??기준) ?€?€ */
 function buildGantt() {
   const tasks = WS.getSortedByDue().slice(0,6);
   const today = new Date();
