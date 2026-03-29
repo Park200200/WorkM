@@ -443,10 +443,10 @@
                   <i data-lucide="edit-3" style="width:13px;height:13px;color:var(--accent-blue)"></i>
                   <span id="drExecFormTitle">업무보고 등록</span>
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
                   <div class="form-group" style="margin:0">
                     <label class="form-label">업무명 *</label>
-                    <select class="form-input" id="drExecTaskSel" style="font-size:12px"><option value="">-- 업무 선택 --</option></select>
+                    <select class="form-input" id="drExecTaskSel" style="font-size:12px"><option value="">상세업무 선택</option></select>
                   </div>
                   <div class="form-group" style="margin:0">
                     <label class="form-label">업무중요도</label>
@@ -456,6 +456,15 @@
                       scrollbar-width:none"
                       onmousedown="_drImpDragStart(event)" onmousemove="_drImpDragMove(event)"
                       onmouseup="_drImpDragEnd()" onmouseleave="_drImpDragEnd()"></div>
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">진행상태</label>
+                    <div id="drExecStatusPicks" style="display:flex;flex-wrap:nowrap;gap:4px;padding:5px 8px;
+                      min-height:36px;border:1.5px solid var(--border-color);border-radius:8px;
+                      background:var(--bg-tertiary);overflow-x:auto;cursor:grab;align-items:center;
+                      scrollbar-width:none"
+                      onmousedown="_drStatDragStart(event)" onmousemove="_drStatDragMove(event)"
+                      onmouseup="_drStatDragEnd()" onmouseleave="_drStatDragEnd()"></div>
                   </div>
                 </div>
                 <div class="form-group" style="margin:0 0 10px">
@@ -495,15 +504,16 @@
               <div style="overflow-x:auto">
                 <table class="task-table" style="font-size:11.5px;min-width:700px">
                   <thead><tr>
-                    <th style="min-width:120px">업무명</th>
-                    <th style="min-width:180px">실행내용</th>
-                    <th style="min-width:80px">첨부파일</th>
-                    <th style="min-width:80px;text-align:center">중요도</th>
-                    <th style="min-width:70px;text-align:center">성과점수</th>
-                    <th style="min-width:70px;text-align:center">관리</th>
+                    <th style="min-width:110px">업무명</th>
+                    <th style="min-width:160px">실행내용</th>
+                    <th style="min-width:70px">첨부파일</th>
+                    <th style="min-width:70px;text-align:center">중요도</th>
+                    <th style="min-width:70px;text-align:center">진행상태</th>
+                    <th style="min-width:60px;text-align:center">성과점수</th>
+                    <th style="min-width:60px;text-align:center">관리</th>
                   </tr></thead>
                   <tbody id="dr_exec_list">
-                    <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted)">
+                    <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted)">
                       <i data-lucide="inbox" style="width:20px;height:20px;display:block;margin:0 auto 6px;opacity:.4"></i>
                       등록된 업무보고가 없습니다
                     </td></tr>

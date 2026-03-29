@@ -2844,7 +2844,9 @@ var _drExecReports = [];
 var _drExecEditId  = null;
 var _drExecFiles   = [];
 var _drExecImps    = [];
-var _drImpDragState = { active:false, startX:0, scrollLeft:0 };
+var _drExecStatus  = null;  // 진행상태 (단일 선택)
+var _drImpDragState  = { active:false, startX:0, scrollLeft:0 };
+var _drStatDragState = { active:false, startX:0, scrollLeft:0 };
 
 function _loadDrExecReports() {
   _drExecReports = JSON.parse(localStorage.getItem('ws_dr_exec_reports') || '[]');
@@ -2858,19 +2860,18 @@ function drOpenExecForm(editId) {
   _drExecEditId = editId || null;
   _drExecFiles  = [];
   _drExecImps   = [];
+  _drExecStatus = null;
 
-  var me = WS.currentUser;
-  var myTasks = WS.tasks.filter(function(t) {
-    var ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
-    return ids.includes(me.id);
-  });
+  // 상세업무리스트(ws_detail_tasks) 로드
+  var detailTasks = JSON.parse(localStorage.getItem('ws_detail_tasks') || '[]');
   var sel = document.getElementById('drExecTaskSel');
   if (sel) {
-    sel.innerHTML = '<option value="">\uc5c5\ubb34 \uc120\ud0dd</option>' +
-      myTasks.map(function(t){ return '<option value="' + t.id + '">' + t.title + '</option>'; }).join('');
+    sel.innerHTML = '<option value="">상세업무 선택</option>' +
+      detailTasks.map(function(d){ return '<option value="' + d.id + '">' + d.name + '</option>'; }).join('');
   }
 
   _renderDrImpPicks();
+  _renderDrStatusPicks();
 
   if (editId) {
     var rep = _drExecReports.find(function(r){ return r.id === editId; });
@@ -2878,17 +2879,19 @@ function drOpenExecForm(editId) {
       if (sel) sel.value = rep.taskId;
       var cont = document.getElementById('drExecContent');
       if (cont) cont.value = rep.content || '';
-      _drExecImps = Array.isArray(rep.importance) ? rep.importance.slice() : (rep.importance ? rep.importance.split(',').map(function(s){return s.trim();}).filter(Boolean) : []);
+      _drExecImps   = Array.isArray(rep.importance) ? rep.importance.slice() : (rep.importance ? rep.importance.split(',').map(function(s){return s.trim();}).filter(Boolean) : []);
+      _drExecStatus = rep.status || null;
       _renderDrImpPicks();
+      _renderDrStatusPicks();
       _renderDrExecFileList(rep.attachments || []);
     }
-    document.getElementById('drExecFormTitle').textContent = '\uc5c5\ubb34\ubcf4\uace0 \uc218\uc815';
+    document.getElementById('drExecFormTitle').textContent = '업무보고 수정';
   } else {
     var cont2 = document.getElementById('drExecContent');
     if (cont2) cont2.value = '';
     var fl = document.getElementById('drExecFileList');
     if (fl) fl.innerHTML = '';
-    document.getElementById('drExecFormTitle').textContent = '\uc5c5\ubb34\ubcf4\uace0 \ub4f1\ub85d';
+    document.getElementById('drExecFormTitle').textContent = '업무보고 등록';
   }
 
   var form = document.getElementById('drExecForm');
@@ -2899,7 +2902,7 @@ function drOpenExecForm(editId) {
 function drCloseExecForm() {
   var form = document.getElementById('drExecForm');
   if (form) form.style.display = 'none';
-  _drExecEditId = null; _drExecFiles = []; _drExecImps = [];
+  _drExecEditId = null; _drExecFiles = []; _drExecImps = []; _drExecStatus = null;
   var fi = document.getElementById('drExecFile');
   if (fi) fi.value = '';
 }
@@ -2907,14 +2910,15 @@ function drCloseExecForm() {
 function drSaveExecReport() {
   var sel  = document.getElementById('drExecTaskSel');
   var cont = document.getElementById('drExecContent');
-  if (!sel || !sel.value)            { showToast('error', '\uc5c5\ubb34\ub97c \uc120\ud0dd\ud558\uc138\uc694'); return; }
-  if (!cont || !cont.value.trim())   { showToast('error', '\uc2e4\ud589\ub0b4\uc6a9\uc744 \uc785\ub825\ud558\uc138\uc694'); return; }
+  if (!sel || !sel.value)          { showToast('error', '업무를 선택하세요'); return; }
+  if (!cont || !cont.value.trim()) { showToast('error', '실행내용을 입력하세요'); return; }
 
   var taskId   = sel.value;
   var taskName = sel.options[sel.selectedIndex].text;
   var content  = cont.value.trim();
   var attachments = _drExecFiles.map(function(f){ return f.name; });
   var importance  = _drExecImps.slice();
+  var status      = _drExecStatus || null;
   var score = importance.length * 10 + Math.min(50, Math.round(content.length * 0.2));
 
   _loadDrExecReports();
@@ -2923,12 +2927,12 @@ function drSaveExecReport() {
     if (rep) {
       rep.taskId = taskId; rep.taskName = taskName; rep.content = content;
       if (attachments.length) rep.attachments = attachments;
-      rep.importance = importance; rep.score = score;
+      rep.importance = importance; rep.status = status; rep.score = score;
     }
-    showToast('info', '\uc5c5\ubb34\ubcf4\uace0 \uc218\uc815 \uc644\ub8cc');
+    showToast('info', '업무보고 수정 완료');
   } else {
-    _drExecReports.push({ id: Date.now(), taskId:taskId, taskName:taskName, content:content, attachments:attachments, importance:importance, score:score, date:new Date().toISOString().slice(0,10) });
-    showToast('success', '\uc5c5\ubb34\ubcf4\uace0 \ub4f1\ub85d \uc644\ub8cc!');
+    _drExecReports.push({ id:Date.now(), taskId:taskId, taskName:taskName, content:content, attachments:attachments, importance:importance, status:status, score:score, date:new Date().toISOString().slice(0,10) });
+    showToast('success', '업무보고 등록 완료!');
   }
   _saveDrExecReports();
   drCloseExecForm();
@@ -2940,17 +2944,18 @@ function renderDrExecList() {
   var tbody = document.getElementById('dr_exec_list');
   var cntEl = document.getElementById('dr_exec_count');
   if (!tbody) return;
-  if (cntEl) cntEl.textContent = _drExecReports.length ? _drExecReports.length + '\uac74' : '';
+  if (cntEl) cntEl.textContent = _drExecReports.length ? _drExecReports.length + '건' : '';
 
   if (_drExecReports.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted)">' +
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted)">' +
       '<i data-lucide="inbox" style="width:20px;height:20px;display:block;margin:0 auto 6px;opacity:.4"></i>' +
-      '\ub4f1\ub85d\ub41c \uc5c5\ubb34\ubcf4\uace0\uac00 \uc5c6\uc2b5\ub2c8\ub2e4</td></tr>';
+      '등록된 업무보고가 없습니다</td></tr>';
     refreshIcons();
     return;
   }
 
   var importances = JSON.parse(localStorage.getItem('ws_instr_importances') || '[]');
+  var statuses    = JSON.parse(localStorage.getItem('ws_task_statuses')    || '[]');
   tbody.innerHTML = _drExecReports.map(function(r) {
     var impHtml = (r.importance || []).map(function(name) {
       var imp = importances.find(function(i){ return i.name === name; });
@@ -2962,15 +2967,26 @@ function renderDrExecList() {
     var filesHtml = (r.attachments || []).map(function(f) {
       return '<span style="font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:3px"><i data-lucide="paperclip" style="width:9px;height:9px"></i>' + f + '</span>';
     }).join('');
+    // 진행상태 배지
+    var statusBadge = '-';
+    if (r.status) {
+      var st = statuses.find(function(s){ return s.id === r.status || s.name === r.status; });
+      if (st) {
+        var sc = st.color || '#06b6d4';
+        statusBadge = '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;background:' + sc + '22;border:1.5px solid ' + sc + ';font-size:10px;font-weight:700;color:' + sc + '">' +
+          (st.icon ? '<i data-lucide="' + st.icon + '" style="width:9px;height:9px;color:' + sc + '"></i>' : '') + st.name + '</span>';
+      }
+    }
     return '<tr>' +
       '<td style="font-weight:600">' + r.taskName + '</td>' +
-      '<td style="font-size:11px;color:var(--text-secondary);max-width:200px">' + r.content + '</td>' +
+      '<td style="font-size:11px;color:var(--text-secondary);max-width:180px">' + r.content + '</td>' +
       '<td style="font-size:10.5px">' + (filesHtml || '<span style="color:var(--text-muted)">-</span>') + '</td>' +
       '<td style="text-align:center">' + (impHtml || '-') + '</td>' +
+      '<td style="text-align:center">' + statusBadge + '</td>' +
       '<td style="text-align:center"><span style="font-size:13px;font-weight:800;color:var(--accent-blue)">' + (r.score || 0) + '</span></td>' +
       '<td style="text-align:center"><div style="display:flex;gap:4px;justify-content:center">' +
-        '<button onclick="drOpenExecForm(' + r.id + ')" title="\uc218\uc815" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 5px">\u270f\ufe0f</button>' +
-        '<button onclick="drDeleteExecReport(' + r.id + ')" title="\uc0ad\uc81c" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 5px">\uD83D\uDDD1\uFE0F</button>' +
+        '<button onclick="drOpenExecForm(' + r.id + ')" title="수정" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 5px">✏️</button>' +
+        '<button onclick="drDeleteExecReport(' + r.id + ')" title="삭제" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 5px">🗑️</button>' +
       '</div></td></tr>';
   }).join('');
   refreshIcons();
@@ -3048,6 +3064,52 @@ function _drImpDragMove(e) {
 function _drImpDragEnd() {
   _drImpDragState.active = false;
   var el = document.getElementById('drExecImpPicks'); if (el) el.style.cursor = 'grab';
+}
+
+/* ── \uc9c4\ud589\uc0c1\ud0dc \ud53d\ucee4 \ub80c\ub354 (\ub2e8\uc77c \uc120\ud0dd) */
+function _renderDrStatusPicks() {
+  var container = document.getElementById('drExecStatusPicks');
+  if (!container) return;
+  var statuses = JSON.parse(localStorage.getItem('ws_task_statuses') || '[]');
+  if (statuses.length === 0) {
+    container.innerHTML = '<span style="font-size:11px;color:var(--text-muted);white-space:nowrap">\uc9c4\ud589\uc0c1\ud0dc \uc5c6\uc74c</span>';
+    return;
+  }
+  container.innerHTML = statuses.map(function(st) {
+    var c = st.color || '#06b6d4';
+    var isSelected = _drExecStatus === st.id || _drExecStatus === st.name;
+    var iconHtml = st.icon ? '<i data-lucide="' + st.icon + '" style="width:9px;height:9px;color:' + (isSelected ? '#fff' : c) + '"></i>' : '';
+    if (isSelected) {
+      return '<span onclick="_drToggleStatus(\'' + (st.id || st.name) + '\')" title="\ud074\ub9ad\ud558\uc5ec \ucde8\uc18c"\n        style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:16px;\n               font-size:10.5px;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap;\n               background:' + c + ';border:1.5px solid ' + c + ';color:#fff">' + iconHtml + st.name + '</span>';
+    } else {
+      return '<span onclick="_drToggleStatus(\'' + (st.id || st.name) + '\')" title="' + st.name + '"\n        style="display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:16px;\n               font-size:10.5px;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap;\n               border:1.5px solid ' + c + ';color:' + c + ';background:transparent"\n        onmouseover="this.style.background=\'' + c + '22\'" onmouseout="this.style.background=\'transparent\'">' + iconHtml + st.name + '</span>';
+    }
+  }).join('');
+  setTimeout(refreshIcons, 30);
+}
+
+function _drToggleStatus(idOrName) {
+  if (_drExecStatus === idOrName) {
+    _drExecStatus = null; // \ub2e4\uc2dc \ud074\ub9ad\ud558\uba74 \ucde8\uc18c
+  } else {
+    _drExecStatus = idOrName;
+  }
+  _renderDrStatusPicks();
+}
+
+function _drStatDragStart(e) {
+  var el = document.getElementById('drExecStatusPicks'); if (!el) return;
+  _drStatDragState = { active:true, startX: e.pageX - el.getBoundingClientRect().left, scrollLeft: el.scrollLeft };
+  el.style.cursor = 'grabbing';
+}
+function _drStatDragMove(e) {
+  if (!_drStatDragState.active) return; e.preventDefault();
+  var el = document.getElementById('drExecStatusPicks'); if (!el) return;
+  el.scrollLeft = _drStatDragState.scrollLeft - (e.pageX - el.getBoundingClientRect().left - _drStatDragState.startX) * 1.4;
+}
+function _drStatDragEnd() {
+  _drStatDragState.active = false;
+  var el = document.getElementById('drExecStatusPicks'); if (el) el.style.cursor = 'grab';
 }
 
 /* ════════════════════════════════════════════════
