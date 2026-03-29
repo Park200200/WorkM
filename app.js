@@ -864,7 +864,7 @@ function buildChatWidget() {
     : msgs;
 
   const list = filtered.map(m => {
-    const isMe = m.senderId === WS.currentUser.id;
+    const isMe = String(m.senderId) === String(WS.currentUser.id);
     const sender = WS.getUser(m.senderId);
     return `
       <div class="chat-msg ${isMe?'me':''}">
