@@ -1350,18 +1350,41 @@ function openReceivedTaskDetail(taskId) {
     </div>
 
     <!-- 📊 진행율 설정 -->
-    <div style="margin-bottom:16px">
-      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px">
-        <i data-lucide="sliders-horizontal" style="width:13px;height:13px"></i> 진행율 설정
+    <div style="margin-bottom:16px;background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:14px;padding:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+        <i data-lucide="trending-up" style="width:13px;height:13px"></i> 진행 보고
       </div>
-      <div style="display:flex;align-items:center;gap:12px">
-        <input type="range" min="${t.progress}" max="100" value="${progress}" id="progressSlider_${t.id}"
-          style="flex:1;accent-color:var(--accent-blue)"
-          oninput="const _min=parseInt(this.min);if(parseInt(this.value)<_min)this.value=_min;document.getElementById('progVal_${t.id}').textContent=this.value+'%'; document.getElementById('progBar_live_${t.id}').style.width=this.value+'%'">
-        <span id="progVal_${t.id}" style="font-size:15px;font-weight:800;color:var(--accent-blue);min-width:40px;text-align:right">${progress}%</span>
+      <!-- 이전 진행율 표시 -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:8px 12px;background:var(--bg-secondary);border-radius:10px">
+        <span style="font-size:11px;color:var(--text-muted);font-weight:600;flex-shrink:0">이전까지 진행율</span>
+        <div style="flex:1;height:6px;background:var(--border-color);border-radius:100px;overflow:hidden">
+          <div style="width:${progress}%;height:100%;background:${t.status==='done'?'#22c55e':t.status==='delay'?'#ef4444':'var(--accent-blue)'};border-radius:100px"></div>
+        </div>
+        <span style="font-size:14px;font-weight:800;color:var(--accent-blue);min-width:38px;text-align:right">${progress}%</span>
       </div>
-      <div class="progress-bar" style="margin-top:8px;height:8px;border-radius:6px">
-        <div class="progress-fill ${fillCls}" id="progBar_live_${t.id}" style="width:${progress}%;border-radius:6px"></div>
+      <!-- 현재까지 진행율 입력 -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;background:var(--bg-secondary);border-radius:10px">
+        <span style="font-size:11px;color:var(--text-muted);font-weight:600;flex-shrink:0">현재까지 진행율</span>
+        <div style="flex:1;height:6px;background:var(--border-color);border-radius:100px;overflow:hidden" id="progBar_live_${t.id}">
+          <div id="progBarInner_${t.id}" style="width:${progress}%;height:100%;background:var(--accent-blue);border-radius:100px;transition:width .3s"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="progressInput_${t.id}" min="${progress}" max="100" value="${progress}"
+            style="width:52px;padding:4px 6px;border-radius:8px;border:1.5px solid var(--accent-blue);
+                   font-size:14px;font-weight:800;color:var(--accent-blue);text-align:center;background:var(--bg-primary);
+                   outline:none"
+            oninput="var v=parseInt(this.value)||0;var mn=parseInt(this.min)||0;if(v<mn)this.value=mn;if(v>100)this.value=100;document.getElementById('progBarInner_${t.id}').style.width=this.value+'%'">
+          <span style="font-size:13px;font-weight:700;color:var(--accent-blue)">%</span>
+        </div>
+      </div>
+      <!-- 진행 내용 입력 -->
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <textarea id="td_reportText" placeholder="진행 내용을 입력하세요..." rows="2"
+          class="form-input" style="flex:1;resize:none;font-size:13px"></textarea>
+        <button onclick="addProgressReport('${t.id}')" class="btn btn-blue"
+          style="height:auto;padding:10px 16px;white-space:nowrap;align-self:stretch;border-radius:10px;font-size:13px;font-weight:700">
+          <i data-lucide="plus" style="width:14px;height:14px"></i> 추가
+        </button>
       </div>
     </div>
 
@@ -1583,7 +1606,16 @@ function addProgressReport(taskId) {
   const todayIdx = t.history.findIndex(h => h.date === dateStr);
   let isUpdate = false;
 
-  const progress = (function(){ var s = document.getElementById('progressSlider_' + taskId); return s ? parseInt(s.value) : (t.progress||0); })();
+  // 진행율: 슬라이더 대신 숫자 입력창에서 읽기
+  const progress = (function(){
+    var inp = document.getElementById('progressInput_' + taskId);
+    if (inp) return Math.max(0, Math.min(100, parseInt(inp.value) || 0));
+    var s = document.getElementById('progressSlider_' + taskId);
+    return s ? parseInt(s.value) : (t.progress||0);
+  })();
+
+  // 진행율 업무에 저장
+  t.progress = progress;
 
   if (todayIdx !== -1) {
     // 당일 항목 업데이트
@@ -1620,8 +1652,10 @@ function saveTaskDetail() {
   if (!id) return;
   const t = WS.getTask(id);
   const slider = document.getElementById(`progressSlider_${id}`);
+  const progInput = document.getElementById(`progressInput_${id}`);
   const descEl = document.getElementById('td_desc');
-  if (slider) t.progress = parseInt(slider.value);
+  if (progInput) t.progress = Math.max(0, Math.min(100, parseInt(progInput.value) || t.progress || 0));
+  else if (slider) t.progress = parseInt(slider.value);
   if (descEl) t.desc = descEl.value;
 
   // ?덉뒪?좊━ 湲곕줉

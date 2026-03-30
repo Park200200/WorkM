@@ -2187,7 +2187,7 @@ function _renderProcessSelected() {
   var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
 
   if (!window._processOrder.length) {
-    box.innerHTML = '<span id="nt_process_placeholder" style="font-size:11px;color:var(--text-muted);padding:2px 0">아래 목록에서 더블클릭으로 순서 추가</span>';
+    box.innerHTML = '<span id="nt_process_placeholder" style="font-size:11px;color:var(--text-muted);padding:2px 0">아래 목록을 클릭하여 순서를 추가하세요 (복수 추가 가능)</span>';
     return;
   }
 
@@ -2216,29 +2216,26 @@ function _renderProcessTypeList() {
   list.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:8px 8px;';
   list.innerHTML = types.map(function(t) {
     var tName = t.label || t.name || '';
-    var alreadyAdded = window._processOrder.indexOf(tName) !== -1;
     var accent2 = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
     var tColor  = t.color || accent2;
-    return '<span ondblclick="addProcessOrder(\'' + tName.replace(/'/g, "\\'") + '\')"'
+    var addedCount = window._processOrder.filter(function(n){ return n === tName; }).length;
+    return '<span onclick="addProcessOrder(\'' + tName.replace(/'/g, "\\'") + '\')"'
       + ' style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;cursor:pointer;user-select:none;'
-      + 'border:2px solid ' + (alreadyAdded ? tColor : 'var(--border-color)') + ';'
-      + 'background:' + (alreadyAdded ? 'color-mix(in srgb,' + tColor + ' 15%,var(--bg-primary))' : 'var(--bg-primary)') + ';'
-      + 'transition:all 0.15s;opacity:' + (alreadyAdded ? '0.5' : '1') + '" >'
+      + 'border:2px solid ' + tColor + ';'
+      + 'background:color-mix(in srgb,' + tColor + ' 10%,var(--bg-primary));'
+      + 'transition:all 0.15s" '
+      + 'onmouseover="this.style.opacity=\'0.75\'" onmouseout="this.style.opacity=\'1\'">'
       + (t.icon ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:' + tColor + '22;border:1px solid ' + tColor + '"><i data-lucide="' + t.icon + '" style="width:10px;height:10px;color:' + tColor + '"></i></span>' : '')
       + '<span style="font-size:12px;font-weight:600;color:var(--text-primary)">' + tName + '</span>'
-      + (alreadyAdded ? '<span style="font-size:9px;color:var(--text-muted)">✓</span>' : '')
+      + (addedCount > 0 ? '<span style="font-size:9px;font-weight:700;color:#fff;background:' + tColor + ';border-radius:8px;padding:1px 5px;min-width:14px;text-align:center">' + addedCount + '</span>' : '')
       + '</span>';
   }).join(''); if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
 }
 
 function addProcessOrder(typeName) {
   if (!window._processOrder) window._processOrder = [];
-  if (window._processOrder.indexOf(typeName) !== -1) {
-    showToast('info', '"' + typeName + '"은 이미 추가되었습니다.');
-    return;
-  }
+  // 중복 허용: 같은 항목을 여러 번 추가 가능
   window._processOrder.push(typeName);
-  // _processOrder를 _processTags에도 동기화
   window._processTags = window._processOrder.slice();
   _renderProcessSelected();
   _renderProcessTypeList();
@@ -3345,6 +3342,28 @@ function openTaskDetail(taskId) {
           '<div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">진행율</div>' +
           '<div style="display:flex;align-items:center;gap:6px;margin-top:4px">' +
             '<div class="progress-bar" style="flex:1;height:5px">' +
+              (function() {
+                var types = JSON.parse(localStorage.getItem('ws_task_results')) || (WS.taskResults || []);
+                var accent = 'var(--accent-blue)';
+                return types.map(function(t) {
+                  var tName = t.label || t.name || '';
+                  var addedCount = (window._processOrder || []).filter(function(n){ return n === tName; }).length;
+                  var tColor = t.color || accent;
+                  var iconHtml = t.icon
+                    ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:' + tColor + '22;border:1px solid ' + tColor + '"><i data-lucide="' + t.icon + '" style="width:10px;height:10px;color:' + tColor + '"></i></span>'
+                    : '';
+                  return '<span onclick="addProcessOrder(\'' + tName.replace(/'/g, "\\'") + '\')"' +
+                    ' style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;cursor:pointer;user-select:none;' +
+                    'border:2px solid ' + tColor + ';' +
+                    'background:color-mix(in srgb,' + tColor + ' 10%,var(--bg-primary));' +
+                    'transition:all 0.15s"' +
+                    ' onmouseover="this.style.opacity=\'0.75\'" onmouseout="this.style.opacity=\'1\'">' +
+                    iconHtml +
+                    '<span style="font-size:12px;font-weight:600;color:var(--text-primary)">' + tName + '</span>' +
+                    (addedCount > 0 ? '<span style="font-size:9px;font-weight:700;color:#fff;background:' + tColor + ';border-radius:8px;padding:1px 5px;min-width:14px;text-align:center">' + addedCount + '</span>' : '') +
+                    '</span>';
+                }).join('');
+              })() +
               '<div class="progress-fill ' + fillCls + '" style="width:' + progress + '%"></div>' +
             '</div>' +
             '<span style="font-size:12px;font-weight:800;color:var(--accent-blue)">' + progress + '%</span>' +
@@ -3667,3 +3686,43 @@ function _selectNtResult(name) {
     if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
   };
 })();
+
+/* ══════════════════════════════════════════════
+   _renderProcessTypeList 최종 재정의
+   - 중복 허용: 같은 항목 여러 번 추가 가능
+   - 추가 횟수 배지로 표시
+══════════════════════════════════════════════ */
+(function() {
+  window._renderProcessTypeList = function() {
+    var list = document.getElementById('nt_process_type_list');
+    if (!list) return;
+    var types = JSON.parse(localStorage.getItem('ws_report_types')) || (WS.reportTypes || []);
+    WS.reportTypes = types;
+    if (!types.length) {
+      list.innerHTML = '<div style="padding:12px;text-align:center;font-size:11px;color:var(--text-muted)">등록된 진행보고 유형이 없습니다.<br><span style="font-size:10px">(본사관리 → 기타설정에서 추가)</span></div>';
+      return;
+    }
+    var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
+    list.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-radius:10px;min-height:44px;';
+    list.innerHTML = types.map(function(t) {
+      var tName = t.label || t.name || '';
+      var addedCount = (window._processOrder || []).filter(function(n){ return n === tName; }).length;
+      var tColor = t.color || accent;
+      var iconHtml = t.icon
+        ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:' + tColor + '22;border:1px solid ' + tColor + '"><i data-lucide="' + t.icon + '" style="width:10px;height:10px;color:' + tColor + '"></i></span>'
+        : '';
+      return '<span onclick="addProcessOrder(\'' + tName.replace(/'/g, "\\'") + '\')"' +
+        ' style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;cursor:pointer;user-select:none;' +
+        'border:2px solid ' + tColor + ';' +
+        'background:color-mix(in srgb,' + tColor + ' 10%,var(--bg-primary));' +
+        'transition:all 0.15s"' +
+        ' onmouseover="this.style.opacity=\'0.75\'" onmouseout="this.style.opacity=\'1\'">' +
+        iconHtml +
+        '<span style="font-size:12px;font-weight:600;color:var(--text-primary)">' + tName + '</span>' +
+        (addedCount > 0 ? '<span style="font-size:9px;font-weight:700;color:#fff;background:' + tColor + ';border-radius:8px;padding:1px 5px;min-width:14px;text-align:center">' + addedCount + '</span>' : '') +
+        '</span>';
+    }).join('');
+    if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
+  };
+})();
+
