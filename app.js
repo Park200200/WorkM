@@ -186,11 +186,12 @@ function checkOut() {
 
 /* ?? ?좎뒪???? */
 function showToast(type, msg, duration=3000) {
-  const icons = { success:'check-circle-2', error:'x-circle', info:'info' };
+  const icons = { success:'check-circle-2', error:'x-circle', info:'info', warning:'alert-triangle' };
   const c = document.getElementById('toastContainer');
   const t = document.createElement('div');
   t.className = `toast ${type}`;
-  t.innerHTML = `<span class="t-icon"><i data-lucide="${icons[type]||'message-square'}" class="icon-sm"></i></span><span class="t-msg">${msg}</span>`;
+  const safeMsg = String(msg).replace(/\n/g, '<br>');
+  t.innerHTML = `<span class="t-icon"><i data-lucide="${icons[type]||'message-square'}" class="icon-sm"></i></span><span class="t-msg">${safeMsg}</span>`;
   c.appendChild(t);
   refreshIcons();
   setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(20px)'; t.style.transition='all .3s'; setTimeout(()=>t.remove(),300); }, duration);
@@ -387,7 +388,20 @@ function _openTaskOrEdit(taskId, assignerId) {
   if (isMine) {
     if (typeof editInstruction === 'function') editInstruction(taskId);
   } else {
-    openReceivedTaskDetail(taskId);
+    // 다른 사람이 작성한 업무 - 지시자 정보와 함께 안내 메시지 표시
+    var taskName = task ? (task.title || task.taskName || '') : '';
+    var assigner = (WS.getUser && effective) ? WS.getUser(effective) : null;
+    var assignerLabel = '';
+    if (assigner) {
+      var parts = [assigner.name];
+      if (assigner.dept)  parts.push(assigner.dept);
+      if (assigner.role)  parts.push(assigner.role);
+      assignerLabel = parts.join(' ');
+    } else {
+      assignerLabel = '업무 지시자';
+    }
+    var msg = '\u26d4 "' + taskName + '" \uc5c5\ubb34\ub97c \uc218\uc815\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.\n\uc218\uc815\uc740 ' + assignerLabel + '\ub2d8\uaed8 \ub9d0\uc528\ud558\uc2dc\uae38 \ubc14\ub78d\ub2c8\ub2e4.';
+    showToast('warning', msg, 4000);
   }
 }
 
