@@ -375,7 +375,16 @@ function toggleDashAccordion(key) {
 ══════════════════════════════════════════════ */
 function _openTaskOrEdit(taskId, assignerId) {
   var me = WS.currentUser ? String(WS.currentUser.id) : null;
-  if (me && String(assignerId) === me) {
+  // task 객체에서 작성자 필드를 직접 확인 (다양한 필드명 대비)
+  var task = (WS.getTask ? WS.getTask(taskId) : null)
+    || (WS.tasks||[]).find(function(t){ return String(t.id)===String(taskId); });
+  var aidFromTask = task
+    ? String(task.assignerId || task.creatorId || task.registerId || task.ownerId || '')
+    : '';
+  var effective = String(assignerId || aidFromTask || '');
+  // 작성자 == 나이거나, 작성자 정보가 아예 없으면(본인 등록 스케줄) editInstruction 열기
+  var isMine = me && (effective === me || effective === '');
+  if (isMine) {
     if (typeof editInstruction === 'function') editInstruction(taskId);
   } else {
     openReceivedTaskDetail(taskId);
@@ -542,13 +551,12 @@ function buildScheduleBody() {
     // (내가 지시받은 업무와 동일한 상세 팝업 UI 사용)
     var titleOnclick = t._sample
       ? 'event.stopPropagation();_openSampleDetail(' + rowIdx + ')'
-      : 'event.stopPropagation();openReceivedTaskDetail(' + t.id + ')';
+      : 'event.stopPropagation();editInstruction(' + t.id + ')';
     var titleStyle = 'font-weight:700;font-size:12.5px;text-decoration:underline dotted;text-underline-offset:3px;cursor:pointer;color:var(--text-primary)';
-    // 행 전체 클릭: 샘플 → _openSampleDetail, 실제 → openReceivedTaskDetail
-    // 모든 id를 단따옴표로 감싸 문자열 안전 보장
+    // 행 전체 클릭: 샘플 → _openSampleDetail, 실제 → editInstruction (스케줄은 본인이 등록한 것)
     var rowOnclick = t._sample
       ? '_openSampleDetail(' + rowIdx + ')'
-      : "_openTaskOrEdit('" + t.id + "','" + (t.assignerId||'') + "')";
+      : "editInstruction('" + t.id + "')";
 
     return '<tr style="cursor:pointer" onclick="' + rowOnclick + '">'
       + '<td style="width:25%" title="클릭하여 업무 상세 보기">'
