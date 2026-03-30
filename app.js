@@ -2438,7 +2438,7 @@ function renderPage_Settings() {
   refreshIcons();
 }
 
-/* ?? 일정蹂닿린 ?섏씠吏 ?? */
+/* ?€?€ 일정蹂닿린 ?섏씠吏€ ?€?€ */
 function renderPage_Schedule() {
   const el = document.getElementById('scheduleArea');
   if(!el) return;
@@ -2533,47 +2533,147 @@ function renderStaffStatusBadge(status) {
 }
 
 /* ?? 실적보기 ?섏씠吏 ?? */
-function renderPage_Performance() {
+function renderPage_Performance(period) {
   const el = document.getElementById('performanceArea');
-  if(!el) return;
-  const cards = WS.users.map(u => {
+  if (!el) return;
+
+  period = period || window._perfPeriod || 'week';
+  window._perfPeriod = period;
+
+  const now = new Date();
+  let periodStart;
+  if (period === 'week') {
+    const day = now.getDay();
+    periodStart = new Date(now);
+    periodStart.setDate(now.getDate() - day);
+    periodStart.setHours(0,0,0,0);
+  } else if (period === 'month') {
+    periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  } else {
+    periodStart = new Date(now.getFullYear(), 0, 1);
+  }
+
+  const stats = WS.users.map(u => {
     const myTasks = WS.tasks.filter(t => {
-      const _pIds = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
-      return _pIds.includes(u.id);
+      const ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+      if (!ids.includes(u.id)) return false;
+      if (period !== 'all') {
+        const due = t.dueDate ? new Date(t.dueDate) : null;
+        const created = t.createdAt ? new Date(t.createdAt) : null;
+        const ref = due || created;
+        if (ref && ref < periodStart) return false;
+      }
+      return true;
     });
-    const done = myTasks.filter(t=>t.status==='done').length;
-    const delay = myTasks.filter(t=>t.status==='delay').length;
-    const progress = myTasks.filter(t=>t.status==='progress').length;
-    const rate = myTasks.length>0?Math.round(done/myTasks.length*100):0;
-    const avgProg = myTasks.length>0?Math.round(myTasks.reduce((a,t)=>a+t.progress,0)/myTasks.length):0;
-    return `<div class="section-card" style="padding:0">
-      <div style="padding:18px 18px 14px">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-          <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,${u.color},#9747ff);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:800">${u.avatar}</div>
+    const done = myTasks.filter(t => t.status === 'done').length;
+    const delay = myTasks.filter(t => t.status === 'delay').length;
+    const progress = myTasks.filter(t => t.status === 'progress').length;
+    const waiting = myTasks.filter(t => t.status === 'waiting').length;
+    const rate = myTasks.length > 0 ? Math.round(done / myTasks.length * 100) : 0;
+    const avgProg = myTasks.length > 0 ? Math.round(myTasks.reduce((a,t) => a + (t.progress||0), 0) / myTasks.length) : 0;
+    return { u, myTasks, done, delay, progress, waiting, rate, avgProg };
+  });
+
+  stats.sort((a, b) => b.rate - a.rate || b.done - a.done);
+
+  function rankBadge(rank) {
+    const medals = ['?쪍','?쪎','?쪏'];
+    if (rank === 1) return `<span style="font-size:20px" title="1??>${medals[0]}</span>`;
+    if (rank === 2) return `<span style="font-size:20px" title="2??>${medals[1]}</span>`;
+    if (rank === 3) return `<span style="font-size:20px" title="3??>${medals[2]}</span>`;
+    return `<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--bg-tertiary);color:var(--text-muted);font-size:11px;font-weight:800">${rank}</span>`;
+  }
+
+  const rows = stats.map(({ u, myTasks, done, delay, progress, waiting, rate, avgProg }, i) => {
+    const rank = i + 1;
+    const barColor = rate >= 80 ? '#22c55e' : rate >= 50 ? '#f59e0b' : '#ef4444';
+    const rateColor = rate >= 80 ? '#22c55e' : rate >= 50 ? '#f59e0b' : '#ef4444';
+    return `
+    <tr style="border-bottom:1px solid var(--border-color);transition:background .15s" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''">
+      <td style="padding:14px 12px;text-align:center;width:52px">${rankBadge(rank)}</td>
+      <td style="padding:14px 12px;min-width:170px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,${u.color},#9747ff);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:800;flex-shrink:0">${u.avatar}</div>
           <div>
-            <div style="font-size:14px;font-weight:700">${u.name}</div>
-            <div style="font-size:11.5px;color:var(--text-muted)">${u.role} · ${u.dept}</div>
-          </div>
-          <div style="margin-left:auto;text-align:right">
-            <div style="font-size:22px;font-weight:800;color:${rate>=80?'#22c55e':rate>=50?'#f59e0b':'#ef4444'}">${rate}%</div>
-            <div style="font-size:10.5px;color:var(--text-muted)">완료율</div>
+            <div style="font-size:13px;font-weight:700">${u.name}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${u.role} 쨌 ${u.dept}</div>
           </div>
         </div>
-        <div class="progress-bar" style="height:8px;margin-bottom:14px">
-          <div class="progress-fill ${rate>=80?'done':rate<30?'delay':''}" style="width:${rate}%"></div>
+      </td>
+      <td style="padding:14px 12px;text-align:center;width:64px">
+        <div style="font-size:20px;font-weight:800;color:${rateColor}">${rate}%</div>
+        <div style="font-size:10px;color:var(--text-muted)">?꾨즺??/div>
+      </td>
+      <td style="padding:14px 16px;min-width:180px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="flex:1;height:8px;background:var(--bg-tertiary);border-radius:100px;overflow:hidden">
+            <div style="width:${rate}%;height:100%;border-radius:100px;background:${barColor};transition:width .4s"></div>
+          </div>
+          <span style="font-size:10px;font-weight:700;color:var(--text-muted);min-width:28px">${rate}%</span>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
-          ${[{label:'전체',val:myTasks.length,color:'#4f6ef7'},{label:'진행중',val:progress,color:'#06b6d4'},{label:'완료',val:done,color:'#22c55e'},{label:'지연',val:delay,color:'#ef4444'}].map(s=>`
-            <div style="background:var(--bg-tertiary);border-radius:8px;padding:8px;text-align:center">
-              <div style="font-size:18px;font-weight:800;color:${s.color}">${s.val}</div>
-              <div style="font-size:10.5px;color:var(--text-muted)">${s.label}</div>
-            </div>`).join('')}
-        </div>
-        <div style="margin-top:12px;font-size:11.5px;color:var(--text-muted)">평균 진행률: <strong style="color:var(--text-primary)">${avgProg}%</strong></div>
-      </div>
-    </div>`;
+        <div style="font-size:10px;color:var(--text-muted);margin-top:3px">吏꾪뻾瑜??됯퇏 ${avgProg}%</div>
+      </td>
+      <td style="padding:14px 12px;text-align:center;width:52px">
+        <div style="font-size:16px;font-weight:800;color:#4f6ef7">${myTasks.length}</div>
+        <div style="font-size:10px;color:var(--text-muted)">?꾩껜</div>
+      </td>
+      <td style="padding:14px 12px;text-align:center;width:52px">
+        <div style="font-size:16px;font-weight:800;color:#06b6d4">${progress}</div>
+        <div style="font-size:10px;color:var(--text-muted)">吏꾪뻾以?/div>
+      </td>
+      <td style="padding:14px 12px;text-align:center;width:52px">
+        <div style="font-size:16px;font-weight:800;color:#22c55e">${done}</div>
+        <div style="font-size:10px;color:var(--text-muted)">?꾨즺</div>
+      </td>
+      <td style="padding:14px 12px;text-align:center;width:52px">
+        <div style="font-size:16px;font-weight:800;color:#f59e0b">${waiting}</div>
+        <div style="font-size:10px;color:var(--text-muted)">?湲?/div>
+      </td>
+      <td style="padding:14px 12px;text-align:center;width:52px">
+        <div style="font-size:16px;font-weight:800;color:#ef4444">${delay}</div>
+        <div style="font-size:10px;color:var(--text-muted)">吏??/div>
+      </td>
+    </tr>`;
   }).join('');
-  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">${cards}</div>`;
+
+  const periodLabels = { week:'二쇨컙', month:'?붽컙', year:'?곌컙' };
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:18px;font-weight:800">? ?ㅼ쟻 ?꾪솴</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:3px">${periodLabels[period]} ?꾨즺??湲곗? ?쒖쐞</div>
+      </div>
+      <div style="display:flex;border-radius:12px;overflow:hidden;border:1.5px solid var(--border-color);background:var(--bg-secondary)">
+        ${['week','month','year'].map((p,pi) => `${pi>0?'<div style="width:1px;background:var(--border-color)"></div>':''}
+          <button onclick="renderPage_Performance('${p}')"
+            style="padding:8px 22px;border:none;cursor:pointer;font-size:13px;font-weight:700;transition:all .2s;
+            background:${period===p?'var(--accent-blue)':'transparent'};
+            color:${period===p?'#fff':'var(--text-secondary)'};outline:none;white-space:nowrap">
+            ${periodLabels[p]}
+          </button>`).join('')}
+      </div>
+    </div>
+
+    <div class="section-card" style="padding:0;overflow:hidden">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:var(--bg-secondary);border-bottom:2px solid var(--border-color)">
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:700;text-align:center;width:52px">?쒖쐞</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:700;text-align:left">吏곸썝</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:700;text-align:center">?꾨즺??/th>
+            <th style="padding:10px 16px;font-size:11px;color:var(--text-muted);font-weight:700;text-align:left">吏꾪뻾諛?/th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:700;text-align:center">?꾩껜</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:700;text-align:center">吏꾪뻾以?/th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:700;text-align:center">?꾨즺</th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:700;text-align:center">?湲?/th>
+            <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:700;text-align:center">吏??/th>
+          </tr>
+        </thead>
+        <tbody>${rows || '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px">?대떦 湲곌컙 ?낅Т ?곗씠?곌? ?놁뒿?덈떎.</td></tr>'}</tbody>
+      </table>
+    </div>`;
+
   refreshIcons();
 }
 
