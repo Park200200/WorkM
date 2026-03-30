@@ -423,7 +423,7 @@ function buildReceivedBody() {
       + '<span style="font-weight:600;font-size:12.5px">' + t.title + '</span>' + sampleTag + '</div>'
       + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>'
       + assignerCell
-      + '<td style="pointer-events:none">' + _renderStatusBadge(t.status) + '</td>'
+      + '<td onclick="event.stopPropagation();if(!t._sample){openReceivedTaskDetail(\'' + t.id + '\');}" style="cursor:' + (t._sample ? 'default' : 'pointer') + '" title="' + (t._sample ? '' : '클릭하여 상세보기') + '">' + _renderStatusBadge(t.status) + '</td>'
       + '<td style="pointer-events:none">' + progressCell + '</td>'
       + '<td style="pointer-events:none"><span class="dday-badge ' + dd.cls + '">' + dd.label + '</span></td>'
       + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">' + importanceBadges + '</div></td>'
@@ -544,7 +544,7 @@ function buildScheduleBody() {
       + '<span style="' + titleStyle + '">' + t.title + '</span>' + sampleTag + '</div>'
       + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>'
       + collaboratorCell
-      + '<td style="pointer-events:none">' + _renderStatusBadge(t.status) + '</td>'
+      + '<td onclick="event.stopPropagation();' + rowOnclick + '" style="cursor:pointer" title="클릭하여 상세보기">' + _renderStatusBadge(t.status) + '</td>'
       + '<td style="pointer-events:none">' + progressCell + '</td>'
       + '<td style="pointer-events:none"><span class="dday-badge ' + dd.cls + '">' + dd.label + '</span></td>'
       + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">' + importanceBadges + '</div></td>'
@@ -641,7 +641,7 @@ function buildDueTodayBody() {
       + '<span style="font-weight:700;font-size:12.5px;color:#ef4444">' + t.title + '</span>' + sampleTag + '</div>'
       + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>'
       + collaboratorTd
-      + '<td style="pointer-events:none">' + _renderStatusBadge(t.status) + '</td>'
+      + '<td onclick="event.stopPropagation();' + (t._sample ? '' : 'openReceivedTaskDetail(' + t.id + ')') + '" style="cursor:' + (t._sample ? 'default' : 'pointer') + '" title="' + (t._sample ? '' : '클릭하여 상세보기') + '">' + _renderStatusBadge(t.status) + '</td>'
       + '<td style="pointer-events:none">' + progressCell + '</td>'
       + '<td style="pointer-events:none"><span class="dday-badge dday-today">D-DAY</span></td>'
       + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">' + importanceBadges + '</div></td>'
