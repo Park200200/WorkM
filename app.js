@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 
 let sidebarTimer = null;
 
@@ -299,7 +299,7 @@ function renderDashGrid() {
         ${buildChatWidget()}
       </div>
       <div class="dash-left-col" id="dashAccordionCol" style="height:600px">
-        ${buildAccordionCard('byMe',     '#4f6ef7', 'send',         '내가 지시한 업무',      getByMeCount(),       buildAssignedByMeBody())}
+        ${buildAccordionCard('byMe',     '#4f6ef7', 'send',         '내가 지시한 리스트',      getByMeCount(),       buildAssignedByMeBody())}
         ${buildAccordionCard('received', '#9747ff', 'download',     '내가 지시받은 업무',    getReceivedCount(),   buildReceivedBody())}
         ${buildAccordionCard('schedule', '#06b6d4', 'calendar',     '계획한 스케쥴 업무',    getScheduleCount(),   buildScheduleBody())}
         ${buildAccordionCard('dueToday', '#ef4444', 'alert-circle', '오늘이 시한인 업무',    getDueTodayCount(),   buildDueTodayBody())}
@@ -412,7 +412,12 @@ function buildReceivedBody() {
     var assignerCell = assigner
       ? '<td onclick="event.stopPropagation();openTaskChatChannel(\'' + t.title + '\',' + t.id + ',' + (t.assignerId||'') + ')" title="클릭하여 메시지 채널 열기" style="cursor:pointer"><div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,' + (assigner.color||'#9747ff') + ',#4f6ef7)">' + (assigner.avatar||'?') + '</div></div><div style="font-size:11px;color:var(--currentAccent,#9747ff);margin-top:2px;font-weight:600;text-decoration:underline dotted;text-underline-offset:2px">' + assigner.name + '</div></td>'
       : '<td><div style="font-size:11px;color:var(--text-muted)">지시자</div></td>';
-    return '<tr style="cursor:pointer" onclick="' + (t._sample ? '' : 'openReceivedTaskDetail(' + t.id + ')') + '">'
+    // 샘플 업무도 WS.tasks에 등록하여 openReceivedTaskDetail로 팝업 열기
+    if (t._sample && !WS.getTask(t.id)) {
+      t.isSchedule = true;
+      WS.tasks.push(t);
+    }
+    return '<tr style="cursor:pointer" onclick="openReceivedTaskDetail(\'' + t.id + '\')">'
       + '<td style="width:25%"><div style="display:flex;align-items:center;gap:6px">'
       + (t.isImportant ? '<span class="star-icon"><i data-lucide="star"></i></span>' : '')
       + '<span style="font-weight:600;font-size:12.5px">' + t.title + '</span>' + sampleTag + '</div>'
@@ -427,41 +432,129 @@ function buildReceivedBody() {
   return '<div style="padding:8px"><table class="task-table"><thead><tr><th style="width:25%">업무명</th><th>지시자</th><th>상태</th><th>진행률</th><th>마감일</th><th>지시중요도</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
+/* ── 협업자 아바타 겹침 렌더 헬퍼 */
+function _buildAvatarStack(avatarHtmlArr) {
+  if (!avatarHtmlArr || avatarHtmlArr.length === 0) return '<span style="font-size:11px;color:var(--text-muted)">-</span>';
+  if (avatarHtmlArr.length === 1) return '<div style="display:flex;align-items:center">' + avatarHtmlArr[0] + '</div>';
+  // 2명 이상: 오른쪽에서 순서대로 -8px씩 겹침
+  var items = avatarHtmlArr.map(function(html, i) {
+    return '<div style="margin-left:' + (i === 0 ? '0' : '-8px') + ';z-index:' + (avatarHtmlArr.length - i) + ';position:relative;flex-shrink:0">' + html + '</div>';
+  });
+  return '<div style="display:flex;align-items:center">' + items.join('') + '</div>';
+}
+
+/* ── 원형 아바타 단일 HTML 생성 */
+function _makeCircleAvatar(av, col, nm) {
+  return '<div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,'+col+',#4f6ef7);font-size:10.5px;font-weight:800;color:#fff;display:inline-flex;align-items:center;justify-content:center;border:2px solid var(--bg-secondary);box-sizing:border-box" title="'+nm+'">'+av+'</div>';
+}
+
 /* ── 계획한 스케쥴 업무 Body (테이블 스타일) */
 function buildScheduleBody() {
   const tasks = (WS.tasks||[]).filter(function(t){
     return t.isSchedule || (!t.assignerId && !(t.assigneeId||'') && !(t.assigneeIds&&t.assigneeIds.length));
   });
-  var allTasks = tasks.length > 0 ? tasks : [
-    {id:'sc1',title:'주간 툤로우업 미팅',team:'전체',status:'progress',progress:0,dueDate:new Date(Date.now()+2*86400000).toISOString(),_sample:true},
-    {id:'sc2',title:'월간 업무 계획 수립',team:'기획',status:'waiting',progress:0,dueDate:new Date(Date.now()+14*86400000).toISOString(),_sample:true},
-    {id:'sc3',title:'팀 워크숍 준비',team:'인사',status:'waiting',progress:30,dueDate:new Date(Date.now()+10*86400000).toISOString(),_sample:true},
-    {id:'sc4',title:'분기 성과 검토 회의',team:'전체',status:'progress',progress:60,dueDate:new Date(Date.now()+30*86400000).toISOString(),_sample:true},
+  // 샘플용 더미
+  var sampleDummies = [
+    {id:'u2',av:'LS',col:'#9747ff',nm:'이선희'},
+    {id:'u3',av:'PM',col:'#06b6d4',nm:'박민수'},
+    {id:'u1',av:'KJ',col:'#4f6ef7',nm:'김지준'},
   ];
+  var sampleList = [
+    {id:'sc1',title:'주간 팔로우업 미팅',team:'전체',status:'progress',progress:0,dueDate:new Date(Date.now()+2*86400000).toISOString(),assigneeIds:['u2'],_sample:true},
+    {id:'sc2',title:'월간 업무 계획 수립',team:'기획',status:'waiting',progress:0,dueDate:new Date(Date.now()+14*86400000).toISOString(),assigneeIds:[],_sample:true},
+    {id:'sc3',title:'팀 워크숍 준비',team:'인사',status:'waiting',progress:30,dueDate:new Date(Date.now()+10*86400000).toISOString(),assigneeIds:['u3'],_sample:true},
+    {id:'sc4',title:'분기 성과 검토 회의',team:'전체',status:'progress',progress:60,dueDate:new Date(Date.now()+30*86400000).toISOString(),assigneeIds:['u1','u2'],_sample:true},
+  ];
+  var allTasks = tasks.length > 0 ? tasks : sampleList;
+
+  // 샘플 전역 저장 (onclick에서 인덱스로 접근)
+  window._schedSampleData = sampleList;
+
   if(tasks.length===0 && arguments[0]==='noSample') return '<div class="empty-state"><div class="es-icon"><i data-lucide="calendar"></i></div><div class="es-text">계획된 스케쥴 업무가 없습니다</div></div>';
-  const rows = allTasks.map(function(t) {
+
+  // 지시중요도 설정
+  const allImportances = JSON.parse(localStorage.getItem('ws_instr_importances') || '[]');
+  const instrList = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
+
+  const rows = allTasks.map(function(t, rowIdx) {
     const dd = WS.getDdayBadge(t.dueDate);
-    const fillCls = t.status==='delay'?'delay':t.status==='done'?'done':'';
     const sampleTag = t._sample ? '<span style="font-size:9px;background:#06b6d422;color:#06b6d4;border-radius:4px;padding:0 4px;margin-left:4px">샘플</span>' : '';
-    return '<tr style="cursor:pointer" onclick="' + (t._sample ? '' : 'openReceivedTaskDetail(' + t.id + ')') + '">' +
-      '<td><div style="display:flex;align-items:center;gap:6px">' +
-      (t.isImportant ? '<span class="star-icon"><i data-lucide="star"></i></span>' : '') +
-      '<span style="font-weight:600;font-size:12.5px">' + t.title + '</span>' + sampleTag + '</div>' +
-      '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>' +
-      '<td><div style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;background:var(--accent-blue-light);font-size:10.5px;font-weight:700;color:var(--accent-blue)"><i data-lucide="calendar" style="width:10px;height:10px"></i> 스케쥴</div></td>' +
-      '<td>' + _renderStatusBadge(t.status) + '</td>' +
-      '<td><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ' + fillCls + '" style="width:' + t.progress + '%"></div></div><span class="progress-label">' + t.progress + '%</span></div></td>' +
-      '<td><span class="dday-badge ' + dd.cls + '">' + dd.label + '</span></td>' +
-      '<td><div style="display:flex;gap:4px">' +
-      (t._sample ? '<span style="font-size:10px;color:var(--text-muted)">샘플데이터</span>' :
-      '<button class="qa-btn done" style="padding:2px 6px;font-size:10px" onclick="event.stopPropagation();changeStatus(' + t.id + ',\'done\')">완료</button>') +
-      '</div></td>' +
-      '</tr>';
+
+    // ── 협업자 아바타 목록 (원형 겹침)
+    var ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+    var avatarHtmlArr;
+    if (t._sample) {
+      avatarHtmlArr = ids.length > 0
+        ? ids.map(function(uid) {
+            var d = sampleDummies.find(function(x){ return x.id===uid; }) || {av:uid.toUpperCase().slice(1,3),col:'#06b6d4',nm:uid};
+            return _makeCircleAvatar(d.av, d.col, d.nm);
+          })
+        : [];
+    } else {
+      avatarHtmlArr = ids.map(function(uid) {
+        var u = WS.getUser(uid);
+        if (!u) return '';
+        return _makeCircleAvatar(u.avatar||'?', u.color||'#06b6d4', u.name);
+      }).filter(Boolean);
+    }
+    // 협업자 셀 클릭: openTaskChatChannel 호출 (실제 업무만)
+    var collabClick = '';
+    if (!t._sample && ids.length > 0) {
+      collabClick = 'event.stopPropagation();openTaskChatChannel(\'' + t.title.replace(/'/g,"\\'") + '\',' + t.id + ')';
+    }
+    var collaboratorCell = '<td '
+      + (collabClick ? 'onclick="' + collabClick + '" title="클릭하여 메시지 채널 열기" style="cursor:pointer"' : 'style="cursor:default"')
+      + '>' + _buildAvatarStack(avatarHtmlArr) + '</td>';
+
+    // ── 업무중요도 배지 (buildReceivedBody와 동일)
+    var instrRecord = instrList.find(function(i){ return i.id===t.id || i.id===Number(t.id); });
+    var importanceStr = (instrRecord && instrRecord.importance) ? instrRecord.importance : (t.importance || '');
+    var taskImpNames = importanceStr ? importanceStr.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
+    var importanceBadges = taskImpNames.length > 0
+      ? taskImpNames.map(function(name) {
+          var imp = allImportances.find(function(i){ return i.name===name; });
+          var c = imp ? (imp.color||'#ef4444') : '#9ca3af';
+          var icon = imp ? imp.icon : '';
+          var hasIcon = icon && icon.length > 2;
+          var inner = hasIcon ? '<i data-lucide="' + icon + '" style="width:12px;height:12px;color:' + c + '"></i>' : '<span style="width:7px;height:7px;border-radius:50%;background:' + c + ';display:inline-block"></span>';
+          return '<span title="' + name + '" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:' + c + '18;border:1.5px solid ' + c + ';cursor:default;flex-shrink:0">' + inner + '</span>';
+        }).join('')
+      : '<span style="font-size:11px;color:var(--text-muted)">-</span>';
+
+    // ── 진행률 셀
+    var barColor = t.status==='done'?'#22c55e':t.status==='delay'?'#ef4444':'var(--accent-blue)';
+    var progressCell = '<div style="display:flex;align-items:center;gap:5px"><div style="position:relative;width:60px;height:6px;background:var(--border-color);border-radius:100px;overflow:hidden;flex-shrink:0"><div style="position:absolute;left:0;top:0;width:' + t.progress + '%;height:100%;border-radius:100px;background:' + barColor + ';transition:width .4s"></div></div><span style="font-size:10.5px;font-weight:700;color:var(--text-primary);min-width:28px;text-align:right">' + t.progress + '%</span></div>';
+
+    // ── 업무명 클릭: 샘플은 인덱스로, 실제 업무는 id로 openReceivedTaskDetail 호출
+    // (내가 지시받은 업무와 동일한 상세 팝업 UI 사용)
+    var titleOnclick = t._sample
+      ? 'event.stopPropagation();_openSampleDetail(' + rowIdx + ')'
+      : 'event.stopPropagation();openReceivedTaskDetail(' + t.id + ')';
+    var titleStyle = 'font-weight:700;font-size:12.5px;text-decoration:underline dotted;text-underline-offset:3px;cursor:pointer;color:var(--text-primary)';
+    // 행 전체 클릭: 샘플 → _openSampleDetail, 실제 → openReceivedTaskDetail
+    // 모든 id를 단따옴표로 감싸 문자열 안전 보장
+    var rowOnclick = t._sample
+      ? '_openSampleDetail(' + rowIdx + ')'
+      : "openReceivedTaskDetail('" + t.id + "')";
+
+    return '<tr style="cursor:pointer" onclick="' + rowOnclick + '">'
+      + '<td style="width:25%" title="클릭하여 업무 상세 보기">'
+      + '<div style="display:flex;align-items:center;gap:6px">'
+      + (t.isImportant ? '<span class="star-icon"><i data-lucide="star"></i></span>' : '')
+      + '<span style="' + titleStyle + '">' + t.title + '</span>' + sampleTag + '</div>'
+      + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>'
+      + collaboratorCell
+      + '<td style="pointer-events:none">' + _renderStatusBadge(t.status) + '</td>'
+      + '<td style="pointer-events:none">' + progressCell + '</td>'
+      + '<td style="pointer-events:none"><span class="dday-badge ' + dd.cls + '">' + dd.label + '</span></td>'
+      + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">' + importanceBadges + '</div></td>'
+      + '</tr>';
   }).join('');
-  return '<div style="padding:8px"><table class="task-table"><thead><tr><th>업무명</th><th>구분</th><th>상태</th><th>진행률</th><th>마감일</th><th>처리</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  return '<div style="padding:8px"><table class="task-table"><thead><tr><th style="width:25%">업무명</th><th>협업자</th><th>상태</th><th>진행률</th><th>마감일</th><th>업무중요도</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 /* ── 오늘이 시한인 업무 Body (테이블 스타일) */
+
 function buildDueTodayBody() {
   var today2 = new Date(); today2.setHours(0,0,0,0);
   const tasks = (WS.tasks||[]).filter(function(t){
@@ -469,35 +562,92 @@ function buildDueTodayBody() {
     return d.getTime() === today2.getTime() && t.status !== 'done';
   });
   var allTasks = tasks.length > 0 ? tasks : [
-    {id:'dt1',title:'청주서 제출 마감',team:'경영지원',status:'progress',progress:85,dueDate:new Date().toISOString(),assigneeIds:null,assignerId:null,_sample:true},
-    {id:'dt2',title:'보도자료 최종 검토',team:'홀료살',status:'waiting',progress:50,dueDate:new Date().toISOString(),assigneeIds:null,assignerId:null,_sample:true},
-    {id:'dt3',title:'개발서버 배포 작업',team:'IT팀',status:'progress',progress:90,dueDate:new Date().toISOString(),assigneeIds:null,assignerId:null,_sample:true},
-    {id:'dt4',title:'클라이언트 미팅 PPT 완성',team:'사업부',status:'waiting',progress:20,dueDate:new Date().toISOString(),assigneeIds:null,assignerId:null,_sample:true},
+    {id:'dt1',title:'청주서 제출 마감',team:'경영지원',status:'progress',progress:85,dueDate:new Date().toISOString(),assigneeIds:['u2'],assignerId:'u1',_sample:true},
+    {id:'dt2',title:'보도자료 최종 검토',team:'홍보실',status:'waiting',progress:50,dueDate:new Date().toISOString(),assigneeIds:[],assignerId:'u3',_sample:true},
+    {id:'dt3',title:'개발서버 배포 작업',team:'IT팀',status:'progress',progress:90,dueDate:new Date().toISOString(),assigneeIds:['u1','u2'],assignerId:'u4',_sample:true},
+    {id:'dt4',title:'클라이언트 미팅 PPT 완성',team:'사업부',status:'waiting',progress:20,dueDate:new Date().toISOString(),assigneeIds:[],assignerId:null,_sample:true},
   ];
   if(tasks.length===0 && arguments[0]==='noSample') return '<div class="empty-state"><div class="es-icon"><i data-lucide="party-popper"></i></div><div class="es-text">오늘 마감인 업무가 없습니다!</div></div>';
+
+  // 업무중요도 설정 로드
+  const allImportances = JSON.parse(localStorage.getItem('ws_instr_importances') || '[]');
+  const instrList = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
+
   const rows = allTasks.map(function(t) {
-    var ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
-    const assignee = ids.length ? WS.getUser(ids[0]) : null;
-    const assigner = t.assignerId ? WS.getUser(t.assignerId) : null;
-    const fillCls = t.status==='delay'?'delay':t.status==='done'?'done':'';
     const sampleTag = t._sample ? '<span style="font-size:9px;background:#ef444422;color:#ef4444;border-radius:4px;padding:0 4px;margin-left:4px">샘플</span>' : '';
-    return '<tr style="cursor:pointer" onclick="' + (t._sample ? '' : 'openReceivedTaskDetail(' + t.id + ')') + '">' +
-      '<td><div style="display:flex;align-items:center;gap:6px">' +
-      '<i data-lucide="alert-circle" style="width:12px;height:12px;color:#ef4444;flex-shrink:0"></i>' +
-      '<span style="font-weight:700;font-size:12.5px;color:#ef4444">' + t.title + '</span>' + sampleTag + '</div>' +
-      '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>' +
-      '<td>' + (assignee ? '<div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,' + (assignee.color||'#4f6ef7') + ',#9747ff)">' + (assignee.avatar||'?') + '</div></div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + assignee.name + '</div>' : (assigner ? '<div style="font-size:11px;color:var(--text-muted)">from ' + assigner.name + '</div>' : '<span style="font-size:11px;color:var(--text-muted)">-</span>')) + '</td>' +
-      '<td>' + _renderStatusBadge(t.status) + '</td>' +
-      '<td><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ' + fillCls + '" style="width:' + t.progress + '%"></div></div><span class="progress-label">' + t.progress + '%</span></div></td>' +
-      '<td><span class="dday-badge dday-today">D-DAY</span></td>' +
-      '<td><div style="display:flex;gap:4px">' +
-      (t._sample ? '<span style="font-size:10px;color:var(--text-muted)">샘플데이터</span>' :
-      '<button class="qa-btn done" style="padding:2px 6px;font-size:10px" onclick="event.stopPropagation();changeStatus(' + t.id + ',\'done\')">완료</button>' +
-      '<button class="qa-btn delay" style="padding:2px 6px;font-size:10px" onclick="event.stopPropagation();changeStatus(' + t.id + ',\'delay\')">지연</button>') +
-      '</div></td>' +
-      '</tr>';
+    const dd = WS.getDdayBadge ? WS.getDdayBadge(t.dueDate) : {cls:'dday-today',label:'D-DAY'};
+
+    // ── 협업자 아바타 목록 (assigneeIds + assignerId 모두 포함)
+    var assigneeIds = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+    var allPersonIds = [];
+    if (t.assignerId && !allPersonIds.includes(t.assignerId)) allPersonIds.push(t.assignerId);
+    assigneeIds.forEach(function(uid){ if(uid && !allPersonIds.includes(uid)) allPersonIds.push(uid); });
+
+    var collaboratorAvatarArr;
+    if (t._sample) {
+      // 샘플: 더미 아바타 표시
+      var dummyAvatars = [
+        {av:'KJ', col:'#4f6ef7', nm:'김재준'},
+        {av:'LS', col:'#9747ff', nm:'이선희'},
+        {av:'PM', col:'#06b6d4', nm:'박민수'},
+        {av:'CY', col:'#f59e0b', nm:'최유라'},
+      ];
+      var shown = dummyAvatars.slice(0, Math.max(1, assigneeIds.length + (t.assignerId ? 1 : 0)));
+      collaboratorAvatarArr = shown.map(function(d){ return _makeCircleAvatar(d.av, d.col, d.nm); });
+    } else {
+      collaboratorAvatarArr = allPersonIds.map(function(uid){
+        var u = WS.getUser(uid);
+        if (!u) return '';
+        return _makeCircleAvatar(u.avatar||'?', u.color||'#4f6ef7', u.name);
+      }).filter(Boolean);
+    }
+
+    // ── 업무중요도 배지
+    var instrRecord = instrList.find(function(i){ return i.id===t.id || i.id===Number(t.id); });
+    var importanceStr = (instrRecord && instrRecord.importance) ? instrRecord.importance : (t.importance || '');
+    var taskImpNames = importanceStr ? importanceStr.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
+    var importanceBadges = taskImpNames.length > 0
+      ? taskImpNames.map(function(name) {
+          var imp = allImportances.find(function(i){ return i.name===name; });
+          var c = imp ? (imp.color||'#ef4444') : '#9ca3af';
+          var icon = imp ? imp.icon : '';
+          var hasIcon = icon && icon.length > 2;
+          var inner = hasIcon ? '<i data-lucide="' + icon + '" style="width:12px;height:12px;color:' + c + '"></i>' : '<span style="width:7px;height:7px;border-radius:50%;background:' + c + ';display:inline-block"></span>';
+          return '<span title="' + name + '" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:' + c + '18;border:1.5px solid ' + c + ';cursor:default;flex-shrink:0">' + inner + '</span>';
+        }).join('')
+      : '<span style="font-size:11px;color:var(--text-muted)">-</span>';
+
+    // ── 진행률 셀
+    var barColor = t.status==='done'?'#22c55e':t.status==='delay'?'#ef4444':'var(--accent-blue)';
+    var progressCell = '<div style="display:flex;align-items:center;gap:5px"><div style="position:relative;width:60px;height:6px;background:var(--border-color);border-radius:100px;overflow:hidden;flex-shrink:0"><div style="position:absolute;left:0;top:0;width:' + t.progress + '%;height:100%;border-radius:100px;background:' + barColor + ';transition:width .4s"></div></div><span style="font-size:10.5px;font-weight:700;color:var(--text-primary);min-width:28px;text-align:right">' + t.progress + '%</span></div>';
+
+    // ── 협업자 셀 클릭: 실제 업무만 openTaskChatChannel 호출
+    var dueTodayCollabClick = '';
+    if (!t._sample && allPersonIds.length > 0) {
+      dueTodayCollabClick = 'event.stopPropagation();openTaskChatChannel(\'' + t.title.replace(/'/g,"\\'") + '\',' + t.id + ')';
+    }
+    var collaboratorTd = '<td '
+      + (dueTodayCollabClick
+          ? 'onclick="' + dueTodayCollabClick + '" title="클릭하여 메시지 채널 열기" style="cursor:pointer"'
+          : 'style="cursor:default"')
+      + '>' + _buildAvatarStack(collaboratorAvatarArr) + '</td>';
+
+    // 행 전체 클릭: 샘플 무시, 실제 업무는 openReceivedTaskDetail (지시받은 업무와 동일 UI)
+    var rowClick = t._sample ? '' : 'openReceivedTaskDetail(' + t.id + ')';
+
+    return '<tr style="cursor:pointer" onclick="' + rowClick + '">'
+      + '<td style="width:25%"><div style="display:flex;align-items:center;gap:6px">'
+      + '<i data-lucide="alert-circle" style="width:12px;height:12px;color:#ef4444;flex-shrink:0"></i>'
+      + '<span style="font-weight:700;font-size:12.5px;color:#ef4444">' + t.title + '</span>' + sampleTag + '</div>'
+      + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>'
+      + collaboratorTd
+      + '<td style="pointer-events:none">' + _renderStatusBadge(t.status) + '</td>'
+      + '<td style="pointer-events:none">' + progressCell + '</td>'
+      + '<td style="pointer-events:none"><span class="dday-badge dday-today">D-DAY</span></td>'
+      + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">' + importanceBadges + '</div></td>'
+      + '</tr>';
   }).join('');
-  return '<div style="padding:8px"><table class="task-table"><thead><tr><th>업무명</th><th>담당자</th><th>상태</th><th>진행률</th><th>마감</th><th>처리</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  return '<div style="padding:8px"><table class="task-table"><thead><tr><th style="width:25%">업무명</th><th>협업자</th><th>상태</th><th>진행율</th><th>마감일</th><th>업무중요도</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 /* ── 상태 배지 with 아이콘 (설정된 ws_task_statuses 기반) */
@@ -996,30 +1146,47 @@ function _updateChatMemberList() {
     var au = (WS.users || []).find(function(u){ return String(u.id) === String(_activeChatAssignerOverride); });
     users = au ? [au] : [];
   } else if (_activeChatTask) {
+    // assigneeIds + assignerId (지시자) 모두 포함
     var ids = Array.isArray(_activeChatTask.assigneeIds)
-      ? _activeChatTask.assigneeIds
+      ? _activeChatTask.assigneeIds.slice()
       : (_activeChatTask.assigneeId ? [_activeChatTask.assigneeId] : []);
+    // assignerId가 있고 아직 포함되지 않은 경우 추가
+    if (_activeChatTask.assignerId && !ids.some(function(id){ return String(id) === String(_activeChatTask.assignerId); })) {
+      ids.unshift(_activeChatTask.assignerId);
+    }
     users = (WS.users || []).filter(function(u){
       return ids.some(function(id){ return String(id) === String(u.id); });
     });
+    // ids 순서 유지 (assignerId 우선)
+    users.sort(function(a, b){
+      return ids.indexOf(String(a.id)) - ids.indexOf(String(b.id));
+    });
+
   } else {
     users = WS.users || [];
   }
 
-  container.innerHTML = users.map(function(u) {
+  var isMulti = users.length > 1;
+  container.innerHTML = users.map(function(u, i) {
     var isMe = WS.currentUser && String(u.id) === String(WS.currentUser.id);
     var bg = 'linear-gradient(135deg,' + (u.color||'#4f6ef7') + ',#9747ff)';
-    var ring = isMe ? '0 0 0 2px #22c55e' : '0 0 0 1.5px var(--border-color)';
-    return '<div title="' + u.name + '" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0">' +
-      '<div style="width:26px;height:26px;border-radius:50%;background:' + bg + ';box-shadow:' + ring + ';' +
-      'display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;position:relative">' +
-      (u.avatar || u.name.charAt(0)) +
-      (isMe ? '<span style="position:absolute;bottom:-1px;right:-1px;width:7px;height:7px;border-radius:50%;background:#22c55e;border:1.5px solid var(--bg-primary)"></span>' : '') +
-      '</div>' +
-      '<span style="font-size:8.5px;font-weight:' + (isMe?'800':'600') + ';' +
-      'color:' + (isMe?'var(--currentAccent,#4f6ef7)':'var(--text-muted)') + ';' +
-      'white-space:nowrap;max-width:36px;overflow:hidden;text-overflow:ellipsis;line-height:1">' + u.name + '</span>' +
-      '</div>';
+    var ring = isMe ? '0 0 0 2.5px #22c55e' : '0 0 0 1.5px var(--border-color)';
+    var marginLeft = (isMulti && i > 0) ? '-8px' : '0';
+    var zIndex = users.length - i;
+
+    return '<div title="' + u.name + '" style="'
+      + 'display:inline-flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;'
+      + 'margin-left:' + marginLeft + ';z-index:' + zIndex + ';position:relative'
+      + '">'
+      + '<div style="width:26px;height:26px;border-radius:50%;background:' + bg + ';box-shadow:' + ring + ';'
+      + 'display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;position:relative;border:2px solid var(--bg-secondary)">'
+      + (u.avatar || u.name.charAt(0))
+      + (isMe ? '<span style="position:absolute;bottom:-1px;right:-1px;width:7px;height:7px;border-radius:50%;background:#22c55e;border:1.5px solid var(--bg-primary)"></span>' : '')
+      + '</div>'
+      + ((!isMulti) ? ('<span style="font-size:8.5px;font-weight:' + (isMe?'800':'600') + ';'
+        + 'color:' + (isMe?'var(--currentAccent,#4f6ef7)':'var(--text-muted)') + ';'
+        + 'white-space:nowrap;max-width:36px;overflow:hidden;text-overflow:ellipsis;line-height:1">' + u.name + '</span>') : '')
+      + '</div>';
   }).join('');
 }
 
@@ -1102,9 +1269,11 @@ function openReceivedTaskDetail(taskId) {
   const instrList = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
   const instr = instrList.find(i => i.id === t.id || i.id === Number(t.id));
 
-  // 지시자
+  // 지시자 (스케쥴 업무는 본인, 지시받은 업무는 지시자 이름)
   const assigner = WS.getUser(t.assignerId);
-  const assignerName = assigner ? assigner.name : (instr && instr.assignerName ? instr.assignerName : '-');
+  const assignerName = assigner ? assigner.name
+                     : (instr && instr.assignerName ? instr.assignerName
+                     : (t.isSchedule || !t.assignerId ? '본인' : '-'));
 
   // 지시일 (지시사항 등록일 또는 startDate)
   const instrDate = (instr && instr.createdAt) ? new Date(instr.createdAt).toLocaleDateString('ko-KR') :
@@ -1214,7 +1383,7 @@ function openReceivedTaskDetail(taskId) {
       <div style="display:flex;gap:8px;align-items:flex-end">
         <textarea id="td_reportText" placeholder="진행 내용을 입력하세요..." rows="2"
           class="form-input" style="flex:1;resize:none;font-size:13px"></textarea>
-        <button onclick="addProgressReport(${t.id})" class="btn btn-blue" style="height:auto;padding:8px 14px;white-space:nowrap;align-self:stretch">
+        <button onclick="addProgressReport('${t.id}')" class="btn btn-blue" style="height:auto;padding:8px 14px;white-space:nowrap;align-self:stretch">
           <i data-lucide="plus" style="width:14px;height:14px"></i> 추가
         </button>
       </div>
@@ -1435,34 +1604,20 @@ function addProgressReport(taskId) {
   }
   WS.saveTasks();
 
-  // 히스토리 타임라인 즉시 갱신
-  const timeline = document.getElementById(`historyTimeline_${taskId}`);
-  const countEl  = document.getElementById(`historyCount_${taskId}`);
-  if (timeline) {
-    const h = isUpdate ? t.history[todayIdx] : t.history[t.history.length - 1];
-    const itemHtml = `
-      <div class="timeline-dot" style="background:${h.color}22;border-color:${h.color}"><i data-lucide="${h.icon}"></i></div>
-      <div class="timeline-content">
-        <div class="t-date">${h.date} <span style="font-size:10px;background:${h.color}22;color:${h.color};border-radius:4px;padding:1px 5px;margin-left:4px">${isUpdate?'업데이트':''}</span></div>
-        <div class="t-text">${h.event}</div>
-        <div class="t-sub">${h.detail}</div>
-      </div>`;
-    if (isUpdate) {
-      // 타임라인 첫 번째 항목(= 최신순이므로 오늘 항목)을 교체
-      const first = timeline.querySelector('.timeline-item');
-      if (first) first.innerHTML = itemHtml;
-    } else {
-      const newItem = document.createElement('div');
-      newItem.className = 'timeline-item';
-      newItem.innerHTML = itemHtml;
-      timeline.insertBefore(newItem, timeline.firstChild);
-    }
-    refreshIcons();
+  // ✅ 히스토리 UI 실시간 갱신 (renderTaskHistory 직접 재호출)
+  if (typeof renderTaskHistory === 'function') renderTaskHistory(taskId);
+
+  // 히스토리 버튼 내 건수 카운트 업데이트
+  const histSection = document.getElementById('historySection_' + taskId);
+  if (histSection) {
+    const spanEl = histSection.querySelector('button span span');
+    if (spanEl) spanEl.textContent = t.history.length + '건';
   }
-  if (countEl) countEl.textContent = t.history.length + '건';
+
   if (textEl)  textEl.value = '';
-  showToast('success', isUpdate ? '오늘 진행보고를 업데이트했습니다.' : '진행보고가 등록됐습니다.');
+  showToast('success', isUpdate ? '✏️ 오늘 진행보고를 업데이트했습니다.' : '✅ 진행보고가 추가됐습니다.');
 }
+
 
 function changeStatusFromModal(taskId, status) {
   changeStatus(taskId, status);
@@ -2426,7 +2581,52 @@ function renderPage_Profile() {
               <button class="btn-add-accent" onclick="triggerAddAccent()" title="새 강조색 추가">+</button>
               <input type="color" id="accentColorPicker" onchange="addAccentFromPicker(this.value)">
             </div>
-            <div style="font-size:10.5px;color:var(--text-muted);margin-top:10px">색상에 마우스를 올려 삭제할 수 있습니다.</div>
+          <div style="font-size:10.5px;color:var(--text-muted);margin-top:10px">색상에 마우스를 올려 삭제할 수 있습니다.</div>
+          </div>
+
+
+          <!-- ── 모서리 곡률 선택 ── -->
+          <div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px;margin-top:14px">
+            <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:14px">
+              <i data-lucide="square-dashed" style="width:14px;height:14px;color:var(--accent-blue)"></i>
+              모서리 곡률 (Border Radius)
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap" id="radiusPickerRow">
+              ${(function(){
+                var presets = [
+                  { key:'sharp',  label:'직각',   px:'0px',   sm:0,  md:0,  lg:0,  xl:0   },
+                  { key:'slight', label:'약간',   px:'4px',   sm:3,  md:4,  lg:6,  xl:8   },
+                  { key:'normal', label:'보통',   px:'8px',   sm:6,  md:10, lg:16, xl:20  },
+                  { key:'round',  label:'둥글게', px:'16px',  sm:10, md:16, lg:22, xl:28  },
+                  { key:'pill',   label:'Pill',   px:'999px', sm:20, md:30, lg:40, xl:999 }
+                ];
+                var saved = localStorage.getItem('ws_border_radius');
+                var curKey = saved ? JSON.parse(saved).key : 'normal';
+                return presets.map(function(opt){
+                  var isActive = curKey === opt.key;
+                  var bw  = isActive ? '2px' : '1.5px';
+                  var bc  = isActive ? 'var(--accent-blue)'       : 'var(--border-color)';
+                  var bg  = isActive ? 'var(--accent-blue-light)' : 'var(--bg-secondary)';
+                  var previewR = opt.key === 'pill' ? '999px' : opt.md + 'px';
+                  var boxB = isActive ? 'var(--accent-blue)' : 'var(--border-color)';
+                  var cls  = isActive ? ' class="radius-active"' : '';
+                  return '<div onclick="applyBorderRadius(\'' + opt.key + '\',' + opt.sm + ',' + opt.md + ',' + opt.lg + ',' + opt.xl + ')"'
+                    + cls
+                    + ' style="flex:1;min-width:64px;display:flex;flex-direction:column;align-items:center;gap:8px;'
+                    + 'padding:12px 6px;border-radius:10px;border:' + bw + ' solid ' + bc + ';background:' + bg + ';'
+                    + 'cursor:pointer;transition:var(--transition)"'
+                    + ' onmouseover="if(!this.classList.contains(\'radius-active\'))this.style.borderColor=\'var(--accent-blue)\'"'
+                    + ' onmouseout="if(!this.classList.contains(\'radius-active\'))this.style.borderColor=\'var(--border-color)\'">'
+                    + '<div style="width:36px;height:36px;border:' + (isActive?'2':'1.5') + 'px solid ' + boxB + ';'
+                    + 'background:var(--bg-primary);border-radius:' + previewR + '"></div>'
+                    + '<div style="text-align:center">'
+                    + '<div style="font-size:12px;font-weight:700;color:var(--text-primary)">' + opt.label + '</div>'
+                    + '<div style="font-size:10px;color:var(--text-muted);margin-top:1px">(' + opt.px + ')</div>'
+                    + '</div>'
+                    + '</div>';
+                }).join('');
+              })()}
+            </div>
           </div>
         </div>
       </div>
@@ -2440,6 +2640,62 @@ function switchProfileTab(tabId, el) {
     const t=document.getElementById(id);
     if(t) t.style.display = id===tabId?'block':'none';
   });
+  // 테마 탭 열릴 때 곡률 선택기 렌더링
+  if (tabId === 'theme-tab') {
+    setTimeout(renderRadiusPicker, 50);
+  }
+}
+
+/* ── 모서리 곡률 선택기 렌더링 ── */
+function renderRadiusPicker() {
+  const row = document.getElementById('radiusPickerRow');
+  if (!row) return;
+  const presets = [
+    { key:'sharp',  label:'직각',   px:'0px',   sm:0,  md:0,  lg:0,  xl:0   },
+    { key:'slight', label:'약간',   px:'4px',   sm:3,  md:4,  lg:6,  xl:8   },
+    { key:'normal', label:'보통',   px:'8px',   sm:6,  md:10, lg:16, xl:20  },
+    { key:'round',  label:'둥글게', px:'16px',  sm:10, md:16, lg:22, xl:28  },
+    { key:'pill',   label:'Pill',   px:'999px', sm:20, md:30, lg:40, xl:999 }
+  ];
+  const saved = localStorage.getItem('ws_border_radius');
+  const curKey = saved ? JSON.parse(saved).key : 'normal';
+  row.innerHTML = presets.map(function(opt) {
+    const isActive = curKey === opt.key;
+    const bw  = isActive ? '2px'                  : '1.5px';
+    const bc  = isActive ? 'var(--accent-blue)'   : 'var(--border-color)';
+    const bg  = isActive ? 'var(--accent-blue-light)' : 'var(--bg-secondary)';
+    const previewR = opt.key === 'pill' ? '999px' : opt.md + 'px';
+    const boxB = isActive ? 'var(--accent-blue)' : 'var(--border-color)';
+    return '<div onclick="applyBorderRadius(\'' + opt.key + '\',' + opt.sm + ',' + opt.md + ',' + opt.lg + ',' + opt.xl + ')"'
+      + ' style="flex:1;min-width:64px;display:flex;flex-direction:column;align-items:center;gap:8px;'
+      + 'padding:12px 6px;border-radius:10px;border:' + bw + ' solid ' + bc + ';background:' + bg + ';'
+      + 'cursor:pointer;transition:var(--transition)"'
+      + ' onmouseover="if(!this.classList.contains(\'radius-active\'))this.style.borderColor=\'var(--accent-blue)\'"'
+      + ' onmouseout="if(!this.classList.contains(\'radius-active\'))this.style.borderColor=\'var(--border-color)\'"'
+      + (isActive ? ' class="radius-active"' : '') + '>'
+      + '<div style="width:36px;height:36px;border:' + (isActive?'2':'1.5') + 'px solid ' + boxB + ';'
+      + 'background:var(--bg-primary);border-radius:' + previewR + '"></div>'
+      + '<div style="text-align:center">'
+      + '<div style="font-size:12px;font-weight:700;color:var(--text-primary)">' + opt.label + '</div>'
+      + '<div style="font-size:10px;color:var(--text-muted);margin-top:1px">(' + opt.px + ')</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+  if (window.lucide) lucide.createIcons();
+}
+
+/* ── 모서리 곡률 적용 함수 ── */
+function applyBorderRadius(key, sm, md, lg, xl) {
+  const root = document.documentElement;
+  root.style.setProperty('--radius-sm', sm + 'px');
+  root.style.setProperty('--radius-md', md + 'px');
+  root.style.setProperty('--radius-lg', lg + 'px');
+  root.style.setProperty('--radius-xl', xl + 'px');
+  // localStorage 저장
+  localStorage.setItem('ws_border_radius', JSON.stringify({ key: key, sm: sm+'px', md: md+'px', lg: lg+'px', xl: xl+'px' }));
+  // 선택기 UI 갱신
+  renderRadiusPicker();
+  showToast('success', '모서리 곡률이 <b>' + { sharp:'직각', slight:'약간', normal:'보통', round:'둥글게', pill:'Pill' }[key] + '</b>으로 변경되었습니다.');
 }
 
 // switchTab ?꾩뿭 ?몄텧 (?ㅻ뜑 프로필초기화?먯꽌 ?몄텧)
@@ -4080,15 +4336,12 @@ function openInstructionModal(editData) {
   const m = document.getElementById('instructionModal');
   if (!m) return;
 
-  // ── 업무 드롭다운: 기타설정 > 상세업무 리스트 (WS.detailTasks)
-  const taskSel = document.getElementById('instrTask');
-  if (taskSel) {
-    const detailList = WS.detailTasks || JSON.parse(localStorage.getItem('ws_detail_tasks') || '[]');
-    taskSel.innerHTML = '<option value="">— 업무를 선택하세요 —</option>' +
-      detailList.map(d =>
-        `<option value="${d.id || d.name}">${d.name}</option>`
-      ).join('');
-  }
+  // ── 업무선택 컴 피커 초기화
+  var detailList = WS.detailTasks || JSON.parse(localStorage.getItem('ws_detail_tasks') || '[]');
+  window._instrSelectedTasks    = [];  // { id, name }
+  window._instrSelectedAssignees = []; // { id, name, dept }
+  _renderInstrTaskBox();
+  _renderInstrAssigneeBox();
 
   // ── 수정 모드 설정
   window._instrEditId   = editData ? (editData.id || null) : null;
@@ -4214,20 +4467,20 @@ function openInstructionModal(editData) {
 
   // ── 수정 모드: 기존 값으로 폼 채우기
   if (editData) {
-    // 업무선택 — taskName으로 매칭
-    if (taskSel) {
-      const taskName = editData.taskName || '';
-      Array.from(taskSel.options).forEach(o => {
-        o.selected = (o.text === taskName || o.value === editData.taskId);
-      });
+    // 업무선택 콩 복원
+    var taskName = editData.taskName || editData.title || '';
+    if (taskName) {
+      var detailList2 = WS.detailTasks || JSON.parse(localStorage.getItem('ws_detail_tasks') || '[]');
+      var found = detailList2.find(function(d){ return d.name === taskName || String(d.id) === String(editData.taskId); });
+      window._instrSelectedTasks = found ? [{ id: found.id || found.name, name: found.name }] : [{ id: taskName, name: taskName }];
     }
-    // 담당자선택
-    const assSel2 = document.getElementById('instrAssignee');
-    if (assSel2) {
-      Array.from(assSel2.options).forEach(o => {
-        o.selected = (String(o.value) === String(editData.assigneeId));
-      });
+    // 담당자컴 콩 복원
+    if (editData.assigneeId) {
+      var foundUser = (WS.users || []).find(function(u){ return String(u.id) === String(editData.assigneeId); });
+      if (foundUser) window._instrSelectedAssignees = [{ id: foundUser.id, name: foundUser.name, dept: foundUser.dept }];
     }
+    _renderInstrTaskBox();
+    _renderInstrAssigneeBox();
     // 지시내용
     const contEl = document.getElementById('instrContent');
     if (contEl) contEl.value = editData.content || '';
@@ -4578,17 +4831,20 @@ function closeInstructionModal() {
 
 /* 저장 */
 function saveInstruction() {
-  const taskSel  = document.getElementById('instrTask');
-  const assSel   = document.getElementById('instrAssignee');
   const dueEl    = document.getElementById('instrDueDate');
   const contEl   = document.getElementById('instrContent');
   const repEl    = document.getElementById('instrReport');
   const procEl   = document.getElementById('instrProcedureText');
-  const fileEl   = document.getElementById('instrFile');
   const impVal   = document.getElementById('instrImportanceVal');
 
-  const taskId     = taskSel ? taskSel.value : (window._instrEditId ? String(window._instrEditId) : '');
-  const assigneeId = assSel  ? assSel.value  : '';
+  // chip 배열에서 값 읽기
+  var selTasks    = window._instrSelectedTasks    || [];
+  var selAssignees = window._instrSelectedAssignees || [];
+  const taskId     = selTasks.length    ? String(selTasks[0].id)       : '';
+  const taskName   = selTasks.length    ? selTasks.map(t=>t.name).join(', ')  : '';
+  const assigneeId = selAssignees.length ? String(selAssignees[0].id)  : '';
+  const assigneeName = selAssignees.length ? selAssignees.map(u=>u.name).join(', ') : '';
+
   const dueDate    = dueEl   ? dueEl.value   : '';
   const content    = contEl  ? contEl.value.trim() : '';
   const report     = repEl   ? repEl.value.trim()  : '';
@@ -4603,16 +4859,18 @@ function saveInstruction() {
   if (!dueDate)   { showToast('error', '지시완료일을 선택하세요.'); return; }
   if (!content)   { showToast('error', '지시내용을 입력하세요.'); return; }
 
-  // 이름 구하기 (수정모드에서는 select가 숨견a 수 있음)
-  var taskName = '';
-  var assigneeName = '';
-  if (taskSel && taskSel.selectedIndex >= 0) taskName = taskSel.options[taskSel.selectedIndex].text;
-  if (assSel  && assSel.selectedIndex  >= 0) assigneeName = assSel.options[assSel.selectedIndex].text;
-  // 수정모드에서 editData의 이름 활용
+  // 수정모드에서 값이 비어있으면 기존 editData에서 보완
+  var finalTaskName = taskName;
+  var finalAssigneeName = assigneeName;
+  var finalTaskId = taskId;
+  var finalAssigneeId = assigneeId;
   if (isEditMode && window._instrEditData) {
-    if (!taskName)     taskName     = window._instrEditData.taskName     || '';
-    if (!assigneeName) assigneeName = window._instrEditData.assigneeName || '';
+    if (!finalTaskName)     finalTaskName     = window._instrEditData.taskName     || '';
+    if (!finalAssigneeName) finalAssigneeName = window._instrEditData.assigneeName || '';
+    if (!finalTaskId)       finalTaskId       = window._instrEditData.taskId       || '';
+    if (!finalAssigneeId)   finalAssigneeId   = window._instrEditData.assigneeId   || '';
   }
+
   const attachments = [
     ...(window._instrExistingFiles || []),
     ...(window._instrFileArr || []).map(f => f.name)
@@ -4624,13 +4882,11 @@ function saveInstruction() {
   const editId = window._instrEditId || null;
 
   if (editId) {
-    // ── 수정 모드: ws_instructions에서 찾기
     const idx = instr.findIndex(i => i.id === editId || i.id === Number(editId));
     if (idx !== -1) {
-      // ws_instructions에 있는 경우 - 업데이트
       Object.assign(instr[idx], {
-        taskId, taskName,
-        assigneeId: Number(assigneeId), assigneeName,
+        taskId: finalTaskId, taskName: finalTaskName,
+        assigneeId: Number(finalAssigneeId), assigneeName: finalAssigneeName,
         dueDate, content, report, procedure, importance, attachments,
         status: taskStatus || instr[idx].status || 'progress',
         taskStatus,
@@ -4638,11 +4894,10 @@ function saveInstruction() {
         updatedAt: new Date().toISOString()
       });
     } else {
-      // ws_instructions에 없는 경우 (WS.tasks 기반) - 새로 추가
       instr.unshift({
         id: editId,
-        taskId, taskName,
-        assigneeId: Number(assigneeId), assigneeName,
+        taskId: finalTaskId, taskName: finalTaskName,
+        assigneeId: Number(finalAssigneeId), assigneeName: finalAssigneeName,
         dueDate, content, report, procedure, importance, attachments,
         status: taskStatus || 'progress', taskStatus,
         progress: 0, team: '',
@@ -4652,25 +4907,23 @@ function saveInstruction() {
       });
     }
     localStorage.setItem('ws_instructions', JSON.stringify(instr));
-
-    // WS.tasks 배열 내 해당 항목도 업데이트
     if (WS.tasks) {
       const ti = WS.tasks.findIndex(t => t.id === editId || t.id === Number(editId));
       if (ti !== -1) {
-      Object.assign(WS.tasks[ti], {
-          title: taskName,
-          assigneeIds: [Number(assigneeId)],
+        Object.assign(WS.tasks[ti], {
+          title: finalTaskName,
+          assigneeIds: [Number(finalAssigneeId)],
           dueDate, status: taskStatus || WS.tasks[ti].status || 'progress',
           isImportant: importance.length > 0
         });
       }
     }
   } else {
-    // ── 신규 등록
     const newId = Date.now();
     const newItem = {
-      id: newId, taskId, taskName,
-      assigneeId: Number(assigneeId), assigneeName,
+      id: newId,
+      taskId: finalTaskId, taskName: finalTaskName,
+      assigneeId: Number(finalAssigneeId), assigneeName: finalAssigneeName,
       dueDate, content, report, procedure, importance, attachments,
       status: taskStatus || 'progress', taskStatus,
       progress: 0, team: '',
@@ -4680,11 +4933,10 @@ function saveInstruction() {
     };
     instr.unshift(newItem);
     localStorage.setItem('ws_instructions', JSON.stringify(instr));
-
     if (!WS.tasks) WS.tasks = [];
     WS.tasks.push({
-      id: newId, title: taskName, team: '',
-      assigneeIds: [Number(assigneeId)],
+      id: newId, title: finalTaskName, team: '',
+      assigneeIds: [Number(finalAssigneeId)],
       assignerId: curUserId,
       dueDate, status: 'progress', progress: 0,
       isImportant: newItem.isImportant
@@ -4709,7 +4961,230 @@ function saveInstruction() {
 }
 
 
+/* =======================================================
+   업무선택 / 담당자선택 컴 피커 함수
+   ======================================================= */
 
+/* 업무선택 입력박스 렌더 */
+function _renderInstrTaskBox() {
+  var box = document.getElementById('instrTaskBox');
+  var hidden = document.getElementById('instrTask');
+  if (!box) return;
+  var sel = window._instrSelectedTasks || [];
+  if (sel.length === 0) {
+    box.innerHTML = '<span style="color:var(--text-muted);font-size:12.5px;font-weight:500;padding:2px 4px;border-radius:20px;border:1.5px dashed var(--border-color);background:var(--bg-tertiary);display:inline-flex;align-items:center;gap:4px"><span style="font-size:11px">💼</span>업무를 선택하세요</span>';
+  } else {
+    box.innerHTML = sel.map(function(t){
+      return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;' +
+        'background:var(--accent-blue);color:#fff;font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0">' +
+        t.name +
+        '<span onclick="event.stopPropagation();_removeInstrTask(\'' + t.id + '\')" style="cursor:pointer;opacity:.8;font-size:13px;line-height:1;margin-left:2px">×</span>' +
+        '</span>';
+    }).join('');
+  }
+  if (hidden) hidden.value = sel.map(function(t){ return t.id; }).join(',');
+}
+
+/* 담당자선택 입력박스 렌더 */
+function _renderInstrAssigneeBox() {
+  var box = document.getElementById('instrAssigneeBox');
+  var hidden = document.getElementById('instrAssignee');
+  if (!box) return;
+  var sel = window._instrSelectedAssignees || [];
+  if (sel.length === 0) {
+    box.innerHTML = '<span style="color:var(--text-muted);font-size:12.5px;font-weight:500;padding:2px 4px;border-radius:20px;border:1.5px dashed var(--border-color);background:var(--bg-tertiary);display:inline-flex;align-items:center;gap:4px"><span style="font-size:11px">👤</span>담당자를 선택하세요</span>';
+  } else {
+    box.innerHTML = sel.map(function(u){
+      return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;' +
+        'background:#9747ff;color:#fff;font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0">' +
+        u.name + (u.dept ? ' <span style="opacity:.75;font-size:10.5px">(' + u.dept + ')</span>' : '') +
+        '<span onclick="event.stopPropagation();_removeInstrAssignee(\'' + u.id + '\')" style="cursor:pointer;opacity:.8;font-size:13px;line-height:1;margin-left:2px">×</span>' +
+        '</span>';
+    }).join('');
+  }
+  if (hidden) hidden.value = sel.map(function(u){ return u.id; }).join(',');
+}
+
+/* 업무 컴 제거 */
+function _removeInstrTask(id) {
+  window._instrSelectedTasks = (window._instrSelectedTasks || []).filter(function(t){ return String(t.id) !== String(id); });
+  _renderInstrTaskBox();
+}
+
+/* 담당자 컴 제거 */
+function _removeInstrAssignee(id) {
+  window._instrSelectedAssignees = (window._instrSelectedAssignees || []).filter(function(u){ return String(u.id) !== String(id); });
+  _renderInstrAssigneeBox();
+}
+
+/* 업무선택 팝업 열기 */
+function _openInstrTaskPopup() {
+  var popup = document.getElementById('instrTaskPopup');
+  var box   = document.getElementById('instrTaskBox');
+  if (!popup || !box) return;
+  // 다른 팝업 닫기
+  var ap = document.getElementById('instrAssigneePopup');
+  if (ap) ap.style.display = 'none';
+
+  var rect = box.getBoundingClientRect();
+  popup.style.display = 'flex';
+  popup.style.top  = (rect.bottom + 4) + 'px';
+  popup.style.left = rect.left + 'px';
+
+  // 리스트 채우기
+  var detailList = WS.detailTasks || JSON.parse(localStorage.getItem('ws_detail_tasks') || '[]');
+  _renderInstrTaskList(detailList, '');
+
+  var searchEl = document.getElementById('instrTaskSearch');
+  if (searchEl) { searchEl.value = ''; searchEl.focus(); }
+
+  // 외부 클릭 시 닫기
+  setTimeout(function(){
+    document.addEventListener('click', _closeInstrTaskPopupOutside, { once: true, capture: true });
+  }, 10);
+}
+
+function _closeInstrTaskPopupOutside(e) {
+  var popup = document.getElementById('instrTaskPopup');
+  var box   = document.getElementById('instrTaskBox');
+  if (popup && box && !popup.contains(e.target) && !box.contains(e.target)) {
+    popup.style.display = 'none';
+  } else {
+    document.addEventListener('click', _closeInstrTaskPopupOutside, { once: true, capture: true });
+  }
+}
+
+function _renderInstrTaskList(list, filterText) {
+  var listEl = document.getElementById('instrTaskList');
+  if (!listEl) return;
+  var filtered = filterText
+    ? list.filter(function(d){ return d.name.toLowerCase().includes(filterText.toLowerCase()); })
+    : list;
+  var sel = window._instrSelectedTasks || [];
+  var selIds = sel.map(function(t){ return String(t.id); });
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<div style="padding:8px 10px;font-size:12px;color:var(--text-muted)">업무가 없습니다.</div>';
+    return;
+  }
+  listEl.innerHTML = filtered.map(function(d){
+    var id = String(d.id || d.name);
+    var isOn = selIds.includes(id);
+    return '<div onclick="_toggleInstrTask(\'' + id + '\',\'' + d.name.replace(/'/g,'\\&#39;') + '\')"' +
+      ' style="padding:8px 12px;border-radius:8px;cursor:pointer;font-size:12.5px;' +
+      'display:flex;align-items:center;justify-content:space-between;' +
+      'background:' + (isOn ? 'var(--accent-blue-light)' : 'transparent') + ';' +
+      'color:' + (isOn ? 'var(--accent-blue)' : 'var(--text-primary)') + ';' +
+      'font-weight:' + (isOn ? '700' : '400') + ';transition:.12s"' +
+      ' onmouseover="if(!this.classList.contains(\'on\'))this.style.background=\'var(--bg-tertiary)\'"' +
+      ' onmouseout="this.style.background=\'' + (isOn?'var(--accent-blue-light)':'transparent') + '\'">' +
+      d.name +
+      (isOn ? '<span style="font-size:14px;color:var(--accent-blue)">✓</span>' : '') +
+      '</div>';
+  }).join('');
+}
+
+function _toggleInstrTask(id, name) {
+  window._instrSelectedTasks = window._instrSelectedTasks || [];
+  var idx = window._instrSelectedTasks.findIndex(function(t){ return String(t.id) === String(id); });
+  if (idx >= 0) {
+    window._instrSelectedTasks.splice(idx, 1);
+  } else {
+    window._instrSelectedTasks.push({ id: id, name: name });
+  }
+  _renderInstrTaskBox();
+  // 리스트 새로고침
+  var detailList = WS.detailTasks || JSON.parse(localStorage.getItem('ws_detail_tasks') || '[]');
+  var searchEl = document.getElementById('instrTaskSearch');
+  _renderInstrTaskList(detailList, searchEl ? searchEl.value : '');
+}
+
+function _filterInstrTask(val) {
+  var detailList = WS.detailTasks || JSON.parse(localStorage.getItem('ws_detail_tasks') || '[]');
+  _renderInstrTaskList(detailList, val);
+}
+
+/* 담당자선택 팝업 열기 */
+function _openInstrAssigneePopup() {
+  var popup = document.getElementById('instrAssigneePopup');
+  var box   = document.getElementById('instrAssigneeBox');
+  if (!popup || !box) return;
+  var tp = document.getElementById('instrTaskPopup');
+  if (tp) tp.style.display = 'none';
+
+  var rect = box.getBoundingClientRect();
+  popup.style.display = 'flex';
+  popup.style.top  = (rect.bottom + 4) + 'px';
+  popup.style.left = rect.left + 'px';
+
+  _renderInstrAssigneeList(WS.users || [], '');
+
+  var searchEl = document.getElementById('instrAssigneeSearch');
+  if (searchEl) { searchEl.value = ''; searchEl.focus(); }
+
+  setTimeout(function(){
+    document.addEventListener('click', _closeInstrAssigneePopupOutside, { once: true, capture: true });
+  }, 10);
+}
+
+function _closeInstrAssigneePopupOutside(e) {
+  var popup = document.getElementById('instrAssigneePopup');
+  var box   = document.getElementById('instrAssigneeBox');
+  if (popup && box && !popup.contains(e.target) && !box.contains(e.target)) {
+    popup.style.display = 'none';
+  } else {
+    document.addEventListener('click', _closeInstrAssigneePopupOutside, { once: true, capture: true });
+  }
+}
+
+function _renderInstrAssigneeList(list, filterText) {
+  var listEl = document.getElementById('instrAssigneeList');
+  if (!listEl) return;
+  var filtered = filterText
+    ? list.filter(function(u){ return (u.name + (u.dept||'')).toLowerCase().includes(filterText.toLowerCase()); })
+    : list;
+  var sel = window._instrSelectedAssignees || [];
+  var selIds = sel.map(function(u){ return String(u.id); });
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<div style="padding:8px 10px;font-size:12px;color:var(--text-muted)">담당자가 없습니다.</div>';
+    return;
+  }
+  listEl.innerHTML = filtered.map(function(u){
+    var isOn = selIds.includes(String(u.id));
+    var avatarColor = u.color || '#9747ff';
+    return '<div onclick="_toggleInstrAssignee(' + u.id + ',\'' + u.name + '\',\'' + (u.dept||'') + '\')"' +
+      ' style="padding:7px 10px;border-radius:8px;cursor:pointer;' +
+      'display:flex;align-items:center;gap:9px;' +
+      'background:' + (isOn ? 'rgba(151,71,255,.1)' : 'transparent') + ';' +
+      'transition:.12s"' +
+      ' onmouseover="if(!this.dataset.on)this.style.background=\'var(--bg-tertiary)\'"' +
+      ' onmouseout="this.style.background=\'' + (isOn ? 'rgba(151,71,255,.1)' : 'transparent') + '\'">' +
+      '<div style="width:28px;height:28px;border-radius:50%;background:' + avatarColor + ';' +
+      'color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">' +
+      (u.avatar || u.name.substring(0,2)) + '</div>' +
+      '<div style="flex:1;min-width:0">' +
+      '<div style="font-size:12.5px;font-weight:' + (isOn?'700':'500') + ';color:' + (isOn?'#9747ff':'var(--text-primary)') + '">' + u.name + '</div>' +
+      '<div style="font-size:10.5px;color:var(--text-muted)">' + (u.dept||'') + (u.role?' · '+u.role:'') + '</div>' +
+      '</div>' +
+      (isOn ? '<span style="font-size:14px;color:#9747ff">✓</span>' : '') +
+      '</div>';
+  }).join('');
+}
+
+function _toggleInstrAssignee(id, name, dept) {
+  window._instrSelectedAssignees = window._instrSelectedAssignees || [];
+  var idx = window._instrSelectedAssignees.findIndex(function(u){ return String(u.id) === String(id); });
+  if (idx >= 0) {
+    window._instrSelectedAssignees.splice(idx, 1);
+  } else {
+    window._instrSelectedAssignees.push({ id: id, name: name, dept: dept });
+  }
+  _renderInstrAssigneeBox();
+  _renderInstrAssigneeList(WS.users || [], document.getElementById('instrAssigneeSearch') ? document.getElementById('instrAssigneeSearch').value : '');
+}
+
+function _filterInstrAssignee(val) {
+  _renderInstrAssigneeList(WS.users || [], val);
+}
 
 /* 삭제 */
 function deleteInstruction(id) {

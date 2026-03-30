@@ -1,4 +1,4 @@
-﻿/**
+/**
  * modules/overrides.js
  * app.js 이후에 로드되어 특정 함수를 깨끗한 UTF-8 코드로 교체합니다.
  * 이 파일은 항상 UTF-8로만 저장/편집하세요.
@@ -387,7 +387,7 @@ function saveTaskDetail() {
 ══════════════════════════════════════════════ */
 function addProgressReport(taskId) {
   const t = WS.getTask(taskId);
-  if (!t) return;
+  if (!t) { showToast('error', '업무 정보를 찾을 수 없습니다.'); return; }
   const textEl  = document.getElementById('td_reportText');
   const iconVal = (document.getElementById('td_reportIconVal')?.value || 'message-square|진행보고|#4f6ef7');
   const text    = textEl?.value?.trim();
@@ -408,6 +408,9 @@ function addProgressReport(taskId) {
   const slider      = document.getElementById('progressSlider_' + taskId);
   const progressNow = slider ? parseInt(slider.value) : (t.progress || 0);
 
+  // 진행율 즉시 반영
+  t.progress = progressNow;
+
   const todayIdx = t.history.findIndex(h => h.date === dateStr);
   let isUpdate = false;
 
@@ -421,9 +424,10 @@ function addProgressReport(taskId) {
   }
   WS.saveTasks();
 
-  // 히스토리 타임라인 즉시 갱신
+  // 히스토리 즉시 갱신 – historyTimeline_(openTaskDetail) 또는 renderTaskHistory(openReceivedTaskDetail) 두 방식 모두 지원
   const timeline = document.getElementById('historyTimeline_' + taskId);
   if (timeline) {
+    // openTaskDetail 구조
     const newItem = document.createElement('div');
     newItem.className = 'timeline-item';
     newItem.innerHTML = `
@@ -442,8 +446,18 @@ function addProgressReport(taskId) {
     }
     const cntEl = document.getElementById('historyCount_' + taskId);
     if (cntEl) cntEl.textContent = t.history.length + '건';
-    refreshIcons();
+  } else {
+    // openReceivedTaskDetail 구조 – renderTaskHistory로 갱신
+    if (typeof renderTaskHistory === 'function') renderTaskHistory(taskId);
+    // 히스토리 버튼 내 건수 갱신
+    const histSection = document.getElementById('historySection_' + taskId);
+    if (histSection) {
+      histSection.querySelectorAll('span').forEach(function(sp) {
+        if (/^\d+건$/.test(sp.textContent)) sp.textContent = t.history.length + '건';
+      });
+    }
   }
+  refreshIcons();
 
   if (textEl) textEl.value = '';
   showToast('success', isUpdate ? '진행보고가 업데이트되었습니다.' : '진행보고가 추가되었습니다.');
@@ -457,7 +471,7 @@ function createNewTask() {
   const title = titleInput ? titleInput.value.trim() : '';
 
   if (!title) {
-    showToast('error', '업무 제목을 입력하세요');
+    showToast('error', '업무명을 입력하세요');
     return;
   }
 
@@ -495,8 +509,9 @@ function createNewTask() {
     scoreMin:      parseInt(document.getElementById('nt_score_min')?.value) || 0,
     score:         parseInt(document.getElementById('nt_score')?.value) || 0,
     scoreMax:      parseInt(document.getElementById('nt_score_max')?.value) || 0,
-    reportContent: document.getElementById('nt_result')?.value || '',
-    processTags:   window._processTags || [],
+    reportContent: window._ntSelectedResult || document.getElementById('nt_result')?.value || '',
+    processTags:   window._processOrder || window._processTags || [],
+    attachments:   (window._ntAttachFiles || []).map(function(f){ return f.name; }),
     spentTime:     '0h',
     parentId:      window._newParentId || null,
     history: [{
@@ -522,8 +537,13 @@ function createNewTask() {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-  window._processTags = [];
-  window._newParentId = null;
+  window._processTags     = [];
+  window._processOrder    = [];
+  window._newParentId     = null;
+  window._ntSelectedResult = '';
+  window._ntAttachFiles   = [];
+  var ntFileListEl = document.getElementById('nt_attach_file_list');
+  if (ntFileListEl) ntFileListEl.innerHTML = '';
 
   closeModalDirect('newTaskModal');
   renderDashboard();
@@ -629,18 +649,10 @@ function openNewTaskModal(mode, parentId, isSimple) {
     hide(rowTeamsCheck2);
     _showCollaborators();
 
-    // 업무 선택 드롭다운 표시 및 채우기
-    show(rowSel);
-    const selEl = document.getElementById('nt_task_select');
-    if (selEl) {
-      const uid     = WS.currentUser?.id;
-      const myTasks = WS.tasks.filter(t =>
-        t.assignerId === uid || (t.assigneeIds||[]).includes(uid)
-      );
-      selEl.innerHTML = '<option value="">-- 업무 목록에서 선택 --</option>' +
-        myTasks.map(t => '<option value="' + t.id + '">' + t.title + '</option>').join('');
-    }
-
+    // 첨부파일 목록 초기화
+    const ntFileList = document.getElementById('nt_attach_file_list');
+    if (ntFileList) ntFileList.innerHTML = '';
+    window._ntAttachFiles = [];
 
   } else if (mode === 'edit') {
     if (modalTitle) modalTitle.textContent = '업무 수정';
@@ -3240,3 +3252,417 @@ function deleteTaskStatus(id) {
   renderPage_RankMgmt();
 }
 function closeTaskStatusModal() { var m=document.getElementById('taskStatusModal');if(m)m.style.display='none'; }
+
+/* ══════════════════════════════════════════════
+   openTaskDetail – 두 번째 스크린샷 스타일 완전 오버라이드
+   (계획한 스케쥴 업무 / 내가 지시한 리스트 / 오늘이 시한인 업무 공통 사용)
+══════════════════════════════════════════════ */
+function openTaskDetail(taskId) {
+  var t = WS.getTask(taskId);
+  if (!t) { showToast('error', '업무 정보를 찾을 수 없습니다.'); return; }
+
+  var ids      = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+  var assigner = WS.getUser(t.assignerId);
+  var dd       = WS.getDdayBadge(t.dueDate);
+  var progress = t.progress || 0;
+  var fillCls  = t.status === 'delay' ? 'delay' : t.status === 'done' ? 'done' : '';
+
+  /* 헤더 */
+  var titleEl = document.getElementById('tdModalTitle');
+  if (titleEl) {
+    titleEl.innerHTML =
+      '<span style="font-size:18px;font-weight:800;color:var(--text-primary)">' + t.title + '</span>' +
+      '<span style="font-size:13px;font-weight:700;background:var(--accent-blue);color:#fff;' +
+      'border-radius:20px;padding:2px 12px;vertical-align:middle;margin-left:8px">' + progress + '%</span>';
+  }
+
+  /* 날짜 포맷 */
+  function fmtDate(d) {
+    if (!d) return '-';
+    var p = String(d).split('T')[0].split('-');
+    return p.length === 3 ? p[0] + '. ' + parseInt(p[1]) + '. ' + parseInt(p[2]) + '.' : d;
+  }
+
+  /* 상태 배지 */
+  var statusBadge = typeof _renderStatusBadge === 'function' ? _renderStatusBadge(t.status) : '';
+
+  /* 중요도 배지 */
+  var importanceBadges = '';
+  try {
+    var allImportances = JSON.parse(localStorage.getItem('ws_instr_importances') || '[]');
+    var instrList      = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
+    var instrRecord    = instrList.find(function(i){ return i.id === t.id || i.id === Number(t.id); });
+    var impStr         = (instrRecord && instrRecord.importance) ? instrRecord.importance : (t.importance || '');
+    var impNames       = impStr ? impStr.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
+    importanceBadges = impNames.map(function(name) {
+      var imp = allImportances.find(function(i){ return i.name === name; });
+      var c   = imp ? (imp.color || '#ef4444') : '#9ca3af';
+      var ico = imp ? imp.icon : '';
+      var hasIco = ico && ico.length > 2;
+      var inner  = hasIco
+        ? '<i data-lucide="' + ico + '" style="width:13px;height:13px;color:' + c + '"></i>'
+        : '<span style="width:8px;height:8px;border-radius:50%;background:' + c + ';display:inline-block"></span>';
+      return '<span title="' + name + '" style="display:inline-flex;align-items:center;justify-content:center;' +
+        'width:26px;height:26px;border-radius:50%;background:' + c + '18;border:1.5px solid ' + c + ';cursor:default">' +
+        inner + '</span>';
+    }).join('');
+  } catch(e) {}
+
+  /* 바디 HTML */
+  var bodyHTML =
+    /* 지시자 & 업무명 카드 */
+    '<div style="background:var(--bg-tertiary);border:1px solid var(--border-color);' +
+    'border-radius:14px;padding:16px;margin-bottom:18px">' +
+
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">' +
+        '<div>' +
+          '<div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;' +
+          'margin-bottom:5px;letter-spacing:.5px">지시자 및 업무명</div>' +
+          '<div style="font-size:15px;font-weight:800;color:var(--accent-blue)">' +
+            (assigner ? assigner.name : (t.isSchedule ? '본인' : '-')) +
+            ' <span style="color:var(--text-muted);font-weight:400">→</span> ' +
+            '<span style="color:var(--text-primary)">' + t.title + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
+          statusBadge +
+          importanceBadges +
+          '<span class="dday-badge ' + dd.cls + '">' + dd.label + '</span>' +
+        '</div>' +
+      '</div>' +
+
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">' +
+        '<div style="background:var(--bg-secondary);border-radius:10px;padding:10px 12px">' +
+          '<div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">지시일</div>' +
+          '<div style="font-size:13px;font-weight:700;color:var(--text-primary)">' + fmtDate(t.startDate || t.startedAt) + '</div>' +
+        '</div>' +
+        '<div style="background:var(--bg-secondary);border-radius:10px;padding:10px 12px">' +
+          '<div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">마감일</div>' +
+          '<div style="font-size:13px;font-weight:700;color:var(--text-primary)">' + fmtDate(t.dueDate) + '</div>' +
+        '</div>' +
+        '<div style="background:var(--bg-secondary);border-radius:10px;padding:10px 12px">' +
+          '<div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">진행율</div>' +
+          '<div style="display:flex;align-items:center;gap:6px;margin-top:4px">' +
+            '<div class="progress-bar" style="flex:1;height:5px">' +
+              '<div class="progress-fill ' + fillCls + '" style="width:' + progress + '%"></div>' +
+            '</div>' +
+            '<span style="font-size:12px;font-weight:800;color:var(--accent-blue)">' + progress + '%</span>' +
+          '</div>' +
+        '</div>' +
+        '<div style="background:var(--bg-secondary);border-radius:10px;padding:10px 12px">' +
+          '<div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">보고내용</div>' +
+          '<div style="font-size:12px;font-weight:700;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (t.reportContent || '-') + '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div style="border-top:1px solid var(--border-color);padding-top:12px">' +
+        '<label class="form-label" style="display:flex;align-items:center;gap:6px;margin-bottom:6px">' +
+          '<i data-lucide="file-text" style="width:12px;height:12px"></i> 지시내용' +
+        '</label>' +
+        '<textarea class="form-input" id="td_desc" rows="3" style="resize:vertical;font-size:13px;width:100%">' + (t.desc || '') + '</textarea>' +
+      '</div>' +
+    '</div>' +
+
+    /* 진행율 설정 */
+    '<div style="margin-bottom:18px">' +
+      '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;' +
+      'margin-bottom:10px;display:flex;align-items:center;gap:6px">' +
+        '<i data-lucide="sliders-horizontal" style="width:13px;height:13px"></i> 진행율 설정' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:12px">' +
+        '<input type="range" min="' + progress + '" max="100" value="' + progress + '" id="progressSlider_' + t.id + '" ' +
+        'style="flex:1;accent-color:var(--accent-blue)" ' +
+        'oninput="var _min=parseInt(this.min);if(parseInt(this.value)<_min)this.value=_min;' +
+        'document.getElementById(\'progVal_' + t.id + '\').textContent=this.value+\'%\';' +
+        'document.getElementById(\'progBar_live_' + t.id + '\').style.width=this.value+\'%\'">' +
+        '<span id="progVal_' + t.id + '" style="font-size:15px;font-weight:800;color:var(--accent-blue);min-width:42px;text-align:right">' + progress + '%</span>' +
+      '</div>' +
+      '<div class="progress-bar" style="margin-top:8px;height:8px;border-radius:6px">' +
+        '<div class="progress-fill ' + fillCls + '" id="progBar_live_' + t.id + '" style="width:' + progress + '%;border-radius:6px"></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<input type="hidden" id="td_report" value="' + (t.reportContent || '') + '">' +
+    '<input type="hidden" id="td_score"  value="' + (t.score || 0) + '">' +
+    '<input type="hidden" id="td_title"  value="' + t.title + '">' +
+
+    /* 히스토리 */
+    '<div style="border-top:1px solid var(--border-color);padding-top:14px" id="historySection_' + t.id + '">' +
+      '<button class="btn" style="width:100%;justify-content:space-between;background:var(--bg-tertiary);' +
+      'border:none;font-size:12px;font-weight:700;height:36px" ' +
+      'onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\';' +
+      'this.querySelector(\'.chev\').textContent=this.nextElementSibling.style.display===\'none\'?\'▼\':\'▲\'">' +
+        '<span style="display:flex;align-items:center;gap:6px">' +
+          '<i data-lucide="history" style="width:14px;height:14px"></i> 업무 히스토리' +
+          '<span id="historyCount_' + t.id + '" style="font-size:10px;background:var(--bg-card);border-radius:8px;padding:1px 7px;color:var(--text-muted)">' + ((t.history || []).length) + '건</span>' +
+        '</span>' +
+        '<span class="chev">▲</span>' +
+      '</button>' +
+      '<div id="historyList_' + t.id + '" style="display:block;margin-top:8px">' +
+        '<div class="history-timeline" id="historyTimeline_' + t.id + '">' +
+          (t.history && t.history.length
+            ? [].concat(t.history).reverse().map(function(h) {
+                return '<div class="timeline-item">' +
+                  '<div class="timeline-dot" style="background:' + h.color + '22;border-color:' + h.color + '">' +
+                    '<i data-lucide="' + h.icon + '"></i>' +
+                  '</div>' +
+                  '<div class="timeline-content">' +
+                    '<div class="t-date">' + h.date + '</div>' +
+                    '<div class="t-text">' + h.event + '</div>' +
+                    '<div class="t-sub">' + h.detail + '</div>' +
+                  '</div>' +
+                '</div>';
+              }).join('')
+            : '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px">히스토리가 없습니다</div>') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  var bodyEl = document.getElementById('tdModalBody');
+  if (bodyEl) bodyEl.innerHTML = bodyHTML;
+
+  /* 진행보고 추가 칩 */
+  var chipWrap = document.getElementById('tdReportTypePicks');
+  if (chipWrap) {
+    var rtList = [];
+    try { rtList = JSON.parse(localStorage.getItem('ws_report_types') || '[]'); } catch(e) {}
+    if (!rtList.length) rtList = (WS.reportTypes || []);
+    if (!rtList.length) rtList = [
+      {icon:'play-circle',   label:'업무시작',  color:'#4f6ef7'},
+      {icon:'search',        label:'시장조사',  color:'#06b6d4'},
+      {icon:'check-circle',  label:'작업완료',  color:'#22c55e'},
+      {icon:'message-circle',label:'협의완료',  color:'#f59e0b'},
+      {icon:'file-text',     label:'보고서작성',color:'#8b5cf6'},
+      {icon:'clipboard-list',label:'중간보고',  color:'#9747ff'},
+    ];
+    chipWrap.innerHTML = rtList.map(function(rt) {
+      var ico = rt.icon || 'check';
+      var lbl = rt.label || rt.name || '보고';
+      var col = rt.color || '#4f6ef7';
+      var val = ico + '|' + lbl + '|' + col;
+      return '<button onclick="(function(el,v){'
+        + 'document.getElementById(\'tdReportTypePicks\').querySelectorAll(\'button\').forEach(function(b){'
+        + 'b.style.background=\'var(--bg-tertiary)\';b.style.color=\'var(--text-muted)\';b.style.borderColor=\'var(--border-color)\';});'
+        + 'el.style.background=\'' + col + '22\';el.style.color=\'' + col + '\';el.style.borderColor=\'' + col + '\';'
+        + 'document.getElementById(\'td_reportIconVal\').value=v;'
+        + '})(this,\'' + val.replace(/'/g,"\\'") + '\')" '
+        + 'style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;'
+        + 'border:1.5px solid var(--border-color);background:var(--bg-tertiary);cursor:pointer;'
+        + 'font-size:11.5px;font-weight:600;color:var(--text-muted);transition:all .15s;white-space:nowrap">'
+        + '<i data-lucide="' + ico + '" style="width:12px;height:12px"></i>' + lbl + '</button>';
+    }).join('');
+  }
+
+  window._editingTaskId = taskId;
+
+  /* 모달 열기 */
+  var modal = document.getElementById('taskDetailModal');
+  if (modal) modal.style.display = 'flex';
+
+  if (typeof refreshIcons === 'function') refreshIcons();
+}
+
+/* 샘플 업무 클릭 시 읽기전용 미리보기 팝업 */
+function _openSampleDetail(title, status, progress, dueDate, team) {
+  var tempId = 'sample_preview';
+  // 샘플 가상 task 객체 생성
+  var fakTask = {
+    id: tempId,
+    title: title,
+    status: status,
+    progress: progress || 0,
+    dueDate: dueDate,
+    team: team || '',
+    desc: '(샘플 데이터입니다. 실제 업무를 등록하면 이 팝업이 정상 작동합니다.)',
+    history: [],
+    reportContent: '-',
+    isSchedule: true,
+    _isSample: true
+  };
+  // 임시로 WS.tasks에 추가 (없으면)
+  if (!WS.tasks.find(function(t){ return t.id === tempId; })) {
+    WS.tasks.push(fakTask);
+  } else {
+    WS.tasks = WS.tasks.map(function(t){ return t.id === tempId ? fakTask : t; });
+  }
+  openTaskDetail(tempId);
+}
+
+/* _openSampleDetail 인덱스 기반 버전으로 교체 */
+function _openSampleDetail(idx) {
+  var dataArr = window._schedSampleData;
+  var t = dataArr && dataArr[idx];
+  if (!t) { showToast('warning', '샘플 데이터를 불러올 수 없습니다.'); return; }
+  var tempId = 'sample_preview_' + idx;
+  var fakTask = {
+    id: tempId,
+    title: t.title,
+    status: t.status,
+    progress: t.progress || 0,
+    dueDate: t.dueDate,
+    team: t.team || '',
+    desc: '(샘플 데이터입니다. 실제 업무를 등록하면 이 팝업이 정상 작동합니다.)',
+    history: [],
+    reportContent: '-',
+    isSchedule: true,   // 스케쥴 업무 → 지시자 "본인"으로 표시
+    _isSample: true
+  };
+  WS.tasks = WS.tasks.filter(function(x){ return String(x.id).indexOf('sample_preview') !== 0; });
+  WS.tasks.push(fakTask);
+  // 내가 지시받은 업무와 동일한 상세 팝업 UI 사용
+  openReceivedTaskDetail(tempId);
+}
+
+/* ══════════════════════════════════════════════
+   내 스케줄 추가 모달 - 첨부파일 처리 함수
+   (지시사항 등록의 _onInstrFileChange와 동일한 방식)
+══════════════════════════════════════════════ */
+function _onNtFileChange(input) {
+  if (!window._ntAttachFiles) window._ntAttachFiles = [];
+  Array.from(input.files).forEach(function(f) {
+    var dup = window._ntAttachFiles.some(function(ef) { return ef.name === f.name && ef.size === f.size; });
+    if (!dup) window._ntAttachFiles.push(f);
+  });
+  input.value = '';
+  _renderNtFileList();
+}
+
+function _renderNtFileList() {
+  var listEl = document.getElementById('nt_attach_file_list');
+  if (!listEl) return;
+  if (!window._ntAttachFiles) window._ntAttachFiles = [];
+  listEl.innerHTML = window._ntAttachFiles.map(function(f, i) {
+    return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;' +
+      'background:rgba(79,110,247,.08);border:1px solid rgba(79,110,247,.3);' +
+      'font-size:11.5px;color:var(--text-primary)">' +
+      '<i data-lucide="file-plus" style="width:11px;height:11px;color:var(--accent-blue)"></i>' +
+      '<span style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + f.name + '</span>' +
+      '<button onclick="_removeNtFile(' + i + ')" title="삭제" ' +
+      'style="background:none;border:none;cursor:pointer;padding:0;margin-left:2px;' +
+      'display:inline-flex;align-items:center;color:var(--text-muted);transition:color .15s" ' +
+      'onmouseover="this.style.color=\'#ef4444\'" onmouseout="this.style.color=\'var(--text-muted)\'">' +
+      '<i data-lucide="x" style="width:11px;height:11px"></i>' +
+      '</button></span>';
+  }).join('');
+  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 30);
+}
+
+function _removeNtFile(idx) {
+  if (!window._ntAttachFiles) return;
+  window._ntAttachFiles.splice(idx, 1);
+  _renderNtFileList();
+}
+
+/* ══════════════════════════════════════════════
+   내 스케줄 추가 모달 - 업무결과 칩 렌더링
+   (지시사항 등록UI의 instrReportPicks와 동일한 단일선택 칩 방식)
+══════════════════════════════════════════════ */
+function _renderNtResultPicks(currentValue) {
+  var picksEl = document.getElementById('nt_result_picks');
+  if (!picksEl) return;
+  var results = JSON.parse(localStorage.getItem('ws_task_results')) || (WS.taskResults || []);
+  if (currentValue !== undefined) window._ntSelectedResult = currentValue;
+  if (!window._ntSelectedResult) window._ntSelectedResult = '';
+
+  if (!results.length) {
+    picksEl.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">기타설정 > 업무결과에서 항목을 추가하세요</span>';
+    return;
+  }
+
+  picksEl.innerHTML = results.map(function(r) {
+    var c = r.color || '#6b7280';
+    var hasLucide = r.icon && r.icon.length > 2;
+    var iconHtml = hasLucide
+      ? '<i data-lucide="' + r.icon + '" style="width:11px;height:11px;color:' + c + '"></i>'
+      : (r.icon ? '<span>' + r.icon + '</span>' : '');
+    var isSelected = (window._ntSelectedResult === r.name);
+    var bgStyle = isSelected ? 'background:' + c + '22;' : 'background:transparent;';
+    return '<span onclick="_selectNtResult(\'' + r.name.replace(/\'/g, "\\'") + '\',this)"' +
+      ' data-result="' + r.name + '"' +
+      (isSelected ? ' class="selected"' : '') +
+      ' style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;' +
+      'font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;' +
+      'border:1.5px solid ' + c + ';color:' + c + ';' + bgStyle + '"' +
+      ' onmouseover="if(!this.classList.contains(\'selected\'))this.style.background=\'' + c + '22\'"' +
+      ' onmouseout="if(!this.classList.contains(\'selected\'))this.style.background=\'transparent\'">' +
+      iconHtml + r.name + '</span>';
+  }).join('');
+
+  var hiddenEl = document.getElementById('nt_result');
+  if (hiddenEl) hiddenEl.value = window._ntSelectedResult || '';
+
+  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 30);
+}
+
+function _selectNtResult(name) {
+  if (window._ntSelectedResult === name) {
+    window._ntSelectedResult = '';
+  } else {
+    window._ntSelectedResult = name;
+  }
+  var hiddenEl = document.getElementById('nt_result');
+  if (hiddenEl) hiddenEl.value = window._ntSelectedResult || '';
+  _renderNtResultPicks();
+}
+
+/* ══════════════════════════════════════════════
+   openNewTaskModal 최종 래핑:
+   업무결과 칩 + 첨부파일 초기화 추가
+   (진행보고 순서 UI 초기화는 위의 래핑에서 이미 처리)
+══════════════════════════════════════════════ */
+(function() {
+  var _prevNt2 = typeof window.openNewTaskModal === 'function' ? window.openNewTaskModal : null;
+  if (!_prevNt2) return;
+  window.openNewTaskModal = function(mode, parentId, assigneeId) {
+    _prevNt2.call(window, mode, parentId, assigneeId);
+    if (mode === 'edit') return;
+    setTimeout(function() {
+      // 업무결과 칩 UI 초기화
+      window._ntSelectedResult = '';
+      if (typeof _renderNtResultPicks === 'function') _renderNtResultPicks('');
+      // 첨부파일 목록 초기화
+      window._ntAttachFiles = [];
+      var ntfl = document.getElementById('nt_attach_file_list');
+      if (ntfl) ntfl.innerHTML = '';
+    }, 20);
+  };
+})();
+
+/* ══════════════════════════════════════════════
+   진행순서 목록에서 클릭(단일 클릭)으로도 추가 가능하도록
+   _renderProcessTypeList 재정의
+   (지시사항 보고절차와 동일한 클릭 방식)
+══════════════════════════════════════════════ */
+(function() {
+  var _origRenderTypeList = typeof _renderProcessTypeList === 'function' ? _renderProcessTypeList : null;
+  window._renderProcessTypeList = function() {
+    var list = document.getElementById('nt_process_type_list');
+    if (!list) return;
+    var types = JSON.parse(localStorage.getItem('ws_report_types')) || (WS.reportTypes || []);
+    WS.reportTypes = types;
+    if (!types.length) {
+      list.innerHTML = '<div style="padding:12px;text-align:center;font-size:11px;color:var(--text-muted)">등록된 진행보고 유형이 없습니다.<br><span style="font-size:10px">(본사관리 → 기타설정에서 추가)</span></div>';
+      return;
+    }
+    var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
+    list.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-radius:10px;min-height:44px;';
+    list.innerHTML = types.map(function(t) {
+      var tName = t.label || t.name || '';
+      var alreadyAdded = (window._processOrder || []).indexOf(tName) !== -1;
+      var tColor = t.color || accent;
+      var iconHtml = t.icon
+        ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:' + tColor + '22;border:1px solid ' + tColor + '"><i data-lucide="' + t.icon + '" style="width:10px;height:10px;color:' + tColor + '"></i></span>'
+        : '';
+      return '<span onclick="addProcessOrder(\'' + tName.replace(/'/g, "\\'") + '\')"' +
+        ' style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;cursor:pointer;user-select:none;' +
+        'border:2px solid ' + (alreadyAdded ? tColor : 'var(--border-color)') + ';' +
+        'background:' + (alreadyAdded ? 'color-mix(in srgb,' + tColor + ' 15%,var(--bg-primary))' : 'var(--bg-primary)') + ';' +
+        'transition:all 0.15s;opacity:' + (alreadyAdded ? '0.5' : '1') + '">' +
+        iconHtml +
+        '<span style="font-size:12px;font-weight:600;color:var(--text-primary)">' + tName + '</span>' +
+        (alreadyAdded ? '<span style="font-size:9px;color:var(--text-muted)">✓</span>' : '') +
+        '</span>';
+    }).join('');
+    if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
+  };
+})();
