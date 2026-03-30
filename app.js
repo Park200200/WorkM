@@ -302,7 +302,7 @@ function renderDashGrid() {
         ${buildAccordionCard('byMe',     '#4f6ef7', 'send',         '내가 지시한 리스트',      getByMeCount(),       buildAssignedByMeBody())}
         ${buildAccordionCard('received', '#9747ff', 'download',     '내가 지시받은 업무',    getReceivedCount(),   buildReceivedBody())}
         ${buildAccordionCard('schedule', '#06b6d4', 'calendar',     '계획한 스케쥴 업무',    getScheduleCount(),   buildScheduleBody())}
-        ${buildAccordionCard('dueToday', '#ef4444', 'alert-circle', '오늘이 시한인 업무',    getDueTodayCount(),   buildDueTodayBody())}
+        ${buildAccordionCard('dueToday', '#ef4444', 'alert-circle', '오늘이 마감인 업무',    getDueTodayCount(),   buildDueTodayBody())}
       </div>
     </div>
   `;
@@ -1365,27 +1365,18 @@ function openReceivedTaskDetail(taskId) {
       </div>
     </div>
 
-    <!-- 📝 진행보고 입력 -->
+    <!-- 📎 첨부파일 섹션 -->
     <div style="margin-bottom:18px;background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:14px;padding:14px">
-      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px">
-        <i data-lucide="message-square-plus" style="width:13px;height:13px"></i> 진행보고 추가
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:6px">
+        <span style="display:flex;align-items:center;gap:6px"><i data-lucide="paperclip" style="width:13px;height:13px"></i> 첨부파일</span>
+        <label style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;border:1.5px solid var(--accent-blue);color:var(--accent-blue);font-size:11px;font-weight:700;cursor:pointer;background:transparent;transition:all .15s"
+          onmouseover="this.style.background='rgba(79,110,247,.1)'" onmouseout="this.style.background='transparent'">
+          <i data-lucide="plus" style="width:11px;height:11px"></i> 파일 추가
+          <input type="file" multiple style="display:none" onchange="_addTaskAttachment('${t.id}',this)">
+        </label>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="reportIconChips">
-        ${(WS.reportTypes||[]).map(ic => `
-          <button type="button"
-            onclick="document.querySelectorAll('#reportIconChips .ricon-chip').forEach(b=>b.classList.remove('active'));this.classList.add('active');document.getElementById('td_reportIconVal').value='${ic.icon}|${ic.label}|${ic.color}';"
-            class="ricon-chip" style="display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:20px;border:1.5px solid var(--border-color);background:var(--bg-secondary);font-size:11.5px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all .15s;white-space:nowrap">
-            <i data-lucide="${ic.icon}" style="width:12px;height:12px"></i>${ic.label}
-          </button>`).join('')}
-      </div>
-      <style>.ricon-chip.active { background:var(--accent-blue)!important; color:#fff!important; border-color:var(--accent-blue)!important; }</style>
-      <input type="hidden" id="td_reportIconVal" value="message-square|진행보고|#4f6ef7">
-      <div style="display:flex;gap:8px;align-items:flex-end">
-        <textarea id="td_reportText" placeholder="진행 내용을 입력하세요..." rows="2"
-          class="form-input" style="flex:1;resize:none;font-size:13px"></textarea>
-        <button onclick="addProgressReport('${t.id}')" class="btn btn-blue" style="height:auto;padding:8px 14px;white-space:nowrap;align-self:stretch">
-          <i data-lucide="plus" style="width:14px;height:14px"></i> 추가
-        </button>
+      <div id="taskAttachList_${t.id}" style="display:flex;flex-wrap:wrap;gap:6px;min-height:28px">
+        ${_buildTaskAttachHTML(t)}
       </div>
     </div>
 
@@ -5192,4 +5183,98 @@ function deleteInstruction(id) {
   instructions = instructions.filter(i => i.id !== id);
   localStorage.setItem('ws_instructions', JSON.stringify(instructions));
   showToast('info', '삭제되었습니다.');
+}
+
+/* ══════════════════════════════════════════════
+   첨부파일 섹션 - 업무 상세 팝업 (taskDetailModal)
+   - 내가 등록한 파일: 추가/삭제 가능
+   - 다른 사람이 등록한 파일: 보기만 가능 (삭제 불가)
+══════════════════════════════════════════════ */
+
+/* 첨부파일 목록 HTML 생성 */
+function _buildTaskAttachHTML(t) {
+  var meId = WS.currentUser ? WS.currentUser.id : null;
+  var attaches = t.attachments || [];
+  // attachments가 [{name, uploaderId, size}] 또는 [name문자열] 모두 처리
+  if (!attaches.length) {
+    return '<span style="font-size:12px;color:var(--text-muted)">등록된 첨부파일이 없습니다</span>';
+  }
+  return attaches.map(function(a, idx) {
+    var name = typeof a === 'string' ? a : (a.name || '');
+    var uploader = typeof a === 'object' ? (a.uploaderId || null) : null;
+    var isMine = !uploader || (meId && String(uploader) === String(meId));
+    var bgStyle = isMine
+      ? 'background:rgba(79,110,247,.08);border:1px solid rgba(79,110,247,.3);'
+      : 'background:var(--bg-secondary);border:1px solid var(--border-color);';
+    var iconName = isMine ? 'file-plus' : 'file';
+    var iconColor = isMine ? 'var(--accent-blue)' : 'var(--text-muted)';
+    var deleteBtn = isMine
+      ? '<button onclick="_removeTaskAttachment(\'' + (t.id) + '\',' + idx + ')" title="삭제" '
+        + 'style="background:none;border:none;cursor:pointer;padding:0;margin-left:2px;'
+        + 'display:inline-flex;align-items:center;color:var(--text-muted);transition:color .15s" '
+        + 'onmouseover="this.style.color=\'#ef4444\'" onmouseout="this.style.color=\'var(--text-muted)\'">'
+        + '<i data-lucide="x" style="width:11px;height:11px"></i></button>'
+      : '<span title="' + (typeof a === 'object' && a.uploaderName ? a.uploaderName + '님이 등록' : '타인 등록') + '"'
+        + ' style="margin-left:4px;font-size:9px;color:var(--text-muted);background:var(--bg-tertiary);'
+        + 'border-radius:4px;padding:1px 4px">' 
+        + (typeof a === 'object' && a.uploaderName ? a.uploaderName : '타인') + '</span>';
+    return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;'
+      + bgStyle + 'font-size:11.5px;color:var(--text-primary)">'
+      + '<i data-lucide="' + iconName + '" style="width:11px;height:11px;color:' + iconColor + '"></i>'
+      + '<span style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + '</span>'
+      + deleteBtn
+      + '</span>';
+  }).join('');
+}
+
+/* 첨부파일 추가 */
+function _addTaskAttachment(taskId, input) {
+  var t = WS.getTask(taskId);
+  if (!t) return;
+  var me = WS.currentUser;
+  if (!t.attachments) t.attachments = [];
+  Array.from(input.files).forEach(function(f) {
+    var dup = t.attachments.some(function(a) {
+      return (typeof a === 'string' ? a : a.name) === f.name;
+    });
+    if (!dup) {
+      t.attachments.push({
+        name: f.name,
+        uploaderId: me ? me.id : null,
+        uploaderName: me ? me.name : '본인',
+        size: f.size,
+        addedAt: new Date().toISOString().split('T')[0]
+      });
+    }
+  });
+  input.value = '';
+  WS.saveTasks();
+  var listEl = document.getElementById('taskAttachList_' + taskId);
+  if (listEl) {
+    listEl.innerHTML = _buildTaskAttachHTML(t);
+    if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 30);
+  }
+  showToast('success', '파일이 추가됐습니다.');
+}
+
+/* 내가 등록한 첨부파일 삭제 */
+function _removeTaskAttachment(taskId, idx) {
+  var t = WS.getTask(taskId);
+  if (!t || !t.attachments) return;
+  var a = t.attachments[idx];
+  var me = WS.currentUser;
+  var uploader = typeof a === 'object' ? a.uploaderId : null;
+  // 내가 등록한 파일만 삭제 허용
+  if (uploader && me && String(uploader) !== String(me.id)) {
+    showToast('warning', '다른 사람이 등록한 파일은 삭제할 수 없습니다.');
+    return;
+  }
+  t.attachments.splice(idx, 1);
+  WS.saveTasks();
+  var listEl = document.getElementById('taskAttachList_' + taskId);
+  if (listEl) {
+    listEl.innerHTML = _buildTaskAttachHTML(t);
+    if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 30);
+  }
+  showToast('success', '파일이 삭제됐습니다.');
 }
