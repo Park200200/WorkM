@@ -369,6 +369,19 @@ function toggleDashAccordion(key) {
 }
 
 /* ── 내가 지시받은 업무 Body (테이블 스타일) */
+/* ══════════════════════════════════════════════
+   업무 클릭 라우터: 본인이 작성한 업무 → 수정 UI (editInstruction)
+                   타인이 작성한 업무 → 진행 보고 UI (openReceivedTaskDetail)
+══════════════════════════════════════════════ */
+function _openTaskOrEdit(taskId, assignerId) {
+  var me = WS.currentUser ? String(WS.currentUser.id) : null;
+  if (me && String(assignerId) === me) {
+    if (typeof editInstruction === 'function') editInstruction(taskId);
+  } else {
+    openReceivedTaskDetail(taskId);
+  }
+}
+
 function buildReceivedBody() {
   const tasks = WS.getAssignedToMe().sort(function(a,b){
     const po={high:0,medium:1,low:2};
@@ -417,13 +430,13 @@ function buildReceivedBody() {
       t.isSchedule = true;
       WS.tasks.push(t);
     }
-    return '<tr style="cursor:pointer" onclick="openReceivedTaskDetail(\'' + t.id + '\')">'
+    return '<tr style="cursor:pointer" onclick="_openTaskOrEdit(\'' + t.id + '\',\'' + (t.assignerId||'') + '\')">'
       + '<td style="width:25%"><div style="display:flex;align-items:center;gap:6px">'
       + (t.isImportant ? '<span class="star-icon"><i data-lucide="star"></i></span>' : '')
       + '<span style="font-weight:600;font-size:12.5px">' + t.title + '</span>' + sampleTag + '</div>'
       + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>'
       + assignerCell
-      + '<td onclick="event.stopPropagation();' + (t._sample ? '' : "openReceivedTaskDetail('" + t.id + "')") + '" style="cursor:' + (t._sample ? 'default' : 'pointer') + '" title="' + (t._sample ? '' : '클릭하여 상세보기') + '">' + _renderStatusBadge(t.status) + '</td>'
+      + '<td onclick="event.stopPropagation();' + (t._sample ? '' : "_openTaskOrEdit('" + t.id + "','" + (t.assignerId||'') + "')") + '" style="cursor:' + (t._sample ? 'default' : 'pointer') + '" title="' + (t._sample ? '' : '클릭하여 상세보기') + '">' + _renderStatusBadge(t.status) + '</td>'
       + '<td style="pointer-events:none">' + progressCell + '</td>'
       + '<td style="pointer-events:none"><span class="dday-badge ' + dd.cls + '">' + dd.label + '</span></td>'
       + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">' + importanceBadges + '</div></td>'
@@ -535,7 +548,7 @@ function buildScheduleBody() {
     // 모든 id를 단따옴표로 감싸 문자열 안전 보장
     var rowOnclick = t._sample
       ? '_openSampleDetail(' + rowIdx + ')'
-      : "openReceivedTaskDetail('" + t.id + "')";
+      : "_openTaskOrEdit('" + t.id + "','" + (t.assignerId||'') + "')";
 
     return '<tr style="cursor:pointer" onclick="' + rowOnclick + '">'
       + '<td style="width:25%" title="클릭하여 업무 상세 보기">'
@@ -633,7 +646,7 @@ function buildDueTodayBody() {
       + '>' + _buildAvatarStack(collaboratorAvatarArr) + '</td>';
 
     // 행 전체 클릭: 샘플 무시, 실제 업무는 openReceivedTaskDetail (지시받은 업무와 동일 UI)
-    var rowClick = t._sample ? '' : 'openReceivedTaskDetail(' + t.id + ')';
+    var rowClick = t._sample ? '' : "_openTaskOrEdit('" + t.id + "','" + (t.assignerId||'') + "')";
 
     return '<tr style="cursor:pointer" onclick="' + rowClick + '">'
       + '<td style="width:25%"><div style="display:flex;align-items:center;gap:6px">'
@@ -641,7 +654,7 @@ function buildDueTodayBody() {
       + '<span style="font-weight:700;font-size:12.5px;color:#ef4444">' + t.title + '</span>' + sampleTag + '</div>'
       + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>'
       + collaboratorTd
-      + '<td onclick="event.stopPropagation();' + (t._sample ? '' : 'openReceivedTaskDetail(' + t.id + ')') + '" style="cursor:' + (t._sample ? 'default' : 'pointer') + '" title="' + (t._sample ? '' : '클릭하여 상세보기') + '">' + _renderStatusBadge(t.status) + '</td>'
+      + '<td onclick="event.stopPropagation();' + (t._sample ? '' : "_openTaskOrEdit('" + t.id + "','" + (t.assignerId||'') + "')") + '" style="cursor:' + (t._sample ? 'default' : 'pointer') + '" title="' + (t._sample ? '' : '클릭하여 상세보기') + '">' + _renderStatusBadge(t.status) + '</td>'
       + '<td style="pointer-events:none">' + progressCell + '</td>'
       + '<td style="pointer-events:none"><span class="dday-badge dday-today">D-DAY</span></td>'
       + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">' + importanceBadges + '</div></td>'
