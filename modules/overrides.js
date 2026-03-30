@@ -1,4 +1,4 @@
-﻿/**
+/**
  * modules/overrides.js
  * app.js 이후에 로드되어 특정 함수를 깨끗한 UTF-8 코드로 교체합니다.
  * 이 파일은 항상 UTF-8로만 저장/편집하세요.
@@ -2134,7 +2134,8 @@ function renderDetailTaskCheckboxes(currentDesc) {
     container.innerHTML = '<div style="padding:10px;font-size:11px;color:var(--text-muted)">상세업무 없음 (기타설정에서 추가)</div>';
     return;
   }
-  container.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px;background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:10px;min-height:52px;align-items:flex-start;';
+  container.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px;' +
+    'background:var(--bg-secondary);border:1.5px solid var(--border-color);border-radius:10px;min-height:52px;align-items:flex-start;';
   container.innerHTML = WS.detailTasks.map(function(d) {
     var checked = selected.includes(d.name);
     var uid = 'dtcb_' + d.id;
@@ -2186,7 +2187,7 @@ function _renderProcessSelected() {
   var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
 
   if (!window._processOrder.length) {
-    box.innerHTML = '<span id="nt_process_placeholder" style="font-size:11px;color:var(--text-muted);padding:2px 0">아래 목록에서 클릭으로 순서 추가</span>';
+    box.innerHTML = '<span id="nt_process_placeholder" style="font-size:11px;color:var(--text-muted);padding:2px 0">아래 목록에서 더블클릭으로 순서 추가</span>';
     return;
   }
 
@@ -2212,29 +2213,35 @@ function _renderProcessTypeList() {
     return;
   }
   var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
-  list.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px;background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:10px;min-height:44px;';
+  list.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:8px 8px;';
   list.innerHTML = types.map(function(t) {
     var tName = t.label || t.name || '';
-    var tColor = t.color || accent;
-    return '<span onclick="addProcessOrder(\'' + tName.replace(/'/g, "\\'") + '\')"'
+    var alreadyAdded = window._processOrder.indexOf(tName) !== -1;
+    var accent2 = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
+    var tColor  = t.color || accent2;
+    return '<span ondblclick="addProcessOrder(\'' + tName.replace(/'/g, "\\'") + '\')"'
       + ' style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;cursor:pointer;user-select:none;'
-      + 'border:2px solid var(--border-color);background:var(--bg-primary);'
-      + 'transition:all 0.15s" '
-      + 'onmouseover="this.style.borderColor=\'' + tColor + '\';this.style.background=\'' + tColor + '22\'"'
-      + 'onmouseout="this.style.borderColor=\'var(--border-color)\';this.style.background=\'var(--bg-primary)\'">
+      + 'border:2px solid ' + (alreadyAdded ? tColor : 'var(--border-color)') + ';'
+      + 'background:' + (alreadyAdded ? 'color-mix(in srgb,' + tColor + ' 15%,var(--bg-primary))' : 'var(--bg-primary)') + ';'
+      + 'transition:all 0.15s;opacity:' + (alreadyAdded ? '0.5' : '1') + '" >'
       + (t.icon ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:' + tColor + '22;border:1px solid ' + tColor + '"><i data-lucide="' + t.icon + '" style="width:10px;height:10px;color:' + tColor + '"></i></span>' : '')
       + '<span style="font-size:12px;font-weight:600;color:var(--text-primary)">' + tName + '</span>'
+      + (alreadyAdded ? '<span style="font-size:9px;color:var(--text-muted)">✓</span>' : '')
       + '</span>';
   }).join(''); if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
 }
 
 function addProcessOrder(typeName) {
   if (!window._processOrder) window._processOrder = [];
-  // 복수 추가 허용 (중복 제한 없음)
+  if (window._processOrder.indexOf(typeName) !== -1) {
+    showToast('info', '"' + typeName + '"은 이미 추가되었습니다.');
+    return;
+  }
   window._processOrder.push(typeName);
+  // _processOrder를 _processTags에도 동기화
   window._processTags = window._processOrder.slice();
   _renderProcessSelected();
-  // 목록은 상태 변화 없으므로 재렌더 불필요
+  _renderProcessTypeList();
 }
 
 function removeProcessOrder(idx) {
@@ -3622,3 +3629,41 @@ function _selectNtResult(name) {
   };
 })();
 
+/* ══════════════════════════════════════════════
+   진행순서 목록에서 클릭(단일 클릭)으로도 추가 가능하도록
+   _renderProcessTypeList 재정의
+   (지시사항 보고절차와 동일한 클릭 방식)
+══════════════════════════════════════════════ */
+(function() {
+  var _origRenderTypeList = typeof _renderProcessTypeList === 'function' ? _renderProcessTypeList : null;
+  window._renderProcessTypeList = function() {
+    var list = document.getElementById('nt_process_type_list');
+    if (!list) return;
+    var types = JSON.parse(localStorage.getItem('ws_report_types')) || (WS.reportTypes || []);
+    WS.reportTypes = types;
+    if (!types.length) {
+      list.innerHTML = '<div style="padding:12px;text-align:center;font-size:11px;color:var(--text-muted)">등록된 진행보고 유형이 없습니다.<br><span style="font-size:10px">(본사관리 → 기타설정에서 추가)</span></div>';
+      return;
+    }
+    var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim() || '#4f6ef7';
+    list.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-radius:10px;min-height:44px;';
+    list.innerHTML = types.map(function(t) {
+      var tName = t.label || t.name || '';
+      var alreadyAdded = (window._processOrder || []).indexOf(tName) !== -1;
+      var tColor = t.color || accent;
+      var iconHtml = t.icon
+        ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:' + tColor + '22;border:1px solid ' + tColor + '"><i data-lucide="' + t.icon + '" style="width:10px;height:10px;color:' + tColor + '"></i></span>'
+        : '';
+      return '<span onclick="addProcessOrder(\'' + tName.replace(/'/g, "\\'") + '\')"' +
+        ' style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;cursor:pointer;user-select:none;' +
+        'border:2px solid ' + (alreadyAdded ? tColor : 'var(--border-color)') + ';' +
+        'background:' + (alreadyAdded ? 'color-mix(in srgb,' + tColor + ' 15%,var(--bg-primary))' : 'var(--bg-primary)') + ';' +
+        'transition:all 0.15s;opacity:' + (alreadyAdded ? '0.5' : '1') + '">' +
+        iconHtml +
+        '<span style="font-size:12px;font-weight:600;color:var(--text-primary)">' + tName + '</span>' +
+        (alreadyAdded ? '<span style="font-size:9px;color:var(--text-muted)">✓</span>' : '') +
+        '</span>';
+    }).join('');
+    if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
+  };
+})();
