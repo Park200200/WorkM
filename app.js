@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 
 let sidebarTimer = null;
 
@@ -2150,10 +2150,205 @@ function saveEditTask() {
       title,
       desc:          document.getElementById('nt_desc')?.value || t.desc,
       priority:      document.getElementById('nt_priority')?.value || t.priority,
+    // 업무목록 뷰 데이터 배분
+    if (titleEl) titleEl.style.display = 'none';
+    el.innerHTML = '<div id="taskSubContentArea"></div>';
+    const subArea = document.getElementById('taskSubContentArea');
+    if (window._assignmentMode === 'task') renderAssignmentByTask(subArea);
+    else renderAssignmentByStaff(subArea);
+  } else {
+    // 업무목록 뷰 데이터박스 변경된것으로 표시
+    if (titleEl) {
+      titleEl.style.display = 'block';
+      titleEl.innerHTML = `
+        <span style="display:inline-flex;align-items:center;gap:6px;
+              background:var(--bg-secondary);border:1.5px solid var(--border-color);
+              border-radius:20px;padding:5px 14px 5px 10px;
+              font-size:13px;font-weight:800;color:var(--text-secondary)">
+          <i data-lucide="list-checks" style="width:14px;height:14px;color:var(--accent-blue)"></i>
+          업무목록 리스트        </span>`;
+      refreshIcons();
+    }
+    el.innerHTML = '<div id="taskSubContentArea"></div>';
+    const subArea = document.getElementById('taskSubContentArea');
+    renderTaskListView(subArea);
+  }
+  refreshIcons();
+}
+
+/* 업무목록: 업무별 리스트 */
+function renderAssignmentByTask(targetEl) {
+  const el = targetEl || document.getElementById('taskListArea');
+  if(!el) return;
+  const tasks = WS.tasks;
+  const rows = tasks.map(t => {
+    const ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+    const assigneeHtml = ids.length > 0
+      ? ids.map(uid => {
+          const u = WS.getUser(uid);
+          return u ? `<div class="staff-badge"><div class="avatar-sm" style="background:linear-gradient(135deg,${u.color||'#4f6ef7'},#9747ff)">${u.avatar}</div>${u.name}</div>` : '';
+        }).join('')
+      : `<span style="color:var(--text-muted);font-size:11.5px">미배정</span>`;
+    return `<tr>
+      <td style="width:40%"><div style="font-weight:700;font-size:13.5px">${t.title}</div><div style="font-size:11px;color:var(--text-muted)">${t.team}</div></td>
+      <td><div class="badge-list">${assigneeHtml}</div></td>
+      <td><div class="score-tag">${t.score || 0}<span>pt</span></div></td>
+      <td style="width:80px">
+        <div class="manage-actions">
+          <button class="btn-icon-sm edit" onclick="openTaskAssignModal(${t.id})" title="담당직원 배정">
+            <i data-lucide="user-plus" class="icon-sm"></i>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `<table class="task-table">
+    <thead><tr><th>업무명</th><th>담당 직원</th><th>점수</th><th>관리</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="4" class="empty-state">데이터가 없습니다.</td></tr>'}</tbody>
+  </table>`;
+  refreshIcons();
+}
+
+/* 업무목록: 직원별 리스트 */
+function renderAssignmentByStaff(targetEl) {
+  const el = targetEl || document.getElementById('taskListArea');
+  if(!el) return;
+  const users = WS.users;
+  const rows = users.map(u => {
+    const myTasks = WS.tasks.filter(t => {
+      const ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+      return ids.includes(u.id);
+    });
+    const badges = myTasks.map(t => `<span class="task-badge">${t.title}</span>`).join('');
+    return `<tr>
+      <td style="width:200px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="avatar" style="width:32px;height:32px;background:linear-gradient(135deg,${u.color},#9747ff);color:#fff;font-size:12px;font-weight:800;border-radius:50%;display:flex;align-items:center;justify-content:center">${u.avatar}</div>
+          <div>
+            <div style="font-weight:700;font-size:13px">${u.name}</div>
+            <div style="font-size:10.5px;color:var(--text-muted)">${u.role} · ${u.dept}</div>
+          </div>
+        </div>
+      </td>
+      <td><div class="badge-list">${badges || '<span style="color:var(--text-muted);font-size:11px">배정된 업무 없음</span>'}</div></td>
+      <td style="width:100px">
+        <div class="manage-actions">
+          <button class="btn-icon-sm edit" onclick="openAssignmentManageModal(${u.id})" title="업무 배정 관리"><i data-lucide="settings-2" class="icon-sm"></i></button>
+          <!-- 삭제 아이템 제거 -->
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `<table class="task-table">
+    <thead><tr><th>직원 정보</th><th>배정 업무</th><th>관리</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+  refreshIcons();
+}
+
+/* 업무목록: 고도화된 계층형 리스트 */
+function renderTaskListView(targetEl) {
+  const el = targetEl || document.getElementById('taskListArea');
+  if(!el) return;
+
+  const renderNode = (parentId = null, level = 0) => {
+    const tasks = WS.tasks.filter(t => t.parentId === (parentId === null ? null : Number(parentId)));
+    let html = '';
+    tasks.forEach(t => {
+      const indent = level * 24;
+      html += `<tr>
+        <td>
+          <div class="tree-node" style="padding-left:${indent}px">
+            ${level > 0 ? '<div class="tree-line"></div>' : ''}
+            <div class="tree-title">${t.isImportant?'<span class="star-icon"><i data-lucide="star"></i></span>':''} ${t.title}</div>
+            <button class="btn-sub-add" onclick="openNewTaskModal(${t.id})" title="하위 분류 추가"><i data-lucide="plus" style="width:12px;height:12px"></i></button>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);padding-left:${indent}px">${t.team}</div>
+        </td>
+        <td style="width:110px">
+          ${(() => {
+            const rc = t.reportContent || '';
+            return rc ? `<span class="report-status-badge">${rc}</span>` : '<span style="color:var(--text-muted);font-size:11px">-</span>';
+          })()}
+        </td>
+        <td>
+          ${(() => {
+            const tags = Array.isArray(t.processTags) && t.processTags.length > 0
+              ? t.processTags.map(tag => `<span class="task-badge" style="margin-right:3px">${tag}</span>`).join('')
+              : '<span style="color:var(--text-muted);font-size:11px">-</span>';
+            return tags;
+          })()}
+        </td>
+        <td style="width:80px"><div class="score-tag">${t.score || 0}<span>pt</span></div></td>
+        <td style="color:var(--text-muted);font-size:11.5px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.desc || '-'}</td>
+        <td style="width:80px">
+          <div class="manage-actions">
+            <button class="btn-icon-sm edit" onclick="openEditTaskModal(${t.id})" title="수정"><i data-lucide="edit-3" class="icon-sm"></i></button>
+            <button class="btn-icon-sm delete" onclick="deleteTask(${t.id})" title="삭제"><i data-lucide="trash-2" class="icon-sm"></i></button>
+          </div>
+        </td>
+      </tr>`;
+      html += renderNode(t.id, level + 1);
+    });
+    return html;
+  };
+
+  const rowsHtml = renderNode(null, 0);
+
+  el.innerHTML = `<table class="task-table">
+    <thead><tr><th>업무명</th><th>업무결과</th><th>과정확인</th><th>점수</th><th>설명</th><th>관리</th></tr></thead>
+    <tbody>${rowsHtml || '<tr><td colspan="6" class="empty-state">업무가 없습니다.</td></tr>'}</tbody>
+  </table>`;
+  refreshIcons();
+}
+
+/* 업무목록 수정 모달 */
+function openEditTaskModal(id) {
+  const t = WS.getTask(id);
+  if(!t) return;
+  window._editingTaskId = id;
+
+  // 모달을 '선택업무 수정' 모드로 열기
+  openNewTaskModal('edit');
+
+  // 임시 필드 데이터 채우기(openNewTaskModal을 초기화한 후
+  setTimeout(() => {
+    const set = (elId, val) => { const el = document.getElementById(elId); if(el) el.value = val ?? ''; };
+    set('nt_title',    t.title);
+    set('nt_desc',     t.desc);
+    set('nt_priority', t.priority || 'medium');
+    set('nt_team',     t.team);
+    set('nt_start',    t.startedAt || '');
+    set('nt_due',      t.dueDate);
+    set('nt_result',   t.reportContent || '');   // reportContent 를 nt_result
+    set('nt_score',    t.score ?? 0);
+    const impEl = document.getElementById('nt_important');
+    if(impEl) impEl.checked = !!t.isImportant;
+
+    // 과정등록 태그
+    window._processTags = Array.isArray(t.processTags) ? [...t.processTags] : [];
+    renderProcessTags();
+  }, 0);
+}
+
+function saveEditTask() {
+  const id = window._editingTaskId;
+  if(!id) return;
+  const title = document.getElementById('nt_title')?.value.trim();
+  if(!title) { showToast('error', '제목을 입력하세요'); return; }
+  WS.tasks = WS.tasks.map(t => {
+    if(t.id !== id) return t;
+    return {
+      ...t,
+      title,
+      desc:          document.getElementById('nt_desc')?.value || t.desc,
+      priority:      document.getElementById('nt_priority')?.value || t.priority,
       team:          document.getElementById('nt_team')?.value || t.team,
       startedAt:     document.getElementById('nt_start')?.value || t.startedAt,
       dueDate:       document.getElementById('nt_due')?.value || t.dueDate,
-      reportContent: document.getElementById('nt_result')?.value || '',  // nt_result ??reportContent
+      reportContent: document.getElementById('nt_result')?.value || '',  // nt_result 를 reportContent
       score:         parseInt(document.getElementById('nt_score')?.value) || 0,
       isImportant:   document.getElementById('nt_important')?.checked ?? t.isImportant,
       processTags:   window._processTags || t.processTags,
@@ -2175,19 +2370,19 @@ function deleteTask(id) {
   showToast('info', '<i data-lucide="trash-2"></i> 업무가 삭제되었습니다.');
 }
 
-/* ?? 업무 현황 담당吏곸썝 諛곗젙 紐⑤떖 ?? */
+/* 업무 현황 담당직원 배정 모달 */
 function openTaskAssignModal(taskId) {
   const t = WS.getTask(taskId);
   if(!t) return;
   window._assigningTaskId = taskId;
 
-  // 紐⑤떖 ??댄? 업데이트
+  // 모달 데이터 업데이트
   const title = document.getElementById('tam_task_title');
   const team  = document.getElementById('tam_task_team');
   if(title) title.textContent = t.title;
   if(team)  team.textContent  = t.team;
 
-  // 吏곸썝 ?좏깮 由ъ뒪???뚮뜑留?  renderTaskAssignStaffList(taskId);
+  // 직원 선택 리스트 렌더링  renderTaskAssignStaffList(taskId);
   openModal('taskAssignModal');
   refreshIcons();
 }
@@ -2236,23 +2431,23 @@ function selectTaskAssignee(taskId, staffId) {
   const idx = t.assigneeIds.indexOf(staffId);
   if (idx !== -1) {
     t.assigneeIds.splice(idx, 1);
-    showToast('info', '담당吏곸썝 諛곗젙???댁젣되었습니다.');
+    showToast('info', '담당직원 배정 해제되었습니다.');
   } else {
     t.assigneeIds.push(staffId);
     const u = WS.getUser(staffId);
-    showToast('success', `[${t.title}] 업무媛 ${u?.name}?섏뿉寃?諛곗젙되었습니다.`);
+    showToast('success', `[${t.title}] 업무가 ${u?.name}에게 배정되었습니다.`);
   }
   WS.saveTasks();
   renderTaskAssignStaffList(taskId);
   renderPage_Tasks();
 }
 
-/* ?? 업무 諛곗젙 愿由??꾩슜 紐⑤떖 (?좉퇋) ?? */
+/* 업무 배정 관리 전용 모달 (신규) */
 function openAssignmentManageModal(id) {
   const u = WS.getUser(id);
   if(!u) return;
 
-  // ?곷떒 吏곸썝 탭 ?뚮뜑留?  const card = document.getElementById('amm_staff_card');
+  // 상단 직원 탭 렌더링  const card = document.getElementById('amm_staff_card');
   if(card) {
     card.innerHTML = `
       <div style="width:60px;height:60px;border-radius:12px;background:linear-gradient(135deg,${u.color},#9747ff);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:800;border:2px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,0.1)">${u.avatar}</div>
@@ -2262,16 +2457,16 @@ function openAssignmentManageModal(id) {
         <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">${u.email || ''}</div>
       </div>
       <div style="margin-left:auto;text-align:right">
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">?꾩옱 담당 업무</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">현재 담당 업무</div>
         <div style="font-size:20px;font-weight:800;color:var(--accent-blue)">${WS.tasks.filter(t => {
           const ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
           return ids.includes(id);
-        }).length}건/div>
+        }).length}건</div>
       </div>
     `;
   }
 
-  // 업무 由ъ뒪??(?좉?) ?뚮뜑留?  renderAssignmentManageTasks(id);
+  // 업무 리스트(신규) 렌더링  renderAssignmentManageTasks(id);
   
   openModal('assignmentManageModal');
   refreshIcons();
@@ -2319,15 +2514,15 @@ function toggleTaskAssignment(staffId, taskId) {
   const idx = t.assigneeIds.indexOf(staffId);
   if (idx !== -1) {
     t.assigneeIds.splice(idx, 1);
-    showToast('info', `[${t.title}] 諛곗젙???댁젣되었습니다.`);
+    showToast('info', `[${t.title}] 배정 해제되었습니다.`);
   } else {
     t.assigneeIds.push(staffId);
-    showToast('success', `[${t.title}] 업무媛 諛곗젙되었습니다.`);
+    showToast('success', `[${t.title}] 업무가 배정되었습니다.`);
   }
 
   WS.saveTasks();
   renderAssignmentManageTasks(staffId);
-  renderPage_Tasks(); // 諛곌꼍 由ъ뒪?몃룄 媛깆떊
+  renderPage_Tasks(); // 배경 리스트도 갱신
 }
 
 function filterTasks(f, el) {
@@ -2346,13 +2541,13 @@ function updateStatusCounters() {
     done: tasks.filter(t=>t.status==='done').length
   };
 
-  // 업무목록/紐⑸줉 ?섏씠吏 移?업데이트
+  // 업무목록/목록 페이지 카운트 업데이트
   Object.keys(counts).forEach(k => {
     const el = document.getElementById(`cnt_${k}`);
     if(el) el.textContent = counts[k];
   });
 
-  // 업무설정 ?섏씠吏 移?업데이트
+  // 업무설정 페이지 카운트 업데이트
   Object.keys(counts).forEach(k => {
     const el = document.getElementById(`scnt_${k}`);
     if(el) el.textContent = counts[k];
@@ -2366,7 +2561,7 @@ function filterSettings(filter, el) {
   renderPage_Settings();
 }
 
-/* ?? 업무설정 ?섏씠吏 ?? */
+/* 업무설정 페이지 */
 function renderPage_Settings() {
   updateStatusCounters();
   // 최초 진입 시 전체 필터로 강제 초기화
@@ -2390,7 +2585,7 @@ function renderPage_Settings() {
         <div class="section-title-group">
           <div class="section-dot" style="background:var(--accent-blue)"><i data-lucide="users"></i></div>
           <div class="section-title">${team}</div>
-          <span class="section-count">${tasks.length}건</span>>
+          <span class="section-count">${tasks.length}건</span>
         </div>
       </div>
       <table class="task-table">
@@ -2438,7 +2633,7 @@ function renderPage_Settings() {
   refreshIcons();
 }
 
-/* ?€?€ 일정蹂닿린 ?섏씠吏€ ?€?€ */
+/* 일정보기 페이지 */
 function renderPage_Schedule() {
   const el = document.getElementById('scheduleArea');
   if(!el) return;
@@ -2474,7 +2669,7 @@ function renderPage_Schedule() {
   refreshIcons();
 }
 
-/* ?? 吏곸썝愿由??섏씠吏 (?좉퇋) ?? */
+/* 직원관리 페이지 */
 function renderPage_StaffMgmt() {
   const el = document.getElementById('staffListArea');
   if(!el) return;
@@ -2532,7 +2727,7 @@ function renderStaffStatusBadge(status) {
   return `<span class="status-badge status-${type}">${status}</span>`;
 }
 
-/* ?? 실적보기 ?섏씠吏 ?? */
+/* 실적보기 페이지 */
 function renderPage_Performance(period) {
   const el = document.getElementById('performanceArea');
   if (!el) return;
@@ -2577,10 +2772,10 @@ function renderPage_Performance(period) {
   stats.sort((a, b) => b.rate - a.rate || b.done - a.done);
 
   function rankBadge(rank) {
-    const medals = ['?쪍','?쪎','?쪏'];
-    if (rank === 1) return `<span style="font-size:20px" title="1??>${medals[0]}</span>`;
-    if (rank === 2) return `<span style="font-size:20px" title="2??>${medals[1]}</span>`;
-    if (rank === 3) return `<span style="font-size:20px" title="3??>${medals[2]}</span>`;
+    const medals = ['🥇','🥈','🥉'];
+    if (rank === 1) return `<span style="font-size:20px" title="1위">${medals[0]}</span>`;
+    if (rank === 2) return `<span style="font-size:20px" title="2위">${medals[1]}</span>`;
+    if (rank === 3) return `<span style="font-size:20px" title="3위">${medals[2]}</span>`;
     return `<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--bg-tertiary);color:var(--text-muted);font-size:11px;font-weight:800">${rank}</span>`;
   }
 
@@ -2596,13 +2791,13 @@ function renderPage_Performance(period) {
           <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,${u.color},#9747ff);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:800;flex-shrink:0">${u.avatar}</div>
           <div>
             <div style="font-size:13px;font-weight:700">${u.name}</div>
-            <div style="font-size:11px;color:var(--text-muted)">${u.role} 쨌 ${u.dept}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${u.role} · ${u.dept}</div>
           </div>
         </div>
       </td>
       <td style="padding:14px 12px;text-align:center;width:64px">
         <div style="font-size:20px;font-weight:800;color:${rateColor}">${rate}%</div>
-        <div style="font-size:10px;color:var(--text-muted)">?꾨즺??/div>
+        <div style="font-size:10px;color:var(--text-muted)">완료율</div>
       </td>
       <td style="padding:14px 16px;min-width:180px">
         <div style="display:flex;align-items:center;gap:6px">
@@ -2611,38 +2806,38 @@ function renderPage_Performance(period) {
           </div>
           <span style="font-size:10px;font-weight:700;color:var(--text-muted);min-width:28px">${rate}%</span>
         </div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:3px">吏꾪뻾瑜??됯퇏 ${avgProg}%</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:3px">진행률 평균 ${avgProg}%</div>
       </td>
       <td style="padding:14px 12px;text-align:center;width:52px">
         <div style="font-size:16px;font-weight:800;color:#4f6ef7">${myTasks.length}</div>
-        <div style="font-size:10px;color:var(--text-muted)">?꾩껜</div>
+        <div style="font-size:10px;color:var(--text-muted)">전체</div>
       </td>
       <td style="padding:14px 12px;text-align:center;width:52px">
         <div style="font-size:16px;font-weight:800;color:#06b6d4">${progress}</div>
-        <div style="font-size:10px;color:var(--text-muted)">吏꾪뻾以?/div>
+        <div style="font-size:10px;color:var(--text-muted)">진행중</div>
       </td>
       <td style="padding:14px 12px;text-align:center;width:52px">
         <div style="font-size:16px;font-weight:800;color:#22c55e">${done}</div>
-        <div style="font-size:10px;color:var(--text-muted)">?꾨즺</div>
+        <div style="font-size:10px;color:var(--text-muted)">완료</div>
       </td>
       <td style="padding:14px 12px;text-align:center;width:52px">
         <div style="font-size:16px;font-weight:800;color:#f59e0b">${waiting}</div>
-        <div style="font-size:10px;color:var(--text-muted)">?湲?/div>
+        <div style="font-size:10px;color:var(--text-muted)">대기</div>
       </td>
       <td style="padding:14px 12px;text-align:center;width:52px">
         <div style="font-size:16px;font-weight:800;color:#ef4444">${delay}</div>
-        <div style="font-size:10px;color:var(--text-muted)">吏??/div>
+        <div style="font-size:10px;color:var(--text-muted)">지연</div>
       </td>
     </tr>`;
   }).join('');
 
-  const periodLabels = { week:'二쇨컙', month:'?붽컙', year:'?곌컙' };
+  const periodLabels = { week:'주간', month:'월간', year:'연간' };
 
   el.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
       <div>
         <div style="font-size:18px;font-weight:800">? ?ㅼ쟻 ?꾪솴</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:3px">${periodLabels[period]} ?꾨즺??湲곗? ?쒖쐞</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:3px">${periodLabels[period]} 완료율 기준 순위</div>
       </div>
       <div style="display:flex;border-radius:12px;overflow:hidden;border:1.5px solid var(--border-color);background:var(--bg-secondary)">
         ${['week','month','year'].map((p,pi) => `${pi>0?'<div style="width:1px;background:var(--border-color)"></div>':''}
@@ -2670,7 +2865,7 @@ function renderPage_Performance(period) {
             <th style="padding:10px 12px;font-size:11px;color:var(--text-muted);font-weight:700;text-align:center">吏??/th>
           </tr>
         </thead>
-        <tbody>${rows || '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px">?대떦 湲곌컙 ?낅Т ?곗씠?곌? ?놁뒿?덈떎.</td></tr>'}</tbody>
+        <tbody>${rows || '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px">해당 기간 업무 데이터가 없습니다.</td></tr>'}</tbody>
       </table>
     </div>`;
 
