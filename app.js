@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 
 let sidebarTimer = null;
 
@@ -460,7 +460,7 @@ function buildReceivedBody() {
       + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>'
       + assignerCell
       + '<td onclick="event.stopPropagation();' + (t._sample ? '' : "_openTaskOrEdit('" + t.id + "','" + (t.assignerId||'') + "')") + '" style="cursor:' + (t._sample ? 'default' : 'pointer') + '" title="' + (t._sample ? '' : '클릭하여 상세보기') + '">' + _renderStatusBadge(t.status) + '</td>'
-      + '<td style="pointer-events:none">' + progressCell + '</td>'
+      + '<td onclick="event.stopPropagation();' + (t._sample ? '' : "openReceivedTaskDetail('" + t.id + "')") + '" style="cursor:' + (t._sample ? 'default' : 'pointer') + '" title="吏꾪뻾???대┃?섏뿬 ?낅Т吏꾪뻾 UI ?닿린">' + progressCell + '</td>'
       + '<td style="pointer-events:none"><span class="dday-badge ' + dd.cls + '">' + dd.label + '</span></td>'
       + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">' + importanceBadges + '</div></td>'
       + '</tr>';
@@ -580,7 +580,7 @@ function buildScheduleBody() {
       + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>'
       + collaboratorCell
       + '<td onclick="event.stopPropagation();' + rowOnclick + '" style="cursor:pointer" title="클릭하여 상세보기">' + _renderStatusBadge(t.status) + '</td>'
-      + '<td style="pointer-events:none">' + progressCell + '</td>'
+      + '<td onclick="event.stopPropagation();' + (t._sample ? '' : "openReceivedTaskDetail('" + t.id + "')") + '" style="cursor:' + (t._sample ? 'default' : 'pointer') + '" title="吏꾪뻾???대┃?섏뿬 ?낅Т吏꾪뻾 UI ?닿린">' + progressCell + '</td>'
       + '<td style="pointer-events:none"><span class="dday-badge ' + dd.cls + '">' + dd.label + '</span></td>'
       + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">' + importanceBadges + '</div></td>'
       + '</tr>';
@@ -677,7 +677,7 @@ function buildDueTodayBody() {
       + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>'
       + collaboratorTd
       + '<td onclick="event.stopPropagation();' + (t._sample ? '' : "_openTaskOrEdit('" + t.id + "','" + (t.assignerId||'') + "')") + '" style="cursor:' + (t._sample ? 'default' : 'pointer') + '" title="' + (t._sample ? '' : '클릭하여 상세보기') + '">' + _renderStatusBadge(t.status) + '</td>'
-      + '<td style="pointer-events:none">' + progressCell + '</td>'
+      + '<td onclick="event.stopPropagation();' + (t._sample ? '' : 'openReceivedTaskDetail(' + t.id + ')') + '" style="cursor:' + (t._sample ? 'default' : 'pointer') + '" title="吏꾪뻾???대┃?섏뿬 ?낅Т吏꾪뻾 UI ?닿린">' + progressCell + '</td>'
       + '<td style="pointer-events:none"><span class="dday-badge dday-today">D-DAY</span></td>'
       + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">' + importanceBadges + '</div></td>'
       + '</tr>';
