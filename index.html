@@ -1922,34 +1922,6 @@
       <!-- openTaskDetail()이 동적으로 채웁니다 -->
     </div>
 
-    <!-- 진행보고 추가 섹션 -->
-    <div style="padding:0 24px 16px;flex-shrink:0">
-      <div style="background:var(--bg-tertiary);border:1px solid var(--border-color);
-                  border-radius:14px;padding:14px">
-        <div style="font-size:11px;font-weight:700;color:var(--text-muted);
-                    display:flex;align-items:center;gap:6px;margin-bottom:10px">
-          <i data-lucide="file-pen-line" style="width:13px;height:13px"></i> 진행보고 추가
-        </div>
-        <!-- 보고유형 칩 목록 (JS로 채움) -->
-        <div id="tdReportTypePicks"
-             style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
-        <input type="hidden" id="td_reportIconVal" value="message-square|진행보고|#4f6ef7">
-        <div style="display:flex;gap:8px;align-items:center">
-          <textarea id="td_reportText" rows="2"
-                    class="form-input"
-                    placeholder="진행 내용을 입력하세요..."
-                    style="flex:1;resize:none;font-size:12.5px;min-height:36px"></textarea>
-          <button onclick="addProgressReport(window._editingTaskId)"
-                  style="padding:0 18px;height:52px;border-radius:10px;background:var(--accent-blue);
-                         color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:700;
-                         white-space:nowrap;flex-shrink:0;transition:opacity .15s"
-                  onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
-            + 추가
-          </button>
-        </div>
-      </div>
-    </div>
-
     <!-- 푸터 -->
     <div style="display:flex;justify-content:flex-end;gap:10px;
                 padding:14px 24px 20px;border-top:1px solid var(--border-color);flex-shrink:0">
