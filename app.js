@@ -1358,9 +1358,9 @@ function openReceivedTaskDetail(taskId) {
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:8px 12px;background:var(--bg-secondary);border-radius:10px">
         <span style="font-size:11px;color:var(--text-muted);font-weight:600;flex-shrink:0">이전까지 진행율</span>
         <div style="flex:1;height:6px;background:var(--border-color);border-radius:100px;overflow:hidden">
-          <div style="width:${progress}%;height:100%;background:${t.status==='done'?'#22c55e':t.status==='delay'?'#ef4444':'var(--accent-blue)'};border-radius:100px"></div>
+          <div id="prevProgBarFill_${t.id}" style="width:${progress}%;height:100%;background:${t.status==='done'?'#22c55e':t.status==='delay'?'#ef4444':'var(--accent-blue)'};border-radius:100px"></div>
         </div>
-        <span style="font-size:14px;font-weight:800;color:var(--accent-blue);min-width:38px;text-align:right">${progress}%</span>
+        <span id="prevProgText_${t.id}" style="font-size:14px;font-weight:800;color:var(--accent-blue);min-width:38px;text-align:right">${progress}%</span>
       </div>
       <!-- 현재까지 진행율 입력 -->
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;background:var(--bg-secondary);border-radius:10px">
@@ -1606,10 +1606,16 @@ function addProgressReport(taskId) {
   const todayIdx = t.history.findIndex(h => h.date === dateStr);
   let isUpdate = false;
 
-  // 진행율: 슬라이더 대신 숫자 입력창에서 읽기
+  // 진행율: 입력창에서 읽기 (min 속성 = 이전 진행율, 이상으로만 허용)
   const progress = (function(){
     var inp = document.getElementById('progressInput_' + taskId);
-    if (inp) return Math.max(0, Math.min(100, parseInt(inp.value) || 0));
+    if (inp) {
+      var minVal = parseInt(inp.min) || 0;
+      var val = parseInt(inp.value);
+      if (isNaN(val) || val < minVal) val = minVal;
+      if (val > 100) val = 100;
+      return val;
+    }
     var s = document.getElementById('progressSlider_' + taskId);
     return s ? parseInt(s.value) : (t.progress||0);
   })();
@@ -1627,7 +1633,7 @@ function addProgressReport(taskId) {
   }
   WS.saveTasks();
 
-  // ✅ 히스토리 UI 실시간 갱신 (renderTaskHistory 직접 재호출)
+  // ✅ 히스토리 UI 실시간 갱신
   if (typeof renderTaskHistory === 'function') renderTaskHistory(taskId);
 
   // 히스토리 버튼 내 건수 카운트 업데이트
@@ -1637,7 +1643,27 @@ function addProgressReport(taskId) {
     if (spanEl) spanEl.textContent = t.history.length + '건';
   }
 
-  if (textEl)  textEl.value = '';
+  if (textEl) textEl.value = '';
+
+  // ✅ 추가 후 UI 동적 업데이트: 이전까지 진행율 → 새 값으로 갱신
+  const prevBarFill = document.getElementById('prevProgBarFill_' + taskId);
+  const prevText    = document.getElementById('prevProgText_' + taskId);
+  const progInp     = document.getElementById('progressInput_' + taskId);
+  const progInner   = document.getElementById('progBarInner_' + taskId);
+  if (prevBarFill) prevBarFill.style.width = progress + '%';
+  if (prevText)    prevText.textContent = progress + '%';
+  if (progInp)   { progInp.min = progress; progInp.value = progress; }
+  if (progInner)   progInner.style.width = progress + '%';
+
+  // 모달 타이틀 진행율 배지 업데이트
+  const titleEl = document.getElementById('tdModalTitle');
+  if (titleEl) {
+    titleEl.innerHTML = t.title +
+      '<span style="font-size:13px;font-weight:700;background:var(--accent-blue);color:#fff;' +
+      'border-radius:20px;padding:2px 10px;vertical-align:middle;margin-left:6px">' +
+      progress + '%</span>';
+  }
+
   showToast('success', isUpdate ? '✏️ 오늘 진행보고를 업데이트했습니다.' : '✅ 진행보고가 추가됐습니다.');
 }
 
