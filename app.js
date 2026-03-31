@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 
 let sidebarTimer = null;
 
@@ -1288,12 +1288,12 @@ function buildGantt() {
         <div class="gantt-task-col">업무</div>
         <div class="gantt-timeline-head">${dayHeaders}</div>
       </div>
-      ${tasks.length===0?'<div class="empty-state"><div class="es-icon">?럦</div><div class="es-text">吏꾪뻾 以묒씤 업무媛 없습니다</div></div>':rows}
+      ${tasks.length===0?'<div class="empty-state"><div class="es-icon">?뱥</div><div class="es-text">吏꾪뻾 以묒씤 ?낅Т媛 ?놁뒿?덈떎</div></div>':rows}
     </div>
   </div>`;
 }
 
-/* ?? 상태 蹂寃??? */
+/* ?낅Т ?곹깭 蹂寃?*/
 function changeStatus(taskId, newStatus) {
   WS.changeTaskStatus(taskId, newStatus);
   renderDashboard();
@@ -1731,7 +1731,7 @@ function saveTaskDetail() {
   if (!t.history) t.history = [];
   t.history.push({
     date: dateStr, event: '吏꾪뻾??업데이트',
-    detail: `吏꾪뻾瑜?${t.progress}% · ${t.desc ? '설명 수정' : ''}`,
+    detail: `吏꾪뻾瑜? %`,
     icon: 'refresh-cw', color: '#4f6ef7'
   });
 
