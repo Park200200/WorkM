@@ -3774,6 +3774,16 @@ function _resetScheduleFields() {
   var natureHidden = document.getElementById('nt_sched_nature');
   if (natureHidden) natureHidden.value = '일일업무';
   if (typeof _selectNtNature === 'function') _selectNtNature('일일업무');
+  // 시작일 초기화
+  var ss = document.getElementById('nt_sched_start');
+  var sl = document.getElementById('nt_sched_start_label');
+  if (ss) ss.value = '';
+  if (sl) sl.textContent = '날짜를 선택하세요';
+  // 완료계획일 초기화
+  var ds = document.getElementById('nt_sched_due');
+  var dl = document.getElementById('nt_sched_due_label');
+  if (ds) ds.value = '';
+  if (dl) dl.textContent = '날짜를 선택하세요';
 }
 
 function _renderNtSchedImportance() {
@@ -3997,7 +4007,7 @@ function createScheduleTask() {
     progress:    0,
     dueDate:     due,
     createdAt:   today,
-    startedAt:   today,
+    startedAt:   (document.getElementById('nt_sched_start') ? document.getElementById('nt_sched_start').value : '') || due,
     isSchedule:  true,
     taskNature:  (document.getElementById('nt_sched_nature') ? document.getElementById('nt_sched_nature').value : '일일업무'),
     importance:  (document.getElementById('nt_sched_importance') ? document.getElementById('nt_sched_importance').value : ''),

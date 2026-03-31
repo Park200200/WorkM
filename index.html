@@ -1610,8 +1610,26 @@
           <input type="hidden" id="nt_sched_nature" value="일일업무">
         </div>
 
-        <!-- 완료계획일 + 지시중요도 2열 -->
-        <div style="display:grid;grid-template-columns:180px 1fr;gap:12px">
+        <!-- 시작일 + 완료계획일 2열 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <!-- 시작일 -->
+          <div class="form-group" style="margin:0">
+            <label class="form-label">
+              <i data-lucide="calendar-check" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+              시작일 *
+            </label>
+            <input type="hidden" id="nt_sched_start">
+            <button type="button" id="nt_sched_start_display"
+              onclick="openDatePicker('nt_sched_start','nt_sched_start_display')"
+              style="display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;border-radius:10px;
+                     border:1.5px solid var(--border-color);background:var(--bg-secondary);cursor:pointer;
+                     color:var(--text-primary);font-size:13px;transition:border-color .2s;text-align:left"
+              onmouseover="this.style.borderColor='var(--accent-blue)'"
+              onmouseout="this.style.borderColor='var(--border-color)'">
+              <i data-lucide="calendar-check" style="width:14px;height:14px;opacity:.6;flex-shrink:0"></i>
+              <span id="nt_sched_start_label" style="color:var(--text-secondary)">날짜를 선택하세요</span>
+            </button>
+          </div>
           <!-- 완료계획일 -->
           <div class="form-group" style="margin:0">
             <label class="form-label">

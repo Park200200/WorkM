@@ -3079,9 +3079,9 @@ function renderPage_Performance() {
       </td>
       <td style="padding:11px 14px;text-align:center"><div style="font-size:15px;font-weight:800;color:#4f6ef7">${s.total}</div><div style="font-size:10px;color:var(--text-muted)">전체</div></td>
       <td style="padding:11px 14px;text-align:center"><div style="font-size:15px;font-weight:800;color:#22c55e">${s.done}</div><div style="font-size:10px;color:var(--text-muted)">완료</div></td>
-      <td style="padding:11px 14px;text-align:center"><div style="font-size:15px;font-weight:800;color:#06b6d4">${s.prog}</div><div style="font-size:10px;color:var(--text-muted)">吏꾪뻾以?/div></td>
-      <td style="padding:11px 14px;text-align:center"><div style="font-size:15px;font-weight:800;color:#ef4444">${s.delay}</div><div style="font-size:10px;color:var(--text-muted)">吏??/div></td>
-      <td style="padding:11px 14px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--text-primary)">${s.avgP}%</div><div style="font-size:10px;color:var(--text-muted)">?됯퇏吏꾪뻾瑜?/div></td>
+      <td style="padding:11px 14px;text-align:center"><div style="font-size:15px;font-weight:800;color:#06b6d4">${s.prog}</div><div style="font-size:10px;color:var(--text-muted)">진행중</div></td>
+      <td style="padding:11px 14px;text-align:center"><div style="font-size:15px;font-weight:800;color:#ef4444">${s.delay}</div><div style="font-size:10px;color:var(--text-muted)">지연</div></td>
+      <td style="padding:11px 14px;text-align:center"><div style="font-size:15px;font-weight:800;color:var(--text-primary)">${s.avgP}%</div><div style="font-size:10px;color:var(--text-muted)">평균진행률</div></td>
     </tr>`;
   }).join('');
 
@@ -3104,13 +3104,13 @@ function renderPage_Performance() {
         <table style="width:100%;border-collapse:collapse">
           <thead><tr style="background:var(--bg-secondary)">
             <th style="padding:10px 14px;font-size:11px;font-weight:700;color:var(--text-muted);text-align:center;width:60px">순위</th>
-            <th style="padding:10px 14px;font-size:11px;font-weight:700;color:var(--text-muted);text-align:left">吏곸썝</th>
+            <th style="padding:10px 14px;font-size:11px;font-weight:700;color:var(--text-muted);text-align:left">직원</th>
             <th style="padding:10px 14px;font-size:11px;font-weight:700;color:var(--text-muted);text-align:left;min-width:140px">달성률</th>
             <th style="padding:10px 14px;font-size:11px;font-weight:700;color:var(--text-muted);text-align:center">전체</th>
             <th style="padding:10px 14px;font-size:11px;font-weight:700;color:var(--text-muted);text-align:center">완료</th>
-            <th style="padding:10px 14px;font-size:11px;font-weight:700;color:var(--text-muted);text-align:center">吏꾪뻾以?/th>
-            <th style="padding:10px 14px;font-size:11px;font-weight:700;color:var(--text-muted);text-align:center">吏??/th>
-            <th style="padding:10px 14px;font-size:11px;font-weight:700;color:var(--text-muted);text-align:center">?됯퇏吏꾪뻾瑜?/th>
+            <th style="padding:10px 14px;font-size:11px;font-weight:700;color:var(--text-muted);text-align:center">진행중</th>
+            <th style="padding:10px 14px;font-size:11px;font-weight:700;color:var(--text-muted);text-align:center">지연</th>
+            <th style="padding:10px 14px;font-size:11px;font-weight:700;color:var(--text-muted);text-align:center">평균진행률</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
