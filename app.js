@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 
 let sidebarTimer = null;
 
@@ -2763,21 +2763,22 @@ function renderPage_Schedule() {
           }
 
           return `<tr style="position:relative;">
-            <!-- 월 라벨 (sticky left) -->
+            <!-- 월 라벨 (sticky left) - bars의 absolute 기준점 -->
             <td style="position:sticky;left:0;z-index:10;
                        width:${labelW}px;min-width:${labelW}px;height:${ch}px;
                        background:${isCurrentMonth?'rgba(79,110,247,.08)':'var(--bg-secondary)'};
                        border-right:2px solid var(--border-color);border-bottom:1px solid var(--border-color);
-                       padding:0;text-align:center;vertical-align:middle;">
+                       padding:0;text-align:center;vertical-align:middle;
+                       overflow:visible;">
               <div style="font-size:12px;font-weight:${isCurrentMonth?800:600};
                    color:${isCurrentMonth?'var(--accent-blue)':'var(--text-secondary)'};">
                 ${mLabel}
                 ${isCurrentMonth?'<div style="width:5px;height:5px;border-radius:50%;background:var(--accent-blue);margin:2px auto 0"></div>':''}
               </div>
+              <!-- 다일 업무 막대: td 기준 absolute (overflow:visible로 행 전체에 걸쳐 표시) -->
+              ${bars}
             </td>
             ${cells}
-            <!-- 다일 업무 막대 -->
-            ${bars}
             <!-- 단일일 원형도트 주입 스크립트 -->
             ${dotScript}
           </tr>`;
