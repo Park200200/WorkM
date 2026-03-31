@@ -27,14 +27,14 @@
 
     <nav class="sidebar-nav" onclick="resetSidebarTimer()">
       <div class="sidebar-section-label">Main</div>
-      <div class="nav-item active" onclick="showPage('dashboard',this)" data-page="dashboard" data-tooltip="전체현황">
-        <span class="nav-icon"><i data-lucide="home"></i></span> <span class="nav-text">전체현황</span>
+      <div class="nav-item active" onclick="showPage('dashboard',this)" data-page="dashboard" data-tooltip="내의책상">
+        <span class="nav-icon"><i data-lucide="home"></i></span> <span class="nav-text">내의책상</span>
       </div>
 
-      <!-- 본사관리 서브메뉴 그룹 -->
-      <div class="nav-item has-sub" onclick="toggleSubMenu(this)" data-tooltip="본사관리">
+      <!-- 기본관리 서브메뉴 그룹 -->
+      <div class="nav-item has-sub" onclick="toggleSubMenu(this)" data-tooltip="기본관리">
         <span class="nav-icon"><i data-lucide="building-2"></i></span>
-        <span class="nav-text">본사관리</span>
+        <span class="nav-text">기본관리</span>
         <span class="nav-icon-sub"><i data-lucide="chevron-down"></i></span>
       </div>
       <div class="sub-menu">
@@ -70,8 +70,8 @@
         </div>
       </div>
 
-      <div class="nav-item" onclick="showPage('settings',this)" data-page="settings" data-tooltip="업무설정">
-        <span class="nav-icon"><i data-lucide="settings"></i></span> <span class="nav-text">업무설정</span>
+      <div class="nav-item" onclick="showPage('settings',this)" data-page="settings" data-tooltip="진행현황">
+        <span class="nav-icon"><i data-lucide="settings"></i></span> <span class="nav-text">진행현황</span>
       </div>
 
       <div class="sidebar-section-label">Analytics</div>
@@ -85,6 +85,35 @@
       <div class="sidebar-section-label">Account</div>
       <div class="nav-item" onclick="showPage('profile',this)" data-page="profile" data-tooltip="개인설정">
         <span class="nav-icon"><i data-lucide="user"></i></span> <span class="nav-text">개인설정</span>
+      </div>
+    </nav>
+
+    <!-- 회계관리 전용 사이드 메뉴 (기본 숨김) -->
+    <nav class="sidebar-nav" id="acctNav" style="display:none" onclick="resetSidebarTimer()">
+      <div class="sidebar-section-label" style="color:var(--accent-blue)">회계관리</div>
+      <div class="nav-item" onclick="showAcctPage('acct-overview',this)" data-acct-page="acct-overview">
+        <span class="nav-icon"><i data-lucide="layout-dashboard"></i></span>
+        <span class="nav-text">기본현황</span>
+      </div>
+      <div class="nav-item" onclick="showAcctPage('acct-budget',this)" data-acct-page="acct-budget">
+        <span class="nav-icon"><i data-lucide="wallet"></i></span>
+        <span class="nav-text">예산설정</span>
+      </div>
+      <div class="nav-item" onclick="showAcctPage('acct-approval',this)" data-acct-page="acct-approval">
+        <span class="nav-icon"><i data-lucide="file-check"></i></span>
+        <span class="nav-text">품의하기</span>
+      </div>
+      <div class="nav-item" onclick="showAcctPage('acct-expense',this)" data-acct-page="acct-expense">
+        <span class="nav-icon"><i data-lucide="credit-card"></i></span>
+        <span class="nav-text">지출하기</span>
+      </div>
+      <div class="nav-item" onclick="showAcctPage('acct-income',this)" data-acct-page="acct-income">
+        <span class="nav-icon"><i data-lucide="arrow-down-circle"></i></span>
+        <span class="nav-text">입금전표</span>
+      </div>
+      <div class="nav-item" onclick="showAcctPage('acct-payment',this)" data-acct-page="acct-payment">
+        <span class="nav-icon"><i data-lucide="arrow-up-circle"></i></span>
+        <span class="nav-text">출금전표</span>
       </div>
     </nav>
 
@@ -104,9 +133,21 @@
 
     <!-- ─── 헤더 ─── -->
     <header class="main-header" style="position:relative">
-      <div class="header-search">
+      <div class="header-search" id="headerSearch">
         <span class="search-icon"><i data-lucide="search" class="icon-sm"></i></span>
         <input type="text" placeholder="업무, 담당자, 키워드 검색..." id="globalSearch" oninput="handleSearch(this.value)">
+      </div>
+
+      <!-- 회계관리 모드 표시바 (기본 숨김) -->
+      <div id="acctModeBar" style="display:none;align-items:center;gap:14px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <i data-lucide="calculator" style="width:18px;height:18px;color:var(--accent-blue)"></i>
+          <span style="font-size:15px;font-weight:800;color:var(--text-primary)">회계관리</span>
+          <span style="font-size:12px;color:var(--text-muted)">사용시작 : <span id="acctStartTime">--:--</span></span>
+        </div>
+        <button onclick="exitAccountingMode()" style="display:flex;align-items:center;gap:5px;padding:6px 14px;border-radius:8px;border:1.5px solid var(--accent-blue);background:transparent;color:var(--accent-blue);font-size:12px;font-weight:700;cursor:pointer">
+          <i data-lucide="home" style="width:13px;height:13px"></i> 홈으로
+        </button>
       </div>
 
       <div class="header-actions">
@@ -176,7 +217,7 @@
 
         <div class="page-header">
           <div>
-            <div class="page-title">전체현황</div>
+            <div class="page-title">나의 업무현황</div>
             <div class="page-subtitle" id="dashSubtitle">오늘의 업무 현황을 확인하세요</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
@@ -187,7 +228,7 @@
             <button class="btn" style="border:1.5px solid var(--accent-blue);color:var(--accent-blue);background:transparent" onclick="openDailyReportModal()">
               <i data-lucide="clipboard-pen" style="width:14px;height:14px;margin-right:4px;vertical-align:middle"></i>일보작성
             </button>
-            <button class="btn btn-blue" onclick="openNewTaskModal('schedule')">+ 내 스케쥴</button>
+            <button class="btn btn-blue" onclick="openScheduleModal()">+ 내가추진</button>
           </div>
         </div>
 
@@ -740,7 +781,7 @@
       <div class="page" id="page-settings">
         <div class="page-header">
           <div>
-            <div class="page-title">업무설정</div>
+            <div class="page-title">진행현황</div>
             <div class="page-subtitle">팀 전체 업무 기준 및 담당자 관리</div>
           </div>
           <div style="display:flex;gap:12px;align-items:center">
@@ -751,7 +792,6 @@
               <span class="chip" onclick="filterSettings('delay',this)">지연 <span class="count-badge" id="scnt_delay">0</span></span>
               <span class="chip" onclick="filterSettings('done',this)">완료 <span class="count-badge" id="scnt_done">0</span></span>
             </div>
-            <button class="btn btn-blue" onclick="openNewTaskModal()">+ 업무 추가</button>
           </div>
         </div>
         <div id="settingsArea"></div>
@@ -767,7 +807,7 @@
             <div class="page-subtitle">업무 일정을 캘린더로 확인하세요</div>
           </div>
         </div>
-        <div id="scheduleArea"></div>
+        <div id="scheduleArea" style="height:calc(100vh - 130px);overflow:hidden;display:flex;flex-direction:column;border:1.5px solid var(--border-color);border-radius:14px;background:var(--bg-primary);"></div>
       </div>
 
       <!-- ══════════════════════════════
@@ -787,18 +827,81 @@
            💰 회계관리 페이지
       ══════════════════════════════ -->
       <div class="page" id="page-accounting">
-        <div class="page-header">
-          <div>
-            <div class="page-title">회계관리</div>
-            <div class="page-subtitle">수입·지출 내역 및 재무 현황 관리</div>
+        <!-- 회계관리 서브페이지 컨테이너 -->
+        <div id="acct-overview" class="acct-sub-page">
+          <div class="page-header">
+            <div>
+              <div class="page-title">기본현황</div>
+              <div class="page-subtitle">전체 수입·지출 현황 요약</div>
+            </div>
+          </div>
+          <div class="empty-state" style="margin-top:60px">
+            <i data-lucide="layout-dashboard" style="width:48px;height:48px;opacity:.3;margin-bottom:12px"></i>
+            <div class="es-text">기본현황 기능을 준비 중입니다</div>
           </div>
         </div>
-        <div class="empty-state" style="margin-top:60px">
-          <i data-lucide="calculator" style="width:48px;height:48px;opacity:.3;margin-bottom:12px"></i>
-          <div class="es-text">회계관리 기능이 곧 추가됩니다</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">준비 중입니다</div>
+        <div id="acct-budget" class="acct-sub-page" style="display:none">
+          <div class="page-header">
+            <div>
+              <div class="page-title">예산설정</div>
+              <div class="page-subtitle">부서별 예산 배정 및 관리</div>
+            </div>
+          </div>
+          <div class="empty-state" style="margin-top:60px">
+            <i data-lucide="wallet" style="width:48px;height:48px;opacity:.3;margin-bottom:12px"></i>
+            <div class="es-text">예산설정 기능을 준비 중입니다</div>
+          </div>
+        </div>
+        <div id="acct-approval" class="acct-sub-page" style="display:none">
+          <div class="page-header">
+            <div>
+              <div class="page-title">품의하기</div>
+              <div class="page-subtitle">지출 품의 결재 신청</div>
+            </div>
+          </div>
+          <div class="empty-state" style="margin-top:60px">
+            <i data-lucide="file-check" style="width:48px;height:48px;opacity:.3;margin-bottom:12px"></i>
+            <div class="es-text">품의하기 기능을 준비 중입니다</div>
+          </div>
+        </div>
+        <div id="acct-expense" class="acct-sub-page" style="display:none">
+          <div class="page-header">
+            <div>
+              <div class="page-title">지출하기</div>
+              <div class="page-subtitle">지출 내역 등록 및 관리</div>
+            </div>
+          </div>
+          <div class="empty-state" style="margin-top:60px">
+            <i data-lucide="credit-card" style="width:48px;height:48px;opacity:.3;margin-bottom:12px"></i>
+            <div class="es-text">지출하기 기능을 준비 중입니다</div>
+          </div>
+        </div>
+        <div id="acct-income" class="acct-sub-page" style="display:none">
+          <div class="page-header">
+            <div>
+              <div class="page-title">입금전표</div>
+              <div class="page-subtitle">수입 입금 전표 등록 및 조회</div>
+            </div>
+          </div>
+          <div class="empty-state" style="margin-top:60px">
+            <i data-lucide="arrow-down-circle" style="width:48px;height:48px;opacity:.3;margin-bottom:12px"></i>
+            <div class="es-text">입금전표 기능을 준비 중입니다</div>
+          </div>
+        </div>
+        <div id="acct-payment" class="acct-sub-page" style="display:none">
+          <div class="page-header">
+            <div>
+              <div class="page-title">출금전표</div>
+              <div class="page-subtitle">지출 출금 전표 등록 및 조회</div>
+            </div>
+          </div>
+          <div class="empty-state" style="margin-top:60px">
+            <i data-lucide="arrow-up-circle" style="width:48px;height:48px;opacity:.3;margin-bottom:12px"></i>
+            <div class="es-text">출금전표 기능을 준비 중입니다</div>
+          </div>
         </div>
       </div>
+
 
       <!-- 지시사항 모달 -->
       <div class="modal-overlay" id="instructionModal" style="display:none" onclick="if(event.target===this)closeInstructionModal()">
@@ -868,8 +971,8 @@
               <!-- ── 담당자선택 칩 피커 ── -->
               <div class="form-group" style="margin:0;position:relative">
                 <label class="form-label">
-                  <i data-lucide="user" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
-                  담당자선택 *
+                  <i data-lucide="users" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+                  협조자선택 *
                 </label>
                 <div id="instrAssigneeBox"
                   onclick="_openInstrAssigneePopup()"
@@ -888,7 +991,7 @@
                          background:var(--bg-primary);border:1.5px solid var(--border-color);
                          border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.18);
                          padding:10px;max-height:280px;overflow:hidden;flex-direction:column">
-                  <input id="instrAssigneeSearch" placeholder="담당자 검색..." oninput="_filterInstrAssignee(this.value)"
+                  <input id="instrAssigneeSearch" placeholder="협조자 검색..." oninput="_filterInstrAssignee(this.value)"
                     style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border-color);
                            background:var(--bg-secondary);color:var(--text-primary);font-size:12px;margin-bottom:6px;box-sizing:border-box">
                   <div id="instrAssigneeList" style="overflow-y:auto;max-height:200px;display:flex;flex-direction:column;gap:3px"></div>
@@ -904,7 +1007,7 @@
               <div class="form-group" style="margin:0">
                 <label class="form-label">
                   <i data-lucide="calendar" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
-                  지시완료일 *
+                  완료계획일 *
                 </label>
                 <input type="hidden" id="instrDueDate">
                 <button type="button" id="instrDueDateDisplay"
@@ -924,7 +1027,7 @@
               <div class="form-group" style="margin:0">
                 <label class="form-label">
                   <i data-lucide="flag" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
-                  지시중요도
+                  업무중요도
                   <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-left:3px">(복수선택)</span>
                 </label>
                 <div id="instrImportancePicks"
@@ -962,10 +1065,10 @@
             <div class="form-group" style="margin:0">
               <label class="form-label">
                 <i data-lucide="file-text" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
-                지시내용 *
+                업무설명 *
               </label>
               <textarea class="form-textarea" id="instrContent" rows="4"
-                placeholder="지시 내용을 상세히 입력하세요..."
+                placeholder="업무 내용을 상세히 입력하세요..."
                 style="width:100%;resize:vertical;min-height:90px;line-height:1.6"></textarea>
             </div>
 
@@ -988,12 +1091,12 @@
               </div>
             </div>
 
-            <!-- 보고내용 (전체 박스 안에 칩 표시) -->
+            <!-- 업무결과 (복수선택 칩 방식) -->
             <div class="form-group" style="margin:0">
               <label class="form-label">
                 <i data-lucide="clipboard-check" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
-                보고내용
-                <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-left:4px">(기타설정 > 업무결과 선택)</span>
+                업무결과
+                <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-left:4px">(기타설정 > 업무결과 선택, 복수선택)</span>
               </label>
               <div style="border:1.5px solid var(--border-color);border-radius:10px;background:var(--bg-secondary);padding:8px 10px;min-height:44px">
                 <div id="instrReportPicks" style="display:flex;flex-wrap:wrap;gap:7px;min-height:28px;align-items:center"></div>
@@ -1001,19 +1104,24 @@
               <input type="hidden" id="instrReport">
             </div>
 
-            <!-- 보고절차 (전체 박스 안에 칩 표시) -->
+            <!-- 진행순서 (선택박스 + 목록박스 더블클릭 방식) -->
             <div class="form-group" style="margin:0">
               <label class="form-label">
                 <i data-lucide="list-ordered" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
-                보고절차
+                진행순서
               </label>
-              <div style="border:1.5px solid var(--border-color);border-radius:10px;background:var(--bg-secondary);padding:8px 10px;min-height:44px">
-                <div id="instrProcedurePicks" style="display:flex;flex-wrap:wrap;gap:7px;align-items:center">
-                  <!-- JS에서 ws_report_types 기반으로 동적 생성 -->
+              <!-- 선택된 칩들을 표시하는 상단 박스 -->
+              <div style="border:1.5px solid var(--border-color);border-radius:10px;background:var(--bg-secondary);padding:8px 10px;min-height:44px;margin-bottom:8px">
+                <div id="instrProcedureSelected" style="display:flex;flex-wrap:wrap;gap:7px;min-height:28px;align-items:center">
+                  <span id="instrProcedurePlaceholder" style="font-size:11px;color:var(--text-muted);padding:2px 0">아래 목록에서 더블클릭으로 순서 추가</span>
                 </div>
               </div>
-              <input class="form-input" id="instrProcedureText" placeholder="직접 입력 또는 위 항목 선택"
-                style="margin-top:8px" readonly>
+              <!-- 진행보고 유형 목록 (더블클릭으로 추가) -->
+              <div id="instrProcedureTypeList"
+                style="background:var(--bg-secondary);border:1.5px solid var(--border-color);border-radius:10px;padding:8px 10px;min-height:44px">
+                <!-- JS에서 ws_report_types 기반으로 동적 생성 -->
+              </div>
+              <input type="hidden" id="instrProcedureText">
             </div>
 
             <!-- [수정 모드 전용] 업무 히스토리 섹션 -->
@@ -1361,7 +1469,7 @@
     </div>
     <div class="modal-body">
       <!-- 업무명 (전체 너비) -->
-      <div class="form-group">
+      <div class="form-group" id="nt_fg_title">
         <label class="form-label">
           <i data-lucide="pencil-line" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
           업무명 *
@@ -1369,7 +1477,7 @@
         <input type="text" class="form-input" id="nt_title" placeholder="업무명을 입력하세요">
       </div>
       <!-- 첨부파일 -->
-      <div class="form-group">
+      <div class="form-group" id="nt_fg_attach">
         <label class="form-label">
           <i data-lucide="paperclip" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
           첨부파일
@@ -1386,8 +1494,8 @@
           <div id="nt_attach_file_list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
         </div>
       </div>
-      <!-- 상세 업무 리스트 (협업대상자 박스와 동일한 박스 형태) -->
-      <div class="form-group">
+      <!-- 상세 업무 리스트 -->
+      <div class="form-group" id="nt_fg_detail">
         <label class="form-label">
           <i data-lucide="list-checks" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
           상세 업무 리스트
@@ -1398,8 +1506,236 @@
                  padding:10px 12px;min-height:52px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start">
           <!-- overrides.js에서 WS.detailTasks 기반 동적 생성 -->
         </div>
+
+
+      </div><!-- /nt_fg_detail 끝 -->
+
+      <!-- ── schedule 전용 필드 (지시사항 UI 동일) ── -->
+      <div id="nt_schedule_fields" style="display:none;flex-direction:column;gap:14px">
+
+        <!-- 업무선택 + 담당자선택 2열 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+
+          <!-- 업무선택 -->
+          <div class="form-group" style="margin:0;position:relative">
+            <label class="form-label">
+              <i data-lucide="briefcase" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+              업무선택 *
+            </label>
+            <div id="nt_sched_task_box"
+              onclick="_openNtSchedTaskPopup()"
+              style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow-x:auto;
+                     min-height:40px;padding:6px 10px;border-radius:10px;
+                     border:1.5px solid var(--border-color);background:var(--bg-secondary);
+                     cursor:pointer;scrollbar-width:none;transition:border-color .2s"
+              onmouseover="this.style.borderColor='var(--accent-blue)'"
+              onmouseout="this.style.borderColor='var(--border-color)'">
+              <span id="nt_sched_task_placeholder" style="font-size:12px;color:var(--text-muted)">
+                <i data-lucide="briefcase" style="width:12px;height:12px;vertical-align:middle;margin-right:4px;opacity:.5"></i>
+                업무를 선택하세요
+              </span>
+            </div>
+            <input type="hidden" id="nt_sched_task">
+            <!-- 업무선택 팝업 -->
+            <div id="nt_sched_task_popup"
+              style="display:none;position:fixed;z-index:9999;min-width:260px;max-width:340px;
+                     background:var(--bg-primary);border:1.5px solid var(--border-color);
+                     border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.18);
+                     padding:10px;max-height:300px;overflow:hidden;flex-direction:column">
+              <input id="nt_sched_task_search" placeholder="업무 검색..." oninput="_filterNtSchedTask(this.value)"
+                style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border-color);
+                       background:var(--bg-secondary);color:var(--text-primary);font-size:12px;margin-bottom:6px;box-sizing:border-box">
+              <div id="nt_sched_task_list" style="overflow-y:auto;max-height:220px;display:flex;flex-direction:column;gap:3px"></div>
+            </div>
+          </div>
+
+          <!-- 협조자선택 -->
+          <div class="form-group" style="margin:0;position:relative">
+            <label class="form-label">
+              <i data-lucide="users" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+              협조자선택 *
+            </label>
+            <div id="nt_sched_collab_box"
+              onclick="_openNtSchedCollabPopup()"
+              style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow-x:auto;
+                     min-height:40px;padding:6px 10px;border-radius:10px;
+                     border:1.5px solid var(--border-color);background:var(--bg-secondary);
+                     cursor:pointer;scrollbar-width:none;transition:border-color .2s"
+              onmouseover="this.style.borderColor='var(--accent-blue)'"
+              onmouseout="this.style.borderColor='var(--border-color)'">
+              <span id="nt_sched_collab_placeholder" style="font-size:12px;color:var(--text-muted)">
+                <i data-lucide="users" style="width:12px;height:12px;vertical-align:middle;margin-right:4px;opacity:.5"></i>
+                협조자를 선택하세요
+              </span>
+            </div>
+            <!-- 팝업 -->
+            <div id="nt_sched_collab_popup"
+              style="display:none;position:fixed;z-index:9999;min-width:260px;max-width:340px;
+                     background:var(--bg-primary);border:1.5px solid var(--border-color);
+                     border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:10px;max-height:280px;overflow:hidden;flex-direction:column">
+              <input id="nt_sched_collab_search" placeholder="담당자 검색..." oninput="_filterNtSchedCollab(this.value)"
+                style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border-color);
+                       background:var(--bg-secondary);color:var(--text-primary);font-size:12px;margin-bottom:6px;box-sizing:border-box">
+              <div id="nt_sched_collab_list" style="overflow-y:auto;max-height:200px;display:flex;flex-direction:column;gap:3px"></div>
+            </div>
+          </div>
+
+        </div><!-- /2열 업무+담당자 -->
+
+        <!-- 업무성격 선택 -->
+        <div class="form-group" style="margin:0">
+          <label class="form-label">
+            <i data-lucide="layers" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+            업무성격
+            <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-left:4px">(일정보기 표시 방식 결정)</span>
+          </label>
+          <div style="display:flex;gap:8px">
+            <button type="button" id="nt_nature_btn_daily"
+              onclick="_selectNtNature('일일업무')"
+              style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:20px;
+                     border:1.5px solid var(--accent-blue);background:var(--accent-blue);
+                     color:#fff;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s">
+              <i data-lucide="circle-dot" style="width:13px;height:13px"></i>
+              일일업무
+            </button>
+            <button type="button" id="nt_nature_btn_period"
+              onclick="_selectNtNature('기간업무')"
+              style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:20px;
+                     border:1.5px solid var(--border-color);background:var(--bg-secondary);
+                     color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s">
+              <i data-lucide="bar-chart-2" style="width:13px;height:13px"></i>
+              기간업무
+            </button>
+          </div>
+          <input type="hidden" id="nt_sched_nature" value="일일업무">
+        </div>
+
+        <!-- 완료계획일 + 지시중요도 2열 -->
+        <div style="display:grid;grid-template-columns:180px 1fr;gap:12px">
+          <!-- 완료계획일 -->
+          <div class="form-group" style="margin:0">
+            <label class="form-label">
+              <i data-lucide="calendar" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+              완료계획일 *
+            </label>
+            <input type="hidden" id="nt_sched_due">
+            <button type="button" id="nt_sched_due_display"
+              onclick="openDatePicker('nt_sched_due','nt_sched_due_display')"
+              style="display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;border-radius:10px;
+                     border:1.5px solid var(--border-color);background:var(--bg-secondary);cursor:pointer;
+                     color:var(--text-primary);font-size:13px;transition:border-color .2s;text-align:left"
+              onmouseover="this.style.borderColor='var(--accent-blue)'"
+              onmouseout="this.style.borderColor='var(--border-color)'">
+              <i data-lucide="calendar" style="width:14px;height:14px;opacity:.6;flex-shrink:0"></i>
+              <span id="nt_sched_due_label" style="color:var(--text-secondary)">날짜를 선택하세요</span>
+            </button>
+          </div>
+          <!-- 업무중요도 -->
+          <div class="form-group" style="margin:0">
+            <label class="form-label">
+              <i data-lucide="flag" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+              업무중요도
+              <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-left:3px">(복수선택)</span>
+            </label>
+            <div id="nt_sched_importance_picks"
+              style="display:flex;flex-wrap:nowrap;gap:5px;padding:6px 10px;
+                     min-height:40px;border:1.5px solid var(--border-color);
+                     border-radius:10px;background:var(--bg-secondary);
+                     overflow-x:auto;cursor:grab;align-items:center;
+                     scrollbar-width:none;-webkit-overflow-scrolling:touch;
+                     -ms-overflow-style:none"
+              onmousedown="_impDragStart(event)"
+              onmousemove="_impDragMove(event)"
+              onmouseup="_impDragEnd()"
+              onmouseleave="_impDragEnd()"></div>
+            <input type="hidden" id="nt_sched_importance">
+          </div>
+        </div>
+
+        <!-- 현재상태 -->
+        <div class="form-group" style="margin:0">
+          <label class="form-label">
+            <i data-lucide="activity" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+            현재상태
+          </label>
+          <div id="nt_sched_status_picks"
+            style="display:flex;flex-wrap:wrap;gap:7px;padding:7px 10px;
+                   min-height:42px;border:1.5px solid var(--border-color);
+                   border-radius:10px;background:var(--bg-secondary);align-items:center">
+          </div>
+          <input type="hidden" id="nt_sched_status">
+        </div>
+
+        <!-- 업무설명 -->
+        <div class="form-group" style="margin:0">
+          <label class="form-label">
+            <i data-lucide="file-text" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+            업무설명 *
+          </label>
+          <textarea class="form-textarea" id="nt_sched_content" rows="4"
+            placeholder="업무 내용을 상세히 입력하세요..."
+            style="width:100%;resize:vertical;min-height:90px;line-height:1.6"></textarea>
+        </div>
+
+        <!-- 첨부파일 -->
+        <div class="form-group" style="margin:0">
+          <label class="form-label">
+            <i data-lucide="paperclip" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+            첨부파일
+          </label>
+          <div style="position:relative">
+            <input type="file" id="nt_sched_file" multiple accept="*/*" style="display:none"
+              onchange="_onNtSchedFileChange(this)">
+            <button onclick="document.getElementById('nt_sched_file').click()"
+              style="display:flex;align-items:center;gap:7px;width:100%;padding:9px 14px;border-radius:10px;
+                     border:1.5px dashed var(--border-color);background:var(--bg-tertiary);cursor:pointer;
+                     color:var(--text-secondary);font-size:13px;transition:border-color .2s"
+              onmouseover="this.style.borderColor='var(--accent-blue)'"
+              onmouseout="this.style.borderColor='var(--border-color)'">
+              <i data-lucide="upload" style="width:14px;height:14px;opacity:.6"></i>
+              파일 선택 (여러 개 가능)
+            </button>
+            <div id="nt_sched_file_list" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+          </div>
+        </div>
+
+        <!-- 업무결과 -->
+        <div class="form-group" style="margin:0">
+          <label class="form-label">
+            <i data-lucide="clipboard-check" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+            업무결과
+            <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-left:4px">(기타설정 &gt; 업무결과 선택)</span>
+          </label>
+          <div style="border:1.5px solid var(--border-color);border-radius:10px;background:var(--bg-secondary);padding:8px 10px;min-height:44px">
+            <div id="nt_sched_result_picks" style="display:flex;flex-wrap:wrap;gap:7px;min-height:28px;align-items:center"></div>
+          </div>
+          <input type="hidden" id="nt_sched_result">
+        </div>
+
+        <!-- 진행순서 -->
+        <div class="form-group" style="margin:0">
+          <label class="form-label">
+            <i data-lucide="list-ordered" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+            진행순서
+          </label>
+          <!-- 선택된 순서 칩 박스 -->
+          <div style="border:1.5px solid var(--border-color);border-radius:10px;background:var(--bg-secondary);padding:8px 10px;min-height:44px;margin-bottom:8px">
+            <div id="nt_sched_process_selected" style="display:flex;flex-wrap:wrap;gap:7px;min-height:28px;align-items:center">
+              <span id="nt_sched_process_placeholder" style="font-size:11px;color:var(--text-muted);padding:2px 0">아래 목록을 클릭하여 순서를 추가하세요 (복수 추가 가능)</span>
+            </div>
+          </div>
+          <!-- 진행보고 유형 목록 -->
+          <div id="nt_sched_process_type_list"
+            style="background:var(--bg-secondary);border:1.5px solid var(--border-color);border-radius:10px;padding:8px 10px;min-height:44px">
+            <!-- overrides.js에서 WS.reportTypes 기반으로 동적 생성 -->
+          </div>
+        </div>
+
+      </div><!-- /#nt_schedule_fields -->
+
+      <!-- 기존 일반 필드들 (schedule 모드 아닌 경우) -->
+      <div id="nt_normal_fields">
         <textarea style="display:none" id="nt_desc"></textarea>
-      </div>
       <!-- 우선순위 + 팀 (숨김 - 내부 저장용) -->
       <div class="form-row" id="nt_row_priority_team" style="display:none">
         <div class="form-group">
@@ -1474,11 +1810,8 @@
           <!-- overrides.js에서 WS.reportTypes 기반으로 동적 생성 -->
         </div>
       </div>
-      <!-- 중요 업무 -->
-      <div class="form-group" id="nt_row_important" style="display:flex;align-items:center;gap:10px">
-        <input type="checkbox" id="nt_important" style="width:16px;height:16px;accent-color:#4f6ef7">
-        <label for="nt_important" style="font-size:13px;color:var(--text-primary)">⭐ 중요 업무로 표시</label>
-      </div>
+      </div><!-- /nt_normal_fields -->
+
     </div>
     <div class="modal-foot">
       <button class="btn" onclick="closeModalDirect('newTaskModal')">취소</button>
@@ -1857,9 +2190,9 @@
       </div>
     </section>
 
-<script src="data.js?v=20260328j"></script>
-<script src="app.js?v=20260328j"></script>
-<script src="modules/overrides.js?v=20260328j"></script>
+<script src="data.js?v=20260331b"></script>
+<script src="app.js?v=20260331b"></script>
+<script src="modules/overrides.js?v=20260331c"></script>
 
 <!-- ── 커스텀 날짜 픽커 팝업 ── -->
 <div id="customDatePicker" style="display:none;position:fixed;z-index:9999">
@@ -1940,5 +2273,52 @@
   </div>
 </div>
 
+
+<script>
+/* openScheduleModal 인라인 보장 버전 - 즉시 실행 */
+window.openScheduleModal = function() {
+  openModal('newTaskModal');
+  setTimeout(function() {
+    var modalTitle = document.querySelector('#newTaskModal .modal-title');
+    var submitBtn  = document.querySelector('#newTaskModal .modal-foot .btn-blue');
+    if (modalTitle) modalTitle.textContent = '내가 추진하는 업무 추가';
+    if (submitBtn) {
+      submitBtn.textContent = '등록';
+      submitBtn.onclick = (typeof createScheduleTask==='function') ? createScheduleTask : null;
+    }
+    var sf=document.getElementById('nt_schedule_fields');
+    var nf=document.getElementById('nt_normal_fields');
+    var tc=document.getElementById('nt_row_teams_check');
+    var fa=document.getElementById('nt_fg_attach');
+    var fd=document.getElementById('nt_fg_detail');
+    if(sf){sf.style.display='flex';sf.style.flexDirection='column';sf.style.gap='14px';}
+    if(nf)nf.style.display='none';
+    if(tc)tc.style.display='none';
+    if(fa)fa.style.display='none';
+    if(fd)fd.style.display='none';
+    var tod=new Date();
+    var yy=tod.getFullYear(),mo=String(tod.getMonth()+1).padStart(2,'0'),da=String(tod.getDate()).padStart(2,'0');
+    var dh=document.getElementById('nt_sched_due');
+    var dl=document.getElementById('nt_sched_due_label');
+    if(dh)dh.value=yy+'-'+mo+'-'+da;
+    if(dl)dl.textContent=yy+'년 '+parseInt(mo)+'월 '+parseInt(da)+'일';
+    if(typeof _renderNtSchedImportance==='function')_renderNtSchedImportance();
+    if(typeof _renderNtSchedStatus==='function')_renderNtSchedStatus();
+    if(typeof _renderNtSchedResult==='function')_renderNtSchedResult();
+    if(typeof _renderNtSchedProcessList==='function')_renderNtSchedProcessList();
+    window._ntSchedProcess=[];
+    if(typeof _updateNtSchedProcessSelected==='function')_updateNtSchedProcessSelected();
+    if(typeof _clearNtSchedTask==='function')_clearNtSchedTask();
+    window._ntSchedCollabIds=[];
+    window._ntSchedFiles=[];
+    window._ntSchedImps=[];
+    if(typeof _renderNtSchedCollabBox==='function')_renderNtSchedCollabBox();
+    var sc=document.getElementById('nt_sched_content'); if(sc)sc.value='';
+    var fl=document.getElementById('nt_sched_file_list'); if(fl)fl.innerHTML='';
+    var nt2=document.getElementById('nt_title'); if(nt2)nt2.value='';
+    if(typeof refreshIcons==='function')setTimeout(refreshIcons,60);
+  }, 30);
+};
+</script>
 </body>
 </html>

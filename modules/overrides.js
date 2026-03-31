@@ -640,34 +640,61 @@ function openNewTaskModal(mode, parentId, isSimple) {
     hide(rowPT); hide(rowDate); hide(rowImp); hide(rowScore);
 
   } else if (mode === 'schedule') {
-    if (modalTitle) modalTitle.textContent = '내 스케줄 추가';
-    if (submitBtn)  { submitBtn.textContent = '스케줄 등록'; submitBtn.onclick = createNewTask; }
-    hide(rowPT); show(rowDate); hide(rowImp); hide(rowScore);
+    if (modalTitle) modalTitle.textContent = '내가 추진하는 업무 추가';
+    if (submitBtn)  { submitBtn.textContent = '등록'; submitBtn.onclick = createScheduleTask; }
+    hide(rowPT); hide(rowDate); hide(rowImp); hide(rowScore);
 
-    // 팀 체크박스 숨기고 협업대상자 섹션 표시
-    const rowTeamsCheck2 = document.getElementById('nt_row_teams_check');
-    hide(rowTeamsCheck2);
-    _showCollaborators();
+    var normalFields   = document.getElementById('nt_normal_fields');
+    var scheduleFields = document.getElementById('nt_schedule_fields');
+    var rowTeamsCheck2 = document.getElementById('nt_row_teams_check');
+    if (normalFields)   normalFields.style.display   = 'none';
+    if (rowTeamsCheck2) rowTeamsCheck2.style.display  = 'none';
+    if (scheduleFields) { scheduleFields.style.display = 'flex'; scheduleFields.style.flexDirection = 'column'; scheduleFields.style.gap = '14px'; }
+    // 상단 기존 필드 숨김 (업무명 제외, 첨부파일/상세업무 숨김)
+    var fgAttach = document.getElementById('nt_fg_attach');
+    var fgDetail = document.getElementById('nt_fg_detail');
+    if (fgAttach) fgAttach.style.display = 'none';
+    if (fgDetail) fgDetail.style.display = 'none';
 
-    // 첨부파일 목록 초기화
-    const ntFileList = document.getElementById('nt_attach_file_list');
-    if (ntFileList) ntFileList.innerHTML = '';
-    window._ntAttachFiles = [];
+    var tod = new Date();
+    var yy = tod.getFullYear(), mo = String(tod.getMonth()+1).padStart(2,'0'), da = String(tod.getDate()).padStart(2,'0');
+    var schedDueHid = document.getElementById('nt_sched_due');
+    var schedDueLbl = document.getElementById('nt_sched_due_label');
+    if (schedDueHid) schedDueHid.value = yy + '-' + mo + '-' + da;
+    if (schedDueLbl) schedDueLbl.textContent = yy + '년 ' + parseInt(mo) + '월 ' + parseInt(da) + '일';
+
+    if (typeof _renderNtSchedImportance === 'function') _renderNtSchedImportance();
+    if (typeof _renderNtSchedStatus    === 'function') _renderNtSchedStatus();
+    window._ntSchedCollabIds = [];
+    if (typeof _renderNtSchedCollabBox === 'function') _renderNtSchedCollabBox();
+    window._ntSchedFiles = [];
+    var fl = document.getElementById('nt_sched_file_list');
+    if (fl) fl.innerHTML = '';
+    var sc = document.getElementById('nt_sched_content');
+    if (sc) sc.value = '';
+
+    // 업무선택 초기화
+    _clearNtSchedTask();
+    // 업무결과 칩 렌더
+    if (typeof _renderNtSchedResult === 'function') _renderNtSchedResult();
+    // 진행순서 칩 목록 렌더 + 선택 초기화
+    window._ntSchedProcess = [];
+    if (typeof _renderNtSchedProcessList === 'function') _renderNtSchedProcessList();
+    if (typeof _updateNtSchedProcessSelected === 'function') _updateNtSchedProcessSelected();
 
   } else if (mode === 'edit') {
     if (modalTitle) modalTitle.textContent = '업무 수정';
     if (submitBtn)  { submitBtn.textContent = '저장하기'; submitBtn.onclick = saveEditTask; }
     hide(rowPT); hide(rowDate); hide(rowImp); show(rowScore);
+    if (typeof _resetScheduleFields === 'function') _resetScheduleFields();
 
   } else {
-    // 기본: 새 업무 추가
     if (modalTitle) modalTitle.textContent = '새 업무 추가';
     if (submitBtn)  { submitBtn.textContent = '업무 등록'; submitBtn.onclick = createNewTask; }
     hide(rowPT); hide(rowDate); show(rowImp); show(rowScore);
-    // 협업대상자 섹션 숨김
+    if (typeof _resetScheduleFields === 'function') _resetScheduleFields();
     _hideCollaborators();
-    // 팀 체크박스 표시 및 채우기
-    const rowTeamsCheck = document.getElementById('nt_row_teams_check');
+    var rowTeamsCheck = document.getElementById('nt_row_teams_check');
     show(rowTeamsCheck);
     _populateTeamCheckboxes();
   }
@@ -1414,8 +1441,8 @@ function updateTeamCheckStyle(cb) {
   if (!_orig) return;
   window.openNewTaskModal = function(mode, parentId, assigneeId) {
     _orig.call(window, mode, parentId, assigneeId);
-    // edit 모드는 openEditTaskModal에서 기존 값을 복원하므로 초기화 생략
-    if (mode === 'edit') return;
+    // edit/schedule 모드는 초기화 생략
+    if (mode === 'edit' || mode === 'schedule') return;
     setTimeout(function() {
       renderTeamCheckboxes('');
       if (typeof renderDetailTaskCheckboxes === 'function') renderDetailTaskCheckboxes('');
@@ -2256,8 +2283,8 @@ function removeProcessOrder(idx) {
   if (!_prev) return;
   window.openNewTaskModal = function(mode, parentId, assigneeId) {
     _prev.call(window, mode, parentId, assigneeId);
-    // edit 모드는 openEditTaskModal의 setTimeout에서 값을 복원하므로 초기화 생략
-    if (mode === 'edit') return;
+    // edit/schedule 모드는 초기화 생략
+    if (mode === 'edit' || mode === 'schedule') return;
     setTimeout(function() {
       renderTeamCheckboxes('');
       if (typeof renderDetailTaskCheckboxes === 'function') renderDetailTaskCheckboxes('');
@@ -3635,7 +3662,7 @@ function _selectNtResult(name) {
   if (!_prevNt2) return;
   window.openNewTaskModal = function(mode, parentId, assigneeId) {
     _prevNt2.call(window, mode, parentId, assigneeId);
-    if (mode === 'edit') return;
+    if (mode === 'edit' || mode === 'schedule') return;
     setTimeout(function() {
       // 업무결과 칩 UI 초기화
       window._ntSelectedResult = '';
@@ -3726,3 +3753,585 @@ function _selectNtResult(name) {
   };
 })();
 
+
+
+/* ══════════════════════════════════════════════
+   schedule 전용 모달 헬퍼 함수들
+══════════════════════════════════════════════ */
+
+function _resetScheduleFields() {
+  var sf = document.getElementById('nt_schedule_fields');
+  var nf = document.getElementById('nt_normal_fields');
+  var tc = document.getElementById('nt_row_teams_check');
+  var fa = document.getElementById('nt_fg_attach');
+  var fd = document.getElementById('nt_fg_detail');
+  if (sf) sf.style.display = 'none';
+  if (nf) nf.style.display = '';
+  if (tc) tc.style.display = '';
+  if (fa) fa.style.display = '';
+  if (fd) fd.style.display = '';
+  // 업무성격 초기화 (기본값: 일일업무)
+  var natureHidden = document.getElementById('nt_sched_nature');
+  if (natureHidden) natureHidden.value = '일일업무';
+  if (typeof _selectNtNature === 'function') _selectNtNature('일일업무');
+}
+
+function _renderNtSchedImportance() {
+  var box = document.getElementById('nt_sched_importance_picks');
+  if (!box) return;
+  var imps = JSON.parse(localStorage.getItem('ws_instr_importances') || '[]');
+  if (!imps.length) {
+    box.innerHTML = '<span style="font-size:11px;color:var(--text-muted);white-space:nowrap">기타설정에서 중요도를 추가하세요</span>';
+    return;
+  }
+
+  // 선택 순서 배열 (window._ntSchedImps 에 보존)
+  var selected = window._ntSchedImps || [];
+
+  // 선택된 항목(순서 유지): 앞에, 아이콘만 채워진 원형
+  var selItems   = selected.map(function(name) {
+    return imps.find(function(i){ return i.name === name; });
+  }).filter(Boolean);
+
+  // 미선택 항목 (기타설정 순서 유지)
+  var unselItems = imps.filter(function(i){ return selected.indexOf(i.name) === -1; });
+
+  var selHtml = selItems.map(function(imp) {
+    var c = imp.color || '#ef4444';
+    var hasIcon = imp.icon && imp.icon.length > 2;
+    var inner = hasIcon
+      ? '<i data-lucide="' + imp.icon + '" style="width:12px;height:12px;color:#fff"></i>'
+      : '<span style="width:8px;height:8px;border-radius:50%;background:#fff;display:inline-block"></span>';
+    return '<span onclick="_toggleNtSchedImp(\'' + imp.name.replace(/'/g,"\\'") + '\')" title="' + imp.name + ' (클릭하여 취소)"'
+      + ' style="display:inline-flex;align-items:center;justify-content:center;'
+      + 'width:28px;height:28px;border-radius:50%;flex-shrink:0;'
+      + 'background:' + c + ';border:2px solid ' + c + ';cursor:pointer;'
+      + 'transition:all .15s;box-shadow:0 2px 8px ' + c + '55">'
+      + inner + '</span>';
+  }).join('');
+
+  var unselHtml = unselItems.map(function(imp) {
+    var c = imp.color || '#ef4444';
+    var hasIcon = imp.icon && imp.icon.length > 2;
+    var iconHtml = hasIcon
+      ? '<i data-lucide="' + imp.icon + '" style="width:10px;height:10px;color:' + c + '"></i>'
+      : '';
+    return '<span onclick="_toggleNtSchedImp(\'' + imp.name.replace(/'/g,"\\'") + '\')" title="' + imp.name + '"'
+      + ' style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;'
+      + 'border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;'
+      + 'transition:all .15s;user-select:none;flex-shrink:0;white-space:nowrap;'
+      + 'border:1.5px solid ' + c + ';color:' + c + ';background:transparent"'
+      + ' onmouseover="this.style.background=\'' + c + '22\'"'
+      + ' onmouseout="this.style.background=\'transparent\'">'
+      + iconHtml + imp.name + '</span>';
+  }).join('');
+
+  var divider = (selHtml && unselHtml)
+    ? '<span style="width:1px;height:24px;background:var(--border-color);flex-shrink:0;margin:0 3px"></span>'
+    : '';
+
+  box.innerHTML = selHtml + divider + unselHtml;
+
+  // hidden input 동기화
+  var hidden = document.getElementById('nt_sched_importance');
+  if (hidden) hidden.value = selected.join(',');
+
+  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 30);
+}
+
+function _toggleNtSchedImp(name) {
+  if (!window._ntSchedImps) window._ntSchedImps = [];
+  var idx = window._ntSchedImps.indexOf(name);
+  if (idx !== -1) {
+    window._ntSchedImps.splice(idx, 1); // 취소 → 뒤로
+  } else {
+    window._ntSchedImps.push(name);     // 선택 → 앞으로(순서 유지)
+  }
+  _renderNtSchedImportance();
+}
+
+
+function _renderNtSchedStatus() {
+  var box = document.getElementById('nt_sched_status_picks');
+  if (!box) return;
+  var statuses = JSON.parse(localStorage.getItem('ws_task_statuses') || '[]');
+  if (!statuses.length) {
+    statuses = [
+      {id:'waiting',  name:'대기',   icon:'clock',        color:'#6b7280'},
+      {id:'progress', name:'진행',   icon:'trending-up',  color:'#4f6ef7'},
+      {id:'done',     name:'완료',   icon:'check-circle', color:'#22c55e'},
+      {id:'delay',    name:'지연',   icon:'alert-circle', color:'#ef4444'}
+    ];
+  }
+  var selected = document.getElementById('nt_sched_status') ? document.getElementById('nt_sched_status').value : '';
+  if (!selected) { selected = 'waiting'; document.getElementById('nt_sched_status').value = 'waiting'; }
+  box.innerHTML = statuses.map(function(s) {
+    var c = s.color || '#4f6ef7';
+    var id = s.id || s.name;
+    var isOn = (selected === id);
+    var hasIcon = s.icon && s.icon.length > 2;
+    var inner = hasIcon ? '<i data-lucide="' + s.icon + '" style="width:11px;height:11px"></i>' : '';
+    return '<span onclick="_selectNtSchedStatus(this,\'' + id + '\')"'
+      + ' style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;cursor:pointer;font-size:11.5px;font-weight:700;border:1.5px solid ' + c + ';'
+      + (isOn ? 'background:' + c + ';color:#fff' : 'background:' + c + '18;color:' + c) + ';transition:all .2s">'
+      + inner + s.name + '</span>';
+  }).join('');
+  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
+}
+
+function _selectNtSchedStatus(el, val) {
+  var hidden = document.getElementById('nt_sched_status');
+  if (hidden) hidden.value = val;
+  _renderNtSchedStatus();
+}
+
+function _renderNtSchedCollabBox() {
+  var box = document.getElementById('nt_sched_collab_box');
+  if (!box) return;
+  var ph = document.getElementById('nt_sched_collab_placeholder');
+  var ids = window._ntSchedCollabIds || [];
+  Array.from(box.children).forEach(function(c){ if (c !== ph) c.remove(); });
+  if (!ids.length) { if (ph) ph.style.display = ''; return; }
+  if (ph) ph.style.display = 'none';
+  ids.forEach(function(uid) {
+    var u = WS.getUser(uid);
+    if (!u) return;
+    var chip = document.createElement('span');
+    chip.style.cssText = 'display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:' + (u.color||'#4f6ef7') + '22;border:1.5px solid ' + (u.color||'#4f6ef7') + ';font-size:12px;font-weight:700;color:' + (u.color||'#4f6ef7');
+    chip.innerHTML = (u.avatar||'?') + ' ' + u.name + ' <span onclick="event.stopPropagation();_removeNtSchedCollab(' + uid + ')" style="cursor:pointer;margin-left:3px;opacity:.7">×</span>';
+    box.insertBefore(chip, ph || null);
+  });
+}
+
+function _removeNtSchedCollab(uid) {
+  window._ntSchedCollabIds = (window._ntSchedCollabIds || []).filter(function(i){ return i !== uid; });
+  _renderNtSchedCollabBox();
+}
+
+function _openNtSchedCollabPopup() {
+  var popup = document.getElementById('nt_sched_collab_popup');
+  if (!popup) return;
+  var box = document.getElementById('nt_sched_collab_box');
+  var rect = box.getBoundingClientRect();
+  popup.style.top  = (rect.bottom + 4) + 'px';
+  popup.style.left = rect.left + 'px';
+  popup.style.display = 'flex';
+  _filterNtSchedCollab('');
+  setTimeout(function(){
+    document.addEventListener('mousedown', function _closeP(e){
+      if (!popup.contains(e.target) && e.target !== box) {
+        popup.style.display = 'none';
+        document.removeEventListener('mousedown', _closeP);
+      }
+    });
+  }, 10);
+}
+
+function _filterNtSchedCollab(q) {
+  var list = document.getElementById('nt_sched_collab_list');
+  if (!list) return;
+  var users = (WS.users || []).filter(function(u){ return !(WS.currentUser && u.id === WS.currentUser.id); });
+  q = (q || '').trim();
+  if (q) users = users.filter(function(u){ return u.name.indexOf(q) !== -1 || (u.dept||'').indexOf(q) !== -1; });
+  list.innerHTML = users.map(function(u) {
+    var ids = window._ntSchedCollabIds || [];
+    var isOn = ids.indexOf(u.id) !== -1;
+    return '<div onclick="_toggleNtSchedCollab(' + u.id + ')" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;cursor:pointer;background:' + (isOn ? (u.color||'#4f6ef7') + '18' : 'transparent') + '">'
+      + '<span style="width:26px;height:26px;border-radius:50%;background:' + (u.color||'#4f6ef7') + ';display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">' + (u.avatar||'?') + '</span>'
+      + '<div><div style="font-size:12.5px;font-weight:700;color:var(--text-primary)">' + u.name + '</div>'
+      + '<div style="font-size:10.5px;color:var(--text-muted)">' + (u.dept||'') + '</div></div>'
+      + (isOn ? '<span style="margin-left:auto;color:var(--accent-blue);font-size:13px">✓</span>' : '')
+      + '</div>';
+  }).join('') || '<div style="padding:10px;text-align:center;color:var(--text-muted);font-size:12px">검색 결과 없음</div>';
+}
+
+function _toggleNtSchedCollab(uid) {
+  window._ntSchedCollabIds = window._ntSchedCollabIds || [];
+  var idx = window._ntSchedCollabIds.indexOf(uid);
+  if (idx === -1) window._ntSchedCollabIds.push(uid);
+  else window._ntSchedCollabIds.splice(idx, 1);
+  _renderNtSchedCollabBox();
+  _filterNtSchedCollab(document.getElementById('nt_sched_collab_search') ? document.getElementById('nt_sched_collab_search').value : '');
+}
+
+function _onNtSchedFileChange(input) {
+  window._ntSchedFiles = window._ntSchedFiles || [];
+  Array.from(input.files).forEach(function(f){ window._ntSchedFiles.push(f); });
+  var list = document.getElementById('nt_sched_file_list');
+  if (!list) return;
+  list.innerHTML = window._ntSchedFiles.map(function(f, i){
+    return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;background:var(--bg-tertiary);border:1px solid var(--border-color);font-size:11.5px">'
+      + '<i data-lucide="paperclip" style="width:11px;height:11px;opacity:.6"></i>' + f.name
+      + ' <span onclick="_removeNtSchedFile(' + i + ')" style="cursor:pointer;opacity:.6">×</span></span>';
+  }).join('');
+  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
+}
+
+function _removeNtSchedFile(idx) {
+  (window._ntSchedFiles || []).splice(idx, 1);
+  var dummy = { files: [] };
+  _onNtSchedFileChange(dummy);
+  var list = document.getElementById('nt_sched_file_list');
+  if (list) list.innerHTML = (window._ntSchedFiles || []).map(function(f, i){
+    return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;background:var(--bg-tertiary);border:1px solid var(--border-color);font-size:11.5px">'
+      + '<i data-lucide="paperclip" style="width:11px;height:11px;opacity:.6"></i>' + f.name
+      + ' <span onclick="_removeNtSchedFile(' + i + ')" style="cursor:pointer;opacity:.6">×</span></span>';
+  }).join('');
+}
+
+function createScheduleTask() {
+  var title = (document.getElementById('nt_title') ? document.getElementById('nt_title').value.trim() : '');
+  if (!title) { showToast('error', '업무명을 입력하세요'); return; }
+  var due = document.getElementById('nt_sched_due') ? document.getElementById('nt_sched_due').value : '';
+  if (!due) { showToast('error', '완료기한을 선택하세요'); return; }
+
+  var today = new Date().toISOString().split('T')[0];
+  var nt = {
+    id:          Date.now(),
+    title:       title,
+    desc:        (document.getElementById('nt_sched_content') ? document.getElementById('nt_sched_content').value.trim() : ''),
+    assignerId:  WS.currentUser ? WS.currentUser.id : 1,
+    assigneeIds: (window._ntSchedCollabIds || []).slice(),
+    status:      (document.getElementById('nt_sched_status') ? document.getElementById('nt_sched_status').value : '') || 'waiting',
+    priority:    'medium',
+    progress:    0,
+    dueDate:     due,
+    createdAt:   today,
+    startedAt:   today,
+    isSchedule:  true,
+    taskNature:  (document.getElementById('nt_sched_nature') ? document.getElementById('nt_sched_nature').value : '일일업무'),
+    importance:  (document.getElementById('nt_sched_importance') ? document.getElementById('nt_sched_importance').value : ''),
+    attachments: (window._ntSchedFiles || []).map(function(f){ return f.name; }),
+    team:        '',
+    score:       0,
+    spentTime:   '0h',
+    parentId:    null,
+    history: [{
+      date:   today.replace(/-/g,'.'),
+      event:  '업무 등록',
+      detail: WS.currentUser ? WS.currentUser.name : '',
+      icon:   'clipboard-list',
+      color:  '#4f6ef7'
+    }]
+  };
+
+  WS.tasks.push(nt);
+  WS.saveTasks();
+
+  _resetScheduleFields();
+  closeModalDirect('newTaskModal');
+  if (document.getElementById('nt_title')) document.getElementById('nt_title').value = '';
+  renderDashboard();
+  if (typeof renderPage_Tasks === 'function') renderPage_Tasks();
+  showToast('success', '내가 추진하는 업무가 등록되었습니다.');
+  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
+}
+
+/* ── nt_schedule 업무선택 팝업 ── */
+/* ── 업무성격 버튼 토글 ── */
+function _selectNtNature(val) {
+  var hidden = document.getElementById('nt_sched_nature');
+  if (hidden) hidden.value = val;
+  var btnD = document.getElementById('nt_nature_btn_daily');
+  var btnP = document.getElementById('nt_nature_btn_period');
+  if (!btnD || !btnP) return;
+  if (val === '일일업무') {
+    btnD.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:20px;border:1.5px solid var(--accent-blue);background:var(--accent-blue);color:#fff;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s';
+    btnP.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:20px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s';
+  } else {
+    btnP.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:20px;border:1.5px solid var(--accent-blue);background:var(--accent-blue);color:#fff;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s';
+    btnD.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:20px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s';
+  }
+}
+
+/* ── nt_schedule 업무선택 팝업 ── */
+function _openNtSchedTaskPopup() {
+  var popup = document.getElementById('nt_sched_task_popup');
+  var box   = document.getElementById('nt_sched_task_box');
+  if (!popup || !box) return;
+  var rect = box.getBoundingClientRect();
+  popup.style.top  = (rect.bottom + 4) + 'px';
+  popup.style.left = rect.left + 'px';
+  popup.style.display = 'flex';
+  _filterNtSchedTask('');
+  setTimeout(function(){
+    document.addEventListener('mousedown', function _closeT(e){
+      if (!popup.contains(e.target) && e.target !== box) {
+        popup.style.display = 'none';
+        document.removeEventListener('mousedown', _closeT);
+      }
+    });
+  }, 10);
+}
+
+function _filterNtSchedTask(q) {
+  var list = document.getElementById('nt_sched_task_list');
+  if (!list) return;
+  var tasks = (WS.tasks || []);
+  q = (q || '').trim();
+  if (q) tasks = tasks.filter(function(t){ return t.title && t.title.indexOf(q) !== -1; });
+  var selected = document.getElementById('nt_sched_task') ? document.getElementById('nt_sched_task').value : '';
+  list.innerHTML = tasks.slice(0, 30).map(function(t) {
+    var isOn = (selected == t.id);
+    var teamHtml = t.team ? '<span style="font-size:10px;color:var(--text-muted);margin-left:6px">' + t.team + '</span>' : '';
+    return '<div onclick="_selectNtSchedTask(' + t.id + ',this)" data-title="' + (t.title||'').replace(/"/g,'&quot;') + '" '
+      + 'style="padding:7px 10px;border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text-primary);'
+      + 'background:' + (isOn ? 'var(--accent-blue)18' : 'transparent') + '">'
+      + (isOn ? '\u2713 ' : '') + (t.title||'') + teamHtml
+      + '</div>';
+  }).join('') || '<div style="padding:10px;text-align:center;color:var(--text-muted);font-size:12px">\uc5c5\ubb34\ub97c \ub4f1\ub85d\ud558\uc138\uc694</div>';
+}
+
+function _selectNtSchedTask(id, titleOrEl) {
+  // titleOrEl이 DOM 요소이면 data-title 속성에서 읽기
+  var title = (titleOrEl && typeof titleOrEl === 'object' && titleOrEl.getAttribute)
+    ? titleOrEl.getAttribute('data-title') || ''
+    : (titleOrEl || '');
+  var hidden = document.getElementById('nt_sched_task');
+  if (hidden) hidden.value = id;
+  var box = document.getElementById('nt_sched_task_box');
+  var ph  = document.getElementById('nt_sched_task_placeholder');
+  if (box) {
+    if (ph) ph.style.display = 'none';
+    // 기존 칩 제거
+    Array.from(box.children).forEach(function(c){ if (c !== ph) c.remove(); });
+    var chip = document.createElement('span');
+    chip.style.cssText = 'display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:var(--accent-blue)18;border:1.5px solid var(--accent-blue);font-size:12px;font-weight:700;color:var(--accent-blue)';
+    chip.innerHTML = '<i data-lucide="briefcase" style="width:11px;height:11px"></i>' + title
+      + ' <span onclick="event.stopPropagation();_clearNtSchedTask()" style="cursor:pointer;opacity:.7">×</span>';
+    box.insertBefore(chip, ph || null);
+    if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
+  }
+  var popup = document.getElementById('nt_sched_task_popup');
+  if (popup) popup.style.display = 'none';
+}
+
+function _clearNtSchedTask() {
+  var hidden = document.getElementById('nt_sched_task');
+  if (hidden) hidden.value = '';
+  var box = document.getElementById('nt_sched_task_box');
+  var ph  = document.getElementById('nt_sched_task_placeholder');
+  if (box) {
+    Array.from(box.children).forEach(function(c){ if (c !== ph) c.remove(); });
+    if (ph) ph.style.display = '';
+  }
+}
+
+/* 가 nt_schedule 업무결과 렌더링 */
+function _renderNtSchedResult() {
+  var box = document.getElementById('nt_sched_result_picks');
+  if (!box) return;
+  var results = WS.taskResults || JSON.parse(localStorage.getItem('ws_task_results') || '[]');
+  var selected = document.getElementById('nt_sched_result') ? document.getElementById('nt_sched_result').value : '';
+  box.innerHTML = '';
+  results.forEach(function(r) {
+    var c = r.color || '#22c55e';
+    var isOn = (selected === r.name);
+    var span = document.createElement('span');
+    span.setAttribute('data-result-name', r.name);
+    span.onclick = function() { _selectNtSchedResult(this.getAttribute('data-result-name')); };
+    span.style.cssText = 'display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;cursor:pointer;' +
+      'font-size:11.5px;font-weight:700;border:1.5px solid ' + c + ';' +
+      (isOn ? 'background:' + c + ';color:#fff' : 'background:' + c + '18;color:' + c) + ';transition:all .2s';
+    var inner = '';
+    if (r.icon && r.icon.length > 2) {
+      inner = '<i data-lucide="' + r.icon + '" style="width:11px;height:11px"></i>';
+    } else {
+      inner = '<span style="width:6px;height:6px;border-radius:50%;background:' + c + ';display:inline-block"></span>';
+    }
+    span.innerHTML = inner + r.name;
+    box.appendChild(span);
+  });
+  if (!results.length) {
+    box.innerHTML = '<span style="font-size:11px;color:var(--text-muted)">기타설정에서 업무결과를 추가하세요</span>';
+  }
+  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
+}
+
+function _selectNtSchedResult(name) {
+  var hidden = document.getElementById('nt_sched_result');
+  if (hidden) hidden.value = (hidden.value === name) ? '' : name;
+  _renderNtSchedResult();
+}
+
+
+/* 가 nt_schedule 진행순서 렌더링 */
+function _renderNtSchedProcessList() {
+  var list = document.getElementById('nt_sched_process_type_list');
+  if (!list) return;
+  var types = WS.reportTypes || JSON.parse(localStorage.getItem('ws_report_types') || '[]');
+  list.innerHTML = '';
+  if (!types.length) {
+    list.innerHTML = '<span style="font-size:11px;color:var(--text-muted)">기타설정에서 진행보고유형을 추가하세요</span>';
+    return;
+  }
+  types.forEach(function(r) {
+    var c = r.color || '#4f6ef7';
+    var span = document.createElement('span');
+    var rId = (r.id || r.label || '').toString();
+    var rLabel = r.label || '';
+    var rIcon = r.icon || '';
+    span.onclick = function() { _addNtSchedProcess(rId, rLabel, c, rIcon); };
+    span.style.cssText = 'display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;cursor:pointer;' +
+      'font-size:11.5px;font-weight:700;border:1.5px solid ' + c + ';background:' + c + '18;color:' + c + ';transition:all .2s;margin:3px';
+    var inner = (r.icon && r.icon.length > 2) ? '<i data-lucide="' + r.icon + '" style="width:11px;height:11px;color:' + c + '"></i>' : '';
+    span.innerHTML = inner + rLabel;
+    list.appendChild(span);
+  });
+  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
+}
+
+function _addNtSchedProcess(id, label, color, icon) {
+  window._ntSchedProcess = window._ntSchedProcess || [];
+  window._ntSchedProcess.push({ id: id, label: label, color: color, icon: icon });
+  _updateNtSchedProcessSelected();
+}
+
+function _updateNtSchedProcessSelected() {
+  var box = document.getElementById('nt_sched_process_selected');
+  var ph  = document.getElementById('nt_sched_process_placeholder');
+  if (!box) return;
+  var items = window._ntSchedProcess || [];
+  Array.from(box.children).forEach(function(c){ if (c !== ph) c.remove(); });
+  if (!items.length) { if (ph) ph.style.display = ''; return; }
+  if (ph) ph.style.display = 'none';
+  items.forEach(function(r, i) {
+    var chip = document.createElement('span');
+    var c = r.color || '#4f6ef7';
+    var hasIcon = r.icon && r.icon.length > 2;
+    var inner = hasIcon ? '<i data-lucide="' + r.icon + '" style="width:11px;height:11px;color:' + c + '"></i>' : '';
+    chip.style.cssText = 'display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:11.5px;font-weight:700;border:1.5px solid ' + c + ';background:' + c + '22;color:' + c;
+    chip.innerHTML = '<span style="font-size:10px;opacity:.6;margin-right:2px">' + (i+1) + '.</span>'
+      + inner + r.label
+      + ' <span onclick="event.stopPropagation();_removeNtSchedProcess(' + i + ')" style="cursor:pointer;opacity:.6;margin-left:3px">×</span>';
+    box.insertBefore(chip, ph || null);
+  });
+  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 0);
+}
+
+function _removeNtSchedProcess(idx) {
+  (window._ntSchedProcess || []).splice(idx, 1);
+  _updateNtSchedProcessSelected();
+}
+
+
+/* ═══════════════════════════════════════
+   최종 schedule 모드 UI override
+   - 파일 마지막에 위치하여 모든 래퍼보다 나중에 실행
+═══════════════════════════════════════ */
+(function() {
+  var _lastPrev = typeof window.openNewTaskModal === 'function' ? window.openNewTaskModal : null;
+  if (!_lastPrev) return;
+  window.openNewTaskModal = function(mode, parentId, isSimple) {
+    _lastPrev.call(window, mode, parentId, isSimple);
+    if (mode !== 'schedule') return;
+    // setTimeout으로 다른 래퍼들의 setTimeout보다 늦게 실행
+    setTimeout(function() {
+      // 1. schedule 전용 필드 표시
+      var sf = document.getElementById('nt_schedule_fields');
+      if (sf) { sf.style.display = 'flex'; sf.style.flexDirection = 'column'; sf.style.gap = '14px'; }
+      // 2. 기존 일반 필드 숨김
+      var nf = document.getElementById('nt_normal_fields');
+      if (nf) nf.style.display = 'none';
+      var tc = document.getElementById('nt_row_teams_check');
+      if (tc) tc.style.display = 'none';
+      var fa = document.getElementById('nt_fg_attach');
+      if (fa) fa.style.display = 'none';
+      var fd = document.getElementById('nt_fg_detail');
+      if (fd) fd.style.display = 'none';
+      // 3. 버튼 텍스트/핸들러 강제 설정
+      var submitBtn = document.querySelector('#newTaskModal .modal-foot .btn-blue');
+      if (submitBtn) { submitBtn.textContent = '등록'; submitBtn.onclick = createScheduleTask; }
+      // 4. 완료기한 날짜 초기화
+      var tod = new Date();
+      var yy = tod.getFullYear(), mo = String(tod.getMonth()+1).padStart(2,'0'), da = String(tod.getDate()).padStart(2,'0');
+      var dh = document.getElementById('nt_sched_due');
+      var dl = document.getElementById('nt_sched_due_label');
+      if (dh) dh.value = yy + '-' + mo + '-' + da;
+      if (dl) dl.textContent = yy + '년 ' + parseInt(mo) + '월 ' + parseInt(da) + '일';
+      // 5. 중요도/상태/협업자/업무결과/진행순서 렌더
+      if (typeof _renderNtSchedImportance === 'function') _renderNtSchedImportance();
+      if (typeof _renderNtSchedStatus    === 'function') _renderNtSchedStatus();
+      if (typeof _renderNtSchedCollabBox === 'function') _renderNtSchedCollabBox();
+      if (typeof _renderNtSchedResult    === 'function') _renderNtSchedResult();
+      if (typeof _renderNtSchedProcessList === 'function') _renderNtSchedProcessList();
+      if (typeof _updateNtSchedProcessSelected === 'function') _updateNtSchedProcessSelected();
+      if (typeof _clearNtSchedTask === 'function') _clearNtSchedTask();
+      // 6. 업무내용/파일 초기화
+      var sc = document.getElementById('nt_sched_content');
+      if (sc) sc.value = '';
+      var fl = document.getElementById('nt_sched_file_list');
+      if (fl) fl.innerHTML = '';
+      window._ntSchedCollabIds = [];
+      window._ntSchedFiles = [];
+      window._ntSchedProcess = [];
+      if (typeof refreshIcons === 'function') refreshIcons();
+    }, 50);
+  };
+})();
+
+
+/* ═══════════════════════════════════════════════════════
+   openScheduleModal() — "+ 내가추진" 전용 독립 함수
+   openNewTaskModal wrapper chain과 완전히 독립적으로 동작
+═══════════════════════════════════════════════════════ */
+function openScheduleModal() {
+  // 1. newTaskModal 기본 팝업 열기
+  openModal('newTaskModal');
+
+  // 2. 타이틀 / 버튼 설정
+  var modalTitle = document.querySelector('#newTaskModal .modal-title');
+  var submitBtn  = document.querySelector('#newTaskModal .modal-foot .btn-blue');
+  if (modalTitle) modalTitle.textContent = '내가 추진하는 업무 추가';
+  if (submitBtn)  { submitBtn.textContent = '등록'; submitBtn.onclick = createScheduleTask; }
+
+  // 3. 기존 필드 숨기기 / schedule 전용 필드 보이기
+  var sf = document.getElementById('nt_schedule_fields');
+  var nf = document.getElementById('nt_normal_fields');
+  var tc = document.getElementById('nt_row_teams_check');
+  var fa = document.getElementById('nt_fg_attach');
+  var fd = document.getElementById('nt_fg_detail');
+  var rowPT    = document.getElementById('nt_row_priority_team');
+  var rowDate  = document.getElementById('nt_row_dates');
+  var rowScore = document.querySelector('[id^="nt_row_score"]') || null;
+
+  if (sf) { sf.style.display = 'flex'; sf.style.flexDirection = 'column'; sf.style.gap = '14px'; }
+  if (nf) nf.style.display = 'none';
+  if (tc) tc.style.display = 'none';
+  if (fa) fa.style.display = 'none';
+  if (fd) fd.style.display = 'none';
+  if (rowPT)   rowPT.style.display   = 'none';
+  if (rowDate) rowDate.style.display  = 'none';
+  if (rowScore) rowScore.style.display = 'none';
+
+  // 4. 완료기한 날짜 초기화
+  var tod = new Date();
+  var yy = tod.getFullYear(), mo = String(tod.getMonth()+1).padStart(2,'0'), da = String(tod.getDate()).padStart(2,'0');
+  var dh = document.getElementById('nt_sched_due');
+  var dl = document.getElementById('nt_sched_due_label');
+  if (dh) dh.value = yy + '-' + mo + '-' + da;
+  if (dl) dl.textContent = yy + '년 ' + parseInt(mo) + '월 ' + parseInt(da) + '일';
+
+  // 5. 각종 칩/목록 렌더링
+  if (typeof _renderNtSchedImportance    === 'function') _renderNtSchedImportance();
+  if (typeof _renderNtSchedStatus        === 'function') _renderNtSchedStatus();
+  if (typeof _renderNtSchedResult        === 'function') _renderNtSchedResult();
+  if (typeof _renderNtSchedProcessList   === 'function') _renderNtSchedProcessList();
+  if (typeof _updateNtSchedProcessSelected === 'function') _updateNtSchedProcessSelected();
+  if (typeof _clearNtSchedTask           === 'function') _clearNtSchedTask();
+
+  // 6. 협업자/파일/내용 초기화
+  window._ntSchedCollabIds = [];
+  window._ntSchedFiles     = [];
+  window._ntSchedProcess   = [];
+  if (typeof _renderNtSchedCollabBox === 'function') _renderNtSchedCollabBox();
+  var sc = document.getElementById('nt_sched_content');
+  if (sc) sc.value = '';
+  var fl = document.getElementById('nt_sched_file_list');
+  if (fl) fl.innerHTML = '';
+  var nt = document.getElementById('nt_title');
+  if (nt) nt.value = '';
+
+  // 7. 아이콘 갱신
+  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 50);
+}
