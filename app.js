@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 
 let sidebarTimer = null;
 
@@ -2492,8 +2492,9 @@ function renderPage_Schedule() {
 
     return allTasks.map(t => {
       // startedAt/createdAt이 ISO형식(YYYY-MM-DDTHH:mm)일 수 있으므로 날짜 부분만 추출
+      // createdAt은 업무 생성시각이므로 제외 - startedAt이 없으면 dueDate를 시작일로 사용
       const normalize = s => s ? String(s).substring(0,10) : null;
-      const rawStart = normalize(t.startedAt) || normalize(t.createdAt) || normalize(t.dueDate);
+      const rawStart = normalize(t.startedAt) || normalize(t.dueDate);
       const rawEnd   = normalize(t.dueDate);
       if (!rawStart || !rawEnd) return null;
       const sDate    = rawStart > monthStart ? rawStart : monthStart;
@@ -2667,10 +2668,10 @@ function renderPage_Schedule() {
                      border-bottom:1px solid var(--border-color);
                      ${!isValid?'opacity:.35;':''}
                      position:relative;overflow:hidden;">
-              ${isValid && cw >= 28 ? `<div style="position:absolute;top:1px;left:0;right:0;
-                font-size:${cw>=40?'9px':'7.5px'};font-weight:700;
-                color:${dowColor};opacity:.55;pointer-events:none;
-                text-align:center;line-height:1.4;z-index:1;">${dowLabel}</div>` : ''}
+              ${isValid && cw >= 28 ? `<div style="position:absolute;bottom:1px;left:0;right:0;
+                font-size:${cw>=40?'9px':'7.5px'};font-weight:800;
+                color:${dowColor};opacity:.75;pointer-events:none;
+                text-align:center;line-height:1;z-index:6;">${dowLabel}</div>` : ''}
             </td>`;
           }).join('');
 
@@ -2717,10 +2718,14 @@ function renderPage_Schedule() {
                 while (tracks[track] && tracks[track] >= startDay) track++;
                 tracks[track] = endDay;
 
+                // 셀 하단 요일 표시 영역을 침범하지 않도록 막대 크기 제한
                 const barLeft  = labelW + (startDay - 1) * cw;
+                const dowH    = cw >= 28 ? 12 : 0;
+                const usable  = ch - dowH;
                 const barWidth = (endDay - startDay + 1) * cw - 4;
-                const barTop   = 4 + track * (Math.min(24, Math.max(16, ch / 3)));
-                const barH     = Math.min(22, Math.max(14, ch / 3) - 2);
+                const trackH  = Math.min(22, Math.max(14, usable / 3));
+                const barTop  = 2 + track * trackH;
+                const barH    = Math.min(trackH - 2, usable - barTop - 2);
 
                 const startsHere = rawStart.substring(0,7) === `${year}-${String(monthNum).padStart(2,'0')}`;
                 const endsHere   = rawEnd.substring(0,7)   === `${year}-${String(monthNum).padStart(2,'0')}`;
