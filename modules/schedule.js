@@ -192,8 +192,10 @@ function _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, rowH, labelW) {
   let maxTrack = 0;
 
   const dowH   = cw >= 28 ? 12 : 0;
-  const usable = rowH - dowH;
-  const trackH = Math.min(22, Math.max(14, usable / Math.max(3, 1)));
+  const usable = rowH - dowH - _SCHED_PAD_BOT;   // 상단PAD + 막대 공간 + 하단PAD(요일위) 제외
+  // 막대 수에 맞게 트랙 높이 계산 - usable 공간을 막대 수로 균등 분할
+  const barCount = monthTasks.filter(function(item){ return !(item.rawStart===item.rawEnd || (item.t && item.t.taskNature==='일일업무')); }).length || 1;
+  const trackH   = Math.max(14, Math.min(22, (usable - _SCHED_PAD_TOP) / Math.max(barCount, 3)));
 
   sorted.forEach(({t, startDay, endDay, rawStart, rawEnd}) => {
     const c    = _SCHED_STATUS_COLOR[t.status] || '#4f6ef7';
@@ -227,11 +229,12 @@ function _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, rowH, labelW) {
       const barLeft  = (startDay - 1) * cw;  // 헬퍼td가 labelW 위치에서 시작하므로 labelW 제외
       const barWidth = (endDay - startDay + 1) * cw - 4;
       const barTop   = _SCHED_PAD_TOP + track * trackH;   // 상단 10px 여백 후 막대 배치
-      const barH     = Math.max(16, Math.min(trackH - 2, usable - barTop - 2));  // 최소 16px 보장
+      const barH     = Math.max(0, Math.min(trackH - 2, (rowH - dowH - _SCHED_PAD_BOT) - barTop - 2));  // 요일 위 10px 내에 클리핑
       const mStr     = `${year}-${String(monthNum).padStart(2,'0')}`;
       const borderL  = rawStart.substring(0,7) === mStr ? '6px' : '0px';
       const borderR  = rawEnd.substring(0,7)   === mStr ? '6px' : '0px';
 
+      if (barH <= 0) return;  // 바 공간이 없으면 렌더링 스킵 (요일 영역 침범 방지)
       bars += `<div
         onclick="openTaskDetail(${t.id})"
         title="${t.title} (${rawStart||'?'} ~ ${rawEnd}) | ${prog}% | ${t.status}"
@@ -326,7 +329,7 @@ function renderPage_Schedule() {
     // 막대 있는 월 최소 행 높이 = 상단여백(_PAD_TOP) + 막대최소(16) + 요일(dowH) + 하단여백(_PAD_BOT)
     const MIN_BAR_ROW_H = _SCHED_PAD_TOP + 16 + dowH + _SCHED_PAD_BOT;  // 10+16+10+10 = 46px 이상
     const rowH = barTasks.length > 0
-      ? Math.max(MIN_BAR_ROW_H, ch, dowH + 4 + (maxTrack + 1) * trackH + 8)
+      ? Math.max(MIN_BAR_ROW_H, ch, _SCHED_PAD_TOP + (maxTrack + 1) * trackH + dowH + _SCHED_PAD_BOT + 4)
       : ch;
 
     const {bars, dotMap} = _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, rowH, labelW);
