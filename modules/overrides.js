@@ -404,9 +404,16 @@ function addProgressReport(taskId) {
                   String(now.getDate()).padStart(2,'0');
   if (!t.history) t.history = [];
 
-  // 현재 슬라이더 진행율
+  // 캡슐 슬라이더 값 우선, 없으면 slider, 그도 없으면 t.progress
   const slider      = document.getElementById('progressSlider_' + taskId);
-  const progressNow = slider ? parseInt(slider.value) : (t.progress || 0);
+  const progInp     = document.getElementById('progressInput_' + taskId);
+  const progressNow = progInp    ? (parseInt(progInp.value)  || 0)
+                    : slider     ? (parseInt(slider.value)   || 0)
+                    : (t.progress || 0);
+
+  // 진행순서 선택값 (td_stepSelect)
+  const stepEl    = document.getElementById('td_stepSelect');
+  const stepLabel = stepEl ? (stepEl.value || '') : '';
 
   // 진행율 즉시 반영
   t.progress = progressNow;
@@ -414,7 +421,9 @@ function addProgressReport(taskId) {
   const todayIdx = t.history.findIndex(h => h.date === dateStr);
   let isUpdate = false;
 
-  const entry = { date: dateStr, event: label, detail: text, icon, color, progress: progressNow };
+  const userId = WS.currentUser ? WS.currentUser.id : null;
+  const entry = { date: dateStr, event: label, detail: text, icon, color,
+                  progress: progressNow, stepLabel, userId };
 
   if (todayIdx !== -1) {
     t.history[todayIdx] = entry;
