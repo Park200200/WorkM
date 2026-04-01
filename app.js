@@ -411,6 +411,11 @@ function openReceivedTaskDetail(taskId) {
   // 지시내용
   const instrContent = (instr && instr.content) ? instr.content : (t.desc || t.description || '-');
 
+  // processTags: t에 없으면 ws_instructions의 instr.processTags 사용
+  if ((!t.processTags || t.processTags.length === 0) && instr && instr.processTags && instr.processTags.length > 0) {
+    t.processTags = instr.processTags;
+  }
+
   document.getElementById('tdModalTitle').innerHTML =
     `<i data-lucide="file-text" style="width:17px;height:17px;color:var(--accent-blue);vertical-align:middle;margin-right:5px;flex-shrink:0"></i>`
     + `<span style="color:var(--text-primary)">${t.title}</span>`
