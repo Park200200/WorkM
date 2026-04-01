@@ -709,12 +709,13 @@ function renderTaskHistory(taskId) {
       + 'display:flex;align-items:center;justify-content:center;flex-shrink:0;'
       + 'font-size:12px;font-weight:800;color:#fff;letter-spacing:.5px">' + aInitials + '</div>';
 
-    // 이벤트 뱃지
-    const evBadge = '<span style="display:inline-flex;align-items:center;gap:3px;'
+    // 이벤트 뱃지 ('진행보고'/'업무보고'는 불필요하므로 숨김)
+    const _hideEvBadge = (label === '진행보고' || label === '업무보고');
+    const evBadge = _hideEvBadge ? '' : ('<span style="display:inline-flex;align-items:center;gap:3px;'
       + 'font-size:11px;font-weight:700;color:' + color + ';'
       + 'background:' + color + '18;border:1px solid ' + color + '44;'
       + 'border-radius:20px;padding:2px 8px;white-space:nowrap;flex-shrink:0">'
-      + '<i data-lucide="' + icon + '" style="width:10px;height:10px"></i>' + label + '</span>';
+      + '<i data-lucide="' + icon + '" style="width:10px;height:10px"></i>' + label + '</span>');
 
     // 진행순서 뱃지
     const stepBadge = h.stepLabel
