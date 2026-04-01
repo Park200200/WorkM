@@ -557,7 +557,12 @@ function openReceivedTaskDetail(taskId) {
             onchange="_updateStepChip('${t.id}')"
             style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;z-index:2">
             <option value="">단계 선택</option>
-            ${t.processTags.map((s,i)=>`<option value="${s}">${s}</option>`).join('')}
+            ${(t.processTags || []).map(s => {
+              const rt = (WS.reportTypes||[]).find(r => r.label===s);
+              const icon = rt ? (rt.icon||'circle') : 'circle';
+              const color = rt ? (rt.color||'#4f6ef7') : '#4f6ef7';
+              return `<option value="${s}" data-icon="${icon}" data-color="${color}">${s}</option>`;
+            }).join('')}
           </select>
           <span id="td_stepChip_${t.id}"
             style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;
@@ -565,7 +570,7 @@ function openReceivedTaskDetail(taskId) {
                    border:1.5px solid rgba(79,110,247,.35);
                    font-size:12px;font-weight:700;color:var(--accent-blue);
                    white-space:nowrap;cursor:pointer;user-select:none">
-            <i data-lucide="list-ordered" style="width:12px;height:12px"></i>
+            <i id="td_stepIcon_${t.id}" data-lucide="list-ordered" style="width:12px;height:12px"></i>
             <span id="td_stepLabel_${t.id}">단계 선택</span>
             <i data-lucide="chevron-down" style="width:11px;height:11px;opacity:.6"></i>
           </span>
@@ -646,19 +651,37 @@ function _updateStepChip(taskId) {
   var sel   = document.getElementById('td_stepSelect');
   var label = document.getElementById('td_stepLabel_' + taskId);
   var chip  = document.getElementById('td_stepChip_' + taskId);
+  var iconEl = document.getElementById('td_stepIcon_' + taskId);
   if (!sel || !label) return;
   var val = sel.value;
   if (val) {
+    // WS.reportTypes에서 선택된 단계의 아이콘/컬러 찾기
+    var rt = (WS.reportTypes || []).find(function(r){ return r.label === val; });
+    var icon  = rt ? (rt.icon  || 'circle') : 'circle';
+    var color = rt ? (rt.color || '#4f6ef7') : '#4f6ef7';
     label.textContent = val;
+    // 아이콘 교체
+    if (iconEl) {
+      iconEl.setAttribute('data-lucide', icon);
+      iconEl.style.color = color;
+      if (window.lucide && lucide.createIcons) lucide.createIcons({attrs:{strokeWidth:2}, nodes:[iconEl]});
+    }
     if (chip) {
-      chip.style.background = 'rgba(79,110,247,.18)';
-      chip.style.borderColor = 'var(--accent-blue)';
+      chip.style.background = color + '22';
+      chip.style.borderColor = color + '88';
+      chip.style.color = color;
     }
   } else {
     label.textContent = '단계 선택';
+    if (iconEl) {
+      iconEl.setAttribute('data-lucide', 'list-ordered');
+      iconEl.style.color = '';
+      if (window.lucide && lucide.createIcons) lucide.createIcons({attrs:{strokeWidth:2}, nodes:[iconEl]});
+    }
     if (chip) {
       chip.style.background = 'rgba(79,110,247,.08)';
       chip.style.borderColor = 'rgba(79,110,247,.35)';
+      chip.style.color = 'var(--accent-blue)';
     }
   }
 }
