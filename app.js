@@ -478,21 +478,34 @@ function openReceivedTaskDetail(taskId) {
         </div>
         <span id="prevProgText_${t.id}" style="font-size:14px;font-weight:800;color:var(--accent-blue);min-width:38px;text-align:right">${progress}%</span>
       </div>
-      <!-- 현재까지 진행율 입력 -->
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;background:var(--bg-secondary);border-radius:10px">
-        <span style="font-size:11px;color:var(--text-muted);font-weight:600;flex-shrink:0">현재까지 진행율</span>
-        <div style="flex:1;height:6px;background:var(--border-color);border-radius:100px;overflow:hidden" id="progBar_live_${t.id}">
-          <div id="progBarInner_${t.id}" style="width:${progress}%;height:100%;background:var(--accent-blue);border-radius:100px;transition:width .3s"></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px">
-          <input type="number" id="progressInput_${t.id}" min="${progress}" max="100" value="${progress}"
-            style="width:52px;padding:4px 6px;border-radius:8px;border:1.5px solid var(--accent-blue);
-                   font-size:14px;font-weight:800;color:var(--accent-blue);text-align:center;background:var(--bg-primary);
-                   outline:none"
-            oninput="var v=parseInt(this.value)||0;var mn=parseInt(this.min)||0;if(v<mn)this.value=mn;if(v>100)this.value=100;document.getElementById('progBarInner_${t.id}').style.width=this.value+'%'">
-          <span style="font-size:13px;font-weight:700;color:var(--accent-blue)">%</span>
+      <!-- 이전 진행율 + 변화량 헤더 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span style="font-size:12px;color:var(--text-muted);font-weight:600">진행률 설정</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="prevProgLabel_${t.id}" style="font-size:11px;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-radius:20px;padding:3px 10px;font-weight:700;color:var(--text-secondary)">이전: ${progress}%</span>
+          <span id="progDeltaLabel_${t.id}" style="font-size:11px;background:#dcfce7;border-radius:20px;padding:3px 10px;font-weight:800;color:#16a34a;display:${progress>0?'inline-block':'none'}">↗ +0%</span>
         </div>
       </div>
+      <!-- 캡슐형 슬라이더 -->
+      <div id="capsuleSliderWrap_${t.id}"
+        style="position:relative;height:44px;border-radius:100px;background:linear-gradient(135deg,#3b4fd8,#4f6ef7);box-shadow:0 4px 20px rgba(79,110,247,.35);cursor:pointer;user-select:none;overflow:hidden"
+        onmousedown="_capsuleStart(event,'${t.id}',${progress})"
+        ontouchstart="_capsuleStart(event,'${t.id}',${progress})">
+        <!-- 채워진 영역 (진행율만큼) -->
+        <div id="capsuleFill_${t.id}"
+          style="position:absolute;left:0;top:0;bottom:0;width:${progress}%;background:linear-gradient(135deg,#2438c0,#3b5bdb);border-radius:100px;transition:width .15s"></div>
+        <!-- 텍스트 overlay -->
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:56px;pointer-events:none">
+          <span id="capsuleText_${t.id}" style="font-size:15px;font-weight:800;color:#fff;letter-spacing:.5px;text-shadow:0 1px 4px rgba(0,0,0,.3)">현재 ${progress}%</span>
+        </div>
+        <!-- 원형 핸들 -->
+        <div id="capsuleHandle_${t.id}"
+          style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;pointer-events:none">
+          <i data-lucide="align-justify" style="width:16px;height:16px;color:#4f6ef7"></i>
+        </div>
+      </div>
+      <!-- hidden input (저장용) -->
+      <input type="hidden" id="progressInput_${t.id}" value="${progress}">
       <!-- 진행 내용 입력 -->
       <div style="display:flex;gap:8px;align-items:flex-end">
         <textarea id="td_reportText" placeholder="진행 내용을 입력하세요..." rows="2"
@@ -548,7 +561,59 @@ function openReceivedTaskDetail(taskId) {
     if (typeof renderTaskHistory === 'function') renderTaskHistory(t.id);
   }
 }
-/* -- 업무 히스토리 렌더링 */
+
+/* ── 캡슐형 진행율 슬라이더 드래그 로직 ── */
+window._capsuleStart = function(e, taskId, prevVal) {
+  e.preventDefault();
+  var wrap = document.getElementById('capsuleSliderWrap_' + taskId);
+  if (!wrap) return;
+  var minVal = parseInt(prevVal) || 0;
+
+  function getVal(clientX) {
+    var rect = wrap.getBoundingClientRect();
+    var ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    return Math.max(minVal, Math.min(100, Math.round(ratio * 100)));
+  }
+
+  function update(val) {
+    var fill  = document.getElementById('capsuleFill_' + taskId);
+    var text  = document.getElementById('capsuleText_' + taskId);
+    var inp   = document.getElementById('progressInput_' + taskId);
+    var delta = document.getElementById('progDeltaLabel_' + taskId);
+    if (fill)  fill.style.width  = val + '%';
+    if (text)  text.textContent  = '현재 ' + val + '%';
+    if (inp)   inp.value         = val;
+    if (delta) {
+      var diff = val - minVal;
+      delta.textContent  = (diff >= 0 ? '↗ +' : '↘ ') + diff + '%';
+      delta.style.display = 'inline-block';
+      delta.style.background = diff >= 0 ? '#dcfce7' : '#fee2e2';
+      delta.style.color      = diff >= 0 ? '#16a34a' : '#dc2626';
+    }
+  }
+
+  // 즉시 반영
+  var startX = e.touches ? e.touches[0].clientX : e.clientX;
+  update(getVal(startX));
+
+  function onMove(ev) {
+    var cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+    update(getVal(cx));
+  }
+  function onEnd() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup',   onEnd);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend',  onEnd);
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup',   onEnd);
+  document.addEventListener('touchmove', onMove, {passive:false});
+  document.addEventListener('touchend',  onEnd);
+};
+
+/* ── saveTaskDetail 패치: progressInput 우선 읽기 ── */
+
 function renderTaskHistory(taskId) {
   const t = WS.getTask(taskId);
   const el = document.getElementById('historyList_' + taskId);
@@ -1971,8 +2036,10 @@ function _dpSelect(dt) {
     if (!t) return _orig();
 
     const slider  = document.getElementById(`progressSlider_${id}`);
+    const progInp = document.getElementById(`progressInput_${id}`);
     const descEl  = document.getElementById('td_desc');
-    if (slider) t.progress = parseInt(slider.value);
+    if (slider)  t.progress = parseInt(slider.value);
+    else if (progInp) t.progress = parseInt(progInp.value);
     if (descEl)  t.desc = descEl.value;
 
     const now = new Date();
