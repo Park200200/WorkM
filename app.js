@@ -503,8 +503,7 @@ function openReceivedTaskDetail(taskId) {
         </div>
         <!-- 원형 핸들 (fill 끝 위치에서 이동) -->
         <div id="capsuleHandle_${t.id}"
-          style="position:absolute;top:50%;
-                 left:clamp(4px, calc(${progress}% - 22px), calc(100% - 48px));
+          style="position:absolute;top:50%;right:4px;
                  transform:translateY(-50%);
                  width:44px;height:44px;border-radius:50%;background:#fff;
                  box-shadow:0 2px 16px rgba(0,0,0,.28);
@@ -568,6 +567,18 @@ function openReceivedTaskDetail(taskId) {
     if (window.lucide) lucide.createIcons();
     // 히스토리 로딩
     if (typeof renderTaskHistory === 'function') renderTaskHistory(t.id);
+    // 캡슐 슬라이더 핸들 초기 위치 JS로 계산 (CSS % 기준 모호함 해소)
+    requestAnimationFrame(function() {
+      var wrap   = document.getElementById('capsuleSliderWrap_' + t.id);
+      var handle = document.getElementById('capsuleHandle_' + t.id);
+      if (wrap && handle) {
+        var w = wrap.offsetWidth;
+        var hW = 44;
+        var left = Math.max(4, Math.min(w - hW - 4, (progress / 100) * w - hW / 2));
+        handle.style.right = 'auto';
+        handle.style.left  = left + 'px';
+      }
+    });
   }
 }
 
@@ -593,8 +604,13 @@ window._capsuleStart = function(e, taskId, prevVal) {
     if (fill)   fill.style.width = val + '%';
     if (text)   text.textContent = '현재 ' + val + '%';
     if (inp)    inp.value = val;
-    // 핸들을 fill 끝에 맞춰 이동 (CSS clamp 적용)
-    if (handle) handle.style.left = 'clamp(4px, calc(' + val + '% - 22px), calc(100% - 48px))';
+    // 핸들을 fill 끝에 맞춰 이동 (px 계산)
+    if (handle) {
+      var wW = wrap.offsetWidth, hW2 = 44;
+      var lx = Math.max(4, Math.min(wW - hW2 - 4, (val / 100) * wW - hW2 / 2));
+      handle.style.right = 'auto';
+      handle.style.left  = lx + 'px';
+    }
     if (delta) {
       var diff = val - minVal;
       delta.textContent  = (diff >= 0 ? '↗ +' : '↘ ') + diff + '%';
