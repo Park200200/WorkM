@@ -3293,29 +3293,47 @@ function _buildTaskAttachHTML(t) {
   if (!attaches.length) {
     return '<span style="font-size:12px;color:var(--text-muted)">등록된 첨부파일이 없습니다</span>';
   }
+  var avatarPalette = ['#4f6ef7','#22c55e','#f97316','#a855f7','#ec4899','#14b8a6'];
   return attaches.map(function(a, idx) {
-    var name = typeof a === 'string' ? a : (a.name || '');
-    var uploader = typeof a === 'object' ? (a.uploaderId || null) : null;
-    var isMine = !uploader || (meId && String(uploader) === String(meId));
+    var name     = typeof a === 'string' ? a : (a.name || '');
+    var uploader = typeof a === 'object' ? (a.uploaderId   || null) : null;
+    var uName    = typeof a === 'object' ? (a.uploaderName || null) : null;
+    var isMine   = !uploader || (meId && String(uploader) === String(meId));
+
+    // 등록자 이름 확정 (uploaderName 우선, 없으면 WS.getUser 조회)
+    var dispName = uName || (isMine && WS.currentUser ? WS.currentUser.name : '?');
+    if (!uName && uploader && WS.getUser) {
+      var found = WS.getUser(uploader);
+      if (found) dispName = found.name;
+    }
+    var initials  = (dispName && dispName !== '?') ? dispName.slice(0,2) : '?';
+    var aColor    = (dispName && dispName !== '?')
+      ? avatarPalette[dispName.charCodeAt(0) % avatarPalette.length]
+      : '#94a3b8';
+
+    // 아바타 HTML
+    var avatar = '<span title="' + dispName + '" style="'
+      + 'display:inline-flex;align-items:center;justify-content:center;'
+      + 'width:20px;height:20px;border-radius:50%;flex-shrink:0;'
+      + 'background:' + aColor + ';font-size:9px;font-weight:800;color:#fff;'
+      + 'letter-spacing:.3px">' + initials + '</span>';
+
     var bgStyle = isMine
       ? 'background:rgba(79,110,247,.08);border:1px solid rgba(79,110,247,.3);'
       : 'background:var(--bg-secondary);border:1px solid var(--border-color);';
-    var iconName = isMine ? 'file-plus' : 'file';
-    var iconColor = isMine ? 'var(--accent-blue)' : 'var(--text-muted)';
+
     var deleteBtn = isMine
-      ? '<button onclick="_removeTaskAttachment(\'' + (t.id) + '\',' + idx + ')" title="삭제" '
+      ? '<button onclick="_removeTaskAttachment(\'' + t.id + '\',' + idx + ')" title="삭제" '
         + 'style="background:none;border:none;cursor:pointer;padding:0;margin-left:2px;'
         + 'display:inline-flex;align-items:center;color:var(--text-muted);transition:color .15s" '
         + 'onmouseover="this.style.color=\'#ef4444\'" onmouseout="this.style.color=\'var(--text-muted)\'">'
         + '<i data-lucide="x" style="width:11px;height:11px"></i></button>'
-      : '<span title="' + (typeof a === 'object' && a.uploaderName ? a.uploaderName + '님이 등록' : '타인 등록') + '"'
-        + ' style="margin-left:4px;font-size:9px;color:var(--text-muted);background:var(--bg-tertiary);'
-        + 'border-radius:4px;padding:1px 4px">' 
-        + (typeof a === 'object' && a.uploaderName ? a.uploaderName : '타인') + '</span>';
+      : '';
+
     return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;'
       + bgStyle + 'font-size:11.5px;color:var(--text-primary)">'
-      + '<i data-lucide="' + iconName + '" style="width:11px;height:11px;color:' + iconColor + '"></i>'
-      + '<span style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + '</span>'
+      + avatar
+      + '<span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + '</span>'
       + deleteBtn
       + '</span>';
   }).join('');
