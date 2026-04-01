@@ -2332,151 +2332,166 @@ function renderPage_Performance() {
 }
 
 /* ?? 媛쒖씤설정 ?섏씠吏 ?? */
+/* 서브: 프로필 탭 HTML */
+function _buildProfileTab(u) {
+  return '<div id="profile-tab" style="padding:20px">'
+    + '<div class="form-row">'
+    +   '<div class="form-group"><label class="form-label">\uc774\ub984</label><input class="form-input" value="'+u.name+'" readonly></div>'
+    +   '<div class="form-group"><label class="form-label">\ubd80\uc11c</label><input class="form-input" value="'+u.dept+'" readonly></div>'
+    + '</div>'
+    + '<div class="form-row">'
+    +   '<div class="form-group"><label class="form-label">\uc9c1\uae09</label><input class="form-input" value="'+u.role+'" readonly></div>'
+    +   '<div class="form-group"><label class="form-label">\uc9c1\ucc45</label><input class="form-input" value="'+(u.pos||'-')+'" readonly></div>'
+    + '</div>'
+    + '<div class="form-row">'
+    +   '<div class="form-group"><label class="form-label">\uc774\uba54\uc77c</label><input class="form-input" value="'+u.email+'" readonly></div>'
+    +   '<div class="form-group"><label class="form-label">\uc0c1\ud0dc</label><input class="form-input" value="'+u.status+'" readonly></div>'
+    + '</div>'
+    + '<button class="btn btn-blue" onclick="showToast(\'success\',\'\ud504\ub85c\ud544\uc774 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4.\')">\uc800\uc7a5</button>'
+    + '</div>';
+}
+
+/* 서브: 알림 탭 HTML */
+function _buildNotifTab() {
+  var items = [
+    {id:'n1',label:'\uc2e0\uaddc \uc5c5\ubb34 \uc9c0\uc2dc \uc54c\ub9bc',desc:'\uc5c5\ubb34\ub97c \ud560\ub2f9\ubc1b\uc73c\uba74 \uc989\uc2dc \uc54c\ub9bc'},
+    {id:'n2',label:'\ub9c8\uac10 D-3 \uc0ac\uc804 \uc54c\ub9bc',desc:'\ub9c8\uac10 3\uc77c \uc804 \uc790\ub3d9 \uc54c\ub9bc'},
+    {id:'n3',label:'\uc0c1\ud0dc \ubcc0\uacbd \uc54c\ub9bc',desc:'\ub2f4\ub2f9 \uc5c5\ubb34 \uc0c1\ud0dc \ubcc0\uacbd \uc2dc \uc54c\ub9bc'},
+    {id:'n4',label:'\uc9c0\uc2dc \uacb0\uacfc \uc54c\ub9bc',desc:'\uc5c5\ubb34 \uc9c0\uc2dc \uc644\ub8cc \ud6c4 \uc989\uc2dc \uc54c\ub9bc'},
+    {id:'n5',label:'\uc644\ub8cc \ubcf4\uace0 \uc54c\ub9bc',desc:'\uc9c0\uc2dc\ud55c \uc5c5\ubb34\uac00 \uc644\ub8cc\ub418\uba74 \uc54c\ub9bc'}
+  ];
+  return '<div id="notif-tab" style="padding:20px;display:none">'
+    + items.map(function(n){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border-color)">'
+          + '<div>'
+          +   '<div style="font-size:13px;font-weight:600">'+n.label+'</div>'
+          +   '<div style="font-size:11.5px;color:var(--text-muted)">'+n.desc+'</div>'
+          + '</div>'
+          + '<label style="position:relative;display:inline-block;width:42px;height:24px;cursor:pointer">'
+          +   '<input type="checkbox" checked style="display:none" id="'+n.id+'" onchange="showToast(\'info\',\'\uc54c\ub9bc \uc124\uc815\uc774 \ubcc0\uacbd\ub418\uc5c8\uc2b5\ub2c8\ub2e4.\')">'
+          +   '<span style="position:absolute;inset:0;background:#4f6ef7;border-radius:12px;transition:.3s;display:flex;align-items:center;padding:2px">'
+          +     '<span id="'+n.id+'_knob" style="width:20px;height:20px;background:#fff;border-radius:50%;margin-left:auto"></span>'
+          +   '</span>'
+          + '</label>'
+          + '</div>';
+      }).join('')
+    + '<button class="btn btn-blue" style="margin-top:16px" onclick="showToast(\'success\',\'\uc54c\ub9bc \uc124\uc815\uc774 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4.\')">\uc124\uc815 \uc800\uc7a5</button>'
+    + '</div>';
+}
+
+/* 서브: 테마 탭 HTML */
+function _buildThemeTab() {
+  var accentHtml = WS.accents.map(function(c){
+    return '<div class="accent-chip-wrapper">'
+      + '<div class="accent-chip '+(WS.currentAccent===c?'active':'')+'" style="background:'+c+'" onclick="applyAccent(\''+c+'\')"></div>'
+      + '<div class="accent-delete-btn" onclick="deleteAccent(\''+c+'\', event)">\xd7</div>'
+      + '</div>';
+  }).join('');
+
+  var radiusPresets = [
+    {key:'sharp', label:'\uc9c1\uac01',   px:'0px',   sm:0,  md:0,  lg:0,  xl:0   },
+    {key:'slight',label:'\uc57d\uac04',   px:'4px',   sm:3,  md:4,  lg:6,  xl:8   },
+    {key:'normal',label:'\ubcf4\ud1b5',   px:'8px',   sm:6,  md:10, lg:16, xl:20  },
+    {key:'round', label:'\ub465\uadfc\uac8c',px:'16px',sm:10, md:16, lg:22, xl:28  },
+    {key:'pill',  label:'Pill',        px:'999px',sm:20, md:30, lg:40, xl:999 }
+  ];
+  var savedR = localStorage.getItem('ws_border_radius');
+  var curKey = savedR ? JSON.parse(savedR).key : 'normal';
+  var radiusHtml = radiusPresets.map(function(opt){
+    var isActive = curKey === opt.key;
+    var bw  = isActive ? '2px' : '1.5px';
+    var bc  = isActive ? 'var(--accent-blue)' : 'var(--border-color)';
+    var bg  = isActive ? 'var(--accent-blue-light)' : 'var(--bg-secondary)';
+    var pr  = opt.key === 'pill' ? '999px' : opt.md + 'px';
+    var cls = isActive ? ' class="radius-active"' : '';
+    return '<div onclick="applyBorderRadius(\''+opt.key+'\','+opt.sm+','+opt.md+','+opt.lg+','+opt.xl+')"'
+      +cls+' style="flex:1;min-width:64px;display:flex;flex-direction:column;align-items:center;gap:8px;'
+      +'padding:12px 6px;border-radius:10px;border:'+bw+' solid '+bc+';background:'+bg+';'
+      +'cursor:pointer;transition:var(--transition)"'
+      +' onmouseover="if(!this.classList.contains(\'radius-active\'))this.style.borderColor=\'var(--accent-blue)\'"'
+      +' onmouseout="if(!this.classList.contains(\'radius-active\'))this.style.borderColor=\'var(--border-color)\'">'
+      +'<div style="width:36px;height:36px;border:'+(isActive?'2':'1.5')+'px solid '+(isActive?'var(--accent-blue)':'var(--border-color)')+';'
+      +'background:var(--bg-primary);border-radius:'+pr+'"></div>'
+      +'<div style="text-align:center">'
+      +'<div style="font-size:12px;font-weight:700;color:var(--text-primary)">'+opt.label+'</div>'
+      +'<div style="font-size:10px;color:var(--text-muted);margin-top:1px">('+opt.px+')</div>'
+      +'</div></div>';
+  }).join('');
+
+  return '<div id="theme-tab" style="padding:20px;display:none">'
+    + '<div style="font-size:13px;font-weight:600;margin-bottom:14px">UI \ud14c\ub9c8 \uc120\ud0dd</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">'
+    +   '<div onclick="applyTheme(\'light\');showToast(\'info\',\'\ub77c\uc774\ud2b8 \ubaa8\ub4dc\ub85c \ubcc0\uacbd\ub428\')" style="padding:20px;border-radius:12px;border:2px solid var(--border-color);cursor:pointer;background:#f0f2f7;transition:var(--transition)" onmouseover="this.style.borderColor=\'#4f6ef7\'" onmouseout="this.style.borderColor=\'var(--border-color)\'">'
+    +     '<div style="width:32px;height:32px;border-radius:50%;background:rgba(245,158,11,.2);display:flex;align-items:center;justify-content:center;margin-bottom:8px;color:#f59e0b"><i data-lucide="sun" style="width:20px;height:20px"></i></div>'
+    +     '<div style="font-size:13px;font-weight:700;color:#1a1d2e">\ub77c\uc774\ud2b8 \ubaa8\ub4dc</div>'
+    +     '<div style="font-size:11.5px;color:#5a6072">\ubc1d\uace0 \uae54\ub054\ud55c \ud14c\ub9c8</div>'
+    +   '</div>'
+    +   '<div onclick="applyTheme(\'dark\');showToast(\'info\',\'\ub2e4\ud06c \ubaa8\ub4dc\ub85c \ubcc0\uacbd\ub428\')" style="padding:20px;border-radius:12px;border:2px solid var(--border-color);cursor:pointer;background:#252840;transition:var(--transition)" onmouseover="this.style.borderColor=\'#4f6ef7\'" onmouseout="this.style.borderColor=\'var(--border-color)\'">'
+    +     '<div style="width:32px;height:32px;border-radius:50%;background:rgba(151,71,255,.25);display:flex;align-items:center;justify-content:center;margin-bottom:8px;color:#9747ff"><i data-lucide="moon" style="width:20px;height:20px"></i></div>'
+    +     '<div style="font-size:13px;font-weight:700;color:#e8eaf0">\ub2e4\ud06c \ubaa8\ub4dc</div>'
+    +     '<div style="font-size:11.5px;color:#8b93a8">\ub208\uc774 \ud3b8\ud55c \uc5b4\ub450\uc6b4 \ud14c\ub9c8</div>'
+    +   '</div>'
+    + '</div>'
+    + '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">'
+    +   '<div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:12px">\uac15\uc870\uc0c9 \uc124\uc815</div>'
+    +   '<div class="accent-list" id="accentList">'
+    +     accentHtml
+    +     '<button class="btn-add-accent" onclick="triggerAddAccent()" title="\uc0c8 \uac15\uc870\uc0c9 \ucd94\uac00">+</button>'
+    +     '<input type="color" id="accentColorPicker" onchange="addAccentFromPicker(this.value)">'
+    +   '</div>'
+    +   '<div style="font-size:10.5px;color:var(--text-muted);margin-top:10px">\uc0c9\uc0c1\uc5d0 \ub9c8\uc6b0\uc2a4\ub97c \uc62c\ub824 \uc0ad\uc81c\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4.</div>'
+    + '</div>'
+    + '<div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px;margin-top:14px">'
+    +   '<div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:14px">'
+    +     '<i data-lucide="square-dashed" style="width:14px;height:14px;color:var(--accent-blue)"></i>'
+    +     '\ubaa8\uc11c\ub9ac \uacf3\ub960 (Border Radius)'
+    +   '</div>'
+    +   '<div style="display:flex;gap:10px;flex-wrap:wrap" id="radiusPickerRow">'+radiusHtml+'</div>'
+    + '</div>'
+    + '</div>';
+}
+
 function renderPage_Profile() {
-  const el = document.getElementById('profileArea');
-  if(!el) return;
-  const u = WS.currentUser || WS.users[0];
-  el.innerHTML = `
-    <div style="display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px">
-      <!-- 프로필탭 -->
-      <div class="section-card" style="padding:24px;align-items:center;text-align:center">
-        <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,${u.color},#9747ff);display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;font-weight:800;margin:0 auto 14px">${u.avatar}</div>
-        <div style="font-size:18px;font-weight:800;margin-bottom:4px">${u.name}</div>
-        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">${u.dept} · ${u.role}${u.pos ? ` | ${u.pos}` : ''}</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:20px">${u.email}</div>
-        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px">
-          <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--accent-blue)">${WS.tasks.filter(t=>{const _prIds=Array.isArray(t.assigneeIds)?t.assigneeIds:(t.assigneeId?[t.assigneeId]:[]);return _prIds.includes(u.id);}).length}</div><div style="font-size:11px;color:var(--text-muted)">담당 업무</div></div>
-          <div style="width:1px;background:var(--border-color);margin:0 8px"></div>
-          <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:#22c55e">${WS.tasks.filter(t=>{const _prIds=Array.isArray(t.assigneeIds)?t.assigneeIds:(t.assigneeId?[t.assigneeId]:[]);return _prIds.includes(u.id)&&t.status==='done';}).length}</div><div style="font-size:11px;color:var(--text-muted)">완료</div></div>
-          <div style="width:1px;background:var(--border-color);margin:0 8px"></div>
-          <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:#4f6ef7">${WS.tasks.filter(t=>t.assignerId===u.id).length}</div><div style="font-size:11px;color:var(--text-muted)">지시</div></div>
-        </div>
-        <button class="btn btn-blue" style="width:100%" onclick="logout()"><i data-lucide="log-out" class="icon-sm"></i> 로그아웃</button>
-      </div>
+  var el = document.getElementById('profileArea');
+  if (!el) return;
+  var u = WS.currentUser || WS.users[0];
 
-      <!-- 설정 ?⑤꼸 -->
-      <div class="section-card" style="min-width:0;overflow-x:hidden">
-        <div class="tab-bar">
-          <div class="tab-item active" onclick="switchProfileTab('profile-tab',this)">프로필 설정</div>
-          <div class="tab-item" onclick="switchProfileTab('notif-tab',this)">알림 설정</div>
-          <div class="tab-item" onclick="switchProfileTab('theme-tab',this)">UI 테마</div>
-        </div>
+  // 내 업무 통계
+  var myTasks = WS.tasks.filter(function(t){
+    var ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+    return ids.includes(u.id);
+  });
+  var doneCnt  = myTasks.filter(function(t){ return t.status==='done'; }).length;
+  var instrCnt = WS.tasks.filter(function(t){ return t.assignerId===u.id; }).length;
 
-        <div id="profile-tab" style="padding:20px">
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">이름</label><input class="form-input" value="${u.name}" readonly></div>
-            <div class="form-group"><label class="form-label">부서</label><input class="form-input" value="${u.dept}" readonly></div>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">직급</label><input class="form-input" value="${u.role}" readonly></div>
-            <div class="form-group"><label class="form-label">직책</label><input class="form-input" value="${u.pos || '-'}" readonly></div>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">이메일</label><input class="form-input" value="${u.email}" readonly></div>
-            <div class="form-group"><label class="form-label">상태</label><input class="form-input" value="${u.status}" readonly></div>
-          </div>
-          <button class="btn btn-blue" onclick="showToast('success', '<i data-lucide=&quot;check-circle-2&quot;></i> 프로필이 저장되었습니다.')">저장</button>
-        </div>
-
-        <div id="notif-tab" style="padding:20px;display:none">
-          ${[{id:'n1',label:'신규 업무 지시 알림',desc:'업무를 할당받으면 즉시 알림'},
-             {id:'n2',label:'마감 D-3 사전 알림',desc:'마감 3일 전 자동 알림'},
-             {id:'n3',label:'상태 변경 알림',desc:'담당 업무 상태 변경 시 알림'},
-             {id:'n4',label:'지시 결과 알림',desc:'업무 지시 완료 후 즉시 알림'},
-             {id:'n5',label:'완료 보고 알림',desc:'지시한 업무가 완료되면 알림'},
-          ].map(n=>`
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border-color)">
-              <div>
-                <div style="font-size:13px;font-weight:600">${n.label}</div>
-                <div style="font-size:11.5px;color:var(--text-muted)">${n.desc}</div>
-              </div>
-              <label style="position:relative;display:inline-block;width:42px;height:24px;cursor:pointer">
-                <input type="checkbox" checked style="display:none" id="${n.id}" onchange="showToast('info','알림 설정이 변경되었습니다.')">
-                <span style="position:absolute;inset:0;background:#4f6ef7;border-radius:12px;transition:.3s;display:flex;align-items:center;padding:2px">
-                  <span id="${n.id}_knob" style="width:20px;height:20px;background:#fff;border-radius:50%;margin-left:auto"></span>
-                </span>
-              </label>
-            </div>`).join('')}
-          <button class="btn btn-blue" style="margin-top:16px" onclick="showToast('success','알림 설정이 저장되었습니다.')">설정 저장</button>
-        </div>
-
-        <div id="theme-tab" style="padding:20px;display:none">
-          <div style="font-size:13px;font-weight:600;margin-bottom:14px">UI 테마 선택</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
-            <div onclick="applyTheme('light');showToast('info','라이트 모드로 변경됨')" style="padding:20px;border-radius:12px;border:2px solid var(--border-color);cursor:pointer;background:#f0f2f7;transition:var(--transition)" onmouseover="this.style.borderColor='#4f6ef7'" onmouseout="this.style.borderColor='var(--border-color)'">
-              <div style="width:32px;height:32px;border-radius:50%;background:rgba(245,158,11,.2);display:flex;align-items:center;justify-content:center;margin-bottom:8px;color:#f59e0b"><i data-lucide="sun" style="width:20px;height:20px"></i></div>
-              <div style="font-size:13px;font-weight:700;color:#1a1d2e">라이트 모드</div>
-              <div style="font-size:11.5px;color:#5a6072">밝고 깔끔한 테마</div>
-            </div>
-            <div onclick="applyTheme('dark');showToast('info','다크 모드로 변경됨')" style="padding:20px;border-radius:12px;border:2px solid var(--border-color);cursor:pointer;background:#252840;transition:var(--transition)" onmouseover="this.style.borderColor='#4f6ef7'" onmouseout="this.style.borderColor='var(--border-color)'">
-              <div style="width:32px;height:32px;border-radius:50%;background:rgba(151,71,255,.25);display:flex;align-items:center;justify-content:center;margin-bottom:8px;color:#9747ff"><i data-lucide="moon" style="width:20px;height:20px"></i></div>
-              <div style="font-size:13px;font-weight:700;color:#e8eaf0">다크 모드</div>
-              <div style="font-size:11.5px;color:#8b93a8">눈이 편한 어두운 테마</div>
-            </div>
-          </div>
-          <div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px">
-            <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:12px">강조색 설정</div>
-            <div class="accent-list" id="accentList">
-              ${WS.accents.map(c => `
-                <div class="accent-chip-wrapper">
-                  <div class="accent-chip ${WS.currentAccent===c?'active':''}" 
-                       style="background:${c}" 
-                       onclick="applyAccent('${c}')"></div>
-                  <div class="accent-delete-btn" onclick="deleteAccent('${c}', event)">×</div>
-                </div>`).join('')}
-              <button class="btn-add-accent" onclick="triggerAddAccent()" title="새 강조색 추가">+</button>
-              <input type="color" id="accentColorPicker" onchange="addAccentFromPicker(this.value)">
-            </div>
-          <div style="font-size:10.5px;color:var(--text-muted);margin-top:10px">색상에 마우스를 올려 삭제할 수 있습니다.</div>
-          </div>
-
-
-          <!-- ── 모서리 곡률 선택 ── -->
-          <div style="background:var(--bg-tertiary);border-radius:var(--radius-md);padding:14px;margin-top:14px">
-            <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:14px">
-              <i data-lucide="square-dashed" style="width:14px;height:14px;color:var(--accent-blue)"></i>
-              모서리 곡률 (Border Radius)
-            </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap" id="radiusPickerRow">
-              ${(function(){
-                var presets = [
-                  { key:'sharp',  label:'직각',   px:'0px',   sm:0,  md:0,  lg:0,  xl:0   },
-                  { key:'slight', label:'약간',   px:'4px',   sm:3,  md:4,  lg:6,  xl:8   },
-                  { key:'normal', label:'보통',   px:'8px',   sm:6,  md:10, lg:16, xl:20  },
-                  { key:'round',  label:'둥글게', px:'16px',  sm:10, md:16, lg:22, xl:28  },
-                  { key:'pill',   label:'Pill',   px:'999px', sm:20, md:30, lg:40, xl:999 }
-                ];
-                var saved = localStorage.getItem('ws_border_radius');
-                var curKey = saved ? JSON.parse(saved).key : 'normal';
-                return presets.map(function(opt){
-                  var isActive = curKey === opt.key;
-                  var bw  = isActive ? '2px' : '1.5px';
-                  var bc  = isActive ? 'var(--accent-blue)'       : 'var(--border-color)';
-                  var bg  = isActive ? 'var(--accent-blue-light)' : 'var(--bg-secondary)';
-                  var previewR = opt.key === 'pill' ? '999px' : opt.md + 'px';
-                  var boxB = isActive ? 'var(--accent-blue)' : 'var(--border-color)';
-                  var cls  = isActive ? ' class="radius-active"' : '';
-                  return '<div onclick="applyBorderRadius(\'' + opt.key + '\',' + opt.sm + ',' + opt.md + ',' + opt.lg + ',' + opt.xl + ')"'
-                    + cls
-                    + ' style="flex:1;min-width:64px;display:flex;flex-direction:column;align-items:center;gap:8px;'
-                    + 'padding:12px 6px;border-radius:10px;border:' + bw + ' solid ' + bc + ';background:' + bg + ';'
-                    + 'cursor:pointer;transition:var(--transition)"'
-                    + ' onmouseover="if(!this.classList.contains(\'radius-active\'))this.style.borderColor=\'var(--accent-blue)\'"'
-                    + ' onmouseout="if(!this.classList.contains(\'radius-active\'))this.style.borderColor=\'var(--border-color)\'">'
-                    + '<div style="width:36px;height:36px;border:' + (isActive?'2':'1.5') + 'px solid ' + boxB + ';'
-                    + 'background:var(--bg-primary);border-radius:' + previewR + '"></div>'
-                    + '<div style="text-align:center">'
-                    + '<div style="font-size:12px;font-weight:700;color:var(--text-primary)">' + opt.label + '</div>'
-                    + '<div style="font-size:10px;color:var(--text-muted);margin-top:1px">(' + opt.px + ')</div>'
-                    + '</div>'
-                    + '</div>';
-                }).join('');
-              })()}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>`;
+  el.innerHTML =
+    '<div style="display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px">'
+    + '<div class="section-card" style="padding:24px;align-items:center;text-align:center">'
+    +   '<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,'+u.color+',#9747ff);display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;font-weight:800;margin:0 auto 14px">'+u.avatar+'</div>'
+    +   '<div style="font-size:18px;font-weight:800;margin-bottom:4px">'+u.name+'</div>'
+    +   '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">'+u.dept+' \xb7 '+u.role+(u.pos?' | '+u.pos:'')+'</div>'
+    +   '<div style="font-size:12px;color:var(--text-muted);margin-bottom:20px">'+u.email+'</div>'
+    +   '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px">'
+    +     '<div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--accent-blue)">'+myTasks.length+'</div><div style="font-size:11px;color:var(--text-muted)">\ub2f4\ub2f9 \uc5c5\ubb34</div></div>'
+    +     '<div style="width:1px;background:var(--border-color);margin:0 8px"></div>'
+    +     '<div style="text-align:center"><div style="font-size:18px;font-weight:800;color:#22c55e">'+doneCnt+'</div><div style="font-size:11px;color:var(--text-muted)">\uc644\ub8cc</div></div>'
+    +     '<div style="width:1px;background:var(--border-color);margin:0 8px"></div>'
+    +     '<div style="text-align:center"><div style="font-size:18px;font-weight:800;color:#4f6ef7">'+instrCnt+'</div><div style="font-size:11px;color:var(--text-muted)">\uc9c0\uc2dc</div></div>'
+    +   '</div>'
+    +   '<button class="btn btn-blue" style="width:100%" onclick="logout()"><i data-lucide="log-out" class="icon-sm"></i> \ub85c\uadf8\uc544\uc6c3</button>'
+    + '</div>'
+    + '<div class="section-card" style="min-width:0;overflow-x:hidden">'
+    +   '<div class="tab-bar">'
+    +     '<div class="tab-item active" onclick="switchProfileTab(\'profile-tab\',this)">\ud504\ub85c\ud544 \uc124\uc815</div>'
+    +     '<div class="tab-item" onclick="switchProfileTab(\'notif-tab\',this)">\uc54c\ub9bc \uc124\uc815</div>'
+    +     '<div class="tab-item" onclick="switchProfileTab(\'theme-tab\',this)">UI \ud14c\ub9c8</div>'
+    +   '</div>'
+    +   _buildProfileTab(u)
+    +   _buildNotifTab()
+    +   _buildThemeTab()
+    + '</div>'
+    + '</div>';
+  setTimeout(refreshIcons, 50);
 }
 
 /* ── 모서리 곡률 선택기 렌더링 ── */
