@@ -1,4 +1,4 @@
-﻿/**
+/**
  * modules/schedule.js — 일정보기(Schedule View) 렌더링 및 인터랙션
  * app.js에서 분리된 스케쥴 전용 모듈
  */
@@ -172,7 +172,7 @@ function _schedBuildCells(year, monthNum, todayStr, cw, ch, lastDate) {
              border-right:${isToday?'2px solid var(--accent-blue)':'1px solid var(--border-color)'};
              border-bottom:1px solid var(--border-color);
              ${!isValid?'opacity:.35;':''}
-             position:relative;overflow:hidden;z-index:5;">
+             position:relative;overflow:hidden;">
       ${isValid && cw >= 28 ? `<div style="position:absolute;bottom:${_SCHED_PAD_BOT}px;left:0;right:0;
         font-size:${cw>=40?'9px':'7.5px'};font-weight:800;
         color:${dowColor};opacity:.75;pointer-events:none;
