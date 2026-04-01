@@ -2338,10 +2338,29 @@ function openInstructionModal(editData) {
 
 /* 서브: 수정/신규 모드 헤더 처리 */
 function _instrSetEditMode(editData, isEdit) {
-  var titleEl = document.getElementById('instructionModalTitle');
+  var titleEl   = document.getElementById('instructionModalTitle');
+  var iconWrap  = document.getElementById('instrModalIconWrap');
+  var saveBtn   = document.querySelector('#instructionModal .modal-foot .btn-blue');
+
   if (isEdit) {
     var taskName = editData.taskName || editData.title || '';
-    if (titleEl) titleEl.textContent = taskName ? taskName + ' \uc218\uc815' : '\uc9c0\uc2dc\uc0ac\ud56d \uc218\uc815';
+    // 타이틀: "업무명 - 업무수정"
+    if (titleEl) {
+      titleEl.innerHTML =
+        '<span style="color:var(--text-primary)">' + (taskName || '지시사항') + '</span>'
+        + '<span style="color:var(--text-muted);font-weight:400;margin:0 6px">-</span>'
+        + '<span style="color:var(--accent-blue)">업무수정</span>';
+    }
+    // 아이콘: pencil
+    if (iconWrap) {
+      iconWrap.innerHTML = '<i data-lucide="pencil" style="width:16px;height:16px;color:#fff"></i>';
+      refreshIcons && refreshIcons();
+    }
+    // 저장 버튼 → "수정"
+    if (saveBtn) {
+      saveBtn.innerHTML = '<i data-lucide="pencil" style="width:13px;height:13px;margin-right:4px;vertical-align:middle"></i>수정';
+      refreshIcons && refreshIcons();
+    }
     var task = WS.getTask ? WS.getTask(editData.id)
       : WS.tasks.find(function(t){ return t.id === editData.id || t.id === Number(editData.id); });
     var progress = (task && task.progress != null) ? task.progress : (editData.progress || 0);
@@ -2351,7 +2370,16 @@ function _instrSetEditMode(editData, isEdit) {
     if (lbl) lbl.textContent = progress + '%';
     _renderInstrHistory(task || editData);
   } else {
-    if (titleEl) titleEl.textContent = '\uc9c0\uc2dc\uc0ac\ud56d \ub4f1\ub85d';
+    // 등록 모드: 원래대로 복원
+    if (titleEl) titleEl.textContent = '지시사항 등록';
+    if (iconWrap) {
+      iconWrap.innerHTML = '<i data-lucide="megaphone" style="width:16px;height:16px;color:#fff"></i>';
+      refreshIcons && refreshIcons();
+    }
+    if (saveBtn) {
+      saveBtn.innerHTML = '<i data-lucide="send" style="width:13px;height:13px;margin-right:4px;vertical-align:middle"></i>저장';
+      refreshIcons && refreshIcons();
+    }
     var hSec = document.getElementById('instrHistorySection');
     if (hSec) hSec.style.display = 'none';
   }
