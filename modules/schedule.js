@@ -1,4 +1,4 @@
-/**
+﻿/**
  * modules/schedule.js — 일정보기(Schedule View) 렌더링 및 인터랙션
  * app.js에서 분리된 스케쥴 전용 모듈
  */
@@ -141,6 +141,7 @@ function _schedBuildHeader(year, todayStr, today, cw, labelW, maxDays) {
                  background:var(--bg-secondary);border-right:2px solid var(--border-color);
                  border-bottom:2px solid var(--border-color);font-size:10px;font-weight:700;
                  color:var(--text-muted);text-align:center;padding:5px 2px;">월 \\ 일</th>
+      <th style="width:0;min-width:0;max-width:0;padding:0;border:none;background:var(--bg-secondary);"></th>
       ${ths}
     </tr>
   </thead>`;
@@ -171,11 +172,11 @@ function _schedBuildCells(year, monthNum, todayStr, cw, ch, lastDate) {
              border-right:${isToday?'2px solid var(--accent-blue)':'1px solid var(--border-color)'};
              border-bottom:1px solid var(--border-color);
              ${!isValid?'opacity:.35;':''}
-             position:relative;overflow:hidden;">
+             position:relative;overflow:hidden;z-index:5;">
       ${isValid && cw >= 28 ? `<div style="position:absolute;bottom:${_SCHED_PAD_BOT}px;left:0;right:0;
         font-size:${cw>=40?'9px':'7.5px'};font-weight:800;
         color:${dowColor};opacity:.75;pointer-events:none;
-        text-align:center;line-height:1;z-index:6;">${dowLabel}</div>` : ''}
+        text-align:center;line-height:1;z-index:10;">${dowLabel}</div>` : ''}
     </td>`;
   }).join('');
 }
@@ -339,6 +340,7 @@ function renderPage_Schedule() {
     const dotScript = _schedBuildDotScript(dotMap, year, monthNum);
 
     // 헬퍼 td: width=0, overflow=visible, position=relative → bars가 이 안에서 절대 위치로 배치됨
+    // 헬퍼 td: width=0, overflow=visible → bars가 이 안에서 절대 위치로 배치됨
     // 헬퍼 td는 sticky가 아니므로 좌우 스크롤 시 bars가 그리드와 함께 이동함
     return `<tr style="position:relative;">
       <td style="position:sticky;left:0;z-index:10;
