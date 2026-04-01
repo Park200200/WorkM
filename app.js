@@ -412,10 +412,12 @@ function openReceivedTaskDetail(taskId) {
   const instrContent = (instr && instr.content) ? instr.content : (t.desc || t.description || '-');
 
   document.getElementById('tdModalTitle').innerHTML =
-    `<span style="color:var(--text-primary)">${t.title}</span>`
+    `<i data-lucide="file-text" style="width:17px;height:17px;color:var(--accent-blue);vertical-align:middle;margin-right:5px;flex-shrink:0"></i>`
+    + `<span style="color:var(--text-primary)">${t.title}</span>`
     + `<span style="color:var(--text-muted);font-weight:500;margin:0 6px">:</span>`
     + `<span style="color:var(--accent-blue)">진행보고서 작성</span>`
     + `<span style="font-size:12px;font-weight:700;background:var(--accent-blue);color:#fff;border-radius:20px;padding:2px 9px;vertical-align:middle;margin-left:8px;opacity:.85">${progress}%</span>`;
+  refreshIcons && refreshIcons();
 
   document.getElementById('tdModalBody').innerHTML = `
     <!-- 📋 지시받은 업무 상세 카드 -->
