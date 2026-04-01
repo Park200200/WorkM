@@ -488,19 +488,28 @@ function openReceivedTaskDetail(taskId) {
       </div>
       <!-- 캡슐형 슬라이더 -->
       <div id="capsuleSliderWrap_${t.id}"
-        style="position:relative;height:44px;border-radius:100px;background:linear-gradient(135deg,#3b4fd8,#4f6ef7);box-shadow:0 4px 20px rgba(79,110,247,.35);cursor:pointer;user-select:none;overflow:hidden"
+        style="position:relative;height:44px;border-radius:100px;cursor:pointer;user-select:none;overflow:visible;box-shadow:0 4px 20px rgba(79,110,247,.35)"
         onmousedown="_capsuleStart(event,'${t.id}',${progress})"
         ontouchstart="_capsuleStart(event,'${t.id}',${progress})">
-        <!-- 채워진 영역 (진행율만큼) -->
-        <div id="capsuleFill_${t.id}"
-          style="position:absolute;left:0;top:0;bottom:0;width:${progress}%;background:linear-gradient(135deg,#2438c0,#3b5bdb);border-radius:100px;transition:width .15s"></div>
-        <!-- 텍스트 overlay -->
-        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:56px;pointer-events:none">
-          <span id="capsuleText_${t.id}" style="font-size:15px;font-weight:800;color:#fff;letter-spacing:.5px;text-shadow:0 1px 4px rgba(0,0,0,.3)">현재 ${progress}%</span>
+        <!-- 트랙 배경 (inner, overflow:hidden) -->
+        <div style="position:absolute;inset:0;border-radius:100px;background:linear-gradient(135deg,#3b4fd8,#4f6ef7);overflow:hidden">
+          <!-- 채워진 영역 (더 어두운 파란) -->
+          <div id="capsuleFill_${t.id}"
+            style="position:absolute;left:0;top:0;bottom:0;width:${progress}%;background:linear-gradient(135deg,#1a2db8,#2a44d6);transition:width .1s"></div>
+          <!-- 텍스트 overlay -->
+          <div style="position:absolute;inset:0;display:flex;align-items:center;padding:0 54px 0 20px;pointer-events:none">
+            <span id="capsuleText_${t.id}" style="font-size:15px;font-weight:800;color:#fff;letter-spacing:.5px;text-shadow:0 1px 4px rgba(0,0,0,.3)">현재 ${progress}%</span>
+          </div>
         </div>
-        <!-- 원형 핸들 -->
+        <!-- 원형 핸들 (fill 끝 위치에서 이동) -->
         <div id="capsuleHandle_${t.id}"
-          style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;pointer-events:none">
+          style="position:absolute;top:50%;
+                 left:clamp(4px, calc(${progress}% - 22px), calc(100% - 48px));
+                 transform:translateY(-50%);
+                 width:44px;height:44px;border-radius:50%;background:#fff;
+                 box-shadow:0 2px 16px rgba(0,0,0,.28);
+                 display:flex;align-items:center;justify-content:center;
+                 pointer-events:none;cursor:grab;z-index:10">
           <i data-lucide="align-justify" style="width:16px;height:16px;color:#4f6ef7"></i>
         </div>
       </div>
@@ -576,13 +585,16 @@ window._capsuleStart = function(e, taskId, prevVal) {
   }
 
   function update(val) {
-    var fill  = document.getElementById('capsuleFill_' + taskId);
-    var text  = document.getElementById('capsuleText_' + taskId);
-    var inp   = document.getElementById('progressInput_' + taskId);
-    var delta = document.getElementById('progDeltaLabel_' + taskId);
-    if (fill)  fill.style.width  = val + '%';
-    if (text)  text.textContent  = '현재 ' + val + '%';
-    if (inp)   inp.value         = val;
+    var fill   = document.getElementById('capsuleFill_'    + taskId);
+    var text   = document.getElementById('capsuleText_'    + taskId);
+    var inp    = document.getElementById('progressInput_'  + taskId);
+    var delta  = document.getElementById('progDeltaLabel_' + taskId);
+    var handle = document.getElementById('capsuleHandle_'  + taskId);
+    if (fill)   fill.style.width = val + '%';
+    if (text)   text.textContent = '현재 ' + val + '%';
+    if (inp)    inp.value = val;
+    // 핸들을 fill 끝에 맞춰 이동 (CSS clamp 적용)
+    if (handle) handle.style.left = 'clamp(4px, calc(' + val + '% - 22px), calc(100% - 48px))';
     if (delta) {
       var diff = val - minVal;
       delta.textContent  = (diff >= 0 ? '↗ +' : '↘ ') + diff + '%';
