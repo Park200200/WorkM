@@ -470,14 +470,7 @@ function openReceivedTaskDetail(taskId) {
       <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:6px">
         <i data-lucide="trending-up" style="width:13px;height:13px"></i> 진행 보고
       </div>
-      <!-- 이전 진행율 표시 -->
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:8px 12px;background:var(--bg-secondary);border-radius:10px">
-        <span style="font-size:11px;color:var(--text-muted);font-weight:600;flex-shrink:0">이전까지 진행율</span>
-        <div style="flex:1;height:6px;background:var(--border-color);border-radius:100px;overflow:hidden">
-          <div id="prevProgBarFill_${t.id}" style="width:${progress}%;height:100%;background:${t.status==='done'?'#22c55e':t.status==='delay'?'#ef4444':'var(--accent-blue)'};border-radius:100px"></div>
-        </div>
-        <span id="prevProgText_${t.id}" style="font-size:14px;font-weight:800;color:var(--accent-blue);min-width:38px;text-align:right">${progress}%</span>
-      </div>
+
       <!-- 이전 진행율 + 변화량 헤더 -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <span style="font-size:12px;color:var(--text-muted);font-weight:600">진행률 설정</span>
@@ -486,9 +479,9 @@ function openReceivedTaskDetail(taskId) {
           <span id="progDeltaLabel_${t.id}" style="font-size:11px;background:#dcfce7;border-radius:20px;padding:3px 10px;font-weight:800;color:#16a34a;display:${progress>0?'inline-block':'none'}">↗ +0%</span>
         </div>
       </div>
-      <!-- 캡슐형 슬라이더 -->
+      <!-- 캡슐형 슬라이더 (높이24px, 핸들34px) -->
       <div id="capsuleSliderWrap_${t.id}"
-        style="position:relative;height:44px;border-radius:100px;cursor:pointer;user-select:none;overflow:visible;box-shadow:0 4px 20px rgba(79,110,247,.35)"
+        style="position:relative;height:24px;border-radius:100px;cursor:pointer;user-select:none;overflow:visible;box-shadow:0 4px 16px rgba(79,110,247,.35);margin-bottom:10px"
         onmousedown="_capsuleStart(event,'${t.id}',${progress})"
         ontouchstart="_capsuleStart(event,'${t.id}',${progress})">
         <!-- 트랙 배경 (inner, overflow:hidden) -->
@@ -497,19 +490,19 @@ function openReceivedTaskDetail(taskId) {
           <div id="capsuleFill_${t.id}"
             style="position:absolute;left:0;top:0;bottom:0;width:${progress}%;background:linear-gradient(135deg,#1a2db8,#2a44d6);transition:width .1s"></div>
           <!-- 텍스트 overlay -->
-          <div style="position:absolute;inset:0;display:flex;align-items:center;padding:0 54px 0 20px;pointer-events:none">
-            <span id="capsuleText_${t.id}" style="font-size:15px;font-weight:800;color:#fff;letter-spacing:.5px;text-shadow:0 1px 4px rgba(0,0,0,.3)">현재 ${progress}%</span>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;padding:0 44px 0 14px;pointer-events:none">
+            <span id="capsuleText_${t.id}" style="font-size:13px;font-weight:800;color:#fff;letter-spacing:.5px;text-shadow:0 1px 4px rgba(0,0,0,.3)">현재 ${progress}%</span>
           </div>
         </div>
-        <!-- 원형 핸들 (fill 끝 위치에서 이동) -->
+        <!-- 원형 핸들 (34px - 바 24px보다 5px씩 돌출) -->
         <div id="capsuleHandle_${t.id}"
           style="position:absolute;top:50%;right:4px;
                  transform:translateY(-50%);
-                 width:44px;height:44px;border-radius:50%;background:#fff;
-                 box-shadow:0 2px 16px rgba(0,0,0,.28);
+                 width:34px;height:34px;border-radius:50%;background:#fff;
+                 box-shadow:0 2px 12px rgba(0,0,0,.30);
                  display:flex;align-items:center;justify-content:center;
                  pointer-events:none;cursor:grab;z-index:10">
-          <i data-lucide="align-justify" style="width:16px;height:16px;color:#4f6ef7"></i>
+          <i data-lucide="align-justify" style="width:14px;height:14px;color:#4f6ef7"></i>
         </div>
       </div>
       <!-- hidden input (저장용) -->
@@ -573,7 +566,7 @@ function openReceivedTaskDetail(taskId) {
       var handle = document.getElementById('capsuleHandle_' + t.id);
       if (wrap && handle) {
         var w = wrap.offsetWidth;
-        var hW = 44;
+        var hW = 34;
         var left = Math.max(4, Math.min(w - hW - 4, (progress / 100) * w - hW / 2));
         handle.style.right = 'auto';
         handle.style.left  = left + 'px';
@@ -606,7 +599,7 @@ window._capsuleStart = function(e, taskId, prevVal) {
     if (inp)    inp.value = val;
     // 핸들을 fill 끝에 맞춰 이동 (px 계산)
     if (handle) {
-      var wW = wrap.offsetWidth, hW2 = 44;
+      var wW = wrap.offsetWidth, hW2 = 34;
       var lx = Math.max(4, Math.min(wW - hW2 - 4, (val / 100) * wW - hW2 / 2));
       handle.style.right = 'auto';
       handle.style.left  = lx + 'px';
