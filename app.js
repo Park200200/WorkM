@@ -2508,6 +2508,20 @@ function openInstructionModal(editData) {
   ['instrContent','instrProcedureText'].forEach(function(id){ var el=document.getElementById(id); if(el)el.value=''; });
   window._instrFileArr = [];
   window._instrExistingFiles = editData ? (editData.attachments || []).slice() : [];
+  // 담당자(지시받은 사람)가 올린 파일: WS.tasks에서 로드 (다운로드 전용)
+  var _editTaskId = editData ? (editData.id || editData.taskId || null) : null;
+  window._instrTaskFiles = [];
+  if (_editTaskId && WS.getTask) {
+    var _et = WS.getTask(_editTaskId) || (WS.tasks||[]).find(function(t){ return String(t.id)===String(_editTaskId); });
+    if (_et && Array.isArray(_et.attachments) && _et.attachments.length > 0) {
+      var instrFileNames = (window._instrExistingFiles || []).map(function(a){ return typeof a==='string'?a:(a.name||''); });
+      // 지시자 파일과 중복 제외, 나머지는 담당자 파일로 표시
+      window._instrTaskFiles = _et.attachments.filter(function(a){
+        var n = typeof a==='string'?a:(a.name||'');
+        return !instrFileNames.includes(n);
+      });
+    }
+  }
   var fileInput = document.getElementById('instrFile');
   if (fileInput) fileInput.value = '';
   renderInstrFileList();
@@ -2910,7 +2924,29 @@ function renderInstrFileList() {
     </span>`;
   }).join('');
 
-  listEl.innerHTML = existingHtml + newHtml;
+  // 담당자가 올린 파일 (다운로드 전용, 삭제 불가)
+  const taskFiles = window._instrTaskFiles || [];
+  const taskFilesHtml = taskFiles.map((a, i) => {
+    const name = typeof a === 'string' ? a : (a.name || '');
+    const uName = typeof a === 'object' ? (a.uploaderName || null) : null;
+    const uId   = typeof a === 'object' ? (a.uploaderId   || null) : null;
+    let dispName = uName || '?';
+    if (!uName && uId && WS.getUser) { const u = WS.getUser(uId); if (u) dispName = u.name; }
+    return `<span title="담당자 파일 (다운로드만 가능)" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;
+      background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);
+      font-size:11.5px;color:var(--text-secondary)">
+      ${makeAvatar(dispName)}
+      <span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
+      <button onclick="_downloadInstrTaskFile(${i})" title="다운로드"
+        style="background:none;border:none;cursor:pointer;padding:0;margin-left:2px;
+               display:inline-flex;align-items:center;color:#a78bfa;transition:opacity .15s"
+        onmouseover="this.style.opacity='.6'" onmouseout="this.style.opacity='1'">
+        <i data-lucide="download" style="width:11px;height:11px"></i>
+      </button>
+    </span>`;
+  }).join('');
+
+  listEl.innerHTML = existingHtml + taskFilesHtml + newHtml;
   setTimeout(refreshIcons, 30);
 }
 
@@ -2925,6 +2961,27 @@ function _removeExistingFile(idx) {
   window._instrExistingFiles.splice(idx, 1);
   renderInstrFileList();
 }
+
+/* 담당자(지시받은 사람)가 올린 파일 다운로드 */
+function _downloadInstrTaskFile(idx) {
+  var files = window._instrTaskFiles || [];
+  var a = files[idx];
+  if (!a) return;
+  var name = typeof a === 'string' ? a : (a.name || '');
+  var dataUrl = typeof a === 'object' ? (a.dataUrl || a.url || null) : null;
+  if (dataUrl) {
+    var link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('success', '"' + name + '" 다운로드를 시작합니다.');
+  } else {
+    showToast('info', '"' + name + '" 파일은 서버에 저장된 파일이 아닙니다. 파일을 다시 첨부해 주세요.');
+  }
+}
+
 
 /* ── 업무중요도 드래그 스크롤 ─────────────────────── */
 var _impDragState = { active: false, startX: 0, scrollLeft: 0 };
