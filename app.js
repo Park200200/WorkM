@@ -3640,192 +3640,184 @@ function editInstruction(taskId) {
 }
 
 /* 모달 열기 (editData 있으면 수정모드) */
+/* 모달 열기 (editData 있으면 수정모드) */
 function openInstructionModal(editData) {
-  const m = document.getElementById('instructionModal');
+  var m = document.getElementById('instructionModal');
   if (!m) return;
 
-  // ── 업무선택 컴 피커 초기화
-  var detailList = WS.detailTasks || JSON.parse(localStorage.getItem('ws_detail_tasks') || '[]');
-  window._instrSelectedTasks    = [];  // { id, name }
-  window._instrSelectedAssignees = []; // { id, name, dept }
+  // 피커 초기화
+  window._instrSelectedTasks    = [];
+  window._instrSelectedAssignees = [];
   _renderInstrTaskBox();
   _renderInstrAssigneeBox();
 
-  // ── 수정 모드 설정
+  // 수정/신규 모드 설정
   window._instrEditId   = editData ? (editData.id || null) : null;
-  window._instrEditData = editData || null; // 수정모드에서 이름 복원용
+  window._instrEditData = editData || null;
   var isEdit = !!window._instrEditId;
 
-  // ── 업무/담당자 드롭다운 항상 표시; 수정모드에서는 진행율 바 추가 표시
+  // 영역 표시 제어
   var newFields  = document.getElementById('instrNewFields');
   var editHeader = document.getElementById('instrEditHeader');
-  if (newFields)  newFields.style.display  = 'grid';             // 항상 표시
-  if (editHeader) editHeader.style.display  = isEdit ? 'block' : 'none'; // 수정모드에서만 진행율바 표시
+  if (newFields)  newFields.style.display  = 'grid';
+  if (editHeader) editHeader.style.display = isEdit ? 'block' : 'none';
 
-  // ── 모달 타이틀 변경
+  // 모달 타이틀 & 수정모드 UI
+  _instrSetEditMode(editData, isEdit);
+
+  // 상태 칩
+  _renderInstrStatusPicks(editData ? (editData.status || editData.taskStatus || '') : '');
+
+  // 담당자 드롭다운
+  var assSel = document.getElementById('instrAssignee');
+  if (assSel) {
+    assSel.innerHTML = '<option value="">-- \ub2f4\ub2f9\uc790\ub97c \uc120\ud0dd\ud558\uc138\uc694 --</option>' +
+      (WS.users || []).map(function(u){ return '<option value="'+u.id+'">'+u.name+' ('+( u.dept||'')+')</option>'; }).join('');
+  }
+
+  // 진행순서 + 보고내용 칩 UI
+  _instrInitProc();
+  _instrInitReportPicks();
+
+  // 폼 초기화
+  var reportInput = document.getElementById('instrReport');
+  if (reportInput) reportInput.value = '';
+  window._instrSelectedReports = [];
+  ['instrContent','instrProcedureText'].forEach(function(id){ var el=document.getElementById(id); if(el)el.value=''; });
+  window._instrFileArr = [];
+  window._instrExistingFiles = editData ? (editData.attachments || []).slice() : [];
+  var fileInput = document.getElementById('instrFile');
+  if (fileInput) fileInput.value = '';
+  renderInstrFileList();
+
+  // 날짜 피커
+  var dueHidden  = document.getElementById('instrDueDate');
+  var dueLabelEl = document.getElementById('instrDueDateLabel');
+  if (dueHidden)  dueHidden.value = editData ? (editData.dueDate || '') : '';
+  if (dueLabelEl) {
+    if (editData && editData.dueDate) {
+      var parts = editData.dueDate.split('-');
+      dueLabelEl.textContent = parts[0]+'\ub144 '+parseInt(parts[1])+'\uc6d4 '+parseInt(parts[2])+'\uc77c';
+    } else {
+      dueLabelEl.textContent = '\ub0a0\uc9dc\ub97c \uc120\ud0dd\ud558\uc138\uc694';
+    }
+  }
+
+  // 업무중요도
+  window._instrImportances = editData && editData.importance
+    ? editData.importance.split(',').map(function(s){return s.trim();}).filter(Boolean) : [];
+  var impVal = document.getElementById('instrImportanceVal');
+  if (impVal) impVal.value = window._instrImportances.join(', ');
+  _renderImportancePicks();
+
+  // 수정모드 기존 값 복원
+  if (editData) _instrRestoreEdit(editData);
+
+  m.style.display = 'flex';
+  setTimeout(refreshIcons, 50);
+}
+
+/* 서브: 수정/신규 모드 헤더 처리 */
+function _instrSetEditMode(editData, isEdit) {
   var titleEl = document.getElementById('instructionModalTitle');
   if (isEdit) {
-    var taskName2 = editData.taskName || editData.title || '';
-    if (titleEl) titleEl.textContent = taskName2 ? taskName2 + ' 수정' : '지시사항 수정';
-    // 진행율 (WS.tasks에서 찾기)
-    var task = WS.getTask ? WS.getTask(editData.id) : WS.tasks.find(function(t){ return t.id === editData.id || t.id === Number(editData.id); });
+    var taskName = editData.taskName || editData.title || '';
+    if (titleEl) titleEl.textContent = taskName ? taskName + ' \uc218\uc815' : '\uc9c0\uc2dc\uc0ac\ud56d \uc218\uc815';
+    var task = WS.getTask ? WS.getTask(editData.id)
+      : WS.tasks.find(function(t){ return t.id === editData.id || t.id === Number(editData.id); });
     var progress = (task && task.progress != null) ? task.progress : (editData.progress || 0);
     var bar = document.getElementById('instrEditProgressBar');
     var lbl = document.getElementById('instrEditProgressLabel');
     if (bar) bar.style.width = progress + '%';
     if (lbl) lbl.textContent = progress + '%';
-    // 히스토리 섹션
     _renderInstrHistory(task || editData);
   } else {
-    if (titleEl) titleEl.textContent = '지시사항 등록';
+    if (titleEl) titleEl.textContent = '\uc9c0\uc2dc\uc0ac\ud56d \ub4f1\ub85d';
     var hSec = document.getElementById('instrHistorySection');
     if (hSec) hSec.style.display = 'none';
   }
+}
 
-  // ── 현재상태 칩 렌더 (ws_task_statuses)
-  var savedStatus = editData ? (editData.status || editData.taskStatus || '') : '';
-  _renderInstrStatusPicks(savedStatus);
-
-  // ── 담당자 드롭다운 채우기
-  const assSel = document.getElementById('instrAssignee');
-  if (assSel) {
-    assSel.innerHTML = '<option value="">-- 담당자를 선택하세요 --</option>' +
-      (WS.users || []).map(u =>
-        `<option value="${u.id}">${u.name} (${u.dept || ''})</option>`
-      ).join('');
-  }
-
-  // ── 진행순서 UI 생성 (진행보고 유형 기반, 더블클릭으로 추가)
+/* 서브: 진행순서 UI 초기화 */
+function _instrInitProc() {
   window._instrProcedures = [];
-  const procTypeList = document.getElementById('instrProcedureTypeList');
-  const procSelected = document.getElementById('instrProcedureSelected');
+  var procTypeList = document.getElementById('instrProcedureTypeList');
+  var procSelected  = document.getElementById('instrProcedureSelected');
   if (procTypeList) {
-    const types = WS.reportTypes || [];
+    var types = WS.reportTypes || [];
     procTypeList.innerHTML = types.length === 0
-      ? '<span style="font-size:11px;color:var(--text-muted)">기타설정에서 진행보고 유형을 추가하세요</span>'
-      : types.map(rt => {
-          const c = rt.color || '#4f6ef7';
-          const icon = rt.icon || 'circle';
-          return `<span ondblclick="_addInstrProcedure('${rt.label}')"
-            data-label="${rt.label}"
-            title="${rt.label} (더블클릭으로 추가)"
-            style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;
-                   font-size:11.5px;font-weight:600;cursor:pointer;transition:all .15s;
-                   border:1.5px solid ${c};color:${c};background:transparent;user-select:none"
-            onmouseover="this.style.background='${c}22'" onmouseout="this.style.background='transparent'">
-            <i data-lucide="${icon}" style="width:11px;height:11px;color:${c}"></i>
-            ${rt.label}
-          </span>`;
+      ? '<span style="font-size:11px;color:var(--text-muted)">\uae30\ud0c0\uc124\uc815\uc5d0\uc11c \uc9c4\ud589\ubcf4\uace0 \uc720\ud615\uc744 \ucd94\uac00\ud558\uc138\uc694</span>'
+      : types.map(function(rt){
+          var c = rt.color || '#4f6ef7', icon = rt.icon || 'circle';
+          return '<span ondblclick="_addInstrProcedure(\''+rt.label+'\')" data-label="'+rt.label+'"'
+            +' title="'+rt.label+' (\ub354\ube14\ud074\ub9ad\uc73c\ub85c \ucd94\uac00)"'
+            +' style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;'
+            +'font-size:11.5px;font-weight:600;cursor:pointer;transition:all .15s;'
+            +'border:1.5px solid '+c+';color:'+c+';background:transparent;user-select:none"'
+            +' onmouseover="this.style.background=\''+c+'22\'" onmouseout="this.style.background=\'transparent\'">'
+            +'<i data-lucide="'+icon+'" style="width:11px;height:11px;color:'+c+'"></i>'
+            +rt.label+'</span>';
         }).join('');
   }
   if (procSelected) {
-    procSelected.innerHTML = '<span id="instrProcedurePlaceholder" style="font-size:11px;color:var(--text-muted);padding:2px 0">아래 목록에서 더블클릭으로 순서 추가</span>';
+    procSelected.innerHTML = '<span id="instrProcedurePlaceholder" style="font-size:11px;color:var(--text-muted);padding:2px 0">\uc544\ub798 \ubaa9\ub85d\uc5d0\uc11c \ub354\ube14\ud074\ub9ad\uc73c\ub85c \uc21c\uc11c \ucd94\uac00</span>';
   }
+}
 
-  // ── 보고내용 칩 생성 (업무결과 리스트 기반, 단일 선택)
-  const reportPicks = document.getElementById('instrReportPicks');
-  if (reportPicks) {
-    const results = JSON.parse(localStorage.getItem('ws_task_results')) || WS.taskResults || [];
-    if (results.length === 0) {
-      reportPicks.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">기타설정 > 업무결과에서 항목을 추가하세요</span>';
-    } else {
-      reportPicks.innerHTML = results.map(r => {
-        const c = r.color || '#6b7280';
-        const hasLucide = r.icon && r.icon.length > 2;
-        const iconHtml = hasLucide
-          ? `<i data-lucide="${r.icon}" style="width:11px;height:11px;color:${c}"></i>`
-          : (r.icon ? `<span>${r.icon}</span>` : '');
-        return `<span onclick="_selectInstrReport('${r.name}',this)"
-          data-result="${r.name}"
-          style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;
-                 font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;
-                 border:1.5px solid ${c};color:${c};background:transparent"
-          onmouseover="if(!this.classList.contains('selected'))this.style.background='${c}22'"
-          onmouseout="if(!this.classList.contains('selected'))this.style.background='transparent'">
-          ${iconHtml}${r.name}
-        </span>`;
-      }).join('');
-    }
+/* 서브: 보고내용 칩 초기화 */
+function _instrInitReportPicks() {
+  var reportPicks = document.getElementById('instrReportPicks');
+  if (!reportPicks) return;
+  var results = JSON.parse(localStorage.getItem('ws_task_results')) || WS.taskResults || [];
+  if (results.length === 0) {
+    reportPicks.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">\uae30\ud0c0\uc124\uc815 &gt; \uc5c5\ubb34\uacb0\uacfc\uc5d0\uc11c \ud56d\ubaa9\uc744 \ucd94\uac00\ud558\uc138\uc694</span>';
+    return;
   }
+  reportPicks.innerHTML = results.map(function(r){
+    var c = r.color || '#6b7280';
+    var iconHtml = (r.icon && r.icon.length > 2)
+      ? '<i data-lucide="'+r.icon+'" style="width:11px;height:11px;color:'+c+'"></i>'
+      : (r.icon ? '<span>'+r.icon+'</span>' : '');
+    return '<span onclick="_selectInstrReport(\''+r.name+'\',this)" data-result="'+r.name+'"'
+      +' style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;'
+      +'font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;'
+      +'border:1.5px solid '+c+';color:'+c+';background:transparent"'
+      +' onmouseover="if(!this.classList.contains(\'selected\'))this.style.background=\''+c+'22\'"'
+      +' onmouseout="if(!this.classList.contains(\'selected\'))this.style.background=\'transparent\'">'
+      +iconHtml+r.name+'</span>';
+  }).join('');
+}
 
-  // ── 폼 초기화
-  const reportInput = document.getElementById('instrReport');
-  if (reportInput) reportInput.value = '';
-  window._instrSelectedReports = [];
-  const fields = ['instrContent','instrProcedureText'];
-  fields.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-  // ── 첸부파일 배열 초기화
-  window._instrFileArr = [];
-  window._instrExistingFiles = editData ? (editData.attachments || []).slice() : [];
-  const fileInput = document.getElementById('instrFile');
-  if (fileInput) fileInput.value = '';
-  renderInstrFileList();
-
-  // ── 날짜 피커 초기화 (커스텀 캘린더 버튼 방식)
-  const dueHidden  = document.getElementById('instrDueDate');
-  const dueLabelEl = document.getElementById('instrDueDateLabel');
-  if (dueHidden)  dueHidden.value = editData ? (editData.dueDate || '') : '';
-  if (dueLabelEl) {
-    if (editData && editData.dueDate) {
-      const [y,mo,d] = editData.dueDate.split('-');
-      dueLabelEl.textContent = `${y}년 ${parseInt(mo)}월 ${parseInt(d)}일`;
-    } else {
-      dueLabelEl.textContent = '날짜를 선택하세요';
-    }
+/* 서브: 수정모드 기존 값 복원 */
+function _instrRestoreEdit(editData) {
+  var taskName = editData.taskName || editData.title || '';
+  if (taskName) {
+    var detailList = WS.detailTasks || JSON.parse(localStorage.getItem('ws_detail_tasks') || '[]');
+    var found = detailList.find(function(d){ return d.name===taskName || String(d.id)===String(editData.taskId); });
+    window._instrSelectedTasks = found ? [{id:found.id||found.name,name:found.name}] : [{id:taskName,name:taskName}];
   }
-
-  // ── 업무중요도: window._instrImportances 초기화 후 _renderImportancePicks() 호출
-  window._instrImportances = editData && editData.importance
-    ? editData.importance.split(',').map(s => s.trim()).filter(Boolean)
-    : [];
-  const impVal = document.getElementById('instrImportanceVal');
-  if (impVal) impVal.value = window._instrImportances.join(', ');
-  _renderImportancePicks();
-
-  // ── 수정 모드: 기존 값으로 폼 채우기
-  if (editData) {
-    // 업무선택 콩 복원
-    var taskName = editData.taskName || editData.title || '';
-    if (taskName) {
-      var detailList2 = WS.detailTasks || JSON.parse(localStorage.getItem('ws_detail_tasks') || '[]');
-      var found = detailList2.find(function(d){ return d.name === taskName || String(d.id) === String(editData.taskId); });
-      window._instrSelectedTasks = found ? [{ id: found.id || found.name, name: found.name }] : [{ id: taskName, name: taskName }];
-    }
-    // 담당자컴 콩 복원
-    if (editData.assigneeId) {
-      var foundUser = (WS.users || []).find(function(u){ return String(u.id) === String(editData.assigneeId); });
-      if (foundUser) window._instrSelectedAssignees = [{ id: foundUser.id, name: foundUser.name, dept: foundUser.dept }];
-    }
-    _renderInstrTaskBox();
-    _renderInstrAssigneeBox();
-    // 지시내용
-    const contEl = document.getElementById('instrContent');
-    if (contEl) contEl.value = editData.content || '';
-    // 보고내용 칩 기존 선택 복원
-    if (editData.report) {
-      window._instrSelectedReports = editData.report.split(',').map(s => s.trim()).filter(Boolean);
-      const rPicks = document.getElementById('instrReportPicks');
-      if (rPicks) {
-        rPicks.querySelectorAll('span[data-result]').forEach(el => {
-          if (window._instrSelectedReports.includes(el.dataset.result)) {
-            el.classList.add('selected');
-            el.style.background = el.style.borderColor;
-            el.style.color = '#ffffff';
-            el.style.fontWeight = '700';
-          }
-        });
+  if (editData.assigneeId) {
+    var fu = (WS.users||[]).find(function(u){ return String(u.id)===String(editData.assigneeId); });
+    if (fu) window._instrSelectedAssignees = [{id:fu.id,name:fu.name,dept:fu.dept}];
+  }
+  _renderInstrTaskBox();
+  _renderInstrAssigneeBox();
+  var contEl = document.getElementById('instrContent');
+  if (contEl) contEl.value = editData.content || '';
+  if (editData.report) {
+    window._instrSelectedReports = editData.report.split(',').map(function(s){return s.trim();}).filter(Boolean);
+    var rPicks = document.getElementById('instrReportPicks');
+    if (rPicks) rPicks.querySelectorAll('span[data-result]').forEach(function(el){
+      if (window._instrSelectedReports.includes(el.dataset.result)) {
+        el.classList.add('selected'); el.style.background = el.style.borderColor;
+        el.style.color='#fff'; el.style.fontWeight='700';
       }
-    }
-    // 진행순서 기존 선택 복원
-    if (editData.procedure) {
-      window._instrProcedures = editData.procedure.split(' → ').map(s => s.trim()).filter(Boolean);
-      _renderInstrProcedureSelected();
-    }
-    // 업무중요도: _instrImportances가 이미 설정되어 _renderImportancePicks()에서 처리됨
+    });
   }
-
-  m.style.display = 'flex';
-  setTimeout(refreshIcons, 50);
+  if (editData.procedure) {
+    window._instrProcedures = editData.procedure.split(' \u2192 ').map(function(s){return s.trim();}).filter(Boolean);
+    _renderInstrProcedureSelected();
+  }
 }
 
 /* 히스토리 렌더 */
