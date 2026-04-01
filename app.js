@@ -414,9 +414,16 @@ function openReceivedTaskDetail(taskId) {
   // 지시내용
   const instrContent = (instr && instr.content) ? instr.content : (t.desc || t.description || '-');
 
-  // processTags: t에 없으면 ws_instructions의 instr.processTags 사용
-  if ((!t.processTags || t.processTags.length === 0) && instr && instr.processTags && instr.processTags.length > 0) {
-    t.processTags = instr.processTags;
+  // processTags: t에 없으면 instr.processTags → instr.procedure 파싱 순으로 fallback
+  if (!t.processTags || t.processTags.length === 0) {
+    if (instr && instr.processTags && instr.processTags.length > 0) {
+      t.processTags = instr.processTags;
+    } else if (instr && instr.procedure && instr.procedure.trim()) {
+      // procedure 문자열 "A → B → C" 파싱
+      t.processTags = instr.procedure.split(/→|\|/).map(s => s.trim()).filter(Boolean);
+    } else if (t.procedure && t.procedure.trim()) {
+      t.processTags = t.procedure.split(/→|\|/).map(s => s.trim()).filter(Boolean);
+    }
   }
 
   // instr.attachments 병합: 지시자가 등록한 파일을 진행보고서 모달에도 표시
@@ -3156,10 +3163,16 @@ function saveInstruction() {
   if (editId) {
     const idx = instr.findIndex(i => i.id === editId || i.id === Number(editId));
     if (idx !== -1) {
+      // procedure 문자열 → processTags 배열 파생
+      const savedProcedure = procedure || (instr[idx].procedure || '');
+      const derivedTags = savedProcedure
+        ? savedProcedure.split(/→|\|/).map(s => s.trim()).filter(Boolean)
+        : (instr[idx].processTags || []);
       Object.assign(instr[idx], {
         taskId: finalTaskId, taskName: finalTaskName,
         assigneeId: Number(finalAssigneeId), assigneeName: finalAssigneeName,
         dueDate, content, report, procedure, importance, attachments,
+        processTags: derivedTags,
         status: taskStatus || instr[idx].status || 'progress',
         taskStatus,
         isImportant: importance.length > 0,
@@ -3192,11 +3205,16 @@ function saveInstruction() {
     }
   } else {
     const newId = Date.now();
+    // procedure 문자열 → processTags 배열 파생
+    const newProcTags = procedure
+      ? procedure.split(/→|\|/).map(s => s.trim()).filter(Boolean)
+      : [];
     const newItem = {
       id: newId,
       taskId: finalTaskId, taskName: finalTaskName,
       assigneeId: Number(finalAssigneeId), assigneeName: finalAssigneeName,
       dueDate, content, report, procedure, importance, attachments,
+      processTags: newProcTags,
       status: taskStatus || 'progress', taskStatus,
       progress: 0, team: '',
       isImportant: importance.length > 0,
