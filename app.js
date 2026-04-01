@@ -683,7 +683,7 @@ window._capsuleStart = function(e, taskId, prevVal) {
 /* ── saveTaskDetail 패치: progressInput 우선 읽기 ── */
 
 function renderTaskHistory(taskId) {
-  const t = WS.getTask(taskId);
+  const t  = WS.getTask(taskId);
   const el = document.getElementById('historyList_' + taskId);
   if (!el || !t) return;
   const history = t.history || [];
@@ -691,47 +691,67 @@ function renderTaskHistory(taskId) {
     el.innerHTML = '<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-muted)">히스토리가 없습니다</div>';
     return;
   }
+  const palette = ['#ec4899','#4f6ef7','#f97316','#22c55e','#a855f7','#14b8a6'];
   el.innerHTML = history.slice().reverse().map(function(h) {
-    const icon = h.icon || 'clock';
-    const color = h.color || '#4f6ef7';
-    const label = h.event || h.label || h.type || '업무보고';
+    const icon   = h.icon  || 'clock';
+    const color  = h.color || '#4f6ef7';
+    const label  = h.event || h.label || h.type || '업무보고';
     const detail = h.detail || h.content || h.text || '';
-    const prog = (h.progress !== undefined && h.progress !== null) ? h.progress : null;
-    // 날짜 포맷: h.date가 'YYYY.MM.DD' 형식
+    const prog   = (h.progress !== undefined && h.progress !== null) ? h.progress : null;
     const dateStr = h.date || '';
-    const user = h.userId ? WS.getUser(h.userId) : null;
-    // 진행율 바
-    const barColor = prog !== null ? (prog >= 100 ? '#22c55e' : prog < 30 ? '#ef4444' : '#4f6ef7') : color;
-    const progressBar = prog !== null
-      ? '<div style="display:flex;align-items:center;gap:5px;margin-top:5px">'
-        + '<div style="flex:1;height:4px;background:var(--border-color);border-radius:100px;overflow:hidden">'
+    const user    = h.userId ? WS.getUser(h.userId) : null;
+
+    // 아바타
+    const aName    = user ? user.name : null;
+    const aColor   = aName ? palette[aName.charCodeAt(0) % palette.length] : '#94a3b8';
+    const aInitials = aName ? aName.slice(0,2) : '?';
+    const avatar   = '<div style="width:34px;height:34px;border-radius:50%;background:' + aColor + ';'
+      + 'display:flex;align-items:center;justify-content:center;flex-shrink:0;'
+      + 'font-size:12px;font-weight:800;color:#fff;letter-spacing:.5px">' + aInitials + '</div>';
+
+    // 이벤트 뱃지
+    const evBadge = '<span style="display:inline-flex;align-items:center;gap:3px;'
+      + 'font-size:11px;font-weight:700;color:' + color + ';'
+      + 'background:' + color + '18;border:1px solid ' + color + '44;'
+      + 'border-radius:20px;padding:2px 8px;white-space:nowrap;flex-shrink:0">'
+      + '<i data-lucide="' + icon + '" style="width:10px;height:10px"></i>' + label + '</span>';
+
+    // 진행순서 뱃지
+    const stepBadge = h.stepLabel
+      ? '<span style="display:inline-flex;align-items:center;gap:3px;'
+        + 'font-size:11px;font-weight:700;color:#4f6ef7;'
+        + 'background:#eef2ff;border:1px solid #c7d2fe;'
+        + 'border-radius:20px;padding:2px 8px;white-space:nowrap;flex-shrink:0">'
+        + '▶ ' + h.stepLabel + '</span>'
+      : '';
+
+    // 인라인 진행바 + %
+    const barColor = prog !== null
+      ? (prog >= 100 ? '#22c55e' : prog < 30 ? '#ef4444' : '#4f6ef7') : color;
+    const inlineBar = prog !== null
+      ? '<div style="flex:1;height:4px;background:var(--border-color);border-radius:100px;overflow:hidden;min-width:40px">'
         + '<div style="width:' + prog + '%;height:100%;background:' + barColor + ';border-radius:100px"></div></div>'
-        + '<span style="font-size:10px;font-weight:700;color:' + barColor + ';min-width:26px;text-align:right">' + prog + '%</span>'
+        + '<span style="font-size:11px;font-weight:700;color:' + barColor + ';white-space:nowrap;flex-shrink:0">' + prog + '%</span>'
+      : '<div style="flex:1"></div>';
+
+    // 날짜
+    const dateHtml = '<span style="font-size:10px;color:var(--text-muted);white-space:nowrap;flex-shrink:0">' + dateStr + '</span>';
+
+    // 2행: 작성자명 + 내용
+    const row2 = (aName || detail)
+      ? '<div style="display:flex;align-items:baseline;gap:6px;margin-top:5px;padding-left:0">'
+        + (aName ? '<span style="font-size:11px;font-weight:700;color:var(--text-muted);flex-shrink:0">' + aName + '</span>' : '')
+        + (detail ? '<span style="font-size:12px;color:var(--text-primary);line-height:1.5;white-space:pre-wrap">' + detail + '</span>' : '')
         + '</div>'
       : '';
-    // 작성자 아바타
-    const avatarColor = user ? (['#4f6ef7','#22c55e','#f97316','#a855f7','#ec4899','#14b8a6'][user.name.charCodeAt(0) % 6]) : '#94a3b8';
-    const avatarInitials = user ? user.name.slice(0,2) : '?';
-    const avatarHtml = '<div style="width:32px;height:32px;border-radius:50%;background:' + avatarColor + ';'
-      + 'display:flex;align-items:center;justify-content:center;flex-shrink:0;'
-      + 'font-size:11px;font-weight:800;color:#fff;letter-spacing:.5px">' + avatarInitials + '</div>';
 
-    // 진행순서 뱃지 (stepLabel 있으면)
-    const stepBadge = h.stepLabel
-      ? '<span style="font-size:10px;font-weight:700;background:#f0f4ff;color:#4f6ef7;border:1px solid #c7d2fe;border-radius:6px;padding:1px 7px;margin-left:4px;">▶ ' + h.stepLabel + '</span>'
-      : '';
-
-    return '<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-color)">'
-      + avatarHtml
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border-color)">'
+      + avatar
       + '<div style="flex:1;min-width:0">'
-      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'
-      + '<span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;color:' + color + ';background:' + color + '15;border-radius:8px;padding:1px 7px">'
-      + '<i data-lucide="' + icon + '" style="width:10px;height:10px"></i>' + label + '</span>'
-      + stepBadge
-      + '<span style="font-size:10px;color:var(--text-muted);margin-left:auto">' + dateStr + '</span></div>'
-      + (user ? '<div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">' + user.name + '</div>' : '')
-      + (detail ? '<div style="font-size:12px;color:var(--text-primary);line-height:1.6;white-space:pre-wrap">' + detail + '</div>' : '')
-      + progressBar
+      + '<div style="display:flex;align-items:center;gap:6px">'
+      + evBadge + stepBadge + inlineBar + dateHtml
+      + '</div>'
+      + row2
       + '</div></div>';
   }).join('');
   const countEl = document.getElementById('historyCount_' + taskId);
