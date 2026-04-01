@@ -130,12 +130,10 @@ function _schedBuildHeader(year, todayStr, today, cw, labelW, maxDays) {
     const isToday = (todayStr === `${year}-${String(today.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
     return `<th style="width:${cw}px;min-width:${cw}px;max-width:${cw}px;
                text-align:center;font-size:${cw>=36?'11px':'9px'};font-weight:${isToday?900:700};padding:5px 0;
-               border-right:${isToday?'1.5px solid rgba(79,110,247,.3)':'1px solid var(--border-color)'};
-               border-left:${isToday?'1.5px solid rgba(79,110,247,.3)':'none'};
-               border-top:${isToday?'2px solid rgba(79,110,247,.5)':'none'};
+               border-right:1px solid var(--border-color);
                border-bottom:2px solid var(--border-color);
-               color:${isToday?'#fff':'var(--text-muted)'};
-               background:${isToday?'var(--accent-blue)':'var(--bg-secondary)'};
+               color:${isToday?'var(--accent-blue)':'var(--text-muted)'};
+               background:${isToday?'#fff':'var(--bg-secondary)'};
                overflow:hidden;">${d}</th>`;
   }).join('');
   return `<thead>
@@ -160,7 +158,7 @@ function _schedBuildCells(year, monthNum, todayStr, cw, ch, lastDate) {
     const isToday = dt === todayStr;
     const isSun = dow === 0, isSat = dow === 6;
     const bg = !isValid ? 'var(--bg-tertiary)'
-      : isToday ? 'rgba(79,110,247,.12)'
+      : isToday ? '#fff'
       : isSun ? 'rgba(239,68,68,.04)'
       : isSat ? 'rgba(79,110,247,.04)'
       : 'var(--bg-primary)';
@@ -172,8 +170,7 @@ function _schedBuildCells(year, monthNum, todayStr, cw, ch, lastDate) {
       style="width:${cw}px;min-width:${cw}px;max-width:${cw}px;
              height:${ch}px;padding:0;vertical-align:top;
              background:${bg};
-             border-right:${isToday?'1.5px solid rgba(79,110,247,.25)':'1px solid var(--border-color)'};
-             border-left:${isToday?'1.5px solid rgba(79,110,247,.25)':'none'};
+             border-right:1px solid var(--border-color);
              border-bottom:1px solid var(--border-color);
              ${!isValid?'opacity:.35;':''}
              position:relative;overflow:hidden;">
