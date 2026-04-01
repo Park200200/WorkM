@@ -508,13 +508,20 @@ function openReceivedTaskDetail(taskId) {
       <!-- hidden input (저장용) -->
       <input type="hidden" id="progressInput_${t.id}" value="${progress}">
       <!-- 진행 내용 입력 -->
-      <div style="display:flex;gap:8px;align-items:flex-end">
-        <textarea id="td_reportText" placeholder="진행 내용을 입력하세요..." rows="2"
-          class="form-input" style="flex:1;resize:none;font-size:13px"></textarea>
-        <button onclick="addProgressReport('${t.id}')" class="btn btn-blue"
-          style="height:auto;padding:10px 16px;white-space:nowrap;align-self:stretch;border-radius:10px;font-size:13px;font-weight:700">
-          <i data-lucide="plus" style="width:14px;height:14px"></i> 추가
-        </button>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${(t.processTags && t.processTags.length > 0) ? `
+        <select id="td_stepSelect" style="width:100%;padding:7px 12px;border-radius:10px;border:1.5px solid var(--border-color);font-size:12px;font-weight:600;color:var(--text-primary);background:var(--bg-secondary);cursor:pointer;outline:none">
+          <option value="">-- 진행순서 선택 (선택사항) --</option>
+          ${t.processTags.map((s,i) => `<option value="${s}">Step ${i+1}. ${s}</option>`).join('')}
+        </select>` : `<input type="hidden" id="td_stepSelect" value="">`}
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <textarea id="td_reportText" placeholder="진행 내용을 입력하세요..." rows="2"
+            class="form-input" style="flex:1;resize:none;font-size:13px"></textarea>
+          <button onclick="addProgressReport('${t.id}')" class="btn btn-blue"
+            style="height:auto;padding:10px 16px;white-space:nowrap;align-self:stretch;border-radius:10px;font-size:13px;font-weight:700">
+            <i data-lucide="plus" style="width:14px;height:14px"></i> 추가
+          </button>
+        </div>
       </div>
     </div>
 
@@ -662,15 +669,27 @@ function renderTaskHistory(taskId) {
         + '<span style="font-size:10px;font-weight:700;color:' + barColor + ';min-width:26px;text-align:right">' + prog + '%</span>'
         + '</div>'
       : '';
+    // 작성자 아바타
+    const avatarColor = user ? (['#4f6ef7','#22c55e','#f97316','#a855f7','#ec4899','#14b8a6'][user.name.charCodeAt(0) % 6]) : '#94a3b8';
+    const avatarInitials = user ? user.name.slice(0,2) : '?';
+    const avatarHtml = '<div style="width:32px;height:32px;border-radius:50%;background:' + avatarColor + ';'
+      + 'display:flex;align-items:center;justify-content:center;flex-shrink:0;'
+      + 'font-size:11px;font-weight:800;color:#fff;letter-spacing:.5px">' + avatarInitials + '</div>';
+
+    // 진행순서 뱃지 (stepLabel 있으면)
+    const stepBadge = h.stepLabel
+      ? '<span style="font-size:10px;font-weight:700;background:#f0f4ff;color:#4f6ef7;border:1px solid #c7d2fe;border-radius:6px;padding:1px 7px;margin-left:4px;">▶ ' + h.stepLabel + '</span>'
+      : '';
+
     return '<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-color)">'
-      + '<div style="width:32px;height:32px;border-radius:50%;background:' + color + '18;border:1.5px solid ' + color + ';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
-      + '<i data-lucide="' + icon + '" style="width:14px;height:14px;color:' + color + '"></i></div>'
+      + avatarHtml
       + '<div style="flex:1;min-width:0">'
       + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'
       + '<span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;color:' + color + ';background:' + color + '15;border-radius:8px;padding:1px 7px">'
       + '<i data-lucide="' + icon + '" style="width:10px;height:10px"></i>' + label + '</span>'
-      + (user ? '<span style="font-size:10px;color:var(--text-muted)">' + user.name + '</span>' : '')
+      + stepBadge
       + '<span style="font-size:10px;color:var(--text-muted);margin-left:auto">' + dateStr + '</span></div>'
+      + (user ? '<div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">' + user.name + '</div>' : '')
       + (detail ? '<div style="font-size:12px;color:var(--text-primary);line-height:1.6;white-space:pre-wrap">' + detail + '</div>' : '')
       + progressBar
       + '</div></div>';
