@@ -781,14 +781,19 @@ function renderTaskHistory(taskId) {
       + 'border-radius:20px;padding:2px 8px;white-space:nowrap;flex-shrink:0">'
       + '<i data-lucide="' + icon + '" style="width:10px;height:10px"></i>' + label + '</span>');
 
-    // 진행순서 뱃지
-    const stepBadge = h.stepLabel
-      ? '<span style="display:inline-flex;align-items:center;gap:3px;'
-        + 'font-size:11px;font-weight:700;color:#4f6ef7;'
-        + 'background:#eef2ff;border:1px solid #c7d2fe;'
-        + 'border-radius:20px;padding:2px 8px;white-space:nowrap;flex-shrink:0">'
-        + '▶ ' + h.stepLabel + '</span>'
-      : '';
+    // 진행순서 뱃지 - WS.reportTypes에서 아이콘/컬러 적용
+    const stepBadge = (function() {
+      if (!h.stepLabel) return '';
+      var rt = (WS.reportTypes || []).find(function(r){ return r.label === h.stepLabel; });
+      var ic  = rt ? (rt.icon  || 'circle') : 'circle';
+      var col = rt ? (rt.color || '#4f6ef7') : '#4f6ef7';
+      return '<span style="display:inline-flex;align-items:center;gap:4px;'
+        + 'font-size:11px;font-weight:700;color:' + col + ';'
+        + 'background:' + col + '18;border:1.5px solid ' + col + '55;'
+        + 'border-radius:20px;padding:2px 9px;white-space:nowrap;flex-shrink:0">'
+        + '<i data-lucide="' + ic + '" style="width:10px;height:10px;color:' + col + '"></i>'
+        + h.stepLabel + '</span>';
+    })();
 
     // 인라인 진행바 + %
     const barColor = prog !== null
