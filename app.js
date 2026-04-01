@@ -507,21 +507,39 @@ function openReceivedTaskDetail(taskId) {
       </div>
       <!-- hidden input (저장용) -->
       <input type="hidden" id="progressInput_${t.id}" value="${progress}">
-      <!-- 진행 내용 입력 -->
-      <div style="display:flex;flex-direction:column;gap:6px">
+      <!-- 진행 내용 입력 (한 줄 칩 UI) -->
+      <div style="display:flex;gap:8px;align-items:center">
+        <!-- 왼쪽: 진행순서 선택 칩 (processTags 있을 때만) -->
         ${(t.processTags && t.processTags.length > 0) ? `
-        <select id="td_stepSelect" style="width:100%;padding:7px 12px;border-radius:10px;border:1.5px solid var(--border-color);font-size:12px;font-weight:600;color:var(--text-primary);background:var(--bg-secondary);cursor:pointer;outline:none">
-          <option value="">-- 진행순서 선택 (선택사항) --</option>
-          ${t.processTags.map((s,i) => `<option value="${s}">Step ${i+1}. ${s}</option>`).join('')}
-        </select>` : `<input type="hidden" id="td_stepSelect" value="">`}
-        <div style="display:flex;gap:8px;align-items:flex-end">
-          <textarea id="td_reportText" placeholder="진행 내용을 입력하세요..." rows="2"
-            class="form-input" style="flex:1;resize:none;font-size:13px"></textarea>
-          <button onclick="addProgressReport('${t.id}')" class="btn btn-blue"
-            style="height:auto;padding:10px 16px;white-space:nowrap;align-self:stretch;border-radius:10px;font-size:13px;font-weight:700">
-            <i data-lucide="plus" style="width:14px;height:14px"></i> 추가
-          </button>
-        </div>
+        <div style="position:relative;flex-shrink:0">
+          <select id="td_stepSelect"
+            onchange="_updateStepChip('${t.id}')"
+            style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;z-index:2">
+            <option value="">단계 선택</option>
+            ${t.processTags.map((s,i)=>`<option value="${s}">${s}</option>`).join('')}
+          </select>
+          <span id="td_stepChip_${t.id}"
+            style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;
+                   border-radius:20px;background:rgba(79,110,247,.12);
+                   border:1.5px solid rgba(79,110,247,.35);
+                   font-size:12px;font-weight:700;color:var(--accent-blue);
+                   white-space:nowrap;cursor:pointer;user-select:none">
+            <i data-lucide="list-ordered" style="width:12px;height:12px"></i>
+            <span id="td_stepLabel_${t.id}">단계 선택</span>
+            <i data-lucide="chevron-down" style="width:11px;height:11px;opacity:.6"></i>
+          </span>
+        </div>` : `<input type="hidden" id="td_stepSelect" value="">`}
+        <!-- 가운데: 텍스트 입력 -->
+        <input id="td_reportText" type="text" placeholder="진행 내용을 입력하세요..."
+          class="form-input"
+          style="flex:1;height:38px;padding:0 12px;font-size:13px;border-radius:20px"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();addProgressReport('${t.id}')}"
+        >
+        <!-- 오른쪽: 추가 버튼 -->
+        <button onclick="addProgressReport('${t.id}')" class="btn btn-blue"
+          style="height:38px;padding:0 16px;white-space:nowrap;border-radius:20px;font-size:13px;font-weight:700;flex-shrink:0">
+          <i data-lucide="plus" style="width:14px;height:14px"></i> 추가
+        </button>
       </div>
     </div>
 
@@ -579,6 +597,28 @@ function openReceivedTaskDetail(taskId) {
         handle.style.left  = left + 'px';
       }
     });
+  }
+}
+
+/* ── 진행순서 칩 레이블 업데이트 ── */
+function _updateStepChip(taskId) {
+  var sel   = document.getElementById('td_stepSelect');
+  var label = document.getElementById('td_stepLabel_' + taskId);
+  var chip  = document.getElementById('td_stepChip_' + taskId);
+  if (!sel || !label) return;
+  var val = sel.value;
+  if (val) {
+    label.textContent = val;
+    if (chip) {
+      chip.style.background = 'rgba(79,110,247,.18)';
+      chip.style.borderColor = 'var(--accent-blue)';
+    }
+  } else {
+    label.textContent = '단계 선택';
+    if (chip) {
+      chip.style.background = 'rgba(79,110,247,.08)';
+      chip.style.borderColor = 'rgba(79,110,247,.35)';
+    }
   }
 }
 
