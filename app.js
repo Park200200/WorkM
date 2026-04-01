@@ -3419,19 +3419,23 @@ function _buildTaskAttachHTML(t) {
       ? 'background:rgba(79,110,247,.08);border:1px solid rgba(79,110,247,.3);'
       : 'background:var(--bg-secondary);border:1px solid var(--border-color);';
 
-    var deleteBtn = isMine
+    var actionBtn = isMine
       ? '<button onclick="_removeTaskAttachment(\'' + t.id + '\',' + idx + ')" title="삭제" '
         + 'style="background:none;border:none;cursor:pointer;padding:0;margin-left:2px;'
         + 'display:inline-flex;align-items:center;color:var(--text-muted);transition:color .15s" '
         + 'onmouseover="this.style.color=\'#ef4444\'" onmouseout="this.style.color=\'var(--text-muted)\'">'
         + '<i data-lucide="x" style="width:11px;height:11px"></i></button>'
-      : '';
+      : '<button onclick="_downloadTaskAttachment(\'' + t.id + '\',' + idx + ')" title="다운로드" '
+        + 'style="background:none;border:none;cursor:pointer;padding:0;margin-left:2px;'
+        + 'display:inline-flex;align-items:center;color:var(--accent-blue);transition:color .15s" '
+        + 'onmouseover="this.style.opacity=\'.7\'" onmouseout="this.style.opacity=\'1\'">'
+        + '<i data-lucide="download" style="width:11px;height:11px"></i></button>';
 
     return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;'
       + bgStyle + 'font-size:11.5px;color:var(--text-primary)">'
       + avatar
       + '<span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + '</span>'
-      + deleteBtn
+      + actionBtn
       + '</span>';
   }).join('');
 }
@@ -3486,4 +3490,28 @@ function _removeTaskAttachment(taskId, idx) {
     if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 30);
   }
   showToast('success', '파일이 삭제됐습니다.');
+}
+
+/* 다른 사람이 등록한 첨부파일 다운로드 */
+function _downloadTaskAttachment(taskId, idx) {
+  var t = WS.getTask(taskId);
+  if (!t || !t.attachments) return;
+  var a = t.attachments[idx];
+  var name = typeof a === 'string' ? a : (a ? a.name : '');
+
+  // blob/dataUrl이 저장되어 있는 경우 실제 다운로드
+  var dataUrl = typeof a === 'object' ? (a.dataUrl || a.url || null) : null;
+  if (dataUrl) {
+    var link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('success', '"' + name + '" 다운로드를 시작합니다.');
+    return;
+  }
+
+  // 파일 데이터가 없는 경우 (파일명만 저장된 경우)
+  showToast('info', '"' + name + '" 파일은 서버에 저장된 파일이 아닙니다. 파일을 다시 첨부해 주세요.');
 }
