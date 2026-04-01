@@ -328,7 +328,7 @@ function buildGantt() {
     const barWidth = Math.max(3, barEnd - barStart);
     const barCls = t.status==='delay'?'red':t.status==='done'?'green':WS.getDday(t.dueDate)<=2?'orange':'blue';
     const dd = WS.getDdayBadge(t.dueDate);
-    return `<div class="gantt-row" onclick="openTaskDetail(${t.id})" style="cursor:pointer">
+    return `<div class="gantt-row" onclick="openReceivedTaskDetail(${t.id})" style="cursor:pointer">
       <div class="gantt-task-info">
         <div class="gantt-task-name" title="${t.title}">${t.isImportant?'<span class="star-icon"><i data-lucide="star"></i></span>':''} ${t.title}</div>
         <div class="gantt-task-assignee">${assignee?.name} · <span class="dday-badge ${dd.cls}" style="font-size:9.5px;padding:1px 5px">${dd.label}</span></div>
