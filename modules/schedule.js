@@ -1,4 +1,4 @@
-﻿/**
+/**
  * modules/schedule.js — 일정보기(Schedule View) 렌더링 및 인터랙션
  * app.js에서 분리된 스케쥴 전용 모듈
  */
@@ -182,7 +182,7 @@ function _schedBuildCells(year, monthNum, todayStr, cw, ch, lastDate) {
 
 /* ── 서브5: 업무 막대 + 도트 렌더 ── */
 /* rowH: 실제 행 높이(동적 계산 후 전달) / ch: 기본 높이(trackH 초기 추정에 사용) */
-function _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, rowH, labelW) {
+function _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, rowH, labelW, trackH) {
   let bars = '';
   const dotMap = {};
   if (!monthTasks.length) return {bars, dotMap, maxTrack: 0};
@@ -192,10 +192,12 @@ function _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, rowH, labelW) {
   let maxTrack = 0;
 
   const dowH   = cw >= 28 ? 12 : 0;
-  const usable = rowH - dowH - _SCHED_PAD_BOT;   // 상단PAD + 막대 공간 + 하단PAD(요일위) 제외
-  // 막대 수에 맞게 트랙 높이 계산 - usable 공간을 막대 수로 균등 분할
-  const barCount = monthTasks.filter(function(item){ return !(item.rawStart===item.rawEnd || (item.t && item.t.taskNature==='일일업무')); }).length || 1;
-  const trackH   = Math.max(14, Math.min(22, (usable - _SCHED_PAD_TOP) / Math.max(barCount, 3)));
+  // trackH는 renderPage에서 전달받은 값 사용 (월별 일관성 보장)
+  // 전달받지 못한 경우에만 fallback 계산
+  if (!trackH) {
+    const usable = rowH - dowH - _SCHED_PAD_BOT;
+    trackH = Math.max(14, Math.min(22, (usable - _SCHED_PAD_TOP) / 3));
+  }
 
   sorted.forEach(({t, startDay, endDay, rawStart, rawEnd}) => {
     const c    = _SCHED_STATUS_COLOR[t.status] || '#4f6ef7';
@@ -332,7 +334,7 @@ function renderPage_Schedule() {
       ? Math.max(MIN_BAR_ROW_H, ch, _SCHED_PAD_TOP + (maxTrack + 1) * trackH + dowH + _SCHED_PAD_BOT + 4)
       : ch;
 
-    const {bars, dotMap} = _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, rowH, labelW);
+    const {bars, dotMap} = _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, rowH, labelW, trackH);
     const cells     = _schedBuildCells(year, monthNum, todayStr, cw, rowH, lastDate);
     const dotScript = _schedBuildDotScript(dotMap, year, monthNum);
 
