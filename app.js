@@ -378,7 +378,10 @@ function openReceivedTaskDetail(taskId) {
 
   // ws_instructions에서 지시 정보 가져오기
   const instrList = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
-  const instr = instrList.find(i => i.id === t.id || i.id === Number(t.id));
+  const instr = instrList.find(i =>
+    i.id === t.id || i.id === Number(t.id) ||
+    (i.taskId && (i.taskId === t.id || i.taskId === String(t.id) || i.taskId === Number(t.id)))
+  );
 
   // 지시자 (스케쥴 업무는 본인, 지시받은 업무는 지시자 이름)
   const assigner = WS.getUser(t.assignerId);

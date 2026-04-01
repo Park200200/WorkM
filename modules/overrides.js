@@ -4025,6 +4025,7 @@ function createScheduleTask() {
     score:       0,
     spentTime:   '0h',
     parentId:    null,
+    processTags: (window._ntSchedProcess || []).map(function(p){ return p.label || p; }),
     history: [{
       date:   today.replace(/-/g,'.'),
       event:  '업무 등록',
