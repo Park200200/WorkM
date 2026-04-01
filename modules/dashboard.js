@@ -453,8 +453,15 @@ function buildDueTodayBody() {
           : 'style="cursor:default"')
       + '>' + _buildAvatarStack(collaboratorAvatarArr) + '</td>';
 
-    // 행 전체 클릭: 샘플 무시, 실제 업무는 openReceivedTaskDetail (지시받은 업무와 동일 UI)
+    // 샘플 업무도 WS.tasks에 등록하여 openReceivedTaskDetail로 팝업 열기 (buildReceivedBody와 동일 패턴)
+    if (t._sample && !WS.getTask(t.id)) {
+      WS.tasks.push(t);
+    }
+    // 행 전체 클릭: 샘플 무시, 실제 업무는 _openTaskOrEdit 호출
     var rowClick = t._sample ? '' : "_openTaskOrEdit('" + t.id + "','" + (t.assignerId||'') + "')";
+    // 진행율 셀 클릭: 실제/샘플 모두 openReceivedTaskDetail 호출
+    var tid = typeof t.id === 'string' ? ("'" + t.id + "'") : t.id;
+    var progressClick = 'event.stopPropagation();openReceivedTaskDetail(' + tid + ')';
 
     return '<tr style="cursor:pointer" onclick="' + rowClick + '">'
       + '<td style="width:25%"><div style="display:flex;align-items:center;gap:6px">'
@@ -463,7 +470,7 @@ function buildDueTodayBody() {
       + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>'
       + collaboratorTd
       + '<td onclick="event.stopPropagation();' + (t._sample ? '' : "_openTaskOrEdit('" + t.id + "','" + (t.assignerId||'') + "')") + '" style="cursor:' + (t._sample ? 'default' : 'pointer') + '" title="' + (t._sample ? '' : '클릭하여 상세보기') + '">' + _renderStatusBadge(t.status) + '</td>'
-      + '<td onclick="event.stopPropagation();' + (t._sample ? '' : 'openReceivedTaskDetail(' + t.id + ')') + '" style="cursor:' + (t._sample ? 'default' : 'pointer') + '" title="吏꾪뻾???대┃?섏뿬 ?낅Т吏꾪뻾 UI ?닿린">' + progressCell + '</td>'
+      + '<td onclick="' + progressClick + '" style="cursor:pointer" title="클릭하여 진행보고서 작성">' + progressCell + '</td>'
       + '<td style="pointer-events:none"><span class="dday-badge dday-today">D-DAY</span></td>'
       + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">' + importanceBadges + '</div></td>'
       + '</tr>';
