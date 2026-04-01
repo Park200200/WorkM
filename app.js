@@ -414,15 +414,16 @@ function openReceivedTaskDetail(taskId) {
   // 지시내용
   const instrContent = (instr && instr.content) ? instr.content : (t.desc || t.description || '-');
 
-  // processTags: t에 없으면 instr.processTags → instr.procedure 파싱 순으로 fallback
-  if (!t.processTags || t.processTags.length === 0) {
-    if (instr && instr.processTags && instr.processTags.length > 0) {
-      t.processTags = instr.processTags;
-    } else if (instr && instr.procedure && instr.procedure.trim()) {
-      // procedure 문자열 "A → B → C" 파싱
-      t.processTags = instr.procedure.split(/→|\|/).map(s => s.trim()).filter(Boolean);
-    } else if (t.procedure && t.procedure.trim()) {
-      t.processTags = t.procedure.split(/→|\|/).map(s => s.trim()).filter(Boolean);
+  // processTags 결정: instr.procedure 파싱 > instr.processTags > t.processTags 순
+  // instr.procedure는 편집 모달 기준 항상 최신값 → 항상 우선 적용
+  if (instr && instr.procedure && instr.procedure.trim()) {
+    const parsed = instr.procedure.split(/→|\u2192|\|/).map(s => s.trim()).filter(Boolean);
+    if (parsed.length > 0) t.processTags = parsed;
+  } else if (instr && instr.processTags && instr.processTags.length > 0) {
+    t.processTags = instr.processTags;
+  } else if (!t.processTags || t.processTags.length === 0) {
+    if (t.procedure && t.procedure.trim()) {
+      t.processTags = t.procedure.split(/→|\u2192|\|/).map(s => s.trim()).filter(Boolean);
     }
   }
 
