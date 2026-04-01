@@ -651,13 +651,7 @@ function buildAssignedByMeBody() {
         <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${t.team||''}</div>
       </td>
       <td onclick="event.stopPropagation();openTaskChatChannel('${t.title}',${t.id})" title="클릭하여 메시지 채널 열기" style="cursor:pointer"><div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,${assignee?.color||'#4f6ef7'},#9747ff)">${assignee?.avatar||'?'}</div></div><div style="font-size:11px;color:var(--currentAccent,#4f6ef7);margin-top:2px;font-weight:600;text-decoration:underline dotted;text-underline-offset:2px">${assignee?.name||''}</div></td>
-      <td onclick="(function(){
-        var me = WS.currentUser ? String(WS.currentUser.id) : null;
-        var aid = '${t.assignerId}';
-        if (!me || me !== aid) { showToast('warning','업무 작성자만 상세 내용을 확인할 수 있습니다.'); return; }
-        openReceivedTaskDetail(${t.id});
-      })()" title="${t.assignerId && WS.currentUser && String(WS.currentUser.id)===String(t.assignerId) ? '클릭하여 상세보기' : '작성자만 클릭 가능'}"
-        style="cursor:${t.assignerId && WS.currentUser && String(WS.currentUser.id)===String(t.assignerId) ? 'pointer' : 'not-allowed'};opacity:${t.assignerId && WS.currentUser && String(WS.currentUser.id)===String(t.assignerId) ? '1' : '0.6'}">${_renderStatusBadge(t.status)}</td>
+      <td style="pointer-events:none;cursor:default">${_renderStatusBadge(t.status)}</td>
       <td onclick="(function(){
         var me = WS.currentUser ? String(WS.currentUser.id) : null;
         var aid = '${t.assignerId}';
