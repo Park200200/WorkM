@@ -1,4 +1,4 @@
-﻿/**
+/**
  * modules/schedule.js — 일정보기(Schedule View) 렌더링 및 인터랙션
  * app.js에서 분리된 스케쥴 전용 모듈
  */
@@ -220,7 +220,7 @@ function _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, rowH, labelW) {
       tracks[track] = endDay;
       if (track > maxTrack) maxTrack = track;
 
-      const barLeft  = labelW + (startDay - 1) * cw;
+      const barLeft  = (startDay - 1) * cw;  // 헬퍼td가 labelW 위치에서 시작하므로 labelW 제외
       const barWidth = (endDay - startDay + 1) * cw - 4;
       const barTop   = 2 + track * trackH;
       const barH     = Math.max(10, Math.min(trackH - 2, usable - barTop - 2));
@@ -326,6 +326,8 @@ function renderPage_Schedule() {
     const cells     = _schedBuildCells(year, monthNum, todayStr, cw, rowH, lastDate);
     const dotScript = _schedBuildDotScript(dotMap, year, monthNum);
 
+    // 헬퍼 td: width=0, overflow=visible, position=relative → bars가 이 안에서 절대 위치로 배치됨
+    // 헬퍼 td는 sticky가 아니므로 좌우 스크롤 시 bars가 그리드와 함께 이동함
     return `<tr style="position:relative;">
       <td style="position:sticky;left:0;z-index:10;
                  width:${labelW}px;min-width:${labelW}px;height:${rowH}px;
@@ -337,6 +339,9 @@ function renderPage_Schedule() {
           ${mLabel}
           ${isCurrentMonth?'<div style="width:5px;height:5px;border-radius:50%;background:var(--accent-blue);margin:2px auto 0"></div>':''}
         </div>
+      </td>
+      <td style="width:0;min-width:0;max-width:0;padding:0;border:0;
+                 overflow:visible;position:relative;height:${rowH}px;z-index:4;">
         ${bars}
       </td>
       ${cells}
