@@ -658,7 +658,13 @@ function buildAssignedByMeBody() {
         openReceivedTaskDetail(${t.id});
       })()" title="${t.assignerId && WS.currentUser && String(WS.currentUser.id)===String(t.assignerId) ? '클릭하여 상세보기' : '작성자만 클릭 가능'}"
         style="cursor:${t.assignerId && WS.currentUser && String(WS.currentUser.id)===String(t.assignerId) ? 'pointer' : 'not-allowed'};opacity:${t.assignerId && WS.currentUser && String(WS.currentUser.id)===String(t.assignerId) ? '1' : '0.6'}">${_renderStatusBadge(t.status)}</td>
-      <td>
+      <td onclick="(function(){
+        var me = WS.currentUser ? String(WS.currentUser.id) : null;
+        var aid = '${t.assignerId}';
+        if (!me || me !== aid) { showToast('warning','업무 작성자만 상세 내용을 확인할 수 있습니다.'); return; }
+        openReceivedTaskDetail(${t.id});
+      })()" title="${t.assignerId && WS.currentUser && String(WS.currentUser.id)===String(t.assignerId) ? '클릭하여 진행보고서 보기' : '작성자만 클릭 가능'}"
+        style="cursor:${t.assignerId && WS.currentUser && String(WS.currentUser.id)===String(t.assignerId) ? 'pointer' : 'not-allowed'};opacity:${t.assignerId && WS.currentUser && String(WS.currentUser.id)===String(t.assignerId) ? '1' : '0.6'}">
         <div style="display:flex;align-items:center;gap:5px">
           <div style="position:relative;width:60px;height:6px;background:var(--border-color);border-radius:100px;overflow:hidden;flex-shrink:0">
             <div style="position:absolute;left:0;top:0;width:${t.progress}%;height:100%;border-radius:100px;background:${t.status==='done'?'#22c55e':t.status==='delay'?'#ef4444':'var(--accent-blue)'};transition:width .4s"></div>
