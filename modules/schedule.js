@@ -130,7 +130,10 @@ function _schedBuildHeader(year, todayStr, today, cw, labelW, maxDays) {
     const isToday = (todayStr === `${year}-${String(today.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
     return `<th style="width:${cw}px;min-width:${cw}px;max-width:${cw}px;
                text-align:center;font-size:${cw>=36?'11px':'9px'};font-weight:${isToday?900:700};padding:5px 0;
-               border-right:1px solid var(--border-color);border-bottom:2px solid var(--border-color);
+               border-right:${isToday?'1.5px solid rgba(79,110,247,.3)':'1px solid var(--border-color)'};
+               border-left:${isToday?'1.5px solid rgba(79,110,247,.3)':'none'};
+               border-top:${isToday?'2px solid rgba(79,110,247,.5)':'none'};
+               border-bottom:2px solid var(--border-color);
                color:${isToday?'#fff':'var(--text-muted)'};
                background:${isToday?'var(--accent-blue)':'var(--bg-secondary)'};
                overflow:hidden;">${d}</th>`;
@@ -169,7 +172,8 @@ function _schedBuildCells(year, monthNum, todayStr, cw, ch, lastDate) {
       style="width:${cw}px;min-width:${cw}px;max-width:${cw}px;
              height:${ch}px;padding:0;vertical-align:top;
              background:${bg};
-             border-right:${isToday?'2px solid var(--accent-blue)':'1px solid var(--border-color)'};
+             border-right:${isToday?'1.5px solid rgba(79,110,247,.25)':'1px solid var(--border-color)'};
+             border-left:${isToday?'1.5px solid rgba(79,110,247,.25)':'none'};
              border-bottom:1px solid var(--border-color);
              ${!isValid?'opacity:.35;':''}
              position:relative;overflow:hidden;">
