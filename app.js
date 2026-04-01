@@ -2821,35 +2821,60 @@ function renderInstrFileList() {
   if (!window._instrFileArr)       window._instrFileArr = [];
   if (!window._instrExistingFiles) window._instrExistingFiles = [];
 
-  const existingHtml = window._instrExistingFiles.map((name, i) =>
-    `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;
+  const palette = ['#4f6ef7','#22c55e','#f97316','#a855f7','#ec4899','#14b8a6'];
+
+  // 아바타 HTML 생성 헬퍼
+  function makeAvatar(dispName) {
+    const initials = (dispName && dispName !== '?') ? dispName.slice(0,2) : '?';
+    const aColor   = (dispName && dispName !== '?')
+      ? palette[dispName.charCodeAt(0) % palette.length] : '#94a3b8';
+    return '<span title="' + dispName + '" style="'
+      + 'display:inline-flex;align-items:center;justify-content:center;'
+      + 'width:20px;height:20px;border-radius:50%;flex-shrink:0;'
+      + 'background:' + aColor + ';font-size:9px;font-weight:800;color:#fff;'
+      + 'letter-spacing:.3px">' + initials + '</span>';
+  }
+
+  const me = WS.currentUser;
+
+  const existingHtml = window._instrExistingFiles.map((a, i) => {
+    const name = typeof a === 'string' ? a : (a.name || '');
+    const uName = typeof a === 'object' ? (a.uploaderName || null) : null;
+    const uId   = typeof a === 'object' ? (a.uploaderId   || null) : null;
+    let dispName = uName || '?';
+    if (!uName && uId && WS.getUser) {
+      const u = WS.getUser(uId);
+      if (u) dispName = u.name;
+    }
+    return `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;
       background:var(--bg-tertiary);border:1px solid var(--border-color);
       font-size:11.5px;color:var(--text-secondary)">
-      <i data-lucide="file" style="width:11px;height:11px"></i>
-      <span style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
-      <button onclick="_removeExistingFile(${i})" title="\uc0ad\uc81c"
+      ${makeAvatar(dispName)}
+      <span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
+      <button onclick="_removeExistingFile(${i})" title="삭제"
         style="background:none;border:none;cursor:pointer;padding:0;margin-left:2px;
                display:inline-flex;align-items:center;color:var(--text-muted);transition:color .15s"
         onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--text-muted)'">
         <i data-lucide="x" style="width:11px;height:11px"></i>
       </button>
-    </span>`
-  ).join('');
+    </span>`;
+  }).join('');
 
-  const newHtml = window._instrFileArr.map((f, i) =>
-    `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;
+  const newHtml = window._instrFileArr.map((f, i) => {
+    const dispName = me ? me.name : '?';
+    return `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;
       background:rgba(79,110,247,.08);border:1px solid rgba(79,110,247,.3);
       font-size:11.5px;color:var(--text-primary)">
-      <i data-lucide="file-plus" style="width:11px;height:11px;color:var(--accent-blue)"></i>
-      <span style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
-      <button onclick="_removeNewFile(${i})" title="\uc0ad\uc81c"
+      ${makeAvatar(dispName)}
+      <span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
+      <button onclick="_removeNewFile(${i})" title="삭제"
         style="background:none;border:none;cursor:pointer;padding:0;margin-left:2px;
                display:inline-flex;align-items:center;color:var(--text-muted);transition:color .15s"
         onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--text-muted)'">
         <i data-lucide="x" style="width:11px;height:11px"></i>
       </button>
-    </span>`
-  ).join('');
+    </span>`;
+  }).join('');
 
   listEl.innerHTML = existingHtml + newHtml;
   setTimeout(refreshIcons, 30);
@@ -3016,9 +3041,20 @@ function saveInstruction() {
     if (!finalAssigneeId)   finalAssigneeId   = window._instrEditData.assigneeId   || '';
   }
 
+  const me2 = WS.currentUser;
   const attachments = [
-    ...(window._instrExistingFiles || []),
-    ...(window._instrFileArr || []).map(f => f.name)
+    ...(window._instrExistingFiles || []).map(a =>
+      typeof a === 'string'
+        ? { name: a, uploaderId: null, uploaderName: null }
+        : a
+    ),
+    ...(window._instrFileArr || []).map(f => ({
+      name: f.name,
+      uploaderId:   me2 ? me2.id   : null,
+      uploaderName: me2 ? me2.name : null,
+      size: f.size,
+      addedAt: new Date().toISOString().split('T')[0]
+    }))
   ];
 
   // ── ws_instructions 저장 (신규 or 수정)
