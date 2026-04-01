@@ -177,13 +177,19 @@ function _schedBuildCells(year, monthNum, todayStr, cw, ch, lastDate) {
 }
 
 /* ── 서브5: 업무 막대 + 도트 렌더 ── */
-function _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, ch, labelW) {
+/* rowH: 실제 행 높이(동적 계산 후 전달) / ch: 기본 높이(trackH 초기 추정에 사용) */
+function _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, rowH, labelW) {
   let bars = '';
   const dotMap = {};
-  if (!monthTasks.length) return {bars, dotMap};
+  if (!monthTasks.length) return {bars, dotMap, maxTrack: 0};
 
   const tracks = [];
   const sorted = [...monthTasks].sort((a,b) => a.startDay - b.startDay);
+  let maxTrack = 0;
+
+  const dowH   = cw >= 28 ? 12 : 0;
+  const usable = rowH - dowH;
+  const trackH = Math.min(22, Math.max(14, usable / Math.max(3, 1)));
 
   sorted.forEach(({t, startDay, endDay, rawStart, rawEnd}) => {
     const c    = _SCHED_STATUS_COLOR[t.status] || '#4f6ef7';
@@ -212,12 +218,10 @@ function _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, ch, labelW) {
       let track = 0;
       while (tracks[track] && tracks[track] >= startDay) track++;
       tracks[track] = endDay;
+      if (track > maxTrack) maxTrack = track;
 
       const barLeft  = labelW + (startDay - 1) * cw;
       const barWidth = (endDay - startDay + 1) * cw - 4;
-      const dowH     = cw >= 28 ? 12 : 0;
-      const usable   = ch - dowH;
-      const trackH   = Math.min(22, Math.max(14, usable / 3));
       const barTop   = 2 + track * trackH;
       const barH     = Math.max(10, Math.min(trackH - 2, usable - barTop - 2));
       const mStr     = `${year}-${String(monthNum).padStart(2,'0')}`;
@@ -243,7 +247,7 @@ function _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, ch, labelW) {
       </div>`;
     }
   });
-  return {bars, dotMap};
+  return {bars, dotMap, maxTrack};
 }
 
 /* ── 서브6: 도트 주입 인라인 스크립트 ── */
@@ -287,19 +291,44 @@ function renderPage_Schedule() {
   // 날짜 헤더
   const header   = _schedBuildHeader(year, todayStr, today, cw, labelW, maxDays);
 
-  // 12개월 tbody 행 빌드
+  // 12개월 tbody 행 빌드 — 업무 수에 따라 월별 높이 동적 결정
+  const dowH   = cw >= 28 ? 12 : 0;          // 요일 라벨 공간(px)
+  const baseUsable = ch - dowH;               // 기본 사용 가능 높이
+  const trackH = Math.min(22, Math.max(14, baseUsable / 3)); // 트랙 1개 높이
+
   const rows = months.map((mLabel, mi) => {
     const monthNum       = mi + 1;
     const lastDate       = new Date(year, monthNum, 0).getDate();
     const isCurrentMonth = (monthNum === today.getMonth()+1 && year === thisYear);
     const monthTasks     = _schedGetTasksForMonth(allTasks, year, mi);
-    const cells          = _schedBuildCells(year, monthNum, todayStr, cw, ch, lastDate);
-    const {bars, dotMap} = _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, ch, labelW);
-    const dotScript      = _schedBuildDotScript(dotMap, year, monthNum);
+
+    // 1-pass: maxTrack 파악 (막대 업무만 카운트)
+    const barTasks = monthTasks.filter(({rawStart, rawEnd, startDay, endDay, t}) =>
+      !(rawStart === rawEnd || startDay === endDay || t.taskNature === '일일업무')
+    );
+    let maxTrack = 0;
+    if (barTasks.length > 0) {
+      const tmpTracks = [];
+      [...barTasks].sort((a,b) => a.startDay - b.startDay).forEach(({startDay, endDay}) => {
+        let tk = 0;
+        while (tmpTracks[tk] && tmpTracks[tk] >= startDay) tk++;
+        tmpTracks[tk] = endDay;
+        if (tk > maxTrack) maxTrack = tk;
+      });
+    }
+
+    // 2-pass: rowH 확정 후 실제 bars/dots 렌더
+    const rowH = barTasks.length > 0
+      ? Math.max(ch, dowH + 4 + (maxTrack + 1) * trackH + 8)
+      : ch;
+
+    const {bars, dotMap} = _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, rowH, labelW);
+    const cells     = _schedBuildCells(year, monthNum, todayStr, cw, rowH, lastDate);
+    const dotScript = _schedBuildDotScript(dotMap, year, monthNum);
 
     return `<tr style="position:relative;">
       <td style="position:sticky;left:0;z-index:10;
-                 width:${labelW}px;min-width:${labelW}px;height:${ch}px;
+                 width:${labelW}px;min-width:${labelW}px;height:${rowH}px;
                  background:${isCurrentMonth?'rgba(79,110,247,.08)':'var(--bg-secondary)'};
                  border-right:2px solid var(--border-color);border-bottom:1px solid var(--border-color);
                  padding:0;text-align:center;vertical-align:middle;overflow:visible;">
