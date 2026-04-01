@@ -3172,11 +3172,11 @@ function saveInstruction() {
   if (editId) {
     const idx = instr.findIndex(i => i.id === editId || i.id === Number(editId));
     if (idx !== -1) {
-      // procedure 문자열 → processTags 배열 파생
-      const savedProcedure = procedure || (instr[idx].procedure || '');
-      const derivedTags = savedProcedure
-        ? savedProcedure.split(/→|\|/).map(s => s.trim()).filter(Boolean)
-        : (instr[idx].processTags || []);
+      // window._instrProcedures 배열 직접 사용 (UI에서 설정한 현재 순서)
+      const liveProcs = window._instrProcedures || [];
+      const derivedTags = liveProcs.length > 0
+        ? liveProcs.slice()
+        : (procedure ? procedure.split(/→|\|/).map(s => s.trim()).filter(Boolean) : (instr[idx].processTags || []));
       Object.assign(instr[idx], {
         taskId: finalTaskId, taskName: finalTaskName,
         assigneeId: Number(finalAssigneeId), assigneeName: finalAssigneeName,
@@ -3215,10 +3215,11 @@ function saveInstruction() {
     }
   } else {
     const newId = Date.now();
-    // procedure 문자열 → processTags 배열 파생
-    const newProcTags = procedure
-      ? procedure.split(/→|\|/).map(s => s.trim()).filter(Boolean)
-      : [];
+    // window._instrProcedures 배열 직접 사용
+    const liveNewProcs = window._instrProcedures || [];
+    const newProcTags = liveNewProcs.length > 0
+      ? liveNewProcs.slice()
+      : (procedure ? procedure.split(/→|\|/).map(s => s.trim()).filter(Boolean) : []);
     const newItem = {
       id: newId,
       taskId: finalTaskId, taskName: finalTaskName,
