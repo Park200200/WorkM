@@ -4,8 +4,8 @@
  */
 
 window._scheduleYear = window._scheduleYear || new Date().getFullYear();
-window._schedCellW   = window._schedCellW   || 44;   // 날짜 셀 너비(px)
-window._schedCellH   = window._schedCellH   || 68;   // 월 행 높이(px)
+window._schedCellW   = Math.max(28,  window._schedCellW  || 44);  // 최소 28px
+window._schedCellH   = Math.max(52,  window._schedCellH  || 68);  // 최소 52px
 
 /**
  * Phase 3: renderPage_Schedule 분해 버전
@@ -223,7 +223,7 @@ function _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, rowH, labelW) {
       const barLeft  = (startDay - 1) * cw;  // 헬퍼td가 labelW 위치에서 시작하므로 labelW 제외
       const barWidth = (endDay - startDay + 1) * cw - 4;
       const barTop   = 2 + track * trackH;
-      const barH     = Math.max(10, Math.min(trackH - 2, usable - barTop - 2));
+      const barH     = Math.max(16, Math.min(trackH - 2, usable - barTop - 2));  // 최소 16px 보장
       const mStr     = `${year}-${String(monthNum).padStart(2,'0')}`;
       const borderL  = rawStart.substring(0,7) === mStr ? '6px' : '0px';
       const borderR  = rawEnd.substring(0,7)   === mStr ? '6px' : '0px';
@@ -318,8 +318,10 @@ function renderPage_Schedule() {
     }
 
     // 2-pass: rowH 확정 후 실제 bars/dots 렌더
+    // 막대 있는 월: 최소 52px 보장 (bar 1개 이상 온전히 표시)
+    const MIN_BAR_ROW_H = 52;
     const rowH = barTasks.length > 0
-      ? Math.max(ch, dowH + 4 + (maxTrack + 1) * trackH + 8)
+      ? Math.max(MIN_BAR_ROW_H, ch, dowH + 4 + (maxTrack + 1) * trackH + 8)
       : ch;
 
     const {bars, dotMap} = _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, rowH, labelW);
@@ -474,7 +476,7 @@ function _schedUpdateCellH(val) {
     var speed = Math.pow(Math.abs(ratio), _jog.SPEED_EXP) * Math.sign(ratio) * _jog.STEP_MAX;
     if (Math.abs(speed) > 0.3) {
       if (_jog.type === 'w') {
-        var nw = Math.round(Math.max(20, Math.min(160, (window._schedCellW || 44) + speed)));
+        var nw = Math.round(Math.max(28, Math.min(160, (window._schedCellW || 44) + speed)));  // 최소 28px
         window._schedCellW = nw;
         renderPage_Schedule();
         // 재렌더 후 레버 위치 복원
@@ -482,7 +484,7 @@ function _schedUpdateCellH(val) {
         var lbl = labelEl('w');
         if (lbl) lbl.textContent = nw + 'px';
       } else {
-        var nh = Math.round(Math.max(36, Math.min(220, (window._schedCellH || 68) + speed)));
+        var nh = Math.round(Math.max(52, Math.min(220, (window._schedCellH || 68) + speed)));  // 최소 52px
         window._schedCellH = nh;
         renderPage_Schedule();
         // 재렌더 후 레버 위치 복원
