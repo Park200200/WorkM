@@ -1023,28 +1023,64 @@
                 </button>
               </div>
 
-              <!-- 지시중요도 복수선택 -->
+              <!-- 업무성공 배점 (에서 ~ 까지) -->
               <div class="form-group" style="margin:0">
                 <label class="form-label">
-                  <i data-lucide="flag" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
-                  업무중요도
-                  <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-left:3px">(복수선택)</span>
+                  <i data-lucide="award" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+                  업무성공 배점
                 </label>
-                <div id="instrImportancePicks"
-                  style="display:flex;flex-wrap:nowrap;gap:5px;padding:6px 10px;
-                         min-height:40px;border:1.5px solid var(--border-color);
-                         border-radius:10px;background:var(--bg-secondary);
-                         overflow-x:auto;cursor:grab;align-items:center;
-                         scrollbar-width:none;-webkit-overflow-scrolling:touch;
-                         -ms-overflow-style:none"
-                  onmousedown="_impDragStart(event)"
-                  onmousemove="_impDragMove(event)"
-                  onmouseup="_impDragEnd()"
-                  onmouseleave="_impDragEnd()"></div>
-                <input type="hidden" id="instrImportanceVal">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <div style="position:relative;flex:1">
+                    <input type="number" id="instrScoreMin" min="0" max="100"
+                      style="width:100%;padding:9px 36px 9px 12px;border-radius:10px;
+                             border:1.5px solid var(--border-color);background:var(--bg-secondary);
+                             color:var(--text-primary);font-size:13px;outline:none;
+                             transition:border-color .2s;box-sizing:border-box;text-align:right"
+                      onfocus="this.style.borderColor='var(--accent-blue)'"
+                      onblur="this.style.borderColor='var(--border-color)'"
+                      placeholder="0">
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                 font-size:11px;color:var(--text-muted);pointer-events:none;white-space:nowrap">에서</span>
+                  </div>
+                  <span style="font-size:13px;color:var(--text-muted);flex-shrink:0">~</span>
+                  <div style="position:relative;flex:1">
+                    <input type="number" id="instrScoreMax" min="0" max="100"
+                      style="width:100%;padding:9px 36px 9px 12px;border-radius:10px;
+                             border:1.5px solid var(--border-color);background:var(--bg-secondary);
+                             color:var(--text-primary);font-size:13px;outline:none;
+                             transition:border-color .2s;box-sizing:border-box;text-align:right"
+                      onfocus="this.style.borderColor='var(--accent-blue)'"
+                      onblur="this.style.borderColor='var(--border-color)'"
+                      placeholder="100">
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                                 font-size:11px;color:var(--text-muted);pointer-events:none;white-space:nowrap">까지</span>
+                  </div>
+                </div>
               </div>
 
             </div>
+
+            <!-- 업무중요도 (아래 줄, 전체 폭) -->
+            <div class="form-group" style="margin:0">
+              <label class="form-label">
+                <i data-lucide="flag" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+                업무중요도
+                <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-left:3px">(복수선택)</span>
+              </label>
+              <div id="instrImportancePicks"
+                style="display:flex;flex-wrap:nowrap;gap:5px;padding:6px 10px;
+                       min-height:40px;border:1.5px solid var(--border-color);
+                       border-radius:10px;background:var(--bg-secondary);
+                       overflow-x:auto;cursor:grab;align-items:center;
+                       scrollbar-width:none;-webkit-overflow-scrolling:touch;
+                       -ms-overflow-style:none"
+                onmousedown="_impDragStart(event)"
+                onmousemove="_impDragMove(event)"
+                onmouseup="_impDragEnd()"
+                onmouseleave="_impDragEnd()"></div>
+              <input type="hidden" id="instrImportanceVal">
+            </div>
+
 
             <!-- 현재상태 선택 (칩 방식, 다음 줄) -->
             <div class="form-group" style="margin:0">

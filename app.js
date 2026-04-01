@@ -2689,6 +2689,11 @@ function _instrRestoreEdit(editData) {
     window._instrProcedures = editData.procedure.split(' \u2192 ').map(function(s){return s.trim();}).filter(Boolean);
     _renderInstrProcedureSelected();
   }
+  // 배점 복원
+  var sMin = document.getElementById('instrScoreMin');
+  var sMax = document.getElementById('instrScoreMax');
+  if (sMin) sMin.value = (editData.scoreMin > 0) ? editData.scoreMin : '';
+  if (sMax) sMax.value = (editData.scoreMax > 0) ? editData.scoreMax : '';
 }
 
 /* 히스토리 렌더 */
@@ -3118,6 +3123,10 @@ function saveInstruction() {
   const report     = repEl   ? repEl.value.trim()  : '';
   const procedure  = procEl  ? procEl.value   : '';
   const importance = impVal  ? impVal.value   : '';
+  const scoreMinEl = document.getElementById('instrScoreMin');
+  const scoreMaxEl = document.getElementById('instrScoreMax');
+  const scoreMin   = scoreMinEl ? (parseInt(scoreMinEl.value) || 0) : 0;
+  const scoreMax   = scoreMaxEl ? (parseInt(scoreMaxEl.value) || 0) : 0;
   const statusEl   = document.getElementById('instrStatus');
   const taskStatus = statusEl ? statusEl.value : '';
 
@@ -3173,6 +3182,7 @@ function saveInstruction() {
         assigneeId: Number(finalAssigneeId), assigneeName: finalAssigneeName,
         dueDate, content, report, procedure, importance, attachments,
         processTags: derivedTags,
+        scoreMin, scoreMax,
         status: taskStatus || instr[idx].status || 'progress',
         taskStatus,
         isImportant: importance.length > 0,
@@ -3215,6 +3225,7 @@ function saveInstruction() {
       assigneeId: Number(finalAssigneeId), assigneeName: finalAssigneeName,
       dueDate, content, report, procedure, importance, attachments,
       processTags: newProcTags,
+      scoreMin, scoreMax,
       status: taskStatus || 'progress', taskStatus,
       progress: 0, team: '',
       isImportant: importance.length > 0,
