@@ -416,6 +416,31 @@ function openReceivedTaskDetail(taskId) {
     t.processTags = instr.processTags;
   }
 
+  // instr.attachments 병합: 지시자가 등록한 파일을 진행보고서 모달에도 표시
+  // (t.attachments에 없는 파일만 앞쪽에 추가, 읽기전용 - 삭제불가 다운로드만)
+  if (instr && Array.isArray(instr.attachments) && instr.attachments.length > 0) {
+    if (!t.attachments) t.attachments = [];
+    const existingNames = t.attachments.map(a => typeof a === 'string' ? a : (a.name || ''));
+    // 지시자 이름 결정 (author → WS.getUser(assignerId) → '지시자' 순서)
+    const instrUploaderName = instr.assignerName
+      || instr.author
+      || (instr.assignerId && WS.getUser && WS.getUser(instr.assignerId)
+           ? WS.getUser(instr.assignerId).name : null)
+      || '지시자';
+    const instrUploaderId = instr.assignerId || null;
+    const instrAttachNorm = instr.attachments.map(a =>
+      typeof a === 'string'
+        ? { name: a, uploaderId: instrUploaderId, uploaderName: instrUploaderName, _instrFile: true }
+        : Object.assign({}, a, {
+            uploaderId:   a.uploaderId   || instrUploaderId,
+            uploaderName: a.uploaderName || instrUploaderName,
+            _instrFile: true
+          })
+    ).filter(a => !existingNames.includes(a.name));
+    // 지시자 파일은 앞에 붙임
+    t.attachments = instrAttachNorm.concat(t.attachments);
+  }
+
   document.getElementById('tdModalTitle').innerHTML =
     `<i data-lucide="file-text" style="width:17px;height:17px;color:var(--accent-blue);vertical-align:middle;margin-right:5px;flex-shrink:0"></i>`
     + `<span style="color:var(--text-primary)">${t.title}</span>`
