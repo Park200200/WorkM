@@ -1,4 +1,4 @@
-/**
+﻿/**
  * modules/schedule.js — 일정보기(Schedule View) 렌더링 및 인터랙션
  * app.js에서 분리된 스케쥴 전용 모듈
  */
@@ -13,6 +13,10 @@ window._schedCellH   = Math.max(52,  window._schedCellH  || 68);  // 최소 52px
  */
 
 /* ── 상수 ── */
+// 월 행 여백 상수: 위 10px(막대 시작 위치), 아래 10px(요일 텍스트 위 여백)
+const _SCHED_PAD_TOP = 10;  // 스케쥴바 상단 여백
+const _SCHED_PAD_BOT = 10;  // 요일 텍스트 위 하단 여백
+
 const _SCHED_STATUS_COLOR = {
   done:'#22c55e', progress:'#4f6ef7', delay:'#ef4444',
   waiting:'#f59e0b', hold:'#8b5cf6', cancel:'#6b7280',
@@ -168,7 +172,7 @@ function _schedBuildCells(year, monthNum, todayStr, cw, ch, lastDate) {
              border-bottom:1px solid var(--border-color);
              ${!isValid?'opacity:.35;':''}
              position:relative;overflow:hidden;">
-      ${isValid && cw >= 28 ? `<div style="position:absolute;bottom:1px;left:0;right:0;
+      ${isValid && cw >= 28 ? `<div style="position:absolute;bottom:${_SCHED_PAD_BOT}px;left:0;right:0;
         font-size:${cw>=40?'9px':'7.5px'};font-weight:800;
         color:${dowColor};opacity:.75;pointer-events:none;
         text-align:center;line-height:1;z-index:6;">${dowLabel}</div>` : ''}
@@ -222,7 +226,7 @@ function _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, rowH, labelW) {
 
       const barLeft  = (startDay - 1) * cw;  // 헬퍼td가 labelW 위치에서 시작하므로 labelW 제외
       const barWidth = (endDay - startDay + 1) * cw - 4;
-      const barTop   = 2 + track * trackH;
+      const barTop   = _SCHED_PAD_TOP + track * trackH;   // 상단 10px 여백 후 막대 배치
       const barH     = Math.max(16, Math.min(trackH - 2, usable - barTop - 2));  // 최소 16px 보장
       const mStr     = `${year}-${String(monthNum).padStart(2,'0')}`;
       const borderL  = rawStart.substring(0,7) === mStr ? '6px' : '0px';
@@ -319,7 +323,8 @@ function renderPage_Schedule() {
 
     // 2-pass: rowH 확정 후 실제 bars/dots 렌더
     // 막대 있는 월: 최소 52px 보장 (bar 1개 이상 온전히 표시)
-    const MIN_BAR_ROW_H = 52;
+    // 막대 있는 월 최소 행 높이 = 상단여백(_PAD_TOP) + 막대최소(16) + 요일(dowH) + 하단여백(_PAD_BOT)
+    const MIN_BAR_ROW_H = _SCHED_PAD_TOP + 16 + dowH + _SCHED_PAD_BOT;  // 10+16+10+10 = 46px 이상
     const rowH = barTasks.length > 0
       ? Math.max(MIN_BAR_ROW_H, ch, dowH + 4 + (maxTrack + 1) * trackH + 8)
       : ch;
@@ -484,7 +489,7 @@ function _schedUpdateCellH(val) {
         var lbl = labelEl('w');
         if (lbl) lbl.textContent = nw + 'px';
       } else {
-        var nh = Math.round(Math.max(52, Math.min(220, (window._schedCellH || 68) + speed)));  // 최소 52px
+        var nh = Math.round(Math.max(_SCHED_MIN_CH, Math.min(220, (window._schedCellH || 68) + speed)));  // 최소 52px
         window._schedCellH = nh;
         renderPage_Schedule();
         // 재렌더 후 레버 위치 복원
