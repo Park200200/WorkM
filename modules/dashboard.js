@@ -1,4 +1,4 @@
-﻿/**
+/**
  * modules/dashboard.js -- 대시보드 렌더링 및 알림 모듈
  * app.js에서 분리된 대시보드 전용 모듈
  */
@@ -88,7 +88,7 @@ function renderDashGrid() {
       <div class="dash-left-col" id="dashAccordionCol" style="height:600px">
         ${buildAccordionCard('byMe',     '#4f6ef7', 'send',         '내가 지시한 리스트',      getByMeCount(),       buildAssignedByMeBody())}
         ${buildAccordionCard('received', '#9747ff', 'download',     '내가 지시받은 업무',    getReceivedCount(),   buildReceivedBody())}
-        ${buildAccordionCard('schedule', '#06b6d4', 'calendar',     '계획한 스케쥴 업무',    getScheduleCount(),   buildScheduleBody())}
+        ${buildAccordionCard('schedule', '#06b6d4', 'calendar',     '내가 기획한 내업무',    getScheduleCount(),   buildScheduleBody())}
         ${buildAccordionCard('dueToday', '#ef4444', 'alert-circle', '오늘이 마감인 업무',    getDueTodayCount(),   buildDueTodayBody())}
       </div>
     </div>
