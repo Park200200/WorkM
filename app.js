@@ -1676,6 +1676,257 @@ window._scheduleYear = window._scheduleYear || new Date().getFullYear();
 window._schedCellW   = window._schedCellW   || 44;   // 날짜 셀 너비(px)
 window._schedCellH   = window._schedCellH   || 68;   // 월 행 높이(px)
 
+/**
+ * Phase 3: renderPage_Schedule 분해 버전
+ * 원래 346줄 → 6개 서브 함수로 분리
+ */
+
+/* ── 상수 ── */
+const _SCHED_STATUS_COLOR = {
+  done:'#22c55e', progress:'#4f6ef7', delay:'#ef4444',
+  waiting:'#f59e0b', hold:'#8b5cf6', cancel:'#6b7280',
+  fail:'#dc2626', edit:'#06b6d4', add:'#10b981'
+};
+
+/* ── 서브1: 각 월에 표시할 업무 계산 ── */
+function _schedGetTasksForMonth(allTasks, year, monthIdx) {
+  const monthNum   = monthIdx + 1;
+  const monthStart = `${year}-${String(monthNum).padStart(2,'0')}-01`;
+  const lastDay    = new Date(year, monthNum, 0).getDate();
+  const monthEnd   = `${year}-${String(monthNum).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  const normalize  = s => s ? String(s).substring(0,10) : null;
+
+  return allTasks.map(t => {
+    const rawStart = normalize(t.startedAt) || normalize(t.dueDate);
+    const rawEnd   = normalize(t.dueDate);
+    if (!rawStart || !rawEnd) return null;
+    if (rawEnd < monthStart || rawStart > monthEnd) return null;
+    const sDate    = rawStart > monthStart ? rawStart : monthStart;
+    const eDate    = rawEnd   < monthEnd   ? rawEnd   : monthEnd;
+    const startDay = parseInt(sDate.substring(8,10)) || 1;
+    const endDay   = parseInt(eDate.substring(8,10)) || lastDay;
+    return { t, startDay, endDay, rawStart, rawEnd };
+  }).filter(Boolean);
+}
+
+/* ── 서브2: 컨트롤 바 HTML ── */
+function _schedBuildControls(year, cw, ch) {
+  const legendItems = [
+    {label:'진행중', color:'#4f6ef7'},
+    {label:'완료',   color:'#22c55e'},
+    {label:'지연',   color:'#ef4444'},
+    {label:'대기',   color:'#f59e0b'}
+  ];
+  const legendHTML = legendItems.map(({label,color}) =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--text-muted)">
+      <span style="width:14px;height:8px;border-radius:3px;background:${color};display:inline-block"></span>${label}
+    </span>`
+  ).join('') + `<span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--text-muted)">
+    <span style="width:8px;height:8px;border-radius:50%;background:#4f6ef7;display:inline-block;box-shadow:0 0 0 1.5px #4f6ef755"></span>일일업무
+  </span>`;
+
+  const knob = (id, type, grad, shadow) => `
+    <div style="position:relative;width:80px;height:22px;border-radius:11px;
+                background:var(--bg-tertiary);border:1.5px solid var(--border-color);
+                display:flex;align-items:center;justify-content:center;overflow:visible;"
+         title="좌우로 드래그하여 조절">
+      <div style="position:absolute;left:50%;top:3px;bottom:3px;width:1.5px;background:var(--border-color);transform:translateX(-50%);border-radius:2px;"></div>
+      <div id="${id}"
+        style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+               width:26px;height:26px;border-radius:50%;
+               background:${grad};border:2px solid #fff;
+               box-shadow:0 2px 8px ${shadow};
+               cursor:col-resize;transition:box-shadow .15s;z-index:2;
+               display:flex;align-items:center;justify-content:center;"
+        onmousedown="_jogLeverStart(event,'${type}')"
+        onmouseover="this.style.boxShadow='0 3px 14px ${shadow.replace('45','99')}'"
+        onmouseout="if(!window._jogActive)this.style.boxShadow='0 2px 8px ${shadow}'">
+        <i data-lucide="grip-vertical" style="width:10px;height:10px;color:#fff;pointer-events:none;"></i>
+      </div>
+    </div>`;
+
+  return `
+  <div style="flex-shrink:0;border-bottom:2px solid var(--border-color);background:var(--bg-secondary);
+              padding:9px 16px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button onclick="_scheduleChangeYear(-1)"
+        style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border-color);
+               background:var(--bg-primary);color:var(--text-primary);cursor:pointer;
+               display:inline-flex;align-items:center;justify-content:center;transition:all .15s"
+        onmouseover="this.style.borderColor='var(--accent-blue)'"
+        onmouseout="this.style.borderColor='var(--border-color)'">
+        <i data-lucide="chevron-left" style="width:14px;height:14px"></i>
+      </button>
+      <span style="font-size:17px;font-weight:800;min-width:72px;text-align:center;color:var(--text-primary)">${year}년</span>
+      <button onclick="_scheduleGoToday()"
+        style="padding:4px 12px;border-radius:7px;border:1.5px solid var(--accent-blue);
+               background:transparent;color:var(--accent-blue);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s"
+        onmouseover="this.style.background='var(--accent-blue)';this.style.color='#fff'"
+        onmouseout="this.style.background='transparent';this.style.color='var(--accent-blue)'">현재</button>
+      <button onclick="_scheduleChangeYear(1)"
+        style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border-color);
+               background:var(--bg-primary);color:var(--text-primary);cursor:pointer;
+               display:inline-flex;align-items:center;justify-content:center;transition:all .15s"
+        onmouseover="this.style.borderColor='var(--accent-blue)'"
+        onmouseout="this.style.borderColor='var(--border-color)'">
+        <i data-lucide="chevron-right" style="width:14px;height:14px"></i>
+      </button>
+      <div style="display:flex;align-items:center;gap:10px;margin-left:12px;flex-wrap:wrap;">${legendHTML}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <i data-lucide="move-horizontal" style="width:12px;height:12px;color:var(--text-muted)"></i>
+        <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">열 너비 <b id="schedCwVal">${cw}px</b></span>
+        ${knob('jogKnob_w','w','linear-gradient(135deg,var(--accent-blue),#9747ff)','rgba(79,110,247,.45)')}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <i data-lucide="move-vertical" style="width:12px;height:12px;color:var(--text-muted)"></i>
+        <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">행 높이 <b id="schedChVal">${ch}px</b></span>
+        ${knob('jogKnob_h','h','linear-gradient(135deg,#9747ff,var(--accent-blue))','rgba(151,71,255,.45)')}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── 서브3: 날짜 헤더 th 행 ── */
+function _schedBuildHeader(year, todayStr, today, cw, labelW, maxDays) {
+  const days = Array.from({length: maxDays}, (_,i) => i+1);
+  const ths = days.map(d => {
+    const isToday = (todayStr === `${year}-${String(today.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
+    return `<th style="width:${cw}px;min-width:${cw}px;max-width:${cw}px;
+               text-align:center;font-size:${cw>=36?'11px':'9px'};font-weight:${isToday?900:700};padding:5px 0;
+               border-right:1px solid var(--border-color);border-bottom:2px solid var(--border-color);
+               color:${isToday?'#fff':'var(--text-muted)'};
+               background:${isToday?'var(--accent-blue)':'var(--bg-secondary)'};
+               overflow:hidden;">${d}</th>`;
+  }).join('');
+  return `<thead>
+    <tr style="position:sticky;top:0;z-index:20;background:var(--bg-secondary);">
+      <th style="width:${labelW}px;min-width:${labelW}px;position:sticky;left:0;z-index:30;
+                 background:var(--bg-secondary);border-right:2px solid var(--border-color);
+                 border-bottom:2px solid var(--border-color);font-size:10px;font-weight:700;
+                 color:var(--text-muted);text-align:center;padding:5px 2px;">월 \\ 일</th>
+      ${ths}
+    </tr>
+  </thead>`;
+}
+
+/* ── 서브4: 날짜 셀(td) 렌더 ── */
+function _schedBuildCells(year, monthNum, todayStr, cw, ch, lastDate) {
+  const days = Array.from({length: 31}, (_,i) => i+1);
+  return days.map(d => {
+    const isValid = d <= lastDate;
+    const dt = `${year}-${String(monthNum).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow = isValid ? new Date(year, monthNum-1, d).getDay() : -1;
+    const isToday = dt === todayStr;
+    const isSun = dow === 0, isSat = dow === 6;
+    const bg = !isValid ? 'var(--bg-tertiary)'
+      : isToday ? 'rgba(79,110,247,.12)'
+      : isSun ? 'rgba(239,68,68,.04)'
+      : isSat ? 'rgba(79,110,247,.04)'
+      : 'var(--bg-primary)';
+    const dowLabels = ['일','월','화','수','목','금','토'];
+    const dowLabel = isValid ? dowLabels[dow] : '';
+    const dowColor = dow===0 ? '#ef4444' : dow===6 ? '#4f6ef7' : 'var(--text-muted)';
+    return `<td data-date="${dt}" data-day="${d}"
+      id="sched-cell-${year}-${monthNum}-${d}"
+      style="width:${cw}px;min-width:${cw}px;max-width:${cw}px;
+             height:${ch}px;padding:0;vertical-align:top;
+             background:${bg};
+             border-right:${isToday?'2px solid var(--accent-blue)':'1px solid var(--border-color)'};
+             border-bottom:1px solid var(--border-color);
+             ${!isValid?'opacity:.35;':''}
+             position:relative;overflow:hidden;">
+      ${isValid && cw >= 28 ? `<div style="position:absolute;bottom:1px;left:0;right:0;
+        font-size:${cw>=40?'9px':'7.5px'};font-weight:800;
+        color:${dowColor};opacity:.75;pointer-events:none;
+        text-align:center;line-height:1;z-index:6;">${dowLabel}</div>` : ''}
+    </td>`;
+  }).join('');
+}
+
+/* ── 서브5: 업무 막대 + 도트 렌더 ── */
+function _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, ch, labelW) {
+  let bars = '';
+  const dotMap = {};
+  if (!monthTasks.length) return {bars, dotMap};
+
+  const tracks = [];
+  const sorted = [...monthTasks].sort((a,b) => a.startDay - b.startDay);
+
+  sorted.forEach(({t, startDay, endDay, rawStart, rawEnd}) => {
+    const c    = _SCHED_STATUS_COLOR[t.status] || '#4f6ef7';
+    const prog = t.progress || 0;
+    const isOneDay = (rawStart === rawEnd) || (startDay === endDay) || (t.taskNature === '일일업무');
+
+    if (isOneDay) {
+      const day = (t.taskNature === '일일업무')
+        ? (parseInt((rawEnd||'').substring(8)) || endDay)
+        : endDay;
+      if (!dotMap[day]) dotMap[day] = [];
+      const dotSize = Math.min(10, Math.max(7, cw / 5));
+      dotMap[day].push(`
+        <div onclick="openTaskDetail(${t.id})"
+          title="${t.title} (${rawEnd})${t.taskNature==='일일업무'?' | 일일업무':''} | ${prog}%"
+          style="display:flex;align-items:center;gap:3px;padding:1px 3px;cursor:pointer;
+                 overflow:hidden;max-width:100%;transition:opacity .15s;"
+          onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
+          <span style="width:${dotSize}px;height:${dotSize}px;border-radius:50%;
+                 background:${c};flex-shrink:0;display:inline-block;
+                 box-shadow:0 0 0 1.5px ${c}55;"></span>
+          <span style="font-size:9px;font-weight:700;color:${c};
+                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.title}</span>
+        </div>`);
+    } else {
+      let track = 0;
+      while (tracks[track] && tracks[track] >= startDay) track++;
+      tracks[track] = endDay;
+
+      const barLeft  = labelW + (startDay - 1) * cw;
+      const barWidth = (endDay - startDay + 1) * cw - 4;
+      const dowH     = cw >= 28 ? 12 : 0;
+      const usable   = ch - dowH;
+      const trackH   = Math.min(22, Math.max(14, usable / 3));
+      const barTop   = 2 + track * trackH;
+      const barH     = Math.max(10, Math.min(trackH - 2, usable - barTop - 2));
+      const mStr     = `${year}-${String(monthNum).padStart(2,'0')}`;
+      const borderL  = rawStart.substring(0,7) === mStr ? '6px' : '0px';
+      const borderR  = rawEnd.substring(0,7)   === mStr ? '6px' : '0px';
+
+      bars += `<div
+        onclick="openTaskDetail(${t.id})"
+        title="${t.title} (${rawStart||'?'} ~ ${rawEnd}) | ${prog}% | ${t.status}"
+        style="position:absolute;left:${barLeft}px;top:${barTop}px;
+          width:${Math.max(barWidth,cw-4)}px;height:${barH}px;
+          border-radius:${borderL} ${borderR} ${borderR} ${borderL};
+          background:${c}22;border:1.5px solid ${c};cursor:pointer;
+          overflow:hidden;z-index:5;display:flex;align-items:center;
+          box-shadow:0 1px 4px ${c}44;transition:transform .1s,box-shadow .1s;"
+        onmouseover="this.style.transform='scaleY(1.08)';this.style.boxShadow='0 3px 10px ${c}66';this.style.zIndex=15"
+        onmouseout="this.style.transform='';this.style.boxShadow='0 1px 4px ${c}44';this.style.zIndex=5">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:${prog}%;background:${c};opacity:.35;border-radius:${borderL} 0 0 ${borderL};pointer-events:none;"></div>
+        <div style="position:relative;z-index:1;display:flex;align-items:center;gap:4px;padding:0 6px;width:100%;overflow:hidden;">
+          <span style="font-size:9.5px;font-weight:700;color:${c};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">${t.title}</span>
+          <span style="font-size:9px;font-weight:800;color:${c};white-space:nowrap;flex-shrink:0;">${prog}%</span>
+        </div>
+      </div>`;
+    }
+  });
+  return {bars, dotMap};
+}
+
+/* ── 서브6: 도트 주입 인라인 스크립트 ── */
+function _schedBuildDotScript(dotMap, year, monthNum) {
+  if (!Object.keys(dotMap).length) return '';
+  const entries = Object.entries(dotMap).map(([day, htmls]) =>
+    `var _c=document.getElementById('sched-cell-${year}-${monthNum}-${day}');if(_c){_c.insertAdjacentHTML('beforeend',${JSON.stringify(htmls.join(''))});}`
+  ).join('');
+  return `<script>${entries}<\/script>`;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   renderPage_Schedule — 메인 진입점 (분해 후)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 function renderPage_Schedule() {
   const el = document.getElementById('scheduleArea');
   if (!el) return;
@@ -1690,337 +1941,65 @@ function renderPage_Schedule() {
   const ch       = window._schedCellH;
   const labelW   = 52;
 
-  // 상태별 색상
-  const statusColor = {
-    done:     '#22c55e',
-    progress: '#4f6ef7',
-    delay:    '#ef4444',
-    waiting:  '#f59e0b',
-    hold:     '#8b5cf6',
-    cancel:   '#6b7280',
-    fail:     '#dc2626',
-    edit:     '#06b6d4',
-    add:      '#10b981'
-  };
-
-  // 연도의 모든 태스크 조회
+  // 연도가 겹치는 업무만 사전 필터
   const allTasks = (WS.tasks || []).filter(t => {
-    const start = t.startedAt || t.createdAt || null;
     const end   = t.dueDate || null;
+    const start = t.startedAt || t.dueDate || null;
     if (!end) return false;
-    // 연도가 겹치는 업무만
-    const endYear   = parseInt((end || '').substring(0,4));
-    const startYear = parseInt((start || end).substring(0,4));
+    const endYear   = parseInt((end||'').substring(0,4));
+    const startYear = parseInt((start||end).substring(0,4));
     return (startYear <= year && endYear >= year);
   });
 
-  // 각 월에 표시할 업무 계산
-  // → 해당 월과 기간이 겹치는 업무 + 셀 내 위치(시작열, 끝열)
-  function getTasksForMonth(monthIdx) {
-    const monthNum  = monthIdx + 1;
-    const monthStart = `${year}-${String(monthNum).padStart(2,'0')}-01`;
-    const lastDay   = new Date(year, monthNum, 0).getDate();
-    const monthEnd  = `${year}-${String(monthNum).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  // 컨트롤 바
+  const controls = _schedBuildControls(year, cw, ch);
+  // 날짜 헤더
+  const header   = _schedBuildHeader(year, todayStr, today, cw, labelW, maxDays);
 
-    return allTasks.map(t => {
-      // startedAt/createdAt이 ISO형식(YYYY-MM-DDTHH:mm)일 수 있으므로 날짜 부분만 추출
-      // createdAt은 업무 생성시각이므로 제외 - startedAt이 없으면 dueDate를 시작일로 사용
-      const normalize = s => s ? String(s).substring(0,10) : null;
-      const rawStart = normalize(t.startedAt) || normalize(t.dueDate);
-      const rawEnd   = normalize(t.dueDate);
-      if (!rawStart || !rawEnd) return null;
-      const sDate    = rawStart > monthStart ? rawStart : monthStart;
-      const eDate    = rawEnd   < monthEnd   ? rawEnd   : monthEnd;
-      // 이 월과 겹치는지
-      if (rawEnd < monthStart || rawStart > monthEnd) return null;
-      // 이 월 안에서의 시작일/끝일(1-based)
-      const startDay = parseInt(sDate.substring(8,10)) || 1;
-      const endDay   = parseInt(eDate.substring(8,10)) || lastDay;
-      return { t, startDay, endDay, rawStart, rawEnd };
-    }).filter(Boolean);
-  }
+  // 12개월 tbody 행 빌드
+  const rows = months.map((mLabel, mi) => {
+    const monthNum       = mi + 1;
+    const lastDate       = new Date(year, monthNum, 0).getDate();
+    const isCurrentMonth = (monthNum === today.getMonth()+1 && year === thisYear);
+    const monthTasks     = _schedGetTasksForMonth(allTasks, year, mi);
+    const cells          = _schedBuildCells(year, monthNum, todayStr, cw, ch, lastDate);
+    const {bars, dotMap} = _schedBuildBarsAndDots(monthTasks, year, monthNum, cw, ch, labelW);
+    const dotScript      = _schedBuildDotScript(dotMap, year, monthNum);
 
-  /* ─── HTML 빌드 ─── */
-  const days = Array.from({length: maxDays}, (_,i) => i+1);
-
-  let html = `
-<div style="display:flex;flex-direction:column;height:100%;overflow:hidden;border:1.5px solid var(--border-color);border-radius:14px;background:var(--bg-primary);">
-
-  <!-- ① 컨트롤 바 -->
-  <div style="flex-shrink:0;border-bottom:2px solid var(--border-color);background:var(--bg-secondary);padding:9px 16px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-
-    <div style="display:flex;align-items:center;gap:8px;">
-      <button onclick="_scheduleChangeYear(-1)"
-        style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .15s"
-        onmouseover="this.style.borderColor='var(--accent-blue)'" onmouseout="this.style.borderColor='var(--border-color)'">
-        <i data-lucide="chevron-left" style="width:14px;height:14px"></i>
-      </button>
-      <span style="font-size:17px;font-weight:800;min-width:72px;text-align:center;color:var(--text-primary)">${year}년</span>
-      <button onclick="_scheduleGoToday()"
-        style="padding:4px 12px;border-radius:7px;border:1.5px solid var(--accent-blue);background:transparent;color:var(--accent-blue);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s"
-        onmouseover="this.style.background='var(--accent-blue)';this.style.color='#fff'"
-        onmouseout="this.style.background='transparent';this.style.color='var(--accent-blue)'">현재</button>
-      <button onclick="_scheduleChangeYear(1)"
-        style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border-color);background:var(--bg-primary);color:var(--text-primary);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .15s"
-        onmouseover="this.style.borderColor='var(--accent-blue)'" onmouseout="this.style.borderColor='var(--border-color)'">
-        <i data-lucide="chevron-right" style="width:14px;height:14px"></i>
-      </button>
-
-      <!-- 범례 -->
-      <div style="display:flex;align-items:center;gap:10px;margin-left:12px;flex-wrap:wrap;">
-        ${Object.entries({진행중:'#4f6ef7',완료:'#22c55e',지연:'#ef4444',대기:'#f59e0b'}).map(([label,c])=>
-          `<span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--text-muted)">
-            <span style="width:14px;height:8px;border-radius:3px;background:${c};display:inline-block"></span>${label}
-          </span>`).join('')}
-        <span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--text-muted)">
-          <span style="width:8px;height:8px;border-radius:50%;background:#4f6ef7;display:inline-block;box-shadow:0 0 0 1.5px #4f6ef755"></span>일일업무
-        </span>
-      </div>
-    </div>
-
-    <!-- 조이스틱 레버 컨트롤 -->
-    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
-
-      <!-- 열 너비 레버 -->
-      <div style="display:flex;align-items:center;gap:8px;">
-        <i data-lucide="move-horizontal" style="width:12px;height:12px;color:var(--text-muted)"></i>
-        <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">열 너비 <b id="schedCwVal">${cw}px</b></span>
-        <!-- 레버 트랙 -->
-        <div style="position:relative;width:80px;height:22px;border-radius:11px;
-                    background:var(--bg-tertiary);border:1.5px solid var(--border-color);
-                    display:flex;align-items:center;justify-content:center;overflow:visible;"
-             title="좌우로 드래그하여 너비 조절">
-          <!-- 중앱 표시 선 -->
-          <div style="position:absolute;left:50%;top:3px;bottom:3px;width:1.5px;background:var(--border-color);transform:translateX(-50%);border-radius:2px;"></div>
-          <!-- 레버 노브 -->
-          <div id="jogKnob_w"
-            style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-                   width:26px;height:26px;border-radius:50%;
-                   background:linear-gradient(135deg,var(--accent-blue),#9747ff);
-                   border:2px solid #fff;
-                   box-shadow:0 2px 8px rgba(79,110,247,.45);
-                   cursor:col-resize;transition:box-shadow .15s;z-index:2;
-                   display:flex;align-items:center;justify-content:center;"
-            onmousedown="_jogLeverStart(event,'w')"
-            onmouseover="this.style.boxShadow='0 3px 14px rgba(79,110,247,.7)'"
-            onmouseout="if(!window._jogActive)this.style.boxShadow='0 2px 8px rgba(79,110,247,.45)'">
-            <i data-lucide="grip-vertical" style="width:10px;height:10px;color:#fff;pointer-events:none;"></i>
-          </div>
+    return `<tr style="position:relative;">
+      <td style="position:sticky;left:0;z-index:10;
+                 width:${labelW}px;min-width:${labelW}px;height:${ch}px;
+                 background:${isCurrentMonth?'rgba(79,110,247,.08)':'var(--bg-secondary)'};
+                 border-right:2px solid var(--border-color);border-bottom:1px solid var(--border-color);
+                 padding:0;text-align:center;vertical-align:middle;overflow:visible;">
+        <div style="font-size:12px;font-weight:${isCurrentMonth?800:600};
+             color:${isCurrentMonth?'var(--accent-blue)':'var(--text-secondary)'};">
+          ${mLabel}
+          ${isCurrentMonth?'<div style="width:5px;height:5px;border-radius:50%;background:var(--accent-blue);margin:2px auto 0"></div>':''}
         </div>
-      </div>
+        ${bars}
+      </td>
+      ${cells}
+      ${dotScript}
+    </tr>`;
+  }).join('');
 
-      <!-- 행 높이 레버 -->
-      <div style="display:flex;align-items:center;gap:8px;">
-        <i data-lucide="move-vertical" style="width:12px;height:12px;color:var(--text-muted)"></i>
-        <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">행 높이 <b id="schedChVal">${ch}px</b></span>
-        <div style="position:relative;width:80px;height:22px;border-radius:11px;
-                    background:var(--bg-tertiary);border:1.5px solid var(--border-color);
-                    display:flex;align-items:center;justify-content:center;overflow:visible;"
-             title="좌우로 드래그하여 높이 조절">
-          <div style="position:absolute;left:50%;top:3px;bottom:3px;width:1.5px;background:var(--border-color);transform:translateX(-50%);border-radius:2px;"></div>
-          <div id="jogKnob_h"
-            style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-                   width:26px;height:26px;border-radius:50%;
-                   background:linear-gradient(135deg,#9747ff,var(--accent-blue));
-                   border:2px solid #fff;
-                   box-shadow:0 2px 8px rgba(151,71,255,.45);
-                   cursor:col-resize;transition:box-shadow .15s;z-index:2;
-                   display:flex;align-items:center;justify-content:center;"
-            onmousedown="_jogLeverStart(event,'h')"
-            onmouseover="this.style.boxShadow='0 3px 14px rgba(151,71,255,.7)'"
-            onmouseout="if(!window._jogActive)this.style.boxShadow='0 2px 8px rgba(151,71,255,.45)'">
-            <i data-lucide="grip-vertical" style="width:10px;height:10px;color:#fff;pointer-events:none;"></i>
-          </div>
-        </div>
-      </div>
+  el.innerHTML = `
+  <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;
+              border:1.5px solid var(--border-color);border-radius:14px;background:var(--bg-primary);">
+    ${controls}
+    <div id="schedScrollArea" style="flex:1;overflow:auto;position:relative;cursor:grab;user-select:none;"
+      onmousedown="_schedDragStart(event,this)"
+      onmousemove="_schedDragMove(event,this)"
+      onmouseup="_schedDragEnd(this)"
+      onmouseleave="_schedDragEnd(this)">
+      <table style="border-collapse:collapse;table-layout:fixed;width:${labelW + cw*maxDays}px;">
+        ${header}
+        <tbody>${rows}</tbody>
+      </table>
     </div>
-  </div>
+  </div>`;
 
-  <!-- ② 스크롤 가능한 그리드 (드래그 스크롤 지원) -->
-  <div id="schedScrollArea" style="flex:1;overflow:auto;position:relative;cursor:grab;user-select:none;"
-    onmousedown="_schedDragStart(event,this)"
-    onmousemove="_schedDragMove(event,this)"
-    onmouseup="_schedDragEnd(this)"
-    onmouseleave="_schedDragEnd(this)">
-    <table style="border-collapse:collapse;table-layout:fixed;width:${labelW + cw*maxDays}px;">
-
-      <!-- ── sticky 헤더: 날짜 1~31 ── -->
-      <thead>
-        <tr style="position:sticky;top:0;z-index:20;background:var(--bg-secondary);">
-          <th style="width:${labelW}px;min-width:${labelW}px;position:sticky;left:0;z-index:30;
-                     background:var(--bg-secondary);border-right:2px solid var(--border-color);
-                     border-bottom:2px solid var(--border-color);font-size:10px;font-weight:700;
-                     color:var(--text-muted);text-align:center;padding:5px 2px;">월 \\ 일</th>
-          ${days.map(d => {
-            const isToday = (todayStr === `${year}-${String(today.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
-            return `<th style="width:${cw}px;min-width:${cw}px;max-width:${cw}px;
-                       text-align:center;font-size:${cw>=36?'11px':'9px'};font-weight:${isToday?900:700};padding:5px 0;
-                       border-right:1px solid var(--border-color);border-bottom:2px solid var(--border-color);
-                       color:${isToday?'#fff':'var(--text-muted)'};
-                       background:${isToday?'var(--accent-blue)':'var(--bg-secondary)'};
-                       overflow:hidden;">${d}</th>`;
-          }).join('')}
-        </tr>
-      </thead>
-
-      <!-- ── 본문: 12개월 ── -->
-      <tbody>
-        ${months.map((mLabel, mi) => {
-          const monthNum  = mi + 1;
-          const lastDate  = new Date(year, monthNum, 0).getDate();
-          const isCurrentMonth = (monthNum === today.getMonth()+1 && year === thisYear);
-          const monthTasks = getTasksForMonth(mi);
-
-          // 각 날짜 셀의 렌더
-          const cells = days.map(d => {
-            const isValid = d <= lastDate;
-            const dt = `${year}-${String(monthNum).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const dow = isValid ? new Date(year, mi, d).getDay() : -1;
-            const isToday = dt === todayStr;
-            const isSun   = dow === 0;
-            const isSat   = dow === 6;
-
-            const bg = !isValid ? 'var(--bg-tertiary)'
-              : isToday ? 'rgba(79,110,247,.12)'
-              : isSun ? 'rgba(239,68,68,.04)'
-              : isSat ? 'rgba(79,110,247,.04)'
-              : 'var(--bg-primary)';
-
-            const dowLabels = ['일','월','화','수','목','금','토'];
-            const dowLabel = isValid ? dowLabels[dow] : '';
-            const dowColor = dow === 0 ? '#ef4444' : dow === 6 ? '#4f6ef7' : 'var(--text-muted)';
-
-            // dotMap은 bars 빌드 후에 채워지므로 플레이스홀더로 id 사용
-            return `<td data-date="${dt}" data-day="${d}"
-              id="sched-cell-${year}-${monthNum}-${d}"
-              style="width:${cw}px;min-width:${cw}px;max-width:${cw}px;
-                     height:${ch}px;padding:0;vertical-align:top;
-                     background:${bg};
-                     border-right:${isToday?'2px solid var(--accent-blue)':'1px solid var(--border-color)'};
-                     border-bottom:1px solid var(--border-color);
-                     ${!isValid?'opacity:.35;':''}
-                     position:relative;overflow:hidden;">
-              ${isValid && cw >= 28 ? `<div style="position:absolute;bottom:1px;left:0;right:0;
-                font-size:${cw>=40?'9px':'7.5px'};font-weight:800;
-                color:${dowColor};opacity:.75;pointer-events:none;
-                text-align:center;line-height:1;z-index:6;">${dowLabel}</div>` : ''}
-            </td>`;
-          }).join('');
-
-          // ── 업무 렌더: 단일일=원형도트, 다일=막대
-          let bars = '';
-          // 단일일 업무: 특정 날짜 셀에 직접 삽입할 도트 맵 {day: [html,...]}
-          const dotMap = {};
-
-          if (monthTasks.length > 0) {
-            // 다일 업무만 트랙 배정
-            const tracks = [];
-            const sorted = [...monthTasks].sort((a,b) => a.startDay - b.startDay);
-
-            sorted.forEach(({t, startDay, endDay, rawStart, rawEnd}) => {
-              const c    = statusColor[t.status] || '#4f6ef7';
-              const prog = t.progress || 0;
-
-              // ── 단일일(하루) 판단: rawStart === rawEnd 이거나, 기간 1일 이거나, 업무성격이 '일일업무'
-              const isOneDay = (rawStart === rawEnd) || (startDay === endDay) || (t.taskNature === '일일업무');
-
-              if (isOneDay) {
-                // 일일업무: 완료기한(dueDate)이 속하는 날짜에 표시
-                const day = (t.taskNature === '일일업무')
-                  ? (parseInt((rawEnd || '').substring(8)) || endDay)
-                  : endDay;
-                if (!dotMap[day]) dotMap[day] = [];
-                const dotSize = Math.min(10, Math.max(7, cw / 5));
-                dotMap[day].push(`
-                  <div onclick="openTaskDetail(${t.id})"
-                    title="${t.title} (${rawEnd})${t.taskNature === '일일업무' ? ' | 일일업무' : ''} | ${prog}%"
-                    style="display:flex;align-items:center;gap:3px;padding:1px 3px;cursor:pointer;
-                           overflow:hidden;max-width:100%;transition:opacity .15s;"
-                    onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
-                    <span style="
-                      width:${dotSize}px;height:${dotSize}px;border-radius:50%;
-                      background:${c};flex-shrink:0;display:inline-block;
-                      box-shadow:0 0 0 1.5px ${c}55;"></span>
-                    <span style="font-size:9px;font-weight:700;color:${c};
-                           white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.title}</span>
-                  </div>`);
-              } else {
-                // 다일 업무 → 막대 (기존 로직)
-                let track = 0;
-                while (tracks[track] && tracks[track] >= startDay) track++;
-                tracks[track] = endDay;
-
-                // 셀 하단 요일 표시 영역을 침범하지 않도록 막대 크기 제한
-                const barLeft  = labelW + (startDay - 1) * cw;
-                const dowH    = cw >= 28 ? 12 : 0;
-                const usable  = ch - dowH;
-                const barWidth = (endDay - startDay + 1) * cw - 4;
-                const trackH  = Math.min(22, Math.max(14, usable / 3));
-                const barTop  = 2 + track * trackH;
-                const barH    = Math.min(trackH - 2, usable - barTop - 2);
-
-                const startsHere = rawStart.substring(0,7) === `${year}-${String(monthNum).padStart(2,'0')}`;
-                const endsHere   = rawEnd.substring(0,7)   === `${year}-${String(monthNum).padStart(2,'0')}`;
-                const borderL = startsHere ? '6px' : '0px';
-                const borderR = endsHere   ? '6px' : '0px';
-
-                bars += `<div
-                  onclick="openTaskDetail(${t.id})"
-                  title="${t.title} (${rawStart||'?'} ~ ${rawEnd}) | ${prog}% | ${t.status}"
-                  style="position:absolute;left:${barLeft}px;top:${barTop}px;
-                    width:${Math.max(barWidth,cw-4)}px;height:${barH}px;
-                    border-radius:${borderL} ${borderR} ${borderR} ${borderL};
-                    background:${c}22;border:1.5px solid ${c};cursor:pointer;
-                    overflow:hidden;z-index:5;display:flex;align-items:center;
-                    box-shadow:0 1px 4px ${c}44;transition:transform .1s,box-shadow .1s;"
-                  onmouseover="this.style.transform='scaleY(1.08)';this.style.boxShadow='0 3px 10px ${c}66';this.style.zIndex=15"
-                  onmouseout="this.style.transform='';this.style.boxShadow='0 1px 4px ${c}44';this.style.zIndex=5">
-                  <div style="position:absolute;left:0;top:0;bottom:0;width:${prog}%;background:${c};opacity:.35;border-radius:${borderL} 0 0 ${borderL};pointer-events:none;"></div>
-                  <div style="position:relative;z-index:1;display:flex;align-items:center;gap:4px;padding:0 6px;width:100%;overflow:hidden;">
-                    <span style="font-size:9.5px;font-weight:700;color:${c};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">${t.title}</span>
-                    <span style="font-size:9px;font-weight:800;color:${c};white-space:nowrap;flex-shrink:0;">${prog}%</span>
-                  </div>
-                </div>`;
-              }
-            });
-          }
-
-          // dotMap → 각 td에 주입할 인라인 스크립트
-          let dotScript = '';
-          if (Object.keys(dotMap).length > 0) {
-            const dotEntries = Object.entries(dotMap).map(([day, htmls]) =>
-              `var _c=document.getElementById('sched-cell-${year}-${monthNum}-${day}');if(_c){_c.insertAdjacentHTML('beforeend',${JSON.stringify(htmls.join(''))});}`
-            ).join('');
-            dotScript = `<script>${dotEntries}<\/script>`;
-          }
-
-          return `<tr style="position:relative;">
-            <!-- 월 라벨 (sticky left) - bars의 absolute 기준점 -->
-            <td style="position:sticky;left:0;z-index:10;
-                       width:${labelW}px;min-width:${labelW}px;height:${ch}px;
-                       background:${isCurrentMonth?'rgba(79,110,247,.08)':'var(--bg-secondary)'};
-                       border-right:2px solid var(--border-color);border-bottom:1px solid var(--border-color);
-                       padding:0;text-align:center;vertical-align:middle;
-                       overflow:visible;">
-              <div style="font-size:12px;font-weight:${isCurrentMonth?800:600};
-                   color:${isCurrentMonth?'var(--accent-blue)':'var(--text-secondary)'};">
-                ${mLabel}
-                ${isCurrentMonth?'<div style="width:5px;height:5px;border-radius:50%;background:var(--accent-blue);margin:2px auto 0"></div>':''}
-              </div>
-              <!-- 다일 업무 막대: td 기준 absolute (overflow:visible로 행 전체에 걸쳐 표시) -->
-              ${bars}
-            </td>
-            ${cells}
-            <!-- 단일일 원형도트 주입 스크립트 -->
-            ${dotScript}
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
-  </div>
-</div>`;
-
-  el.innerHTML = html;
   setTimeout(refreshIcons, 50);
 }
 
