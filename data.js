@@ -251,10 +251,10 @@ const WS = {
     return `${dt.getMonth()+1}/${dt.getDate()}`;
   },
 
-  // 내가 지시한 업무
+  // 내가 지시한 업무 (스케줄 업무 제외)
   getAssignedByMe(){
     if(!this.currentUser) return [];
-    return this.tasks.filter(t => t.assignerId === this.currentUser.id);
+    return this.tasks.filter(t => t.assignerId === this.currentUser.id && !t.isSchedule);
   },
 
   // 내가 받은 업무
@@ -419,6 +419,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const accent = localStorage.getItem('ws_current_accent') || '#4f6ef7';
   document.documentElement.style.setProperty('--accent-blue', accent);
   document.documentElement.style.setProperty('--accent-blue-light', accent + '22');
+
+  // ── 모서리 곡률 복원 ─────────────────────────────────────────
+  const radiusSaved = localStorage.getItem('ws_border_radius');
+  if (radiusSaved) {
+    const r = JSON.parse(radiusSaved);
+    const root = document.documentElement;
+    root.style.setProperty('--radius-sm', r.sm);
+    root.style.setProperty('--radius-md', r.md);
+    root.style.setProperty('--radius-lg', r.lg);
+    root.style.setProperty('--radius-xl', r.xl);
+  }
 
   // ── init-data.json 동기화 ──────────────────────────────────────
   // localStorage에 핵심 데이터가 없거나, ws_task_results에 icon이 없으면 init-data.json 로드

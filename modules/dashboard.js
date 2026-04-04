@@ -87,7 +87,7 @@ function renderDashGrid() {
       </div>
       <div class="dash-left-col" id="dashAccordionCol" style="height:600px">
         ${buildAccordionCard('byMe',     '#4f6ef7', 'send',         '내가 지시한 리스트',      getByMeCount(),       buildAssignedByMeBody())}
-        ${buildAccordionCard('received', '#9747ff', 'download',     '내가 지시받은 업무',    getReceivedCount(),   buildReceivedBody())}
+        ${buildAccordionCard('received', '#9747ff', 'download',     '내가 지시받은 업무',    getReceivedCount(),   buildReceivedBody('noSample'))}
         ${buildAccordionCard('schedule', '#06b6d4', 'calendar',     '내가 기획한 내업무',    getScheduleCount(),   buildScheduleBody())}
         ${buildAccordionCard('dueToday', '#ef4444', 'alert-circle', '오늘이 마감인 업무',    getDueTodayCount(),   buildDueTodayBody())}
       </div>
@@ -147,9 +147,9 @@ function toggleDashAccordion(key) {
       bodyEl.style.display = 'block';
       // 실제 콘텐츠 리렌더
       if (k === 'byMe')     bodyEl.innerHTML = buildAssignedByMeBody();
-      if (k === 'received') bodyEl.innerHTML = buildReceivedBody();
-      if (k === 'schedule') bodyEl.innerHTML = buildScheduleBody();
-      if (k === 'dueToday') bodyEl.innerHTML = buildDueTodayBody();
+      if (k === 'received') bodyEl.innerHTML = buildReceivedBody('noSample');
+      if (k === 'schedule') bodyEl.innerHTML = buildScheduleBody('noSample');
+      if (k === 'dueToday') bodyEl.innerHTML = buildDueTodayBody('noSample');
     }
   });
   refreshIcons();
@@ -287,12 +287,9 @@ function buildScheduleBody() {
     {id:'sc3',title:'팀 워크숍 준비',team:'인사',status:'waiting',progress:30,dueDate:new Date(Date.now()+10*86400000).toISOString(),assigneeIds:['u3'],_sample:true},
     {id:'sc4',title:'분기 성과 검토 회의',team:'전체',status:'progress',progress:60,dueDate:new Date(Date.now()+30*86400000).toISOString(),assigneeIds:['u1','u2'],_sample:true},
   ];
-  var allTasks = tasks.length > 0 ? tasks : sampleList;
-
-  // 샘플 전역 저장 (onclick에서 인덱스로 접근)
-  window._schedSampleData = sampleList;
-
-  if(tasks.length===0 && arguments[0]==='noSample') return '<div class="empty-state"><div class="es-icon"><i data-lucide="calendar"></i></div><div class="es-text">계획된 스케쥴 업무가 없습니다</div></div>';
+  // 실제 데이터가 없으면 항상 빈 상태 표시 (샘플 미표시)
+  var allTasks = tasks.length > 0 ? tasks : [];
+  if (allTasks.length === 0) return '<div class="empty-state"><div class="es-icon"><i data-lucide="calendar"></i></div><div class="es-text">계획된 내업무가 없습니다</div></div>';
 
   // 지시중요도 설정
   const allImportances = JSON.parse(localStorage.getItem('ws_instr_importances') || '[]');
@@ -347,53 +344,36 @@ function buildScheduleBody() {
     var barColor = t.status==='done'?'#22c55e':t.status==='delay'?'#ef4444':'var(--accent-blue)';
     var progressCell = '<div style="display:flex;align-items:center;gap:5px"><div style="position:relative;width:60px;height:6px;background:var(--border-color);border-radius:100px;overflow:hidden;flex-shrink:0"><div style="position:absolute;left:0;top:0;width:' + t.progress + '%;height:100%;border-radius:100px;background:' + barColor + ';transition:width .4s"></div></div><span style="font-size:10.5px;font-weight:700;color:var(--text-primary);min-width:28px;text-align:right">' + t.progress + '%</span></div>';
 
-    // ── 업무명 클릭: 샘플은 인덱스로, 실제 업무는 id로 openReceivedTaskDetail 호출
-    // (내가 지시받은 업무와 동일한 상세 팝업 UI 사용)
-    var titleOnclick = t._sample
-      ? 'event.stopPropagation();_openSampleDetail(' + rowIdx + ')'
-      : 'event.stopPropagation();editInstruction(' + t.id + ')';
+    // ── 업무명 클릭: 샘플은 인덱스로, 실제 업무는 수정 모달로 열기
     var titleStyle = 'font-weight:700;font-size:12.5px;text-decoration:underline dotted;text-underline-offset:3px;cursor:pointer;color:var(--text-primary)';
-    // 행 전체 클릭: 샘플 → _openSampleDetail, 실제 → editInstruction (스케줄은 본인이 등록한 것)
-    var rowOnclick = t._sample
-      ? '_openSampleDetail(' + rowIdx + ')'
-      : "editInstruction('" + t.id + "')";
-
-    return '<tr style="cursor:pointer" onclick="' + rowOnclick + '">'
-      + '<td style="width:25%" title="클릭하여 업무 상세 보기">'
+    return '<tr style="cursor:default">'    // 행 전체 클릭 없음
+      + '<td onclick="event.stopPropagation();' + (t._sample ? '_openSampleDetail(' + rowIdx + ')' : 'openScheduleEditModal(' + t.id + ')') + '" title="클릭하여 업무 수정" style="width:25%;cursor:pointer">'
       + '<div style="display:flex;align-items:center;gap:6px">'
       + (t.isImportant ? '<span class="star-icon"><i data-lucide="star"></i></span>' : '')
       + '<span style="' + titleStyle + '">' + t.title + '</span>' + sampleTag + '</div>'
       + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>'
       + collaboratorCell
       + '<td style="pointer-events:none;cursor:default">' + _renderStatusBadge(t.status) + '</td>'
-      + '<td onclick="event.stopPropagation();' + (t._sample ? '' : "openReceivedTaskDetail('" + t.id + "')") + '" style="cursor:' + (t._sample ? 'default' : 'pointer') + '" title="吏꾪뻾???대┃?섏뿬 ?낅Т吏꾪뻾 UI ?닿린">' + progressCell + '</td>'
+      + '<td onclick="event.stopPropagation();' + (t._sample ? '' : "openScheduleProgressModal('" + t.id + "')") + '" style="cursor:' + (t._sample ? 'default' : 'pointer') + '" title="클릭하여 진행보고서 작성">' + progressCell + '</td>'
       + '<td style="pointer-events:none"><span class="dday-badge ' + dd.cls + '">' + dd.label + '</span></td>'
       + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">' + importanceBadges + '</div></td>'
       + '</tr>';
   }).join('');
-  return '<div style="padding:8px"><table class="task-table"><thead><tr><th style="width:25%">업무명</th><th>협업자</th><th>상태</th><th>진행률</th><th>마감일</th><th>업무중요도</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  return '<div style="padding:8px"><table class="task-table"><thead><tr><th style="width:25%">업무명</th><th>수신(협조)자</th><th>상태</th><th>진행률</th><th>마감일</th><th>업무중요도</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 /* ── 오늘이 시한인 업무 Body (테이블 스타일) */
 
 function buildDueTodayBody() {
   var today2 = new Date(); today2.setHours(0,0,0,0);
-  const tasks = (WS.tasks||[]).filter(function(t){
+  var tasks = (WS.tasks||[]).filter(function(t){
     var d = new Date(t.dueDate); d.setHours(0,0,0,0);
     return d.getTime() === today2.getTime() && t.status !== 'done';
   });
-  var allTasks = tasks.length > 0 ? tasks : [
-    {id:'dt1',title:'청주서 제출 마감',team:'경영지원',status:'progress',progress:85,dueDate:new Date().toISOString(),assigneeIds:['u2'],assignerId:'u1',_sample:true},
-    {id:'dt2',title:'보도자료 최종 검토',team:'홍보실',status:'waiting',progress:50,dueDate:new Date().toISOString(),assigneeIds:[],assignerId:'u3',_sample:true},
-    {id:'dt3',title:'개발서버 배포 작업',team:'IT팀',status:'progress',progress:90,dueDate:new Date().toISOString(),assigneeIds:['u1','u2'],assignerId:'u4',_sample:true},
-    {id:'dt4',title:'클라이언트 미팅 PPT 완성',team:'사업부',status:'waiting',progress:20,dueDate:new Date().toISOString(),assigneeIds:[],assignerId:null,_sample:true},
-  ];
-  if(tasks.length===0 && arguments[0]==='noSample') return '<div class="empty-state"><div class="es-icon"><i data-lucide="party-popper"></i></div><div class="es-text">오늘 마감인 업무가 없습니다!</div></div>';
-
-  // 업무중요도 설정 로드
-  const allImportances = JSON.parse(localStorage.getItem('ws_instr_importances') || '[]');
-  const instrList = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
-
+  if (tasks.length === 0) return '<div class="empty-state"><div class="es-icon"><i data-lucide="party-popper"></i></div><div class="es-text">오늘 마감인 업무가 없습니다!</div></div>';
+  var allTasks = tasks;
+  var allImportances = JSON.parse(localStorage.getItem('ws_instr_importances') || '[]');
+  var instrList = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
   const rows = allTasks.map(function(t) {
     const sampleTag = t._sample ? '<span style="font-size:9px;background:#ef444422;color:#ef4444;border-radius:4px;padding:0 4px;margin-left:4px">샘플</span>' : '';
     const dd = WS.getDdayBadge ? WS.getDdayBadge(t.dueDate) : {cls:'dday-today',label:'D-DAY'};
@@ -475,7 +455,7 @@ function buildDueTodayBody() {
       + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">' + importanceBadges + '</div></td>'
       + '</tr>';
   }).join('');
-  return '<div style="padding:8px"><table class="task-table"><thead><tr><th style="width:25%">업무명</th><th>협업자</th><th>상태</th><th>진행율</th><th>마감일</th><th>업무중요도</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  return '<div style="padding:8px"><table class="task-table"><thead><tr><th style="width:25%">업무명</th><th>수신(협조)자</th><th>상태</th><th>진행율</th><th>마감일</th><th>업무중요도</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 /* ── 상태 배지 with 아이콘 (설정된 ws_task_statuses 기반) */
@@ -602,7 +582,6 @@ function buildAssignedByMeBody() {
 
   const rows = tasks.map(t => {
     const _ids2 = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
-    const assignee = WS.getUser(_ids2[0]);
     const dd = WS.getDdayBadge(t.dueDate);
     const fillCls = t.status==='delay'?'delay':t.status==='done'?'done':'';
 
@@ -642,6 +621,20 @@ function buildAssignedByMeBody() {
       return `<i data-lucide="${imp.icon}" style="width:13px;height:13px;color:${c};flex-shrink:0;margin-right:2px"></i>`;
     })() : '';
 
+    // ── 수신(협조)자 아바타 스택 (assigneeIds 전체 표시)
+    const receiverAvatarArr = _ids2.map(uid => {
+      const u = WS.getUser(uid);
+      if (!u) return '';
+      return _makeCircleAvatar(u.avatar||u.name.slice(0,2), u.color||'#4f6ef7', u.name);
+    }).filter(Boolean);
+    // 이름 목록 (tooltip용)
+    const receiverNames = _ids2.map(uid => { const u = WS.getUser(uid); return u ? u.name : ''; }).filter(Boolean);
+    const receiverStack = _buildAvatarStack(receiverAvatarArr);
+    // 단일 수신자일 때 이름 표시, 복수일 때 첫번째 이름만 표시
+    const receiverLabel = receiverNames.length === 0
+      ? '<span style="font-size:11px;color:var(--text-muted)">-</span>'
+      : `<div style="font-size:11px;color:var(--currentAccent,#4f6ef7);margin-top:2px;font-weight:600;text-decoration:underline dotted;text-underline-offset:2px">${receiverNames[0]}</div>`;
+
     return `<tr style="cursor:pointer">
       <td onclick="editInstruction(${t.id})" title="클릭하여 수정" style="width:25%">
         <div style="display:flex;align-items:center;gap:4px">
@@ -650,7 +643,7 @@ function buildAssignedByMeBody() {
         </div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${t.team||''}</div>
       </td>
-      <td onclick="event.stopPropagation();openTaskChatChannel('${t.title}',${t.id})" title="클릭하여 메시지 채널 열기" style="cursor:pointer"><div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,${assignee?.color||'#4f6ef7'},#9747ff)">${assignee?.avatar||'?'}</div></div><div style="font-size:11px;color:var(--currentAccent,#4f6ef7);margin-top:2px;font-weight:600;text-decoration:underline dotted;text-underline-offset:2px">${assignee?.name||''}</div></td>
+      <td onclick="event.stopPropagation();openTaskChatChannel('${t.title}',${t.id})" title="클릭하여 메시지 채널 열기" style="cursor:pointer">${receiverStack}${receiverLabel}</td>
       <td style="pointer-events:none;cursor:default">${_renderStatusBadge(t.status)}</td>
       <td onclick="(function(){
         var me = WS.currentUser ? String(WS.currentUser.id) : null;
@@ -670,7 +663,7 @@ function buildAssignedByMeBody() {
       <td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">${importanceBadges}</div></td>
     </tr>`;
   }).join('');
-  return `<div style="padding:8px"><table class="task-table"><thead><tr><th style="width:25%">업무명</th><th>담당자</th><th>상태</th><th>진행률</th><th>마감일</th><th>지시중요도</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<div style="padding:8px"><table class="task-table"><thead><tr><th style="width:25%">업무명</th><th>수신(협조)자</th><th>상태</th><th>진행률</th><th>마감일</th><th>지시중요도</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 /* ?€?€ ?뱀뀡2: 내가 吏€?쒕컺?€ 업무 ?€?€ */
