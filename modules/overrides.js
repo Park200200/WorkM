@@ -4296,13 +4296,20 @@ function openScheduleEditModal(taskId) {
   // 2. 신규 등록과 동일하게 모달 초기화
   openScheduleModal();
 
-  // 3. 수정 모드: 타이틀 + 버튼 변경
+  // 3. 수정 모드: openScheduleModal의 setTimeout(120ms)보다 늦게 실행해야 덮어쓰기 방지
   setTimeout(function() {
-    var modalTitle = document.querySelector('#newTaskModal .modal-title');
-    var submitBtn  = document.querySelector('#newTaskModal .modal-foot .btn-blue');
-    if (modalTitle) modalTitle.textContent = '내가 기획한 업무 수정';
+    // openScheduleModal은 instructionModal을 재사용하므로 해당 셀렉터 사용
+    var titleEl  = document.getElementById('instructionModalTitle');
+    var iconWrap = document.getElementById('instrModalIconWrap');
+    var submitBtn = document.querySelector('#instructionModal .modal-foot .btn-blue');
+
+    if (titleEl) titleEl.textContent = '내가 기획한 업무 수정';
+    if (iconWrap) {
+      iconWrap.style.background = 'linear-gradient(135deg,#f59e0b,#ef4444)';
+      iconWrap.innerHTML = '<i data-lucide="pencil" style="width:16px;height:16px;color:#fff"></i>';
+    }
     if (submitBtn) {
-      submitBtn.textContent = '수정';
+      submitBtn.innerHTML = '<i data-lucide="save" style="width:13px;height:13px;margin-right:4px;vertical-align:middle"></i>수정';
       submitBtn.onclick = function() { _saveScheduleEdit(taskId); };
     }
 
@@ -4371,7 +4378,7 @@ function openScheduleEditModal(taskId) {
     window._schedEditTaskId = taskId;
 
     if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 50);
-  }, 80);
+  }, 160);
 }
 
 /* 스케줄 업무 수정 저장 */
@@ -4397,7 +4404,11 @@ function _saveScheduleEdit(taskId) {
   task.updatedAt   = new Date().toISOString();
 
   WS.saveTasks();
-  closeModalDirect('newTaskModal');
+  // openScheduleEditModal은 instructionModal을 재사용하므로 둘 다 닫기
+  if (typeof closeModalDirect === 'function') {
+    closeModalDirect('instructionModal');
+    closeModalDirect('newTaskModal');
+  }
   renderDashboard();
   if (typeof renderPage_Tasks === 'function') renderPage_Tasks();
   showToast('success', '"' + title + '" 업무가 수정되었습니다.');
@@ -4430,3 +4441,258 @@ function openScheduleProgressModal(taskId) {
   }
 }
 
+/* ═══════════════════════════════════════════════════════
+   syncDataToInitJson()
+   현재 localStorage 데이터를 init-data.json에 저장 후
+   git commit & push 명령어 안내
+═══════════════════════════════════════════════════════ */
+async function syncDataToInitJson() {
+  var KEYS = [
+    'ws_departments','ws_ranks','ws_positions',
+    'ws_task_results','ws_report_types','ws_detail_tasks',
+    'ws_users','ws_tasks','ws_hq_info','ws_attendance',
+    'ws_messages','ws_accents','ws_current_accent',
+    'ws_theme','ws_border_radius','ws_instr_importances',
+    'ws_task_statuses'
+  ];
+
+  // localStorage에서 데이터 수집
+  var data = {};
+  KEYS.forEach(function(k) {
+    var v = localStorage.getItem(k);
+    if (v) {
+      try { data[k] = JSON.parse(v); }
+      catch(e) { data[k] = v; }
+    }
+  });
+
+  var jsonStr = JSON.stringify(data, null, 2);
+  var btn = document.getElementById('syncBtn');
+
+  // 버튼 로딩 표시
+  if (btn) {
+    btn.style.background = 'var(--accent-blue)';
+    btn.style.color = '#fff';
+    btn.style.borderColor = 'var(--accent-blue)';
+  }
+
+  function resetBtn() {
+    setTimeout(function() {
+      if (btn) {
+        btn.style.background = '';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }
+    }, 2000);
+  }
+
+  function showCmdBox(cmds) {
+    // 기존 박스 제거
+    var old = document.getElementById('syncCmdBox');
+    if (old) old.remove();
+
+    var box = document.createElement('div');
+    box.id = 'syncCmdBox';
+    box.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);'
+      + 'z-index:9999;background:var(--bg-modal);border:1.5px solid var(--border-color);'
+      + 'border-radius:14px;padding:24px 28px;box-shadow:0 20px 60px rgba(0,0,0,.3);'
+      + 'min-width:400px;max-width:560px;';
+    box.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">'
+      + '<div style="width:32px;height:32px;border-radius:9px;background:var(--accent-blue);'
+      +   'display:flex;align-items:center;justify-content:center">'
+      +   '<i data-lucide="terminal" style="width:16px;height:16px;color:#fff"></i></div>'
+      + '<div style="font-size:15px;font-weight:800;color:var(--text-primary)">PowerShell 명령어</div>'
+      + '<button onclick="document.getElementById(\'syncCmdBox\').remove()" '
+      +   'style="margin-left:auto;width:28px;height:28px;border-radius:6px;border:1px solid '
+      +   'var(--border-color);background:transparent;cursor:pointer;font-size:15px;color:var(--text-muted)">✕</button>'
+      + '</div>'
+      + '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">'
+      +   'PowerShell에서 아래 명령어를 실행하세요:</div>'
+      + '<pre id="syncCmdPre" style="background:var(--bg-tertiary);border:1px solid var(--border-color);'
+      +   'border-radius:8px;padding:12px 16px;font-size:12.5px;color:var(--text-primary);'
+      +   'overflow-x:auto;line-height:1.8;white-space:pre">' + cmds + '</pre>'
+      + '<button onclick="_copySyncCmds()" '
+      +   'style="margin-top:14px;width:100%;height:38px;border-radius:9px;border:none;'
+      +   'background:var(--accent-blue);color:#fff;font-size:13px;font-weight:700;cursor:pointer">'
+      + '📋 명령어 복사</button>';
+    document.body.appendChild(box);
+    window._syncCmdsStr = cmds;
+    if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 50);
+  }
+
+  try {
+    // ── File System Access API (Chrome/Edge 지원) ──
+    if (window.showSaveFilePicker) {
+      var fileHandle = await window.showSaveFilePicker({
+        suggestedName: 'init-data.json',
+        types: [{ description: 'JSON 파일', accept: { 'application/json': ['.json'] } }]
+      });
+      var writable = await fileHandle.createWritable();
+      await writable.write(jsonStr);
+      await writable.close();
+
+      showToast('success', 'init-data.json 저장 완료!', 4000);
+
+      var commitMsg = '[WorkM] 데이터 동기화 ' + new Date().toLocaleDateString('ko-KR');
+      var cmds = 'cd C:\\Users\\Lenovo\\Antigravity\\WorkM\n'
+        + 'git add home/init-data.json\n'
+        + 'git commit -m "' + commitMsg + '"\n'
+        + 'git push';
+      showCmdBox(cmds);
+
+    } else {
+      // ── Fallback: 파일 다운로드 ──
+      var blob = new Blob([jsonStr], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'init-data.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      var commitMsg2 = '[WorkM] 데이터 동기화 ' + new Date().toLocaleDateString('ko-KR');
+      var cmds2 = 'cd C:\\Users\\Lenovo\\Antigravity\\WorkM\n'
+        + '# 다운로드된 init-data.json을 home/ 폴더에 복사 후:\n'
+        + 'git add home/init-data.json\n'
+        + 'git commit -m "' + commitMsg2 + '"\n'
+        + 'git push';
+      showToast('info', 'init-data.json 다운로드됨! home/ 폴더에 덮어쓰기 후 git push하세요.', 5000);
+      showCmdBox(cmds2);
+    }
+
+  } catch(e) {
+    if (e.name !== 'AbortError') {
+      showToast('error', '저장 실패: ' + e.message);
+    }
+  } finally {
+    resetBtn();
+  }
+}
+
+function _copySyncCmds() {
+  navigator.clipboard.writeText(window._syncCmdsStr || '').then(function() {
+    showToast('success', '명령어가 클립보드에 복사되었습니다.');
+  }).catch(function() {
+    var pre = document.getElementById('syncCmdPre');
+    if (pre) {
+      var range = document.createRange();
+      range.selectNode(pre);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+      document.execCommand('copy');
+      showToast('success', '복사 완료!');
+    }
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   홈페이지 모드 - 사이드바 전환 및 서브페이지 라우팅
+══════════════════════════════════════════════════════ */
+
+// 홈페이지 모드 진입: mainNav 숨기고 homepageNav 표시
+function enterHomepageMode() {
+  var mainNav      = document.getElementById('mainNav');
+  var acctNav      = document.getElementById('acctNav');
+  var homepageNav  = document.getElementById('homepageNav');
+  if (mainNav)     mainNav.style.display     = 'none';
+  if (acctNav)     acctNav.style.display     = 'none';
+  if (homepageNav) homepageNav.style.display = 'block';
+  // 첫 서브페이지(기본설정) 자동 표시
+  var firstItem = document.querySelector('#homepageNav [data-hp-page="hp-basic"]');
+  showHomepagePage('hp-basic', firstItem);
+  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 60);
+}
+
+// 홈페이지 모드 이탈: mainNav 복원 후 대시보드로
+function exitHomepageMode() {
+  var mainNav     = document.getElementById('mainNav');
+  var homepageNav = document.getElementById('homepageNav');
+  if (homepageNav) homepageNav.style.display = 'none';
+  if (mainNav)     mainNav.style.display     = 'block';
+  // 헤더 breadcrumb 복원
+  var headerSearch = document.getElementById('headerSearch');
+  var homepageBar  = document.getElementById('homepageModeBar');
+  if (headerSearch) headerSearch.style.display = '';
+  if (homepageBar)  homepageBar.style.display  = 'none';
+  // 대시보드로 이동
+  var dashEl = document.querySelector('[data-page="dashboard"]');
+  if (typeof showPage === 'function') showPage('dashboard', dashEl);
+  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 60);
+}
+
+// 홈페이지 서브페이지 전환
+function showHomepagePage(pageId, navEl) {
+  // 서브 콘텐츠 영역 모두 숨기기
+  var subPages = ['hp-basic','hp-content','hp-banner','hp-board','hp-inquiry'];
+  subPages.forEach(function(id) {
+    var el = document.getElementById('page-' + id);
+    if (el) { el.style.display = 'none'; el.classList.remove('active'); }
+  });
+  // 선택한 서브페이지 표시
+  var target = document.getElementById('page-' + pageId);
+  if (target) { target.style.display = 'block'; target.classList.add('active'); }
+  // nav 활성 상태
+  document.querySelectorAll('#homepageNav .nav-item').forEach(function(n) {
+    n.classList.remove('active');
+  });
+  if (navEl) navEl.classList.add('active');
+}
+
+/* ══ 홈페이지 기본설정 - 로고 등록 ══ */
+function _hpLogoPreview(input, previewId, hiddenId) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    var previewEl = document.getElementById(previewId);
+    var hiddenEl  = document.getElementById(hiddenId);
+    if (previewEl) {
+      previewEl.innerHTML = '<img src="' + dataUrl + '" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px">';
+    }
+    if (hiddenEl) hiddenEl.value = dataUrl;
+    // localStorage 임시 저장
+    try { localStorage.setItem('hp_logo_' + hiddenId, dataUrl); } catch(e2){}
+  };
+  reader.readAsDataURL(file);
+}
+
+function _hpLogoSave() {
+  var keys = ['hp_logo_top_h','hp_logo_top_v','hp_logo_bot_h','hp_logo_bot_v'];
+  var saved = 0;
+  keys.forEach(function(k) {
+    var el = document.getElementById(k);
+    if (el && el.value) {
+      try { localStorage.setItem(k, el.value); saved++; } catch(e){}
+    }
+  });
+  if (typeof showToast === 'function') showToast('success', '로고가 저장되었습니다.');
+}
+
+// 저장된 로고 복원 (페이지 로드 시)
+function _hpLogoRestore() {
+  var map = {
+    'hp_logo_top_h': 'logo_top_h_preview',
+    'hp_logo_top_v': 'logo_top_v_preview',
+    'hp_logo_bot_h': 'logo_bot_h_preview',
+    'hp_logo_bot_v': 'logo_bot_v_preview'
+  };
+  Object.keys(map).forEach(function(k) {
+    var dataUrl = localStorage.getItem(k);
+    if (!dataUrl) return;
+    var previewEl = document.getElementById(map[k]);
+    var hiddenEl  = document.getElementById(k);
+    if (previewEl) previewEl.innerHTML = '<img src="' + dataUrl + '" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px">';
+    if (hiddenEl)  hiddenEl.value = dataUrl;
+  });
+}
+
+// showHomepagePage 시 로고 복원 호출
+var _origShowHpPage = window.showHomepagePage;
+window.showHomepagePage = function(pageId, navEl) {
+  if (typeof _origShowHpPage === 'function') _origShowHpPage(pageId, navEl);
+  if (pageId === 'hp-basic') setTimeout(_hpLogoRestore, 80);
+};

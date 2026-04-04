@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 
 let sidebarTimer = null;
 
@@ -86,6 +86,25 @@ function showPage(name, navEl) {
   if (name === 'org-mgmt') renderPage_OrgMgmt();
   if (name === 'rank-mgmt') renderPage_RankMgmt();
 
+
+  // homepage 모드: 헤더 검색창 가시성 전환
+  var headerSearch = document.getElementById('headerSearch');
+  var homepageBar  = document.getElementById('homepageModeBar');
+  if (name === 'homepage') {
+    if (headerSearch) headerSearch.style.display = 'none';
+    if (homepageBar)  homepageBar.style.display  = 'flex';
+    if (typeof enterHomepageMode === 'function') enterHomepageMode();
+  } else {
+    if (headerSearch) headerSearch.style.display = '';
+    if (homepageBar)  homepageBar.style.display  = 'none';
+    // 홈페이지 전용 nav 닫기 + mainNav 복원
+    var mainNav2     = document.getElementById('mainNav');
+    var homepageNav2 = document.getElementById('homepageNav');
+    if (homepageNav2 && homepageNav2.style.display !== 'none') {
+      homepageNav2.style.display = 'none';
+      if (mainNav2) mainNav2.style.display = 'block';
+    }
+  }
   closeAllDropdowns();
 }
 
@@ -3335,6 +3354,8 @@ function saveInstruction() {
   const startDateEl = document.getElementById('instrStartDate');
   const startDate   = startDateEl ? startDateEl.value : '';
   const natureEl    = document.getElementById('instrNature');
+  const taskNature  = natureEl ? (natureEl.value || '일일업무') : '일일업무';
+  var isEditMode = !!window._instrEditId;
   var finalTaskName = taskName;
   var finalAssigneeName = assigneeName;
   var finalTaskId = taskId;
@@ -3479,7 +3500,8 @@ function _renderInstrTaskBox() {
   if (!box) return;
   var sel = window._instrSelectedTasks || [];
   if (sel.length === 0) {
-    box.innerHTML = '<span style="color:var(--text-muted);font-size:12.5px;font-weight:500;padding:2px 4px;border-radius:20px;border:1.5px dashed var(--border-color);background:var(--bg-tertiary);display:inline-flex;align-items:center;gap:4px"><span style="font-size:11px">💼</span>업무를 선택하세요</span>';
+    box.innerHTML = '<span style="font-size:12px;color:var(--text-muted)"><i data-lucide="briefcase" style="width:12px;height:12px;vertical-align:middle;margin-right:4px;opacity:.5"></i>\uc5c5\ubb34\ub97c \uc120\ud0dd\ud558\uc138\uc694</span>';
+    setTimeout(refreshIcons, 30);
   } else {
     box.innerHTML = sel.map(function(t){
       return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;' +
@@ -3499,7 +3521,8 @@ function _renderInstrAssigneeBox() {
   if (!box) return;
   var sel = window._instrSelectedAssignees || [];
   if (sel.length === 0) {
-    box.innerHTML = '<span style="color:var(--text-muted);font-size:12.5px;font-weight:500;padding:2px 4px;border-radius:20px;border:1.5px dashed var(--border-color);background:var(--bg-tertiary);display:inline-flex;align-items:center;gap:4px"><span style="font-size:11px">👤</span>담당자를 선택하세요</span>';
+    box.innerHTML = '<span style="font-size:12px;color:var(--text-muted)"><i data-lucide="users" style="width:12px;height:12px;vertical-align:middle;margin-right:4px;opacity:.5"></i>\ub2f4\ub2f9\uc790\ub97c \uc120\ud0dd\ud558\uc138\uc694</span>';
+    setTimeout(refreshIcons, 30);
   } else {
     box.innerHTML = sel.map(function(u){
       return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;' +

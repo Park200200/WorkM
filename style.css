@@ -279,7 +279,7 @@ a{text-decoration:none;color:inherit}
 .page{display:none}
 .page.active{display:flex;flex-direction:column;height:100%}
 
-.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-shrink:0}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-shrink:0;position:sticky;top:0;z-index:10;background:var(--bg-primary);padding-top:4px;padding-bottom:4px;margin-top:-4px}
 .page-title{font-size:20px;font-weight:800;color:var(--text-primary);letter-spacing:-.5px}
 .page-subtitle{font-size:13px;color:var(--text-secondary);margin-top:2px}
 

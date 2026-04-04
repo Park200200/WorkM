@@ -221,9 +221,14 @@ const WS = {
   getTask(id){ return this.tasks.find(t => t.id === id); },
 
   getDday(dueDate){
-    const due = new Date(dueDate);
-    due.setHours(23,59,59,0);
-    const diff = Math.ceil((due - new Date()) / (1000*60*60*24));
+    // 'YYYY-MM-DD'를 로컬 날짜로 파싱 (new Date('YYYY-MM-DD')는 UTC 자정 → 한국에서 하루 오차)
+    if (!dueDate) return 9999;
+    const p = dueDate.split('-');
+    const due = new Date(Number(p[0]), Number(p[1])-1, Number(p[2]), 23, 59, 59);
+    const now = new Date();
+    // 오늘 자정 기준으로 날짜 차이 계산
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const diff = Math.ceil((due - todayMidnight) / (1000*60*60*24));
     return diff;
   },
 
