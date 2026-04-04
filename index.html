@@ -942,14 +942,19 @@
                 <!-- 클릭하면 팝업 열림 -->
                 <div id="instrTaskBox"
                   onclick="_openInstrTaskPopup()"
-                  style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow-x:auto;
-                         min-height:40px;padding:6px 10px;border-radius:10px;
+                  style="position:relative;display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow-x:auto;
+                         min-height:42px;padding:0 12px 0 38px;border-radius:10px;
                          border:1.5px solid var(--border-color);background:var(--bg-secondary);
                          cursor:pointer;scrollbar-width:none;-webkit-overflow-scrolling:touch;
-                         transition:border-color .2s"
-                  onmouseover="this.style.borderColor='var(--accent-blue)'"
-                  onmouseout="this.style.borderColor='var(--border-color)'">
-                  <!-- JS에서 선택된 업무 칩 렌더 -->
+                         transition:border-color .2s,box-shadow .2s;box-sizing:border-box"
+                  onmouseover="this.style.borderColor='var(--accent-blue)';this.style.boxShadow='0 0 0 3px var(--accent-blue)18'"
+                  onmouseout="this.style.borderColor='var(--border-color)';this.style.boxShadow='none'">
+                  <!-- 좌측 고정 아이콘 -->
+                  <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);
+                               pointer-events:none;color:var(--text-muted);display:flex;align-items:center">
+                    <i data-lucide="briefcase" style="width:14px;height:14px"></i>
+                  </span>
+                  <!-- JS에서 선택된 업무 칩 렌더 (비어있을 때 placeholder) -->
                 </div>
                 <input type="hidden" id="instrTask">
                 <!-- 업무선택 팝업 -->
@@ -973,13 +978,18 @@
                 </label>
                 <div id="instrAssigneeBox"
                   onclick="_openInstrAssigneePopup()"
-                  style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow-x:auto;
-                         min-height:40px;padding:6px 10px;border-radius:10px;
+                  style="position:relative;display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow-x:auto;
+                         min-height:42px;padding:0 12px 0 38px;border-radius:10px;
                          border:1.5px solid var(--border-color);background:var(--bg-secondary);
                          cursor:pointer;scrollbar-width:none;-webkit-overflow-scrolling:touch;
-                         transition:border-color .2s"
-                  onmouseover="this.style.borderColor='var(--accent-blue)'"
-                  onmouseout="this.style.borderColor='var(--border-color)'">
+                         transition:border-color .2s,box-shadow .2s;box-sizing:border-box"
+                  onmouseover="this.style.borderColor='var(--accent-blue)';this.style.boxShadow='0 0 0 3px var(--accent-blue)18'"
+                  onmouseout="this.style.borderColor='var(--border-color)';this.style.boxShadow='none'">
+                  <!-- 좌측 고정 아이콘 -->
+                  <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);
+                               pointer-events:none;color:var(--text-muted);display:flex;align-items:center">
+                    <i data-lucide="user-check" style="width:14px;height:14px"></i>
+                  </span>
                 </div>
                 <input type="hidden" id="instrAssignee">
                 <!-- 담당자선택 팝업 -->

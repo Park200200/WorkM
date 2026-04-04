@@ -3335,15 +3335,6 @@ function saveInstruction() {
   const startDateEl = document.getElementById('instrStartDate');
   const startDate   = startDateEl ? startDateEl.value : '';
   const natureEl    = document.getElementById('instrNature');
-  const taskNature  = natureEl ? (natureEl.value || '일일업무') : '일일업무';
-
-  const isEditMode = !!window._instrEditId;
-  if (!isEditMode && !taskId)    { showToast('error', '업무를 선택하세요.');    return; }
-  if (!isEditMode && !assigneeId){ showToast('error', '협조자를 선택하세요.'); return; }
-  if (!dueDate)   { showToast('error', '완료계획일을 선택하세요.'); return; }
-  if (!content)   { showToast('error', '업무설명을 입력하세요.'); return; }
-
-  // 수정모드에서 값이 비어있으면 기존 editData에서 보완
   var finalTaskName = taskName;
   var finalAssigneeName = assigneeName;
   var finalTaskId = taskId;
