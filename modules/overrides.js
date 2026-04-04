@@ -611,6 +611,11 @@ function saveEditTask() {
    + 성과포인트 섹션 show/hide
 ══════════════════════════════════════════════ */
 function openNewTaskModal(mode, parentId, isSimple) {
+  // schedule 모드: 지시사항 모달 재사용 (openScheduleModal이 instrModal을 열어줌)
+  if (mode === 'schedule' && typeof openScheduleModal === 'function') {
+    openScheduleModal();
+    return;
+  }
   window._newParentId = parentId || null;
   window._processTags = [];
   renderProcessTags();
