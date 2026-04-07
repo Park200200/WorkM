@@ -8011,26 +8011,53 @@ function _hpMcCancel() {
 (function () {
 
   var CHUB_SAMPLE = [
-    { id: 'c1', type: 'news', title: 'AI 반도체 시장 2026년 3천억 달러 전망', url: 'https://zdnet.co.kr', summary: '글로벌 AI 반도체 시장이 2026년 3천억 달러를 돌파할 것이라는 전망이 나왔다.', tags: ['AI', '반도체', '시장'], likes: 142, views: 3850, regDate: '2026-04-01' },
-    { id: 'c2', type: 'news', title: '정부 디지털전환 예산 20조 원 투입', url: 'https://dt.co.kr', summary: '정부가 디지털전환 가속화를 위해 향후 3년간 20조 원을 투입한다고 발표했다.', tags: ['디지털전환', '정부', '예산'], likes: 89, views: 2210, regDate: '2026-03-30' },
-    { id: 'c3', type: 'news', title: '테슬라 자율주행 레벨4 상용화 임박', url: 'https://electrek.co', summary: '테슬라가 레벨4 자율주행 기능을 2026년 하반기부터 상용화하겠다고 밝혔다.', tags: ['테슬라', '자율주행', 'EV'], likes: 203, views: 5640, regDate: '2026-03-28' },
-    { id: 'c4', type: 'news', title: '오픈AI GPT-5 공개 임박, 멀티모달 강화', url: 'https://openai.com', summary: '오픈AI가 GPT-5를 곧 공개할 예정이며, 멀티모달 기능이 대폭 강화될 것으로 알려졌다.', tags: ['GPT-5', 'OpenAI', 'LLM'], likes: 331, views: 8900, regDate: '2026-03-25' },
-    { id: 'c5', type: 'news', title: '국내 스타트업 투자 전년 대비 38% 급증', url: 'https://platum.kr', summary: '2026년 1분기 국내 스타트업 투자금액이 전년 동기 대비 38% 증가한 것으로 나타났다.', tags: ['스타트업', '투자', '벤처'], likes: 77, views: 1980, regDate: '2026-03-22' },
-    { id: 'c6', type: 'blog', title: 'React 19 새 기능 완벽 정리', url: 'https://react.dev', summary: 'React 19의 주요 변경사항과 새로운 훅, 서버 컴포넌트 개선사항을 상세히 정리했습니다.', tags: ['React', 'JavaScript', '웹개발'], likes: 256, views: 6720, regDate: '2026-04-02' },
-    { id: 'c7', type: 'blog', title: 'LLM 프롬프트 엔지니어링 10가지 핵심 기법', url: 'https://promptingguide.ai', summary: '실무에서 바로 쓸 수 있는 LLM 프롬프트 엔지니어링의 핵심 기법 10가지를 소개합니다.', tags: ['LLM', '프롬프트', 'AI'], likes: 418, views: 11200, regDate: '2026-03-29' },
-    { id: 'c8', type: 'blog', title: 'CSS Grid vs Flexbox 2026 최신 기준', url: 'https://css-tricks.com', summary: 'CSS Grid와 Flexbox를 어떤 상황에서 써야 하는지 2026년 최신 기준으로 비교합니다.', tags: ['CSS', '웹디자인', '레이아웃'], likes: 189, views: 4830, regDate: '2026-03-26' },
-    { id: 'c9', type: 'blog', title: '1인 SaaS 창업 6개월 회고록', url: 'https://velog.io', summary: '혼자서 SaaS 제품을 만들고 6개월 동안 운영하면서 배운 것들을 솔직하게 공유합니다.', tags: ['SaaS', '창업', '회고'], likes: 302, views: 8450, regDate: '2026-03-20' },
-    { id: 'c10', type: 'blog', title: 'TypeScript 5.4 새 기능 완벽 정리', url: 'https://typescriptlang.org', summary: 'TypeScript 5.4에서 추가된 새로운 기능들을 예제와 함께 상세히 정리했습니다.', tags: ['TypeScript', 'JavaScript', '개발'], likes: 145, views: 3920, regDate: '2026-03-18' },
-    { id: 'c11', type: 'youtube', title: '2026 웹 개발 트렌드 총정리', url: 'https://youtube.com/watch?v=a1', summary: '2026년 주목해야 할 웹 개발 트렌드를 한 영상에서 모두 정리했습니다.', tags: ['웹개발', '트렌드', '2026'], likes: 512, views: 18400, regDate: '2026-04-03' },
-    { id: 'c12', type: 'youtube', title: 'n8n으로 AI 업무 자동화 완전 정복', url: 'https://youtube.com/watch?v=a2', summary: 'n8n을 활용해 반복 업무를 AI로 자동화하는 방법을 처음부터 끝까지 알려드립니다.', tags: ['n8n', '자동화', 'AI'], likes: 687, views: 23100, regDate: '2026-04-01' },
-    { id: 'c13', type: 'youtube', title: '피그마 AI 기능 완벽 활용법', url: 'https://youtube.com/watch?v=a3', summary: '피그마의 AI 기능을 활용해 디자인 생산성을 10배 높이는 방법을 소개합니다.', tags: ['Figma', '디자인', 'AI'], likes: 423, views: 14200, regDate: '2026-03-27' },
-    { id: 'c14', type: 'youtube', title: '연봉 협상 실전 스크립트 공개', url: 'https://youtube.com/watch?v=a4', summary: '실제로 효과 있었던 연봉 협상 스크립트와 전략을 공개합니다.', tags: ['연봉협상', '커리어', '직장인'], likes: 1240, views: 42000, regDate: '2026-03-24' },
-    { id: 'c15', type: 'youtube', title: 'Claude vs GPT-4o 10라운드 실전 비교', url: 'https://youtube.com/watch?v=a5', summary: 'Claude와 GPT-4o를 10가지 실전 시나리오에서 직접 비교 테스트한 결과를 공개합니다.', tags: ['Claude', 'GPT-4o', 'LLM비교'], likes: 876, views: 31500, regDate: '2026-03-21' },
-    { id: 'c16', type: 'website', title: 'Vercel – 최고의 프론트엔드 배포 플랫폼', url: 'https://vercel.com', summary: 'Next.js 프로젝트를 간편하게 배포할 수 있는 Vercel의 주요 기능과 사용법을 정리했습니다.', tags: ['Vercel', '배포', 'Next.js'], likes: 334, views: 9200, regDate: '2026-04-02' },
-    { id: 'c17', type: 'website', title: 'shadcn/ui – 아름다운 컴포넌트 라이브러리', url: 'https://ui.shadcn.com', summary: '복사-붙여넣기 방식으로 사용하는 현대적인 UI 컴포넌트 라이브러리입니다.', tags: ['shadcn', 'UI', '컴포넌트'], likes: 445, views: 12300, regDate: '2026-03-30' },
-    { id: 'c18', type: 'website', title: 'Supabase – Firebase 대안 오픈소스 BaaS', url: 'https://supabase.com', summary: '오픈소스 Firebase 대안인 Supabase로 빠르게 백엔드를 구축하는 방법을 소개합니다.', tags: ['Supabase', 'BaaS', '백엔드'], likes: 289, views: 7640, regDate: '2026-03-27' },
-    { id: 'c19', type: 'website', title: 'Hugging Face – AI 모델 허브의 모든 것', url: 'https://huggingface.co', summary: 'AI 모델을 공유하고 활용하는 허깅페이스 플랫폼의 주요 기능을 소개합니다.', tags: ['HuggingFace', 'AI', '모델'], likes: 512, views: 16800, regDate: '2026-03-25' },
-    { id: 'c20', type: 'website', title: 'Excalidraw – 손그림 스타일 화이트보드', url: 'https://excalidraw.com', summary: '팀 협업과 아이디어 정리에 최적화된 오픈소스 낙서풍 다이어그램 도구입니다.', tags: ['Excalidraw', '협업', '도구'], likes: 378, views: 10500, regDate: '2026-03-22' }
+    /* ── 뉴스 (10개) ── */
+    { id: 'c1', type: 'news', title: 'AI 반도체 시장 2026년 3천억 달러 전망', url: 'https://zdnet.co.kr', summary: '글로벌 AI 반도체 시장이 2026년 3천억 달러를 돌파할 것이라는 전망이 나왔다.', tags: ['AI', '반도체', '시장'], likes: 142, views: 3850, regDate: '2026-04-01', img: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=480&h=280&fit=crop' },
+    { id: 'c2', type: 'news', title: '정부 디지털전환 예산 20조 원 투입', url: 'https://dt.co.kr', summary: '정부가 디지털전환 가속화를 위해 향후 3년간 20조 원을 투입한다고 발표했다.', tags: ['디지털전환', '정부', '예산'], likes: 89, views: 2210, regDate: '2026-03-30', img: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=480&h=280&fit=crop' },
+    { id: 'c3', type: 'news', title: '테슬라 자율주행 레벨4 상용화 임박', url: 'https://electrek.co', summary: '테슬라가 레벨4 자율주행 기능을 2026년 하반기부터 상용화하겠다고 밝혔다.', tags: ['테슬라', '자율주행', 'EV'], likes: 203, views: 5640, regDate: '2026-03-28', img: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=480&h=280&fit=crop' },
+    { id: 'c4', type: 'news', title: '오픈AI GPT-5 공개 임박, 멀티모달 강화', url: 'https://openai.com', summary: '오픈AI가 GPT-5를 곧 공개할 예정이며, 멀티모달 기능이 대폭 강화될 것으로 알려졌다.', tags: ['GPT-5', 'OpenAI', 'LLM'], likes: 331, views: 8900, regDate: '2026-03-25', img: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=480&h=280&fit=crop' },
+    { id: 'c5', type: 'news', title: '국내 스타트업 투자 전년 대비 38% 급증', url: 'https://platum.kr', summary: '2026년 1분기 국내 스타트업 투자금액이 전년 동기 대비 38% 증가한 것으로 나타났다.', tags: ['스타트업', '투자', '벤처'], likes: 77, views: 1980, regDate: '2026-03-22', img: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=480&h=280&fit=crop' },
+    { id: 'c6n', type: 'news', title: '삼성전자 3nm GAA 공정 양산 본격화', url: 'https://sammobile.com', summary: '삼성전자가 세계 최초로 3nm GAA 공정 기반 칩 양산을 본격화한다고 발표했다.', tags: ['삼성전자', '반도체', '3nm'], likes: 178, views: 4200, regDate: '2026-04-02', img: 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=480&h=280&fit=crop' },
+    { id: 'c7n', type: 'news', title: '메타 AR 글래스 상용 버전 출시 예정', url: 'https://meta.com', summary: '메타가 소비자용 AR 글래스를 2026년 3분기에 출시할 계획이라고 밝혔다.', tags: ['메타', 'AR', 'XR'], likes: 245, views: 6100, regDate: '2026-03-20', img: 'https://images.unsplash.com/photo-1617802690658-1173a812650d?w=480&h=280&fit=crop' },
+    { id: 'c8n', type: 'news', title: '한국 5G 가입자 5천만 돌파', url: 'https://newsis.com', summary: '국내 5G 이동통신 가입자 수가 5천만 명을 돌파하며 세계 최고 보급률을 기록했다.', tags: ['5G', '통신', 'KT'], likes: 56, views: 1420, regDate: '2026-03-18', img: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=480&h=280&fit=crop' },
+    { id: 'c9n', type: 'news', title: '글로벌 SaaS 시장 연 25% 성장 전망', url: 'https://techcrunch.com', summary: 'B2B SaaS 시장이 AI 기능 내장화로 인해 연간 25% 이상 성장할 것으로 전망된다.', tags: ['SaaS', 'B2B', '클라우드'], likes: 134, views: 3680, regDate: '2026-03-15', img: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=480&h=280&fit=crop' },
+    { id: 'c10n', type: 'news', title: 'EU AI 규제법 본격 시행', url: 'https://ec.europa.eu', summary: 'EU의 AI 규제법(AI Act)이 2026년 4월부터 본격 시행되며 기업들의 대응이 필요하다.', tags: ['EU', 'AI규제', '법률'], likes: 92, views: 2560, regDate: '2026-04-05', img: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=480&h=280&fit=crop' },
+
+    /* ── 블로그 (10개) ── */
+    { id: 'c6', type: 'blog', title: 'React 19 새 기능 완벽 정리', url: 'https://react.dev', summary: 'React 19의 주요 변경사항과 새로운 훅, 서버 컴포넌트 개선사항을 상세히 정리했습니다.', tags: ['React', 'JavaScript', '웹개발'], likes: 256, views: 6720, regDate: '2026-04-02', img: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=480&h=280&fit=crop' },
+    { id: 'c7', type: 'blog', title: 'LLM 프롬프트 엔지니어링 10가지 핵심 기법', url: 'https://promptingguide.ai', summary: '실무에서 바로 쓸 수 있는 LLM 프롬프트 엔지니어링의 핵심 기법 10가지를 소개합니다.', tags: ['LLM', '프롬프트', 'AI'], likes: 418, views: 11200, regDate: '2026-03-29', img: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=480&h=280&fit=crop' },
+    { id: 'c8', type: 'blog', title: 'CSS Grid vs Flexbox 2026 최신 기준', url: 'https://css-tricks.com', summary: 'CSS Grid와 Flexbox를 어떤 상황에서 써야 하는지 2026년 최신 기준으로 비교합니다.', tags: ['CSS', '웹디자인', '레이아웃'], likes: 189, views: 4830, regDate: '2026-03-26', img: 'https://images.unsplash.com/photo-1507721999472-8ed4421c4af2?w=480&h=280&fit=crop' },
+    { id: 'c9', type: 'blog', title: '1인 SaaS 창업 6개월 회고록', url: 'https://velog.io', summary: '혼자서 SaaS 제품을 만들고 6개월 동안 운영하면서 배운 것들을 솔직하게 공유합니다.', tags: ['SaaS', '창업', '회고'], likes: 302, views: 8450, regDate: '2026-03-20', img: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=480&h=280&fit=crop' },
+    { id: 'c10', type: 'blog', title: 'TypeScript 5.4 새 기능 완벽 정리', url: 'https://typescriptlang.org', summary: 'TypeScript 5.4에서 추가된 새로운 기능들을 예제와 함께 상세히 정리했습니다.', tags: ['TypeScript', 'JavaScript', '개발'], likes: 145, views: 3920, regDate: '2026-03-18', img: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=480&h=280&fit=crop' },
+    { id: 'c6b', type: 'blog', title: 'Docker 컨테이너 보안 완벽 가이드', url: 'https://docs.docker.com', summary: '프로덕션 환경에서 Docker 컨테이너를 안전하게 운영하기 위한 15가지 핵심 보안 체크리스트.', tags: ['Docker', '보안', 'DevOps'], likes: 312, views: 7840, regDate: '2026-04-03', img: 'https://images.unsplash.com/photo-1605745341112-85968b19335b?w=480&h=280&fit=crop' },
+    { id: 'c7b', type: 'blog', title: 'Next.js 15 App Router 마이그레이션 가이드', url: 'https://nextjs.org', summary: 'Pages Router에서 App Router로 마이그레이션하는 단계별 가이드와 주의사항을 정리합니다.', tags: ['Next.js', 'React', '마이그레이션'], likes: 278, views: 6920, regDate: '2026-03-24', img: 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=480&h=280&fit=crop' },
+    { id: 'c8b', type: 'blog', title: 'PostgreSQL vs MySQL 2026 성능 벤치마크', url: 'https://blog.pganalyze.com', summary: '최신 버전 기준으로 PostgreSQL과 MySQL의 성능을 10가지 시나리오에서 비교 분석합니다.', tags: ['PostgreSQL', 'MySQL', 'DB'], likes: 198, views: 5340, regDate: '2026-03-16', img: 'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=480&h=280&fit=crop' },
+    { id: 'c9b', type: 'blog', title: 'Rust로 첫 웹 서버 만들기 튜토리얼', url: 'https://rust-lang.org', summary: 'Rust와 Actix-web을 사용해 처음부터 REST API 서버를 구축하는 입문 튜토리얼입니다.', tags: ['Rust', '백엔드', 'API'], likes: 167, views: 4120, regDate: '2026-03-12', img: 'https://images.unsplash.com/photo-1515879218367-8466d910adef?w=480&h=280&fit=crop' },
+    { id: 'c10b', type: 'blog', title: 'AI Agent 아키텍처 설계 패턴 총정리', url: 'https://langchain.dev', summary: 'ReAct, Plan-and-Execute 등 AI Agent 구축 시 사용되는 주요 아키텍처 패턴을 비교합니다.', tags: ['AI Agent', 'LangChain', '설계'], likes: 456, views: 12400, regDate: '2026-04-04', img: 'https://images.unsplash.com/photo-1555255707-c07966088b7b?w=480&h=280&fit=crop' },
+
+    /* ── 유튜브 (10개) ── */
+    { id: 'c11', type: 'youtube', title: '2026 웹 개발 트렌드 총정리', url: 'https://youtube.com/watch?v=a1', summary: '2026년 주목해야 할 웹 개발 트렌드를 한 영상에서 모두 정리했습니다.', tags: ['웹개발', '트렌드', '2026'], likes: 512, views: 18400, regDate: '2026-04-03', img: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=480&h=280&fit=crop' },
+    { id: 'c12', type: 'youtube', title: 'n8n으로 AI 업무 자동화 완전 정복', url: 'https://youtube.com/watch?v=a2', summary: 'n8n을 활용해 반복 업무를 AI로 자동화하는 방법을 처음부터 끝까지 알려드립니다.', tags: ['n8n', '자동화', 'AI'], likes: 687, views: 23100, regDate: '2026-04-01', img: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=480&h=280&fit=crop' },
+    { id: 'c13', type: 'youtube', title: '피그마 AI 기능 완벽 활용법', url: 'https://youtube.com/watch?v=a3', summary: '피그마의 AI 기능을 활용해 디자인 생산성을 10배 높이는 방법을 소개합니다.', tags: ['Figma', '디자인', 'AI'], likes: 423, views: 14200, regDate: '2026-03-27', img: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=480&h=280&fit=crop' },
+    { id: 'c14', type: 'youtube', title: '연봉 협상 실전 스크립트 공개', url: 'https://youtube.com/watch?v=a4', summary: '실제로 효과 있었던 연봉 협상 스크립트와 전략을 공개합니다.', tags: ['연봉협상', '커리어', '직장인'], likes: 1240, views: 42000, regDate: '2026-03-24', img: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=480&h=280&fit=crop' },
+    { id: 'c15', type: 'youtube', title: 'Claude vs GPT-4o 10라운드 실전 비교', url: 'https://youtube.com/watch?v=a5', summary: 'Claude와 GPT-4o를 10가지 실전 시나리오에서 직접 비교 테스트한 결과를 공개합니다.', tags: ['Claude', 'GPT-4o', 'LLM비교'], likes: 876, views: 31500, regDate: '2026-03-21', img: 'https://images.unsplash.com/photo-1531746790095-e5a6e0f78a1a?w=480&h=280&fit=crop' },
+    { id: 'c11y', type: 'youtube', title: 'Kubernetes 입문부터 실전까지 3시간', url: 'https://youtube.com/watch?v=a6', summary: 'K8s 클러스터 구축부터 배포 파이프라인까지, 3시간 만에 마스터하는 쿠버네티스 강좌입니다.', tags: ['Kubernetes', 'DevOps', '인프라'], likes: 934, views: 28700, regDate: '2026-04-04', img: 'https://images.unsplash.com/photo-1667372393086-9d4001d51cf1?w=480&h=280&fit=crop' },
+    { id: 'c12y', type: 'youtube', title: 'Notion AI로 업무 생산성 5배 올리기', url: 'https://youtube.com/watch?v=a7', summary: 'Notion의 AI 기능을 활용한 업무 자동화 및 프로젝트 관리 노하우를 공유합니다.', tags: ['Notion', '생산성', 'AI'], likes: 567, views: 19800, regDate: '2026-03-19', img: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=480&h=280&fit=crop' },
+    { id: 'c13y', type: 'youtube', title: '개발자 포트폴리오 만들기 A to Z', url: 'https://youtube.com/watch?v=a8', summary: '취업 성공하는 개발자 포트폴리오 사이트를 처음부터 끝까지 만드는 과정을 보여드립니다.', tags: ['포트폴리오', '취업', '웹개발'], likes: 723, views: 24500, regDate: '2026-03-14', img: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=480&h=280&fit=crop' },
+    { id: 'c14y', type: 'youtube', title: 'ChatGPT 플러그인 직접 만들기', url: 'https://youtube.com/watch?v=a9', summary: 'ChatGPT 플러그인을 직접 개발하고 배포하는 전체 과정을 라이브 코딩으로 보여드립니다.', tags: ['ChatGPT', '플러그인', '개발'], likes: 445, views: 15600, regDate: '2026-03-10', img: 'https://images.unsplash.com/photo-1676299081847-824916de030a?w=480&h=280&fit=crop' },
+    { id: 'c15y', type: 'youtube', title: 'AWS 비용 절약 실전 가이드 2026', url: 'https://youtube.com/watch?v=a10', summary: 'AWS 월 비용을 50%까지 절약하는 실전 최적화 전략 7가지를 상세히 소개합니다.', tags: ['AWS', '클라우드', '비용절감'], likes: 389, views: 13200, regDate: '2026-04-06', img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=480&h=280&fit=crop' },
+
+    /* ── 웹사이트 (10개) ── */
+    { id: 'c16', type: 'website', title: 'Vercel – 최고의 프론트엔드 배포 플랫폼', url: 'https://vercel.com', summary: 'Next.js 프로젝트를 간편하게 배포할 수 있는 Vercel의 주요 기능과 사용법을 정리했습니다.', tags: ['Vercel', '배포', 'Next.js'], likes: 334, views: 9200, regDate: '2026-04-02', img: 'https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?w=480&h=280&fit=crop' },
+    { id: 'c17', type: 'website', title: 'shadcn/ui – 아름다운 컴포넌트 라이브러리', url: 'https://ui.shadcn.com', summary: '복사-붙여넣기 방식으로 사용하는 현대적인 UI 컴포넌트 라이브러리입니다.', tags: ['shadcn', 'UI', '컴포넌트'], likes: 445, views: 12300, regDate: '2026-03-30', img: 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?w=480&h=280&fit=crop' },
+    { id: 'c18', type: 'website', title: 'Supabase – Firebase 대안 오픈소스 BaaS', url: 'https://supabase.com', summary: '오픈소스 Firebase 대안인 Supabase로 빠르게 백엔드를 구축하는 방법을 소개합니다.', tags: ['Supabase', 'BaaS', '백엔드'], likes: 289, views: 7640, regDate: '2026-03-27', img: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=480&h=280&fit=crop' },
+    { id: 'c19', type: 'website', title: 'Hugging Face – AI 모델 허브의 모든 것', url: 'https://huggingface.co', summary: 'AI 모델을 공유하고 활용하는 허깅페이스 플랫폼의 주요 기능을 소개합니다.', tags: ['HuggingFace', 'AI', '모델'], likes: 512, views: 16800, regDate: '2026-03-25', img: 'https://images.unsplash.com/photo-1655720828018-edd2daec9349?w=480&h=280&fit=crop' },
+    { id: 'c20', type: 'website', title: 'Excalidraw – 손그림 스타일 화이트보드', url: 'https://excalidraw.com', summary: '팀 협업과 아이디어 정리에 최적화된 오픈소스 낙서풍 다이어그램 도구입니다.', tags: ['Excalidraw', '협업', '도구'], likes: 378, views: 10500, regDate: '2026-03-22', img: 'https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=480&h=280&fit=crop' },
+    { id: 'c16w', type: 'website', title: 'Linear – 차세대 프로젝트 관리 도구', url: 'https://linear.app', summary: '개발팀을 위한 빠르고 세련된 이슈 트래커. Jira 대안으로 급부상하고 있습니다.', tags: ['Linear', '프로젝트관리', 'PM'], likes: 367, views: 9800, regDate: '2026-04-01', img: 'https://images.unsplash.com/photo-1507925921958-8a62f3d1a50d?w=480&h=280&fit=crop' },
+    { id: 'c17w', type: 'website', title: 'Cursor – AI 네이티브 코드 에디터', url: 'https://cursor.sh', summary: 'AI가 코드를 이해하고 제안하는 차세대 IDE. VS Code 포크 기반으로 빠르게 성장 중입니다.', tags: ['Cursor', 'IDE', 'AI코딩'], likes: 623, views: 21400, regDate: '2026-03-28', img: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=480&h=280&fit=crop' },
+    { id: 'c18w', type: 'website', title: 'Framer – 노코드 웹사이트 빌더', url: 'https://framer.com', summary: '디자이너와 마케터를 위한 강력한 노코드 웹사이트 빌더. 애니메이션 지원이 뛰어납니다.', tags: ['Framer', '노코드', '웹빌더'], likes: 298, views: 8120, regDate: '2026-03-17', img: 'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=480&h=280&fit=crop' },
+    { id: 'c19w', type: 'website', title: 'Raycast – 맥 생산성 런처의 끝판왕', url: 'https://raycast.com', summary: 'Alfred를 넘어선 맥 생산성 도구. AI 통합, 확장 마켓플레이스가 강점입니다.', tags: ['Raycast', 'Mac', '생산성'], likes: 234, views: 6540, regDate: '2026-03-13', img: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=480&h=280&fit=crop' },
+    { id: 'c20w', type: 'website', title: 'Posthog – 오픈소스 프로덕트 분석 도구', url: 'https://posthog.com', summary: '사용자 행동 분석, A/B 테스트, 피처 플래그를 하나의 플랫폼에서 제공합니다.', tags: ['Posthog', '분석', '데이터'], likes: 189, views: 5230, regDate: '2026-04-05', img: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=480&h=280&fit=crop' }
   ];
 
   function chubLoad() {
@@ -8106,11 +8133,13 @@ function _hpMcCancel() {
       grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;padding:4px';
       list.forEach(function (it) {
         var card = document.createElement('div');
-        card.style.cssText = 'border-radius:14px;background:var(--bg-secondary);border:1.5px solid var(--border-color);padding:16px;cursor:pointer;transition:all .18s;display:flex;flex-direction:column;gap:10px';
+        card.style.cssText = 'border-radius:14px;background:var(--bg-secondary);border:1.5px solid var(--border-color);cursor:pointer;transition:all .18s;display:flex;flex-direction:column;overflow:hidden';
         card.onmouseover = function () { this.style.boxShadow = '0 8px 28px rgba(0,0,0,.12)'; this.style.borderColor = typeColor[it.type] || '#3b82f6'; this.style.transform = 'translateY(-2px)'; };
         card.onmouseout = function () { this.style.boxShadow = ''; this.style.borderColor = 'var(--border-color)'; this.style.transform = ''; };
         card.onclick = function () { chubOpenDetail(it.id); };
-        card.innerHTML =
+        var imgHtml = it.img ? '<div style="width:100%;aspect-ratio:16/9;overflow:hidden;background:var(--bg-tertiary)"><img src="' + it.img + '" alt="" style="width:100%;height:100%;object-fit:cover;transition:transform .3s" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'\'" loading="lazy"></div>' : '';
+        card.innerHTML = imgHtml +
+          '<div style="padding:14px;display:flex;flex-direction:column;gap:8px">' +
           '<div style="display:flex;align-items:center;gap:8px">' +
           '<span style="font-size:14px">' + (typeIcon[it.type] || '📄') + '</span>' +
           '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:8px;color:#fff;background:' + (typeColor[it.type] || '#3b82f6') + '">' + it.type + '</span>' +
@@ -8123,18 +8152,20 @@ function _hpMcCancel() {
           '<span style="font-size:11px;color:var(--text-muted)">♥ ' + (it.likes || 0) + '</span>' +
           '<span style="font-size:11px;color:var(--text-muted)">👁 ' + (it.views || 0) + '</span>' +
           '</div>' +
-          '<span style="font-size:10.5px;color:var(--text-muted)">' + (it.regDate || '') + '</span></div>';
+          '<span style="font-size:10.5px;color:var(--text-muted)">' + (it.regDate || '') + '</span></div></div>';
         grid.appendChild(card);
       });
     } else {
       grid.style.cssText = 'display:flex;flex-direction:column;gap:8px;padding:4px';
       list.forEach(function (it) {
         var row = document.createElement('div');
-        row.style.cssText = 'display:grid;grid-template-columns:40px 1fr auto;gap:12px;padding:12px 16px;border-radius:12px;background:var(--bg-secondary);border:1.5px solid var(--border-color);cursor:pointer;transition:all .15s;align-items:center';
+        var hasThumbnail = !!it.img;
+        row.style.cssText = 'display:grid;grid-template-columns:' + (hasThumbnail ? '64px ' : '') + '40px 1fr auto;gap:12px;padding:12px 16px;border-radius:12px;background:var(--bg-secondary);border:1.5px solid var(--border-color);cursor:pointer;transition:all .15s;align-items:center';
         row.onmouseover = function () { this.style.borderColor = typeColor[it.type] || '#3b82f6'; this.style.background = 'var(--bg-tertiary)'; };
         row.onmouseout = function () { this.style.borderColor = 'var(--border-color)'; this.style.background = 'var(--bg-secondary)'; };
         row.onclick = function () { chubOpenDetail(it.id); };
-        row.innerHTML =
+        var thumbHtml = hasThumbnail ? '<div style="width:64px;height:44px;border-radius:8px;overflow:hidden;background:var(--bg-tertiary)"><img src="' + it.img + '" style="width:100%;height:100%;object-fit:cover" loading="lazy"></div>' : '';
+        row.innerHTML = thumbHtml +
           '<div style="text-align:center;font-size:18px">' + (typeIcon[it.type] || '📄') + '</div>' +
           '<div style="min-width:0">' +
           '<div style="font-size:13px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + it.title + '</div>' +
@@ -8161,7 +8192,8 @@ function _hpMcCancel() {
     if (body) {
       var typeIcon = { news: '📰', blog: '✏️', youtube: '▶️', website: '🌐' };
       var typeColor = { news: '#3b82f6', blog: '#10b981', youtube: '#ef4444', website: '#8b5cf6' };
-      body.innerHTML =
+      var detailImg = it.img ? '<div style="width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;margin-bottom:16px;background:var(--bg-tertiary)"><img src="' + it.img + '" style="width:100%;height:100%;object-fit:cover"></div>' : '';
+      body.innerHTML = detailImg +
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">' +
         '<span style="font-size:20px">' + (typeIcon[it.type] || '📄') + '</span>' +
         '<span style="font-size:11px;font-weight:800;padding:3px 10px;border-radius:8px;color:#fff;background:' + (typeColor[it.type] || '#3b82f6') + '">' + it.type.toUpperCase() + '</span>' +
