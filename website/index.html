@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>WorkM Homepage</title>
+  <meta name="description" content="WorkM - 고객과 함께 성장하는 최고의 파트너">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <!-- ── 로딩 스피너 ── -->
+  <div class="hp-loading" id="hpLoading">
+    <div class="hp-loading-spinner"></div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       1. 상단 리벳 (공지 바)
+  ═══════════════════════════════ -->
+  <div class="hp-rivet" id="hpRivet" style="display:none"></div>
+
+  <!-- ═══════════════════════════════
+       2. 헤더 (로고 + 메인메뉴)
+  ═══════════════════════════════ -->
+  <header class="hp-header" id="hpHeader">
+    <div class="hp-header-logo" id="hpLogo">
+      <span class="logo-text">WorkM</span>
+    </div>
+
+    <nav class="hp-header-nav" id="hpNav">
+      <!-- JS에서 동적 생성 -->
+    </nav>
+
+    <!-- 모바일 메뉴 버튼 -->
+    <button class="hp-mobile-menu-btn" id="hpMobileBtn" aria-label="메뉴 열기">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+
+  <!-- 모바일 드로어 -->
+  <div class="hp-mobile-overlay" id="hpMobileOverlay"></div>
+  <div class="hp-mobile-drawer" id="hpMobileDrawer">
+    <!-- JS에서 동적 생성 -->
+  </div>
+
+  <!-- ═══════════════════════════════
+       3. 메인 컨텐츠
+  ═══════════════════════════════ -->
+  <main class="hp-main-content" id="hpMainContent">
+    <!-- JS에서 동적 렌더링 -->
+  </main>
+
+  <!-- ═══════════════════════════════
+       4. 푸터 영역
+  ═══════════════════════════════ -->
+  <footer>
+    <!-- 하단 로고박스 -->
+    <div class="hp-footer-logo" id="hpFooterLogo"></div>
+
+    <!-- 하단 메뉴 -->
+    <div class="hp-footer-menu" id="hpFooterMenu" style="display:none"></div>
+
+    <!-- 하단 텍스트 -->
+    <div class="hp-footer-text" id="hpFooterText">
+      <div class="hp-footer-text-content"></div>
+    </div>
+
+    <!-- 카피라이트 -->
+    <div class="hp-copyright" id="hpCopyright">
+      <div class="hp-copyright-content"></div>
+    </div>
+  </footer>
+
+  <!-- 테마 토글 -->
+  <button class="hp-theme-toggle" id="hpThemeToggle" title="테마 변경" aria-label="테마 변경">🌙</button>
+
+  <script src="script.js"></script>
+</body>
+</html>

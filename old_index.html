@@ -64,7 +64,7 @@
         <span class="nav-icon-sub"><i data-lucide="chevron-down"></i></span>
       </div>
       <div class="sub-menu">
-        <div class="sub-item" onclick="showPage('homepage',this);setTimeout(function(){if(typeof enterHomepageMode==='function')enterHomepageMode();},30)" data-page="homepage">
+        <div class="sub-item" onclick="showPage('homepage',this)" data-page="homepage">
           <span class="nav-icon"><i data-lucide="globe"></i></span>
           <span class="nav-text">홈페이지</span>
         </div>
@@ -150,14 +150,6 @@
         <span class="nav-icon"><i data-lucide="message-square"></i></span>
         <span class="nav-text">문의관리</span>
       </div>
-      <div class="nav-item" onclick="showHomepagePage('hp-media',this)" data-hp-page="hp-media" data-tooltip="미디어자료">
-        <span class="nav-icon"><i data-lucide="film"></i></span>
-        <span class="nav-text">미디어자료</span>
-      </div>
-      <div class="nav-item" onclick="showHomepagePage('hp-terms',this)" data-hp-page="hp-terms" data-tooltip="약관관리">
-        <span class="nav-icon"><i data-lucide="scroll-text"></i></span>
-        <span class="nav-text">약관관리</span>
-      </div>
     </nav>
 
 
@@ -183,7 +175,7 @@
       </div>
 
       <!-- 홈페이지 모드 breadcrumb 바 (기본 숨김) -->
-      <div id="homepageModeBar" style="display:none;align-items:center;gap:8px;flex:1;max-width:560px">
+      <div id="homepageModeBar" style="display:none;align-items:center;gap:8px;flex:1;max-width:480px">
         <button onclick="showPage('dashboard', document.querySelector('[data-page=dashboard]'))"
           style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;
                  border:1.5px solid var(--border-color);background:var(--bg-tertiary);
@@ -200,20 +192,7 @@
           <i data-lucide="globe" style="width:14px;height:14px;color:#fff"></i>
           <span>홈페이지 업무</span>
         </div>
-        <!-- 원형 숫자 카운터 (나열형) -->
-        <div id="hp-work-badges" style="display:inline-flex;align-items:center;gap:4px;flex-shrink:0;flex-wrap:nowrap"></div>
-        <button id="hp-work-badge-plus"
-          onclick="_hpWorkBadgeAdd()"
-          title="숫자 추가"
-          style="width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(245,158,11,.7);
-                 background:rgba(245,158,11,.12);color:#f59e0b;font-size:15px;font-weight:700;
-                 line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
-                 transition:all .15s;padding:0;flex-shrink:0"
-          onmouseover="this.style.background='rgba(245,158,11,.3)';this.style.borderColor='#f59e0b'"
-          onmouseout="this.style.background='rgba(245,158,11,.12)';this.style.borderColor='rgba(245,158,11,.7)'">+</button>
       </div>
-
-
 
       <!-- 회계관리 모드 표시바 (기본 숨김) -->
       <div id="acctModeBar" style="display:none;align-items:center;gap:14px">
@@ -1017,17 +996,6 @@
               </div>
               <div class="page-subtitle">홈페이지 기본 정보 및 환경 설정</div>
             </div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <button class="btn" onclick="window.open('website/index.html','_blank')"
-                style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:10px;
-                       border:1.5px solid #4f6ef7;background:rgba(79,110,247,.07);color:#4f6ef7;
-                       font-size:13px;font-weight:700;cursor:pointer;transition:all .2s"
-                onmouseover="this.style.background='#4f6ef7';this.style.color='#fff'"
-                onmouseout="this.style.background='rgba(79,110,247,.07)';this.style.color='#4f6ef7'">
-                <i data-lucide="external-link" style="width:14px;height:14px"></i>
-                홈페이지 미리보기
-              </button>
-            </div>
           </div>
           <!-- 사이트 정보 카드 (한 줄) -->
           <div class="section-card" style="padding:20px;max-width:100%">
@@ -1038,13 +1006,13 @@
               <span style="font-size:14px;font-weight:700;color:var(--text-primary)">사이트 정보</span>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;align-items:end">
-              <div class="form-group" style="margin:0"><label class="form-label">사이트명</label><input class="form-input" id="hp_site_name" placeholder="예: (주)워크엠" /></div>
-              <div class="form-group" style="margin:0"><label class="form-label">도메인</label><input class="form-input" id="hp_site_domain" placeholder="예: www.workm.kr" /></div>
-              <div class="form-group" style="margin:0"><label class="form-label">대표 이메일</label><input class="form-input" id="hp_site_email" placeholder="예: info@workm.kr" /></div>
-              <div class="form-group" style="margin:0"><label class="form-label">대표 전화</label><input class="form-input" id="hp_site_phone" placeholder="예: 02-1234-5678" /></div>
+              <div class="form-group" style="margin:0"><label class="form-label">사이트명</label><input class="form-input" placeholder="예: (주)워크엠" /></div>
+              <div class="form-group" style="margin:0"><label class="form-label">도메인</label><input class="form-input" placeholder="예: www.workm.kr" /></div>
+              <div class="form-group" style="margin:0"><label class="form-label">대표 이메일</label><input class="form-input" placeholder="예: info@workm.kr" /></div>
+              <div class="form-group" style="margin:0"><label class="form-label">대표 전화</label><input class="form-input" placeholder="예: 02-1234-5678" /></div>
             </div>
             <div style="display:flex;justify-content:flex-end;margin-top:14px">
-              <button class="btn btn-blue" style="min-width:100px" onclick="_hpSiteInfoSave()">
+              <button class="btn btn-blue" style="min-width:100px">
                 <i data-lucide="save" style="width:13px;height:13px"></i> 저장
               </button>
             </div>
@@ -1175,13 +1143,11 @@
                 <label class="form-label" style="display:flex;align-items:center;gap:5px">
                   <i data-lucide="palette" style="width:11px;height:11px"></i> 바탕 칼라
                 </label>
-                <div style="display:flex;align-items:center;gap:6px;height:40px;padding:0 10px;box-sizing:border-box;border:1.5px solid var(--border-color);border-radius:10px;background:var(--bg-secondary)">
+                <div style="display:flex;align-items:center;gap:8px;height:40px;padding:0 10px;box-sizing:border-box;border:1.5px solid var(--border-color);border-radius:10px;background:var(--bg-secondary)">
                   <input type="color" id="rivet_bg_color" value="#1e40af"
-                    oninput="document.getElementById('rivet_bg_label').value=this.value;_rivetPreview()"
+                    oninput="_rivetPreview()"
                     style="width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0">
-                  <input type="text" id="rivet_bg_label" value="#1e40af" maxlength="7"
-                    oninput="var v=this.value;if(/^#[0-9a-fA-F]{6}$/.test(v)){document.getElementById('rivet_bg_color').value=v;_rivetPreview()}"
-                    style="flex:1;border:none;outline:none;background:transparent;font-size:12px;color:var(--text-secondary);font-family:monospace;padding:0;width:60px">
+                  <span id="rivet_bg_label" style="font-size:12px;color:var(--text-secondary);font-family:monospace">#1e40af</span>
                 </div>
               </div>
               <!-- 폰트 사이즈 -->
@@ -1201,13 +1167,11 @@
                 <label class="form-label" style="display:flex;align-items:center;gap:5px">
                   <i data-lucide="paint-bucket" style="width:11px;height:11px"></i> 폰트 칼라
                 </label>
-                <div style="display:flex;align-items:center;gap:6px;height:40px;padding:0 10px;box-sizing:border-box;border:1.5px solid var(--border-color);border-radius:10px;background:var(--bg-secondary)">
+                <div style="display:flex;align-items:center;gap:8px;height:40px;padding:0 10px;box-sizing:border-box;border:1.5px solid var(--border-color);border-radius:10px;background:var(--bg-secondary)">
                   <input type="color" id="rivet_font_color" value="#ffffff"
-                    oninput="document.getElementById('rivet_font_label').value=this.value;_rivetPreview()"
+                    oninput="_rivetPreview()"
                     style="width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0">
-                  <input type="text" id="rivet_font_label" value="#ffffff" maxlength="7"
-                    oninput="var v=this.value;if(/^#[0-9a-fA-F]{6}$/.test(v)){document.getElementById('rivet_font_color').value=v;_rivetPreview()}"
-                    style="flex:1;border:none;outline:none;background:transparent;font-size:12px;color:var(--text-secondary);font-family:monospace;padding:0;width:60px">
+                  <span id="rivet_font_label" style="font-size:12px;color:var(--text-secondary);font-family:monospace">#ffffff</span>
                 </div>
               </div>
               <!-- 정렬 -->
@@ -1290,109 +1254,6 @@
             </div>
           </div>
 
-          <!-- ══ 메인메뉴 등록 카드 ══ -->
-          <div class="section-card" style="padding:20px;margin-top:16px">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
-              <div style="width:32px;height:32px;border-radius:9px;background:rgba(99,102,241,.12);display:flex;align-items:center;justify-content:center">
-                <i data-lucide="navigation" style="width:16px;height:16px;color:#6366f1"></i>
-              </div>
-              <span style="font-size:14px;font-weight:700;color:var(--text-primary)">메인메뉴 등록</span>
-              <span style="font-size:11px;color:var(--text-muted);font-weight:400;margin-left:4px">홈페이지 상단 메인메뉴 구성</span>
-            </div>
-            <!-- 스타일 설정 Row1: 배경컬러+투명도 / 폰트컬러 / 폰트사이즈 / 높이 -->
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px;align-items:end">
-              <div>
-                <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:5px">배경 컬러</label>
-                <div style="display:flex;align-items:center;gap:6px">
-                  <input type="color" id="hp_menu_bg" value="#1e293b" style="width:34px;height:32px;border:1.5px solid var(--border-color);border-radius:6px;cursor:pointer;padding:2px" onchange="_hpMenuPreview()">
-                  <input type="text" id="hp_menu_bg_txt" value="#1e293b" style="flex:1;height:32px;padding:0 8px;border:1.5px solid var(--border-color);border-radius:6px;font-size:12px;background:var(--bg-secondary);color:var(--text-primary)" oninput="document.getElementById('hp_menu_bg').value=this.value;_hpMenuPreview()">
-                </div>
-              </div>
-              <div>
-                <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:5px">폰트 컬러</label>
-                <div style="display:flex;align-items:center;gap:6px">
-                  <input type="color" id="hp_menu_fc" value="#ffffff" style="width:34px;height:32px;border:1.5px solid var(--border-color);border-radius:6px;cursor:pointer;padding:2px" onchange="_hpMenuPreview()">
-                  <input type="text" id="hp_menu_fc_txt" value="#ffffff" style="flex:1;height:32px;padding:0 8px;border:1.5px solid var(--border-color);border-radius:6px;font-size:12px;background:var(--bg-secondary);color:var(--text-primary)" oninput="document.getElementById('hp_menu_fc').value=this.value;_hpMenuPreview()">
-                </div>
-              </div>
-              <div>
-                <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:5px">폰트 사이즈</label>
-                <div style="display:flex;align-items:center;gap:8px">
-                  <input type="range" id="hp_menu_fs" min="12" max="22" value="15" style="flex:1" oninput="document.getElementById('hp_menu_fs_v').textContent=this.value+'px';_hpMenuPreview()">
-                  <span id="hp_menu_fs_v" style="font-size:12px;font-weight:700;color:var(--accent-blue);min-width:30px">15px</span>
-                </div>
-              </div>
-              <div>
-                <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:5px">높이</label>
-                <div style="display:flex;align-items:center;gap:6px">
-                  <input type="range" id="hp_menu_h" min="36" max="80" value="52" style="flex:1" oninput="document.getElementById('hp_menu_h_v').textContent=this.value+'px';_hpMenuPreview()">
-                  <span id="hp_menu_h_v" style="font-size:12px;font-weight:700;color:var(--accent-blue);min-width:28px">52px</span>
-                </div>
-              </div>
-            </div>
-            <!-- Row2: 투명도 / 정렬 / 메뉴 간격 -->
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;align-items:end">
-              <!-- 투명도 -->
-              <div>
-                <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:flex;align-items:center;gap:4px;margin-bottom:5px">
-                  <i data-lucide="blend" style="width:11px;height:11px"></i> 배경 투명도
-                </label>
-                <div style="display:flex;align-items:center;gap:6px;height:34px;padding:0 8px;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);box-sizing:border-box">
-                  <input type="range" id="hp_menu_opacity" min="0" max="100" value="100" style="flex:1;accent-color:#6366f1" oninput="document.getElementById('hp_menu_opacity_v').textContent=this.value+'%';_hpMenuPreview()">
-                  <span id="hp_menu_opacity_v" style="font-size:12px;font-weight:700;color:#6366f1;min-width:34px;text-align:right">100%</span>
-                </div>
-              </div>
-              <!-- 정렬: 아이콘 버튼 방식 (리벳 카드 동일) -->
-              <div>
-                <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:flex;align-items:center;gap:4px;margin-bottom:5px">
-                  <i data-lucide="align-center" style="width:11px;height:11px"></i> 정렬
-                </label>
-                <div style="display:flex;gap:4px;height:34px;padding:0 4px;box-sizing:border-box;align-items:center;border:1.5px solid var(--border-color);border-radius:6px;background:var(--bg-secondary)">
-                  <button id="hp_menu_align_left"   onclick="_hpMenuSetAlign('flex-start')"  title="왼쪽"   style="flex:1;padding:4px 0;border-radius:5px;border:none;cursor:pointer;background:transparent;color:var(--text-secondary);transition:all .15s"><i data-lucide="align-left"   style="width:13px;height:13px;display:block;margin:0 auto"></i></button>
-                  <button id="hp_menu_align_center" onclick="_hpMenuSetAlign('center')"      title="가운데" style="flex:1;padding:4px 0;border-radius:5px;border:none;cursor:pointer;background:#6366f1;color:#fff;transition:all .15s"><i data-lucide="align-center" style="width:13px;height:13px;display:block;margin:0 auto"></i></button>
-                  <button id="hp_menu_align_right"  onclick="_hpMenuSetAlign('flex-end')"    title="오른쪽" style="flex:1;padding:4px 0;border-radius:5px;border:none;cursor:pointer;background:transparent;color:var(--text-secondary);transition:all .15s"><i data-lucide="align-right"  style="width:13px;height:13px;display:block;margin:0 auto"></i></button>
-                  <button id="hp_menu_align_space"  onclick="_hpMenuSetAlign('space-between')" title="균등배분" style="flex:1;padding:4px 0;border-radius:5px;border:none;cursor:pointer;background:transparent;color:var(--text-secondary);transition:all .15s"><i data-lucide="align-justify" style="width:13px;height:13px;display:block;margin:0 auto"></i></button>
-                </div>
-                <input type="hidden" id="hp_menu_align" value="center">
-              </div>
-              <!-- 메뉴 간격 -->
-              <div>
-                <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:5px">메뉴 간격</label>
-                <div style="display:flex;align-items:center;gap:8px">
-                  <input type="range" id="hp_menu_gap" min="50" max="100" value="50" style="flex:1" oninput="document.getElementById('hp_menu_gap_v').textContent=this.value+'px';_hpMenuPreview();var _cw=document.getElementById('hp_menu_chips');if(_cw)_cw.style.gap=this.value+'px'">
-                  <span id="hp_menu_gap_v" style="font-size:12px;font-weight:700;color:var(--accent-blue);min-width:30px">50px</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- 메뉴명 입력 칩 -->
-            <div style="margin-bottom:14px">
-              <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">메뉴명 등록</label>
-              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;min-height:36px;padding:6px;border:1.5px dashed var(--border-color);border-radius:8px;background:var(--bg-secondary)" id="hp_menu_chips"></div>
-              <div style="display:flex;gap:8px;margin-top:8px">
-                <input id="hp_menu_input" type="text" placeholder="메뉴명 입력 후 Enter 또는 + 버튼"
-                  style="flex:1;height:36px;padding:0 12px;border:1.5px solid var(--border-color);border-radius:8px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary)"
-                  onkeydown="if(event.key==='Enter'){event.preventDefault();_hpMenuAdd()}"
-                  onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='var(--border-color)'">
-                <button onclick="_hpMenuAdd()" style="padding:0 14px;border:1.5px solid #6366f1;border-radius:8px;background:#6366f1;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px">
-                  <i data-lucide="plus" style="width:13px;height:13px"></i> 추가
-                </button>
-              </div>
-            </div>
-            <!-- 미리보기 -->
-            <div style="margin-bottom:14px">
-              <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">미리보기</label>
-              <div id="hp_menu_preview_bar" style="padding:0 20px;background:#1e293b;display:flex;align-items:center;justify-content:center;gap:20px;border-radius:10px;min-height:52px;flex-wrap:wrap">
-                <span style="font-size:15px;color:#ffffff;font-weight:600;cursor:pointer">홈</span>
-              </div>
-            </div>
-            <div style="display:flex;justify-content:flex-end;margin-top:14px">
-              <button onclick="_hpMenuSave()" class="btn btn-blue" style="background:#6366f1;border-color:#6366f1;min-width:100px">
-                <i data-lucide="save" style="width:13px;height:13px"></i> 저장
-              </button>
-            </div>
-          </div>
-
           <!-- 메인컨텐츠 등록 카드 -->
           <div class="section-card" id="hp_main_content_card" style="padding:20px;margin-top:16px">
             <!-- 카드 헤더 -->
@@ -1447,12 +1308,9 @@
                   <i data-lucide="palette" style="width:11px;height:11px"></i> 바탕색
                 </label>
                 <div style="display:flex;align-items:center;gap:8px;height:40px;padding:0 10px;box-sizing:border-box;border:1.5px solid var(--border-color);border-radius:10px;background:var(--bg-secondary)">
-                  <input type="color" id="footer_bg_color" value="#1a1a2e"
-                    oninput="document.getElementById('footer_bg_label').value=this.value;_footerLogoPreview()"
+                  <input type="color" id="footer_bg_color" value="#1a1a2e" oninput="_footerLogoPreview()"
                     style="width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0">
-                  <input type="text" id="footer_bg_label" value="#1a1a2e" maxlength="7"
-                    oninput="var v=this.value;if(/^#[0-9a-fA-F]{6}$/.test(v)){document.getElementById('footer_bg_color').value=v;_footerLogoPreview()}"
-                    style="flex:1;border:none;outline:none;background:transparent;font-size:12px;color:var(--text-secondary);font-family:monospace;padding:0;width:60px">
+                  <span id="footer_bg_label" style="font-size:12px;color:var(--text-secondary);font-family:monospace">#1a1a2e</span>
                 </div>
               </div>
               <!-- 높이 -->
@@ -1535,23 +1393,15 @@
               <div class="form-group" style="margin:0">
                 <label class="form-label" style="display:flex;align-items:center;gap:5px"><i data-lucide="palette" style="width:11px;height:11px"></i> 바탕색</label>
                 <div style="display:flex;align-items:center;gap:8px;height:40px;padding:0 10px;box-sizing:border-box;border:1.5px solid var(--border-color);border-radius:10px;background:var(--bg-secondary)">
-                  <input type="color" id="ft_bg_color" value="#0a0a1a"
-                    oninput="document.getElementById('ft_bg_label').value=this.value;_ftPreview()"
-                    style="width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0">
-                  <input type="text" id="ft_bg_label" value="#0a0a1a" maxlength="7"
-                    oninput="var v=this.value;if(/^#[0-9a-fA-F]{6}$/.test(v)){document.getElementById('ft_bg_color').value=v;_ftPreview()}"
-                    style="flex:1;border:none;outline:none;background:transparent;font-size:12px;color:var(--text-secondary);font-family:monospace;padding:0;width:60px">
+                  <input type="color" id="ft_bg_color" value="#0a0a1a" oninput="_ftPreview()" style="width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0">
+                  <span id="ft_bg_label" style="font-size:12px;color:var(--text-secondary);font-family:monospace">#0a0a1a</span>
                 </div>
               </div>
               <div class="form-group" style="margin:0">
                 <label class="form-label" style="display:flex;align-items:center;gap:5px"><i data-lucide="paint-bucket" style="width:11px;height:11px"></i> 폰트 칼라</label>
                 <div style="display:flex;align-items:center;gap:8px;height:40px;padding:0 10px;box-sizing:border-box;border:1.5px solid var(--border-color);border-radius:10px;background:var(--bg-secondary)">
-                  <input type="color" id="ft_font_color" value="#64748b"
-                    oninput="document.getElementById('ft_fc_label').value=this.value;_ftPreview()"
-                    style="width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0">
-                  <input type="text" id="ft_fc_label" value="#64748b" maxlength="7"
-                    oninput="var v=this.value;if(/^#[0-9a-fA-F]{6}$/.test(v)){document.getElementById('ft_font_color').value=v;_ftPreview()}"
-                    style="flex:1;border:none;outline:none;background:transparent;font-size:12px;color:var(--text-secondary);font-family:monospace;padding:0;width:60px">
+                  <input type="color" id="ft_font_color" value="#64748b" oninput="_ftPreview()" style="width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0">
+                  <span id="ft_fc_label" style="font-size:12px;color:var(--text-secondary);font-family:monospace">#64748b</span>
                 </div>
               </div>
               <div class="form-group" style="margin:0">
@@ -1645,23 +1495,15 @@
               <div class="form-group" style="margin:0">
                 <label class="form-label" style="display:flex;align-items:center;gap:5px"><i data-lucide="palette" style="width:11px;height:11px"></i> 바탕색</label>
                 <div style="display:flex;align-items:center;gap:8px;height:40px;padding:0 10px;box-sizing:border-box;border:1.5px solid var(--border-color);border-radius:10px;background:var(--bg-secondary)">
-                  <input type="color" id="cp_bg_color" value="#050510"
-                    oninput="document.getElementById('cp_bg_label').value=this.value;_cpPreview()"
-                    style="width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0">
-                  <input type="text" id="cp_bg_label" value="#050510" maxlength="7"
-                    oninput="var v=this.value;if(/^#[0-9a-fA-F]{6}$/.test(v)){document.getElementById('cp_bg_color').value=v;_cpPreview()}"
-                    style="flex:1;border:none;outline:none;background:transparent;font-size:12px;color:var(--text-secondary);font-family:monospace;padding:0;width:60px">
+                  <input type="color" id="cp_bg_color" value="#050510" oninput="_cpPreview()" style="width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0">
+                  <span id="cp_bg_label" style="font-size:12px;color:var(--text-secondary);font-family:monospace">#050510</span>
                 </div>
               </div>
               <div class="form-group" style="margin:0">
                 <label class="form-label" style="display:flex;align-items:center;gap:5px"><i data-lucide="paint-bucket" style="width:11px;height:11px"></i> 폰트 칼라</label>
                 <div style="display:flex;align-items:center;gap:8px;height:40px;padding:0 10px;box-sizing:border-box;border:1.5px solid var(--border-color);border-radius:10px;background:var(--bg-secondary)">
-                  <input type="color" id="cp_font_color" value="#475569"
-                    oninput="document.getElementById('cp_fc_label').value=this.value;_cpPreview()"
-                    style="width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0">
-                  <input type="text" id="cp_fc_label" value="#475569" maxlength="7"
-                    oninput="var v=this.value;if(/^#[0-9a-fA-F]{6}$/.test(v)){document.getElementById('cp_font_color').value=v;_cpPreview()}"
-                    style="flex:1;border:none;outline:none;background:transparent;font-size:12px;color:var(--text-secondary);font-family:monospace;padding:0;width:60px">
+                  <input type="color" id="cp_font_color" value="#475569" oninput="_cpPreview()" style="width:28px;height:28px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0">
+                  <span id="cp_fc_label" style="font-size:12px;color:var(--text-secondary);font-family:monospace">#475569</span>
                 </div>
               </div>
               <div class="form-group" style="margin:0">
@@ -1743,81 +1585,20 @@
         </div>
 
         <!-- ── 컨텐츠관리 서브페이지 ── -->
-        <div id="page-hp-content" style="display:none;height:100%;overflow-y:auto;background:var(--bg-primary)">
-          <!-- 콘텐츠 허브 헤더 -->
-          <div style="padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent-blue),#8b5cf6);display:flex;align-items:center;justify-content:center"><i data-lucide="rss" style="width:18px;height:18px;color:#fff"></i></div>
-              <div>
-                <div style="font-size:18px;font-weight:800;color:var(--text-primary);letter-spacing:-.3px">콘텐츠 허브</div>
-                <div style="font-size:11.5px;color:var(--text-muted);margin-top:1px">뉴스 · 블로그 · 유튜브 · 웹사이트 통합 관리</div>
+        <div id="page-hp-content" style="display:none;height:100%;overflow-y:auto">
+          <div class="page-header">
+            <div>
+              <div class="page-title" style="display:flex;align-items:center;gap:8px">
+                <i data-lucide="layout-panel-left" style="width:22px;height:22px;color:var(--accent-blue)"></i>컨텐츠관리
               </div>
+              <div class="page-subtitle">홈페이지 페이지 컨텐츠 편집 및 관리</div>
             </div>
-            <button onclick="chubOpenAddModal()" class="btn btn-blue" style="gap:6px;font-size:13px;font-weight:700;padding:0 16px;display:flex;align-items:center">
-              <i data-lucide="plus" style="width:14px;height:14px"></i> 콘텐츠 추가
-            </button>
+            <button class="btn btn-blue"><i data-lucide="plus" style="width:13px;height:13px"></i> 컨텐츠 추가</button>
           </div>
-          <!-- 필터 탭 -->
-          <div style="padding:14px 24px 0;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-            <button data-chub-type="all" onclick="chubSetFilter('all')" style="padding:7px 16px;border-radius:20px;border:1.5px solid var(--accent-blue);background:var(--accent-blue);color:#fff;font-size:12px;font-weight:700;cursor:pointer">전체</button>
-            <button data-chub-type="news" onclick="chubSetFilter('news')" style="padding:7px 16px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer">📰 뉴스</button>
-            <button data-chub-type="blog" onclick="chubSetFilter('blog')" style="padding:7px 16px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer">✍️ 블로그</button>
-            <button data-chub-type="youtube" onclick="chubSetFilter('youtube')" style="padding:7px 16px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer">🎬 유튜브</button>
-            <button data-chub-type="website" onclick="chubSetFilter('website')" style="padding:7px 16px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer">🌐 웹사이트</button>
-            <div style="margin-left:auto;font-size:12px;color:var(--text-muted)" id="chub-count"></div>
-          </div>
-          <!-- 콘텐츠 그리드 -->
-          <div id="chub-grid" style="padding:14px 24px 32px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>
-        </div>
-
-        <!-- 콘텐츠 허브 추가 모달 -->
-        <div id="chubAddModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:3000;align-items:center;justify-content:center">
-          <div style="background:var(--bg-secondary);border-radius:16px;padding:24px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-              <div style="font-size:16px;font-weight:800;color:var(--text-primary)">콘텐츠 추가</div>
-              <button onclick="chubCloseModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-muted)">×</button>
-            </div>
-            <div style="margin-bottom:14px">
-              <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">종류</label>
-              <select id="chub-type" style="width:100%;height:38px;padding:0 12px;border:1.5px solid var(--border-color);border-radius:8px;font-size:13px;background:var(--bg-tertiary);color:var(--text-primary)">
-                <option value="news">📰 뉴스</option>
-                <option value="blog">✍️ 블로그</option>
-                <option value="youtube">🎬 유튜브</option>
-                <option value="website">🌐 웹사이트</option>
-              </select>
-            </div>
-            <div style="margin-bottom:14px">
-              <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">제목</label>
-              <input id="chub-title" type="text" placeholder="제목 입력" style="width:100%;height:38px;padding:0 12px;border:1.5px solid var(--border-color);border-radius:8px;font-size:13px;background:var(--bg-tertiary);color:var(--text-primary);box-sizing:border-box">
-            </div>
-            <div style="margin-bottom:14px">
-              <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">URL</label>
-              <input id="chub-url" type="url" placeholder="https://..." style="width:100%;height:38px;padding:0 12px;border:1.5px solid var(--border-color);border-radius:8px;font-size:13px;background:var(--bg-tertiary);color:var(--text-primary);box-sizing:border-box">
-            </div>
-            <div style="margin-bottom:14px">
-              <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">요약</label>
-              <textarea id="chub-summary" rows="3" placeholder="간단한 설명" style="width:100%;padding:10px 12px;border:1.5px solid var(--border-color);border-radius:8px;font-size:13px;background:var(--bg-tertiary);color:var(--text-primary);resize:none;box-sizing:border-box"></textarea>
-            </div>
-            <div style="margin-bottom:18px">
-              <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">태그 <span style="font-weight:400;font-size:10.5px">(Enter·Space로 추가, 태그 클릭 시 수정)</span></label>
-              <!-- 태그 입력 컨테이너 -->
-              <div id="chub-tags-box"
-                onclick="document.getElementById('chub-tags-input').focus()"
-                style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;min-height:40px;padding:5px 10px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-tertiary);cursor:text;transition:border-color .2s;box-sizing:border-box">
-                <span id="chub-tags-list" style="display:contents"></span>
-                <input id="chub-tags-input" type="text" placeholder="태그 입력 후 Enter 또는 Space"
-                  style="flex:1;min-width:120px;border:none;outline:none;background:transparent;font-size:13px;color:var(--text-primary);padding:2px 4px"
-                  onkeydown="_chubTagKeydown(event)"
-                  oninput="_chubTagInput(event)"
-                  onfocus="document.getElementById('chub-tags-box').style.borderColor='var(--accent-blue)'"
-                  onblur="_chubTagCommit(this);document.getElementById('chub-tags-box').style.borderColor='var(--border-color)'">
-              </div>
-              <input type="hidden" id="chub-tags">
-            </div>
-            <div style="display:flex;gap:10px;justify-content:flex-end">
-              <button onclick="chubCloseModal()" style="padding:10px 20px;border:1.5px solid var(--border-color);border-radius:8px;background:transparent;color:var(--text-secondary);font-size:13px;font-weight:700;cursor:pointer">취소</button>
-              <button onclick="chubSave()" class="btn btn-blue" style="padding:10px 24px">등록</button>
-            </div>
+          <div class="empty-state" style="margin-top:60px">
+            <i data-lucide="layout-panel-left" style="width:48px;height:48px;opacity:.25;margin-bottom:12px"></i>
+            <div class="es-text">등록된 컨텐츠가 없습니다</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:6px">+ 컨텐츠 추가 버튼을 클릭하여 페이지를 구성하세요</div>
           </div>
         </div>
 
@@ -1839,110 +1620,23 @@
         </div>
 
         <!-- ── 게시판관리 서브페이지 ── -->
-        <div id="page-hp-board" style="display:none;height:100%;overflow-y:auto;background:var(--bg-primary)">
-          <div style="padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#22c55e,#16a34a);display:flex;align-items:center;justify-content:center"><i data-lucide="clipboard-list" style="width:18px;height:18px;color:#fff"></i></div>
-              <div>
-                <div style="font-size:18px;font-weight:800;color:var(--text-primary)">게시판 관리</div>
-                <div style="font-size:11.5px;color:var(--text-muted)">공지사항 · 뉴스 · 자유게시판 · Q&amp;A · FAQ · 가맹점 신청 관리</div>
+        <div id="page-hp-board" style="display:none;height:100%;overflow-y:auto">
+          <div class="page-header">
+            <div>
+              <div class="page-title" style="display:flex;align-items:center;gap:8px">
+                <i data-lucide="clipboard-list" style="width:22px;height:22px;color:var(--accent-blue)"></i>게시판관리
               </div>
+              <div class="page-subtitle">공지사항, 뉴스, 갤러리 등 게시판 관리</div>
             </div>
-            <button onclick="boardOpenAddModal()" class="btn" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;gap:6px;font-size:13px;font-weight:700;padding:0 16px;display:flex;align-items:center">
-              <i data-lucide="plus" style="width:14px;height:14px"></i> 게시글 작성
-            </button>
+            <button class="btn btn-blue"><i data-lucide="plus" style="width:13px;height:13px"></i> 게시글 작성</button>
           </div>
-          <!-- 카테고리 탭 + 건수 (한 줄) -->
-          <div style="padding:14px 24px 0;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border-color);padding-bottom:14px">
-            <!-- 탭 버튼 영역 (스크롤 가능) -->
-            <div style="display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0">
-              <button data-board-cat="all" onclick="boardSetCat('all')" style="padding:7px 16px;border-radius:20px;border:1.5px solid #22c55e;background:#22c55e;color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">전체</button>
-              <button data-board-cat="notice" onclick="boardSetCat('notice')" style="padding:7px 16px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">📢 공지사항</button>
-              <button data-board-cat="news" onclick="boardSetCat('news')" style="padding:7px 16px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">📰 뉴스</button>
-              <button data-board-cat="free" onclick="boardSetCat('free')" style="padding:7px 16px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">💬 자유게시판</button>
-              <button data-board-cat="qna" onclick="boardSetCat('qna')" style="padding:7px 16px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">❓ Q&amp;A</button>
-              <button data-board-cat="faq" onclick="boardSetCat('faq')" style="padding:7px 16px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">📋 FAQ</button>
-              <button data-board-cat="franchise" onclick="boardSetCat('franchise')" style="padding:7px 16px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">🏪 가맹점 신청</button>
-            </div>
-            <!-- 건수 (고정 오른쪽) -->
-            <div id="board-count" style="font-size:12px;color:var(--text-muted);white-space:nowrap;flex-shrink:0"></div>
-          </div>
-          <!-- 게시글 목록 -->
-          <div id="board-list" style="padding:16px 24px 32px"></div>
-        </div>
-
-        <!-- 게시판 작성 모달 -->
-        <div id="boardAddModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:3000;align-items:center;justify-content:center">
-          <div style="background:var(--bg-secondary);border-radius:16px;padding:24px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-              <div style="font-size:16px;font-weight:800;color:var(--text-primary)">게시글 작성</div>
-              <button onclick="document.getElementById('boardAddModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-muted)">×</button>
-            </div>
-            <div style="margin-bottom:12px">
-              <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:5px">카테고리</label>
-              <select id="board-cat" style="width:100%;height:38px;padding:0 12px;border:1.5px solid var(--border-color);border-radius:8px;font-size:13px;background:var(--bg-tertiary);color:var(--text-primary)">
-                <option value="notice">📢 공지사항</option>
-                <option value="news">📰 뉴스</option>
-                <option value="free">💬 자유게시판</option>
-                <option value="qna">❓ Q&amp;A</option>
-                <option value="faq">📋 FAQ</option>
-                <option value="franchise">🏪 가맹점 신청</option>
-              </select>
-            </div>
-            <div style="margin-bottom:12px">
-              <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:5px">제목</label>
-              <input id="board-title" type="text" placeholder="게시글 제목" style="width:100%;height:38px;padding:0 12px;border:1.5px solid var(--border-color);border-radius:8px;font-size:13px;background:var(--bg-tertiary);color:var(--text-primary);box-sizing:border-box">
-            </div>
-            <div style="margin-bottom:18px">
-              <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:5px">내용</label>
-              <textarea id="board-content" rows="6" placeholder="게시글 내용을 입력하세요..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border-color);border-radius:8px;font-size:13px;background:var(--bg-tertiary);color:var(--text-primary);resize:vertical;box-sizing:border-box;line-height:1.6"></textarea>
-            </div>
-            <div style="display:flex;gap:10px;justify-content:flex-end">
-              <button onclick="document.getElementById('boardAddModal').style.display='none'" style="padding:10px 20px;border:1.5px solid var(--border-color);border-radius:8px;background:transparent;color:var(--text-secondary);font-size:13px;font-weight:700;cursor:pointer">취소</button>
-              <button onclick="boardSave()" style="padding:10px 24px;border:none;border-radius:8px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:13px;font-weight:700;cursor:pointer">게시</button>
-            </div>
+          <div class="empty-state" style="margin-top:60px">
+            <i data-lucide="clipboard-list" style="width:48px;height:48px;opacity:.25;margin-bottom:12px"></i>
+            <div class="es-text">등록된 게시글이 없습니다</div>
           </div>
         </div>
 
-        <!-- 게시글 상세보기 모달 -->
-        <div id="boardDetailModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:3000;align-items:center;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
-          <div style="background:var(--bg-secondary);border-radius:20px;padding:0;width:620px;max-width:95vw;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,.4)">
-            <!-- 모달 헤더 -->
-            <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border-color);display:flex;align-items:flex-start;gap:14px">
-              <div style="flex:1;min-width:0">
-                <div id="bd-cat-badge" style="display:inline-block;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;margin-bottom:8px"></div>
-                <div id="bd-title" style="font-size:18px;font-weight:800;color:var(--text-primary);line-height:1.4;word-break:break-word"></div>
-              </div>
-              <button onclick="document.getElementById('boardDetailModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);flex-shrink:0;padding:0 4px;line-height:1">×</button>
-            </div>
-            <!-- 메타 정보 -->
-            <div style="padding:12px 24px;border-bottom:1px solid var(--border-color);display:flex;gap:20px;flex-wrap:wrap">
-              <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                <span id="bd-author"></span>
-              </div>
-              <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                <span id="bd-date"></span>
-              </div>
-              <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                조회 <span id="bd-views"></span>
-              </div>
-            </div>
-            <!-- 본문 내용 -->
-            <div style="padding:24px;overflow-y:auto;flex:1">
-              <div id="bd-content" style="font-size:14px;color:var(--text-primary);line-height:1.8;white-space:pre-wrap;min-height:120px"></div>
-            </div>
-            <!-- 하단 버튼 -->
-            <div style="padding:14px 24px;border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;gap:10px">
-              <button id="bd-delete-btn" onclick="boardDeleteCurrent()" style="padding:9px 20px;border:1.5px solid #ef4444;border-radius:8px;background:transparent;color:#ef4444;font-size:13px;font-weight:700;cursor:pointer">삭제</button>
-              <button onclick="document.getElementById('boardDetailModal').style.display='none'" style="padding:9px 24px;border:none;border-radius:8px;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;font-size:13px;font-weight:700;cursor:pointer">닫기</button>
-            </div>
-          </div>
-        </div>
-
-
+        <!-- ── 문의관리 서브페이지 ── -->
         <div id="page-hp-inquiry" style="display:none;height:100%;overflow-y:auto">
           <div class="page-header">
             <div>
@@ -1958,211 +1652,10 @@
           </div>
         </div>
 
-        <!-- 미디어자료 관리 페이지 (컨테이너 안으로 이동) -->
-        <div id="page-hp-media" style="display:none;height:100%;overflow-y:auto;background:var(--bg-primary)">
-          <div style="padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#ef4444);display:flex;align-items:center;justify-content:center"><i data-lucide="film" style="width:18px;height:18px;color:#fff"></i></div>
-              <div>
-                <div style="font-size:18px;font-weight:800;color:var(--text-primary);letter-spacing:-.3px">미디어자료 관리</div>
-                <div style="font-size:11.5px;color:var(--text-muted);margin-top:1px">이미지 · 동영상 통합 관리</div>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="display:flex;border:1.5px solid var(--border-color);border-radius:8px;overflow:hidden;background:var(--bg-secondary)">
-                <button id="med-view-masonry" onclick="medSetView('masonry')" style="padding:7px 10px;border:none;cursor:pointer;background:var(--accent-blue);color:#fff;display:flex;align-items:center" title="매소너리"><i data-lucide="layout-dashboard" style="width:13px;height:13px"></i></button>
-                <button id="med-view-bento"   onclick="medSetView('bento')"   style="padding:7px 10px;border:none;cursor:pointer;background:transparent;color:var(--text-muted);display:flex;align-items:center" title="벤토 그리드"><i data-lucide="layout-template" style="width:13px;height:13px"></i></button>
-                <button id="med-view-grid"    onclick="medSetView('grid')"    style="padding:7px 10px;border:none;cursor:pointer;background:transparent;color:var(--text-muted);display:flex;align-items:center" title="균일 그리드"><i data-lucide="grid-3x3" style="width:13px;height:13px"></i></button>
-                <button id="med-view-list"    onclick="medSetView('list')"    style="padding:7px 10px;border:none;cursor:pointer;background:transparent;color:var(--text-muted);display:flex;align-items:center" title="리스트"><i data-lucide="list" style="width:13px;height:13px"></i></button>
-              </div>
-              <button onclick="medOpenAddModal()" class="btn btn-blue" style="gap:6px;font-size:13px;font-weight:700;padding:0 16px;display:flex;align-items:center"><i data-lucide="plus" style="width:14px;height:14px"></i> 미디어 추가</button>
-            </div>
-          </div>
-          <div style="padding:16px 24px 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-            <div style="position:relative;flex:1;min-width:200px;max-width:400px">
-              <i data-lucide="search" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text-muted)"></i>
-              <input id="med-search" type="text" placeholder="제목, 태그 검색..." style="width:100%;padding:9px 14px 9px 38px;border:1.5px solid var(--border-color);border-radius:10px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);outline:none;box-sizing:border-box" oninput="medRender()" onfocus="this.style.borderColor='var(--accent-blue)'" onblur="this.style.borderColor='var(--border-color)'">
-            </div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap">
-              <button data-med-type="all" onclick="medSetFilter('all')" style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--accent-blue);background:var(--accent-blue);color:#fff;font-size:11.5px;font-weight:700;cursor:pointer">전체</button>
-              <button data-med-type="image" onclick="medSetFilter('image')" style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px"><i data-lucide="image" style="width:11px;height:11px"></i> 이미지</button>
-              <button data-med-type="video" onclick="medSetFilter('video')" style="padding:6px 14px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px"><i data-lucide="video" style="width:11px;height:11px"></i> 동영상</button>
-            </div>
-            <select id="med-sort" onchange="medRender()" style="padding:8px 12px;border:1.5px solid var(--border-color);border-radius:10px;font-size:12.5px;background:var(--bg-secondary);color:var(--text-secondary);cursor:pointer;outline:none;font-weight:600">
-              <option value="date">최신순</option><option value="name">이름순</option>
-            </select>
-          </div>
-          <div style="padding:12px 24px 0"><span id="med-count" style="font-size:12px;color:var(--text-muted);font-weight:600"></span></div>
-          <div id="med-grid" style="padding:12px 24px 32px"></div>
-        </div>
-
-        <!-- 약관관리 페이지 -->
-        <div id="page-hp-terms" style="display:none;height:100%;overflow-y:auto;background:var(--bg-primary)">
-          <!-- 헤더 -->
-          <div style="padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center"><i data-lucide="scroll-text" style="width:18px;height:18px;color:#fff"></i></div>
-              <div>
-                <div style="font-size:18px;font-weight:800;color:var(--text-primary);letter-spacing:-.3px">약관관리</div>
-                <div style="font-size:11.5px;color:var(--text-muted);margin-top:1px">이용약관 · 개인정보처리방침 · 게시물 원칙</div>
-              </div>
-            </div>
-            <button onclick="termsDoSave()" class="btn btn-blue" style="gap:6px;font-size:13px;font-weight:700;padding:0 18px;display:flex;align-items:center">
-              <i data-lucide="save" style="width:14px;height:14px"></i> 저장
-            </button>
-          </div>
-
-          <!-- 탭 -->
-          <div style="padding:16px 24px 0;display:flex;gap:4px;border-bottom:1px solid var(--border-color);margin:0 24px" id="terms-tab-bar">
-            <button onclick="termsSwitchTab('tos')" id="terms-tab-tos"
-              style="padding:9px 18px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:700;color:var(--accent-indigo);border-bottom:2.5px solid var(--accent-indigo);position:relative;top:1px;border-radius:8px 8px 0 0;display:flex;align-items:center;gap:6px">
-              <i data-lucide="file-text" style="width:13px;height:13px"></i> 이용약관
-            </button>
-            <button onclick="termsSwitchTab('privacy')" id="terms-tab-privacy"
-              style="padding:9px 18px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:700;color:var(--text-muted);border-bottom:2.5px solid transparent;position:relative;top:1px;border-radius:8px 8px 0 0;display:flex;align-items:center;gap:6px">
-              <i data-lucide="shield" style="width:13px;height:13px"></i> 개인정보처리방침
-            </button>
-            <button onclick="termsSwitchTab('post')" id="terms-tab-post"
-              style="padding:9px 18px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:700;color:var(--text-muted);border-bottom:2.5px solid transparent;position:relative;top:1px;border-radius:8px 8px 0 0;display:flex;align-items:center;gap:6px">
-              <i data-lucide="book-open" style="width:13px;height:13px"></i> 게시물 게재 원칙
-            </button>
-          </div>
-
-          <!-- 탭 콘텐츠 공통 래퍼 -->
-          <div style="padding:20px 24px 40px">
-
-            <!-- ★ 에디터 툴바 -->
-            <div id="terms-toolbar" style="display:flex;flex-wrap:wrap;gap:4px;padding:8px 12px;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-radius:12px 12px 0 0;align-items:center">
-              <!-- 스타일 -->
-              <select onchange="termsExecCmd('formatBlock',this.value);this.selectedIndex=0" style="padding:4px 8px;border:1.5px solid var(--border-color);border-radius:7px;font-size:12px;background:var(--bg-tertiary);color:var(--text-primary);cursor:pointer;font-weight:600">
-                <option value="">단락 스타일</option>
-                <option value="h1">제목 1</option>
-                <option value="h2">제목 2</option>
-                <option value="h3">제목 3</option>
-                <option value="p">본문</option>
-                <option value="blockquote">인용문</option>
-              </select>
-              <div style="width:1px;height:22px;background:var(--border-color);margin:0 2px"></div>
-              <!-- 폰트 크기 -->
-              <select onchange="termsExecCmd('fontSize',this.value);this.selectedIndex=0" style="padding:4px 8px;border:1.5px solid var(--border-color);border-radius:7px;font-size:12px;background:var(--bg-tertiary);color:var(--text-primary);cursor:pointer;font-weight:600">
-                <option value="">크기</option>
-                <option value="2">소(12px)</option>
-                <option value="3">중(14px)</option>
-                <option value="4">대(16px)</option>
-                <option value="5">특대(18px)</option>
-              </select>
-              <div style="width:1px;height:22px;background:var(--border-color);margin:0 2px"></div>
-              <!-- 서식 -->
-              <button onclick="termsExecCmd('bold')" title="굵게" style="width:30px;height:30px;border:1.5px solid var(--border-color);border-radius:7px;background:var(--bg-tertiary);cursor:pointer;font-weight:800;font-size:14px;color:var(--text-primary)">B</button>
-              <button onclick="termsExecCmd('italic')" title="기울임" style="width:30px;height:30px;border:1.5px solid var(--border-color);border-radius:7px;background:var(--bg-tertiary);cursor:pointer;font-style:italic;font-weight:700;font-size:14px;color:var(--text-primary)">I</button>
-              <button onclick="termsExecCmd('underline')" title="밑줄" style="width:30px;height:30px;border:1.5px solid var(--border-color);border-radius:7px;background:var(--bg-tertiary);cursor:pointer;text-decoration:underline;font-weight:700;font-size:13px;color:var(--text-primary)">U</button>
-              <button onclick="termsExecCmd('strikeThrough')" title="취소선" style="width:30px;height:30px;border:1.5px solid var(--border-color);border-radius:7px;background:var(--bg-tertiary);cursor:pointer;text-decoration:line-through;font-size:13px;color:var(--text-primary)">S</button>
-              <div style="width:1px;height:22px;background:var(--border-color);margin:0 2px"></div>
-              <!-- 정렬 -->
-              <button onclick="termsExecCmd('justifyLeft')" title="왼쪽" style="width:30px;height:30px;border:1.5px solid var(--border-color);border-radius:7px;background:var(--bg-tertiary);cursor:pointer;font-size:13px">≡</button>
-              <button onclick="termsExecCmd('justifyCenter')" title="가운데" style="width:30px;height:30px;border:1.5px solid var(--border-color);border-radius:7px;background:var(--bg-tertiary);cursor:pointer;font-size:13px">☰</button>
-              <button onclick="termsExecCmd('justifyRight')" title="오른쪽" style="width:30px;height:30px;border:1.5px solid var(--border-color);border-radius:7px;background:var(--bg-tertiary);cursor:pointer;font-size:13px">≡</button>
-              <div style="width:1px;height:22px;background:var(--border-color);margin:0 2px"></div>
-              <!-- 목록 -->
-              <button onclick="termsExecCmd('insertUnorderedList')" title="글머리 목록" style="width:30px;height:30px;border:1.5px solid var(--border-color);border-radius:7px;background:var(--bg-tertiary);cursor:pointer;font-size:13px">•</button>
-              <button onclick="termsExecCmd('insertOrderedList')" title="번호 목록" style="width:30px;height:30px;border:1.5px solid var(--border-color);border-radius:7px;background:var(--bg-tertiary);cursor:pointer;font-size:13px">1.</button>
-              <div style="width:1px;height:22px;background:var(--border-color);margin:0 2px"></div>
-              <!-- 색상 -->
-              <label title="글자색" style="display:flex;align-items:center;gap:3px;cursor:pointer;font-size:11px;color:var(--text-muted);font-weight:600">
-                A <input type="color" value="#6366f1" onchange="termsExecCmd('foreColor',this.value)" style="width:22px;height:22px;border:none;padding:0;cursor:pointer;border-radius:4px">
-              </label>
-              <label title="배경색" style="display:flex;align-items:center;gap:3px;cursor:pointer;font-size:11px;color:var(--text-muted);font-weight:600">
-                HL <input type="color" value="#fef08a" onchange="termsExecCmd('hiliteColor',this.value)" style="width:22px;height:22px;border:none;padding:0;cursor:pointer;border-radius:4px">
-              </label>
-              <div style="width:1px;height:22px;background:var(--border-color);margin:0 2px"></div>
-              <!-- 링크/HR -->
-              <button onclick="termsInsertLink()" title="링크" style="width:30px;height:30px;border:1.5px solid var(--border-color);border-radius:7px;background:var(--bg-tertiary);cursor:pointer;font-size:13px">🔗</button>
-              <button onclick="termsExecCmd('insertHorizontalRule')" title="구분선" style="width:30px;height:30px;border:1.5px solid var(--border-color);border-radius:7px;background:var(--bg-tertiary);cursor:pointer;font-size:12px">—</button>
-              <div style="margin-left:auto;display:flex;gap:4px">
-                <button onclick="termsDoSave()" style="padding:5px 14px;border:none;border-radius:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:12px;font-weight:700;cursor:pointer">저장</button>
-              </div>
-            </div>
-
-            <!-- ★ 에디터 영역 (contenteditable) -->
-            <div id="terms-editor" contenteditable="true"
-              style="min-height:520px;padding:28px 32px;border:1.5px solid var(--border-color);border-top:none;border-radius:0 0 12px 12px;background:var(--bg-card);color:var(--text-primary);outline:none;line-height:1.8;font-size:14px;overflow-y:auto">
-            </div>
-
-          </div>
-        </div>
-        <!-- /약관관리 -->
-
       </div>
-      <!-- /홈페이지 서브페이지 컨테이너 닫기 -->
-
-        <div id="medAddModal" style="display:none;position:fixed;inset:0;z-index:1400;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px">
-          <div style="background:var(--bg-modal);border-radius:20px;width:min(560px,96vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.25);overflow:hidden">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid var(--border-color);flex-shrink:0">
-              <div style="font-size:16px;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:8px"><i data-lucide="upload" style="width:18px;height:18px;color:var(--accent-blue)"></i><span>미디어 추가</span></div>
-              <button onclick="medCloseModal()" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--bg-tertiary);cursor:pointer;font-size:15px;color:var(--text-muted);display:flex;align-items:center;justify-content:center">✕</button>
-            </div>
-            <div style="overflow-y:auto;padding:20px 24px;flex:1;display:flex;flex-direction:column;gap:16px">
-              <div>
-                <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">미디어 파일 *</div>
-                <!-- 드롭존: 클릭 또는 드래그 -->
-                <div id="med-drop-zone" onclick="document.getElementById('med-file-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent-blue)';this.style.background='rgba(59,130,246,.06)'" ondragleave="this.style.borderColor='var(--border-color)';this.style.background='var(--bg-secondary)'" ondrop="medHandleDrop(event)" style="width:100%;min-height:110px;border:2px dashed var(--border-color);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;background:var(--bg-secondary);transition:border-color .15s,background .15s;box-sizing:border-box;gap:6px;padding:18px">
-                  <i data-lucide="upload-cloud" style="width:30px;height:30px;color:var(--text-muted)"></i>
-                  <div style="font-size:13px;font-weight:700;color:var(--text-secondary)">클릭 또는 드래그&드롭</div>
-                  <div style="font-size:11px;color:var(--text-muted)">이미지(JPG·PNG·GIF·WebP) · 동영상(MP4·MOV·WebM) · <b>여러 파일 동시 선택 가능</b></div>
-                </div>
-                <input type="file" id="med-file-input" accept="image/*,video/*" style="display:none" multiple onchange="medHandleFiles(this.files)">
-                <!-- 선택된 파일 목록 -->
-                <div id="med-file-list" style="display:none;margin-top:12px;display:none;flex-direction:column;gap:8px"></div>
-              </div>
-
-              <div>
-                <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">제목 *</div>
-                <input id="med-title" type="text" placeholder="파일 제목을 입력하세요" style="width:100%;padding:10px 14px;border:1.5px solid var(--border-color);border-radius:10px;font-size:13.5px;background:var(--bg-secondary);color:var(--text-primary);outline:none;box-sizing:border-box;font-weight:600" onfocus="this.style.borderColor='var(--accent-blue)'" onblur="this.style.borderColor='var(--border-color)'">
-              </div>
-              <div>
-                <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">검색 태그 <span style="font-weight:400;text-transform:none;font-size:10.5px">(Enter 또는 Space로 추가 · 태그 클릭 시 수정)</span></div>
-                <!-- 태그 입력 컨테이너 -->
-                <div id="med-tags-box"
-                  onclick="document.getElementById('med-tags-input').focus()"
-                  style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;min-height:42px;padding:6px 10px;border:1.5px solid var(--border-color);border-radius:10px;background:var(--bg-secondary);cursor:text;transition:border-color .2s;box-sizing:border-box"
-                  onfocus="this.style.borderColor='var(--accent-blue)'">
-                  <span id="med-tags-list" style="display:contents"></span>
-                  <input id="med-tags-input" type="text" placeholder="태그 입력 후 Enter 또는 Space"
-                    style="flex:1;min-width:120px;border:none;outline:none;background:transparent;font-size:13px;color:var(--text-primary);padding:2px 4px"
-                    onkeydown="_medTagKeydown(event)"
-                    oninput="_medTagInput(event)"
-                    onfocus="document.getElementById('med-tags-box').style.borderColor='var(--accent-blue)'"
-                    onblur="_medTagCommit(this);document.getElementById('med-tags-box').style.borderColor='var(--border-color)'">
-                </div>
-                <input type="hidden" id="med-tags">
-              </div>
-              <div>
-                <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">설명</div>
-                <textarea id="med-desc" rows="3" placeholder="파일에 대한 설명을 입력하세요" style="width:100%;padding:10px 14px;border:1.5px solid var(--border-color);border-radius:10px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);outline:none;resize:vertical;box-sizing:border-box;line-height:1.6" onfocus="this.style.borderColor='var(--accent-blue)'" onblur="this.style.borderColor='var(--border-color)'"></textarea>
-              </div>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 24px;border-top:1px solid var(--border-color);flex-shrink:0">
-              <span id="med-file-count" style="font-size:12px;color:var(--text-muted)"></span>
-              <div style="display:flex;gap:10px">
-                <button onclick="medCloseModal()" style="padding:9px 20px;border-radius:10px;border:1.5px solid var(--border-color);background:transparent;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-secondary)">취소</button>
-                <button id="med-save-btn" onclick="medSave()" class="btn btn-blue" style="padding:0 24px;font-size:13px;font-weight:700">저장</button>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- 대ub514어 상세 모달 -->
-        <div id="medDetailModal" style="display:none;position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)medCloseDetail()">
-          <div style="position:relative;max-width:90vw;max-height:90vh;display:flex;flex-direction:column;align-items:center;gap:12px">
-            <button onclick="medCloseDetail()" style="position:absolute;top:-40px;right:0;background:none;border:none;color:#fff;font-size:24px;cursor:pointer;opacity:.7">✕</button>
-            <div id="med-detail-media" style="max-width:85vw;max-height:70vh;border-radius:12px;overflow:hidden"></div>
-            <div id="med-detail-info" style="color:#fff;text-align:center;max-width:600px"></div>
-          </div>
-        </div>
 
       <!-- ══════════════════════════════
-           홍 회계관리 페이지
+           💰 회계관리 페이지
       ══════════════════════════════ -->
       <div class="page" id="page-accounting">
         <!-- 회계관리 서브페이지 컨테이너 -->
@@ -3644,24 +3137,7 @@
 <script src="app.js?v=20260403a"></script>
 <script src="modules/dashboard.js?v=20260401"></script>
 <script src="modules/schedule.js?v=20260401"></script>
-<script src="modules/overrides.js?v=20260406b"></script>
-<script>
-/* hp_menu_items 오염(object 배열) 자동 정리 */
-(function(){
-  try {
-    var raw = localStorage.getItem('hp_menu_items');
-    if (!raw) return;
-    var arr = JSON.parse(raw);
-    if (!Array.isArray(arr)) { localStorage.removeItem('hp_menu_items'); return; }
-    var hasObj = arr.some(function(m){ return typeof m !== 'string'; });
-    if (hasObj) {
-      var cleaned = arr.map(function(m){ return typeof m==='string'?m:(m.name||m.label||''); }).filter(Boolean);
-      if (cleaned.length) localStorage.setItem('hp_menu_items', JSON.stringify(cleaned));
-      else localStorage.removeItem('hp_menu_items');
-    }
-  } catch(e) { localStorage.removeItem('hp_menu_items'); }
-})();
-</script>
+<script src="modules/overrides.js?v=20260403a"></script>
 
 <!-- ── 커스텀 날짜 픽커 팝업 ── -->
 <div id="customDatePicker" style="display:none;position:fixed;z-index:9999">
