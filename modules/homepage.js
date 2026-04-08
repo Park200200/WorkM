@@ -1,4 +1,4 @@
-﻿/**
+/**
  * modules/homepage.js
  */
 /* ══════════════════════════════════════════════════════
@@ -2250,14 +2250,15 @@ function _hpMcBuildLine(ln, i) {
 
   /* ── 본문 ── */
   if ((ln.type || 'image') === 'image') {
-    /* 이미지 & 링크 목록 */
+    /* 이미지 & 텍스트 목록 */
     var body = document.createElement('div');
     body.style.cssText = 'padding:12px 14px';
 
     var tblHdr = document.createElement('div');
     tblHdr.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px';
     tblHdr.innerHTML = '<i data-lucide="image" style="width:12px;height:12px;color:var(--text-muted)"></i>' +
-      '<span style="font-size:11.5px;font-weight:700;color:var(--text-secondary)">이미지 &amp; 링크 목록</span>';
+      '<span style="font-size:11.5px;font-weight:700;color:var(--text-secondary)">이미지 &amp; 텍스트 목록</span>' +
+      '<span style="font-size:10px;color:var(--text-muted);font-weight:400">가로·세로 이미지(반응형) + 텍스트 3줄</span>';
     var addBtn = document.createElement('button');
     addBtn.innerHTML = '<i data-lucide="plus" style="width:11px;height:11px"></i> 항목 추가';
     addBtn.style.cssText = 'margin-left:auto;display:flex;align-items:center;gap:4px;padding:3px 10px;border-radius:7px;border:1.5px solid #4f6ef7;background:rgba(79,110,247,.07);color:#4f6ef7;font-size:11px;font-weight:700;cursor:pointer';
@@ -2265,46 +2266,154 @@ function _hpMcBuildLine(ln, i) {
     tblHdr.appendChild(addBtn);
     body.appendChild(tblHdr);
 
-    /* 테이블 */
-    var tbl = document.createElement('div');
-    tbl.style.cssText = 'border:1px solid var(--border-color);border-radius:8px;overflow:hidden';
-
-    var colHdr = document.createElement('div');
-    colHdr.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1.5fr 1fr 36px;background:var(--bg-tertiary);padding:7px 10px;gap:8px;border-bottom:1px solid var(--border-color)';
-    ['가로 이미지', '세로 이미지', '링크 URL', '설명', ''].forEach(function (c) {
-      var th = document.createElement('div');
-      th.style.cssText = 'font-size:10.5px;font-weight:700;color:var(--text-muted)';
-      th.textContent = c;
-      colHdr.appendChild(th);
-    });
-    tbl.appendChild(colHdr);
+    /* 항목 카드 목록 */
+    var cardList = document.createElement('div');
+    cardList.style.cssText = 'display:flex;flex-direction:column;gap:10px';
 
     if (!ln.items || !ln.items.length) {
       var empty = document.createElement('div');
-      empty.style.cssText = 'padding:18px;text-align:center;font-size:12px;color:var(--text-muted)';
+      empty.style.cssText = 'padding:24px;text-align:center;font-size:12px;color:var(--text-muted);border:1.5px dashed var(--border-color);border-radius:10px;background:var(--bg-tertiary)';
       empty.textContent = '+ 항목 추가 버튼으로 항목을 추가하세요';
-      tbl.appendChild(empty);
+      cardList.appendChild(empty);
     } else {
       ln.items.forEach(function (item, j) {
-        var row = document.createElement('div');
-        row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1.5fr 1fr 36px;padding:6px 10px;gap:8px;align-items:start;border-top:1px solid var(--border-color)';
+        var card = document.createElement('div');
+        card.style.cssText = 'border:1.5px solid var(--border-color);border-radius:10px;overflow:hidden;background:var(--bg-secondary)';
 
-        /* ── 이미지 셀 빌더 (URL + 파일 업로드 + 미리보기) ── */
+        /* ── 카드 헤더 (번호 + 삭제) ── */
+        var cardHdr = document.createElement('div');
+        cardHdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg-tertiary);border-bottom:1px solid var(--border-color)';
+        var cardNum = document.createElement('span');
+        cardNum.style.cssText = 'font-size:11px;font-weight:700;color:var(--text-muted)';
+        cardNum.textContent = '항목 ' + (j + 1);
+        cardHdr.appendChild(cardNum);
+        var dl = document.createElement('button');
+        dl.innerHTML = '×';
+        dl.style.cssText = 'width:22px;height:22px;border:none;border-radius:6px;background:rgba(239,68,68,.1);color:#ef4444;cursor:pointer;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center';
+        dl.onclick = (function (li, ji) { return function () { window._hpMcData[li].items.splice(ji, 1); _hpMcRender(); }; })(i, j);
+        cardHdr.appendChild(dl);
+        card.appendChild(cardHdr);
+
+        /* ── 미리보기 영역 (이미지 위 텍스트 오버레이) ── */
+        var previewWrap = document.createElement('div');
+        previewWrap.className = 'mc-preview-' + i + '-' + j;
+        previewWrap.style.cssText = 'position:relative;width:100%;min-height:180px;background:#0a0a12;border-radius:0;overflow:hidden;display:flex;align-items:center;justify-content:center';
+
+        /* 배경 이미지 */
+        var bgImg = document.createElement('img');
+        bgImg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55;transition:opacity .3s';
+        var imgSrc = item.imgH || item.imgV || '';
+        if (imgSrc && (imgSrc.startsWith('http') || imgSrc.startsWith('data:'))) {
+          bgImg.src = imgSrc;
+        }
+        previewWrap.appendChild(bgImg);
+
+        /* ── 가로/세로 전환 스위치 (미리보기 우측 상단) ── */
+        (function(pWrap, bImg, li, ji) {
+          var switchWrap = document.createElement('div');
+          switchWrap.style.cssText = 'position:absolute;top:8px;right:8px;z-index:5;display:flex;border-radius:6px;overflow:hidden;border:1px solid rgba(255,255,255,.25);box-shadow:0 2px 8px rgba(0,0,0,.3)';
+
+          var btnH = document.createElement('button');
+          btnH.type = 'button';
+          btnH.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>&nbsp;가로';
+          btnH.title = '가로 이미지 (PC)';
+
+          var btnV = document.createElement('button');
+          btnV.type = 'button';
+          btnV.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>&nbsp;세로';
+          btnV.title = '세로 이미지 (모바일)';
+
+          var baseBtnStyle = 'display:flex;align-items:center;gap:2px;padding:4px 10px;border:none;font-size:10px;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit';
+          var activeStyle = ';background:rgba(79,110,247,.9);color:#fff';
+          var inactiveStyle = ';background:rgba(0,0,0,.5);color:rgba(255,255,255,.6)';
+
+          function setMode(mode) {
+            var data = window._hpMcData[li] && window._hpMcData[li].items && window._hpMcData[li].items[ji];
+            if (!data) return;
+            var src = mode === 'v' ? (data.imgV || '') : (data.imgH || '');
+            if (src && (src.startsWith('http') || src.startsWith('data:'))) {
+              bImg.src = src;
+              bImg.style.opacity = '.55';
+            } else {
+              bImg.style.opacity = '0';
+            }
+            btnH.style.cssText = baseBtnStyle + (mode === 'h' ? activeStyle : inactiveStyle);
+            btnV.style.cssText = baseBtnStyle + (mode === 'v' ? activeStyle : inactiveStyle);
+            pWrap.style.aspectRatio = mode === 'v' ? '3/4' : '';
+            pWrap.style.minHeight = mode === 'v' ? '280px' : '180px';
+          }
+
+          btnH.onclick = function() { setMode('h'); };
+          btnV.onclick = function() { setMode('v'); };
+
+          switchWrap.appendChild(btnH);
+          switchWrap.appendChild(btnV);
+          pWrap.appendChild(switchWrap);
+
+          setMode('h');
+        })(previewWrap, bgImg, i, j);
+
+        /* 오버레이 텍스트 컨테이너 */
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:10px;padding:24px 20px;text-align:center;width:100%';
+
+        /* 텍스트 1 — 소형 태그 (둥근 테두리) */
+        var t1 = document.createElement('span');
+        t1.style.cssText = 'display:inline-block;padding:4px 16px;border:1.5px solid rgba(255,255,255,.45);border-radius:20px;font-size:12px;font-weight:500;color:rgba(255,255,255,.85);letter-spacing:1px;backdrop-filter:blur(4px)';
+        t1.textContent = item.text1 || '텍스트 1';
+        overlay.appendChild(t1);
+
+        /* 텍스트 2 — 대형 제목 */
+        var t2 = document.createElement('div');
+        t2.style.cssText = 'font-size:28px;font-weight:800;color:#fff;line-height:1.3;letter-spacing:-0.5px;text-shadow:0 2px 12px rgba(0,0,0,.4)';
+        t2.textContent = item.text2 || '제목을 입력하세요';
+        overlay.appendChild(t2);
+
+        /* 텍스트 3 — 설명 */
+        var t3 = document.createElement('div');
+        t3.style.cssText = 'font-size:13px;font-weight:400;color:rgba(255,255,255,.7);line-height:1.5;max-width:80%';
+        t3.textContent = item.text3 || '설명을 입력하세요';
+        overlay.appendChild(t3);
+
+        previewWrap.appendChild(overlay);
+        card.appendChild(previewWrap);
+
+        /* ── 입력 필드 영역 ── */
+        var inputsWrap = document.createElement('div');
+        inputsWrap.style.cssText = 'padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--bg-tertiary);border-top:1px solid var(--border-color)';
+
+        /* 이미지 입력 (가로 + 세로) */
+        var imgRow = document.createElement('div');
+        imgRow.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px';
+
+        /* 이미지 라벨 + 입력 */
+        var imgLblH = document.createElement('div');
+        imgLblH.style.cssText = 'font-size:10px;font-weight:700;color:var(--text-muted);margin-bottom:3px;display:flex;align-items:center;gap:3px';
+        imgLblH.innerHTML = '<i data-lucide="monitor" style="width:10px;height:10px"></i> 가로 이미지 (PC)';
+        var imgLblV = document.createElement('div');
+        imgLblV.style.cssText = 'font-size:10px;font-weight:700;color:var(--text-muted);margin-bottom:3px;display:flex;align-items:center;gap:3px';
+        imgLblV.innerHTML = '<i data-lucide="smartphone" style="width:10px;height:10px"></i> 세로 이미지 (모바일)';
+
+        var imgColH = document.createElement('div');
+        imgColH.appendChild(imgLblH);
+        var imgColV = document.createElement('div');
+        imgColV.appendChild(imgLblV);
+
+        /* ── 이미지 셀 빌더 (URL + 파일 업로드) ── */
         function _mcImgCell(field, lineIdx, itemIdx, placeholder) {
           var cellWrap = document.createElement('div');
-          cellWrap.style.cssText = 'display:flex;flex-direction:column;gap:4px;position:relative';
-
-          /* URL 입력 + 파일 버튼 한줄 */
-          var inputRow = document.createElement('div');
-          inputRow.style.cssText = 'display:flex;gap:0;align-items:stretch';
+          cellWrap.style.cssText = 'display:flex;gap:0;align-items:stretch';
 
           var inp = document.createElement('input');
           inp.value = item[field] || '';
           inp.placeholder = placeholder;
-          inp.style.cssText = 'flex:1;min-width:0;border:1px solid var(--border-color);border-right:none;border-radius:6px 0 0 6px;padding:5px 8px;font-size:11px;background:var(--bg-secondary);color:var(--text-primary);outline:none;box-sizing:border-box';
+          inp.style.cssText = 'flex:1;min-width:0;border:1px solid var(--border-color);border-right:none;border-radius:6px 0 0 6px;padding:4px 7px;font-size:10.5px;background:var(--bg-secondary);color:var(--text-primary);outline:none;box-sizing:border-box';
           inp.oninput = function () {
             window._hpMcData[lineIdx].items[itemIdx][field] = this.value;
-            _mcImgUpdatePreview(prevBox, this.value);
+            /* 미리보기 배경 업데이트 */
+            var src = window._hpMcData[lineIdx].items[itemIdx].imgH || window._hpMcData[lineIdx].items[itemIdx].imgV || '';
+            if (src && (src.startsWith('http') || src.startsWith('data:'))) { bgImg.src = src; bgImg.style.opacity = '.55'; }
+            else { bgImg.style.opacity = '0'; }
           };
 
           var fileInp = document.createElement('input');
@@ -2318,92 +2427,73 @@ function _hpMcBuildLine(ln, i) {
             reader.onload = function (ev) {
               inp.value = ev.target.result;
               window._hpMcData[lineIdx].items[itemIdx][field] = ev.target.result;
-              _mcImgUpdatePreview(prevBox, ev.target.result);
+              bgImg.src = ev.target.result;
+              bgImg.style.opacity = '.55';
             };
             reader.readAsDataURL(file);
           };
 
           var fileBtn = document.createElement('button');
-          fileBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+          fileBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
           fileBtn.title = '파일 업로드';
-          fileBtn.style.cssText = 'display:flex;align-items:center;justify-content:center;padding:0 8px;border:1px solid var(--border-color);border-radius:0 6px 6px 0;background:var(--bg-tertiary);color:var(--text-secondary);cursor:pointer;transition:all .15s;flex-shrink:0';
+          fileBtn.style.cssText = 'display:flex;align-items:center;justify-content:center;padding:0 7px;border:1px solid var(--border-color);border-radius:0 6px 6px 0;background:var(--bg-secondary);color:var(--text-secondary);cursor:pointer;transition:all .15s;flex-shrink:0';
           fileBtn.onmouseover = function () { this.style.background = 'var(--accent-blue)'; this.style.color = '#fff'; this.style.borderColor = 'var(--accent-blue)'; };
-          fileBtn.onmouseout = function () { this.style.background = 'var(--bg-tertiary)'; this.style.color = 'var(--text-secondary)'; this.style.borderColor = 'var(--border-color)'; };
+          fileBtn.onmouseout = function () { this.style.background = 'var(--bg-secondary)'; this.style.color = 'var(--text-secondary)'; this.style.borderColor = 'var(--border-color)'; };
           fileBtn.onclick = function () { fileInp.click(); };
 
-          inputRow.appendChild(inp);
-          inputRow.appendChild(fileBtn);
-          inputRow.appendChild(fileInp);
-          cellWrap.appendChild(inputRow);
-
-          /* 미리보기 썸네일 */
-          var prevBox = document.createElement('div');
-          prevBox.style.cssText = 'display:none;border-radius:5px;overflow:hidden;border:1px solid var(--border-color);position:relative;max-height:52px';
-          var prevImg = document.createElement('img');
-          prevImg.style.cssText = 'width:100%;max-height:50px;object-fit:cover;display:block';
-          prevBox.appendChild(prevImg);
-
-          /* 미리보기 삭제(클리어) 버튼 */
-          var clearBtn = document.createElement('button');
-          clearBtn.innerHTML = '×';
-          clearBtn.title = '이미지 제거';
-          clearBtn.style.cssText = 'position:absolute;top:2px;right:2px;width:16px;height:16px;border:none;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1';
-          clearBtn.onclick = function () {
-            inp.value = '';
-            window._hpMcData[lineIdx].items[itemIdx][field] = '';
-            prevBox.style.display = 'none';
-          };
-          prevBox.appendChild(clearBtn);
-          cellWrap.appendChild(prevBox);
-
-          /* 초기값 있으면 미리보기 표시 */
-          _mcImgUpdatePreview(prevBox, item[field] || '');
-
+          cellWrap.appendChild(inp);
+          cellWrap.appendChild(fileBtn);
+          cellWrap.appendChild(fileInp);
           return cellWrap;
         }
 
-        /* 미리보기 업데이트 헬퍼 */
-        function _mcImgUpdatePreview(box, val) {
-          var img = box.querySelector('img');
-          if (!val || (!val.startsWith('http') && !val.startsWith('data:'))) {
-            box.style.display = 'none';
-            return;
-          }
-          if (img) img.src = val;
-          box.style.display = 'block';
-        }
+        imgColH.appendChild(_mcImgCell('imgH', i, j, 'URL 또는 파일 업로드'));
+        imgColV.appendChild(_mcImgCell('imgV', i, j, 'URL 또는 파일 업로드'));
+        imgRow.appendChild(imgColH);
+        imgRow.appendChild(imgColV);
+        inputsWrap.appendChild(imgRow);
 
-        /* 가로이미지 셀 */
-        row.appendChild(_mcImgCell('imgH', i, j, 'URL 또는 파일 업로드'));
-        /* 세로이미지 셀 */
-        row.appendChild(_mcImgCell('imgV', i, j, 'URL 또는 파일 업로드'));
+        /* 텍스트 입력 (3개 — 입력 시 미리보기 실시간 업데이트) */
+        var txtRow = document.createElement('div');
+        txtRow.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px';
 
-        /* 링크 URL */
-        var urlInp = document.createElement('input');
-        urlInp.value = item.url || '';
-        urlInp.placeholder = 'https://';
-        urlInp.style.cssText = 'width:100%;border:1px solid var(--border-color);border-radius:6px;padding:5px 8px;font-size:11.5px;background:var(--bg-secondary);color:var(--text-primary);outline:none;box-sizing:border-box';
-        urlInp.oninput = (function (li, ji) { return function () { window._hpMcData[li].items[ji].url = this.value; }; })(i, j);
-        row.appendChild(urlInp);
+        var txtLabels = ['텍스트 1 (태그)', '텍스트 2 (제목)', '텍스트 3 (설명)'];
+        var txtFields = ['text1', 'text2', 'text3'];
+        var txtEls = [t1, t2, t3];
+        var txtPlaceholders = ['텍스트 1', '제목을 입력하세요', '설명을 입력하세요'];
 
-        /* 설명 */
-        var descInp = document.createElement('input');
-        descInp.value = item.desc || '';
-        descInp.placeholder = '설명';
-        descInp.style.cssText = 'width:100%;border:1px solid var(--border-color);border-radius:6px;padding:5px 8px;font-size:11.5px;background:var(--bg-secondary);color:var(--text-primary);outline:none;box-sizing:border-box';
-        descInp.oninput = (function (li, ji) { return function () { window._hpMcData[li].items[ji].desc = this.value; }; })(i, j);
-        row.appendChild(descInp);
+        txtFields.forEach(function (field, fi) {
+          var txtCol = document.createElement('div');
 
-        /* 삭제 */
-        var dl = document.createElement('button');
-        dl.innerHTML = '×';
-        dl.style.cssText = 'width:28px;height:28px;border:none;border-radius:6px;background:rgba(239,68,68,.1);color:#ef4444;cursor:pointer;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center';
-        dl.onclick = (function (li, ji) { return function () { window._hpMcData[li].items.splice(ji, 1); _hpMcRender(); }; })(i, j);
-        row.appendChild(dl);
-        tbl.appendChild(row);
+          var txtLbl = document.createElement('div');
+          txtLbl.style.cssText = 'font-size:10px;font-weight:700;color:var(--text-muted);margin-bottom:3px;display:flex;align-items:center;gap:3px';
+          txtLbl.innerHTML = '<i data-lucide="type" style="width:9px;height:9px"></i> ' + txtLabels[fi];
+          txtCol.appendChild(txtLbl);
+
+          var txtInp = document.createElement('input');
+          txtInp.value = item[field] || '';
+          txtInp.placeholder = txtLabels[fi];
+          txtInp.style.cssText = 'width:100%;border:1px solid var(--border-color);border-radius:6px;padding:4px 7px;font-size:10.5px;background:var(--bg-secondary);color:var(--text-primary);outline:none;box-sizing:border-box;transition:border-color .15s';
+          txtInp.onfocus = function () { this.style.borderColor = 'var(--accent-blue)'; };
+          txtInp.onblur = function () { this.style.borderColor = 'var(--border-color)'; };
+          txtInp.oninput = (function (li, ji, f, el, ph) {
+            return function () {
+              window._hpMcData[li].items[ji][f] = this.value;
+              el.textContent = this.value || ph;
+            };
+          })(i, j, field, txtEls[fi], txtPlaceholders[fi]);
+          txtCol.appendChild(txtInp);
+
+          txtRow.appendChild(txtCol);
+        });
+
+        inputsWrap.appendChild(txtRow);
+        card.appendChild(inputsWrap);
+
+        cardList.appendChild(card);
       });
     }
-    body.appendChild(tbl);
+    body.appendChild(cardList);
     wrap.appendChild(body);
 
   } else {
@@ -2439,7 +2529,7 @@ function _hpMcAddLine() {
 }
 function _hpMcAddItem(idx) {
   if (!window._hpMcData[idx].items) window._hpMcData[idx].items = [];
-  window._hpMcData[idx].items.push({ imgH: '', imgV: '', url: '', desc: '' });
+  window._hpMcData[idx].items.push({ imgH: '', imgV: '', text1: '', text2: '', text3: '' });
   _hpMcRender();
 }
 function _hpMcSave() {

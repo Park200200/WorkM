@@ -99,6 +99,8 @@ button { font-family: inherit; cursor: pointer; }
   border-color: var(--hp-accent);
 }
 
+
+
 /* ═══════════════════════════
    상단 리벳 (공지 바)
 ═══════════════════════════ */
@@ -370,10 +372,71 @@ button { font-family: inherit; cursor: pointer; }
   opacity: 1;
 }
 
-.hp-content-item .item-desc {
+/* 텍스트 오버레이 — 항상 표시 */
+.hp-content-item .item-overlay-text {
+  background: linear-gradient(180deg, rgba(0,0,0,.15) 0%, rgba(0,0,0,.55) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 1;
+}
+
+.hp-content-item .item-overlay-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  padding: 24px 20px;
+  width: 100%;
+}
+
+.hp-content-item .item-tag {
+  display: inline-block;
+  padding: 5px 18px;
+  border: 1.5px solid rgba(255,255,255,.45);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255,255,255,.85);
+  letter-spacing: 1.2px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.hp-content-item .item-title {
+  font-size: 32px;
+  font-weight: 800;
   color: #fff;
+  line-height: 1.3;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 16px rgba(0,0,0,.45);
+}
+
+.hp-content-item .item-desc {
+  color: rgba(255,255,255,.75);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400;
+  line-height: 1.6;
+  max-width: 80%;
+}
+
+/* 반응형 이미지 토글 (PC: 가로, 모바일: 세로) */
+.hp-content-item .mc-img-v {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .hp-content-item.has-vertical {
+    aspect-ratio: 4/5;
+  }
+  .hp-content-item.has-vertical .mc-img-h {
+    display: none !important;
+  }
+  .hp-content-item.has-vertical .mc-img-v {
+    display: block !important;
+  }
 }
 
 /* ── 솔루션형 컨텐츠 ── */
@@ -597,6 +660,20 @@ button { font-family: inherit; cursor: pointer; }
 
   .hp-hero-content p {
     font-size: 15px;
+  }
+
+  .hp-content-item .item-title {
+    font-size: 22px;
+  }
+
+  .hp-content-item .item-tag {
+    font-size: 11px;
+    padding: 3px 12px;
+  }
+
+  .hp-content-item .item-desc {
+    font-size: 12px;
+    max-width: 90%;
   }
 
   .hp-content-line .line-grid.cols-2,

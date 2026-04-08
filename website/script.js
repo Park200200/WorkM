@@ -412,16 +412,41 @@
       '<div class="line-grid ' + colClass + '">';
 
     line.items.forEach(function (item) {
-      var imgSrc = item.imgH || item.imgV || '';
+      var imgH = item.imgH || '';
+      var imgV = item.imgV || '';
+      var imgSrc = imgH || imgV || '';
       if (!imgSrc) return;
 
-      html += '<div class="hp-content-item">';
-      if (item.url) html += '<a href="' + escAttr(item.url) + '" target="_blank">';
-      html += '<img src="' + escAttr(imgSrc) + '" alt="' + escAttr(item.desc || '') + '" loading="lazy">';
-      if (item.desc) {
-        html += '<div class="item-overlay"><div class="item-desc">' + escHtml(item.desc) + '</div></div>';
+      var hasText = item.text1 || item.text2 || item.text3;
+      var isValidImg = function(v) { return v && (v.startsWith('data:') || v.startsWith('http')); };
+      var hasVertical = isValidImg(imgV);
+
+      html += '<div class="hp-content-item' + (hasVertical ? ' has-vertical' : '') + '">';
+
+      /* 반응형 이미지 (가로: PC, 세로: 모바일) — CSS 토글 */
+      if (isValidImg(imgH) && hasVertical) {
+        html += '<img class="mc-img-h" src="' + escAttr(imgH) + '" alt="' + escAttr(item.text2 || '') + '" loading="lazy">';
+        html += '<img class="mc-img-v" src="' + escAttr(imgV) + '" alt="' + escAttr(item.text2 || '') + '" loading="lazy">';
+      } else {
+        html += '<img src="' + escAttr(imgSrc) + '" alt="' + escAttr(item.text2 || '') + '" loading="lazy">';
       }
-      if (item.url) html += '</a>';
+
+      /* 텍스트 오버레이 */
+      if (hasText) {
+        html += '<div class="item-overlay item-overlay-text">';
+        html += '<div class="item-overlay-inner">';
+        if (item.text1) {
+          html += '<span class="item-tag">' + escHtml(item.text1) + '</span>';
+        }
+        if (item.text2) {
+          html += '<div class="item-title">' + escHtml(item.text2) + '</div>';
+        }
+        if (item.text3) {
+          html += '<div class="item-desc">' + escHtml(item.text3) + '</div>';
+        }
+        html += '</div></div>';
+      }
+
       html += '</div>';
     });
 
