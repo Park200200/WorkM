@@ -118,10 +118,16 @@
     if (!_ls('acct_approvals')) _ls('acct_approvals', []);
     if (!_ls('acct_vouchers')) _ls('acct_vouchers', []);
     if (!_ls('acct_cashflows')) _ls('acct_cashflows', []);
+    if (!_ls('acct_budget_cats')) {
+      _ls('acct_budget_cats', [
+        { id: 1, name: '문화재청', bank: '기업은행 10110-11001-12', periodFrom: '2026-01-01', periodTo: '2026-12-31' }
+      ]);
+    }
   }
 
   function _accounts() { return _ls('acct_accounts') || []; }
   function _budgets() { return _ls('acct_budgets') || []; }
+  function _budgetCats() { return _ls('acct_budget_cats') || []; }
   function _approvals() { return _ls('acct_approvals') || []; }
   function _vouchers() { return _ls('acct_vouchers') || []; }
   function _cashflows() { return _ls('acct_cashflows') || []; }
@@ -367,77 +373,217 @@
   /* ══════════════════════════
      2. 예산설정
   ══════════════════════════ */
+  var _selectedBudgetCatId = null;
+
   function renderAcctBudget() {
     var el = document.getElementById('acct-budget');
     if (!el) return;
+    _initDefaults();
+    var cats = _budgetCats();
     var budgets = _budgets();
-    var year = new Date().getFullYear();
+
+    // 선택된 예산구분이 없으면 첫번째 선택
+    if (!_selectedBudgetCatId && cats.length > 0) _selectedBudgetCatId = cats[0].id;
+    var selCat = cats.find(function (c) { return c.id === _selectedBudgetCatId; }) || null;
+    var filtered = selCat ? budgets.filter(function (b) { return b.catId === _selectedBudgetCatId; }) : budgets;
 
     var html = '' +
       '<div class="page-header"><div>' +
       '<div class="page-title">예산설정</div>' +
-      '<div class="page-subtitle">계정과목별 연간 예산을 설정하고 소진 현황을 확인합니다</div>' +
-      '</div>' +
-      '<button class="btn btn-blue" onclick="ACCT.openBudgetModal()"><i data-lucide="plus" style="width:14px;height:14px"></i> 예산 추가</button>' +
-      '</div>' +
+      '<div class="page-subtitle">예산구분별 연간 예산을 설정하고 소진 현황을 확인합니다</div>' +
+      '</div></div>' +
 
-      '<div class="acct-card">' +
-      '<div class="acct-card-head"><i data-lucide="wallet" style="width:16px;height:16px"></i> ' + year + '년 예산 현황</div>';
+      // ── 예산구분 관리 카드 ──
+      '<div class="acct-card" style="margin-bottom:16px">' +
+      '<div class="acct-card-head"><i data-lucide="folder-open" style="width:16px;height:16px"></i> 예산구분 관리' +
+      '<button class="btn" onclick="ACCT.openBudgetCatModal()" style="margin-left:auto;padding:4px 12px;font-size:12px"><i data-lucide="plus" style="width:12px;height:12px"></i> 구분 추가</button>' +
+      '</div>';
 
-    if (budgets.length === 0) {
-      html += '<div class="acct-empty"><i data-lucide="inbox" style="width:36px;height:36px;opacity:.3;display:block;margin:0 auto 10px"></i>등록된 예산이 없습니다<br><span style="font-size:12px;color:var(--text-muted)">위 "예산 추가" 버튼을 눌러 등록하세요</span></div>';
+    if (cats.length === 0) {
+      html += '<div class="acct-empty" style="padding:20px">등록된 예산구분이 없습니다. "구분 추가" 버튼으로 먼저 등록하세요.</div>';
     } else {
-      var totalBudget = 0, totalSpent = 0;
-      budgets.forEach(function (b) { totalBudget += (b.amount || 0); totalSpent += (b.spent || 0); });
-
-      html += '<table class="acct-table"><thead><tr>' +
-        '<th>계정과목</th><th style="text-align:right">예산액</th><th style="text-align:right">집행액</th>' +
-        '<th style="text-align:right">잔액</th><th>소진율</th><th style="text-align:center;width:80px">관리</th>' +
-        '</tr></thead><tbody>';
-
-      budgets.forEach(function (b) {
-        var spent = b.spent || 0;
-        var remain = b.amount - spent;
-        var pct = b.amount > 0 ? Math.round(spent / b.amount * 100) : 0;
-        var over = pct > 100;
-        var color = over ? '#ef4444' : pct > 80 ? '#f59e0b' : '#22c55e';
-        html += '<tr>' +
-          '<td><strong>' + _esc(_acctName(b.accountCode)) + '</strong> <span style="font-size:11px;color:var(--text-muted)">' + b.accountCode + '</span></td>' +
-          '<td class="num">' + _fmtW(b.amount) + '</td>' +
-          '<td class="num">' + _fmtW(spent) + '</td>' +
-          '<td class="num" style="color:' + (remain < 0 ? '#ef4444' : 'var(--text-primary)') + '">' + _fmtW(remain) + '</td>' +
-          '<td><div class="acct-progress-track" style="width:100px;display:inline-block;vertical-align:middle;margin-right:8px"><div class="acct-progress-fill" style="width:' + Math.min(100, pct) + '%;background:' + color + '"></div></div>' +
-          '<span style="font-weight:700;color:' + color + ';font-size:12px">' + pct + '%</span>' + (over ? ' <span style="color:#ef4444;font-weight:800">⚠️ 초과</span>' : '') + '</td>' +
-          '<td style="text-align:center">' +
-          '<button class="btn-icon-sm edit" onclick="ACCT.openBudgetModal(' + b.id + ')" title="수정"><i data-lucide="edit-3" class="icon-sm"></i></button>' +
-          '<button class="btn-icon-sm delete" onclick="ACCT.deleteBudget(' + b.id + ')" title="삭제"><i data-lucide="trash-2" class="icon-sm"></i></button>' +
-          '</td></tr>';
+      html += '<div style="display:flex;gap:12px;flex-wrap:wrap">';
+      cats.forEach(function (c) {
+        var isActive = c.id === _selectedBudgetCatId;
+        var catBudgets = budgets.filter(function (b) { return b.catId === c.id; });
+        var totalAmt = 0; catBudgets.forEach(function (b) { totalAmt += (b.amount || 0); });
+        html += '<div class="acct-budget-cat-card' + (isActive ? ' active' : '') + '" onclick="ACCT.selectBudgetCat(' + c.id + ')" style="' +
+          'padding:14px 18px;border:1.5px solid ' + (isActive ? 'var(--accent-blue)' : 'var(--border-color)') + ';border-radius:14px;cursor:pointer;' +
+          'background:' + (isActive ? 'rgba(79,110,247,.06)' : 'var(--bg-tertiary)') + ';min-width:240px;flex:1;max-width:360px;transition:all .2s;position:relative">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+          '<div style="font-size:15px;font-weight:800;color:' + (isActive ? 'var(--accent-blue)' : 'var(--text-primary)') + '">' + _esc(c.name) + '</div>' +
+          '<div style="display:flex;gap:4px">' +
+          '<button class="btn-icon-sm edit" onclick="event.stopPropagation();ACCT.openBudgetCatModal(' + c.id + ')" title="수정"><i data-lucide="edit-3" class="icon-sm"></i></button>' +
+          '<button class="btn-icon-sm delete" onclick="event.stopPropagation();ACCT.deleteBudgetCat(' + c.id + ')" title="삭제"><i data-lucide="trash-2" class="icon-sm"></i></button>' +
+          '</div></div>' +
+          '<div style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:5px;margin-bottom:4px">' +
+          '<i data-lucide="landmark" style="width:12px;height:12px"></i> ' + _esc(c.bank || '-') + '</div>' +
+          '<div style="font-size:11.5px;color:var(--text-muted);display:flex;align-items:center;gap:5px">' +
+          '<i data-lucide="calendar" style="width:12px;height:12px"></i> ' + (c.periodFrom || '') + ' ~ ' + (c.periodTo || '') + '</div>' +
+          '<div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-top:6px">예산항목 ' + catBudgets.length + '건 · 총 ' + _fmtW(totalAmt) + '</div>' +
+          '</div>';
       });
-
-      var totalPct = totalBudget > 0 ? Math.round(totalSpent / totalBudget * 100) : 0;
-      html += '<tr style="font-weight:800;background:var(--bg-tertiary)">' +
-        '<td>합계</td><td class="num">' + _fmtW(totalBudget) + '</td>' +
-        '<td class="num">' + _fmtW(totalSpent) + '</td>' +
-        '<td class="num">' + _fmtW(totalBudget - totalSpent) + '</td>' +
-        '<td><span style="font-weight:800">' + totalPct + '%</span></td><td></td></tr>';
-
-      html += '</tbody></table>';
+      html += '</div>';
     }
     html += '</div>';
 
-    // 예산 모달
+    // ── 선택된 예산구분의 예산 항목 테이블 ──
+    if (selCat) {
+      html += '<div class="acct-card">' +
+        '<div class="acct-card-head" style="display:flex;align-items:center;justify-content:space-between">' +
+        '<div style="display:flex;align-items:center;gap:8px"><i data-lucide="wallet" style="width:16px;height:16px"></i> ' + _esc(selCat.name) + ' 예산 현황</div>' +
+        '<button class="btn btn-blue" onclick="ACCT.openBudgetModal()" style="padding:6px 14px;font-size:12.5px"><i data-lucide="plus" style="width:13px;height:13px"></i> 예산 추가</button>' +
+        '</div>';
+
+      if (filtered.length === 0) {
+        html += '<div class="acct-empty"><i data-lucide="inbox" style="width:36px;height:36px;opacity:.3;display:block;margin:0 auto 10px"></i>등록된 예산이 없습니다<br><span style="font-size:12px;color:var(--text-muted)">"예산 추가" 버튼을 눌러 등록하세요</span></div>';
+      } else {
+        var totalBudget = 0, totalSpent = 0;
+        filtered.forEach(function (b) { totalBudget += (b.amount || 0); totalSpent += (b.spent || 0); });
+
+        html += '<table class="acct-table"><thead><tr>' +
+          '<th>예산목</th><th>계정과목</th><th style="text-align:right">예산액</th><th style="text-align:right">집행액</th>' +
+          '<th style="text-align:right">잔액</th><th>소진율</th><th style="text-align:center;width:80px">관리</th>' +
+          '</tr></thead><tbody>';
+
+        filtered.forEach(function (b) {
+          var spent = b.spent || 0;
+          var remain = b.amount - spent;
+          var pct = b.amount > 0 ? Math.round(spent / b.amount * 100) : 0;
+          var over = pct > 100;
+          var color = over ? '#ef4444' : pct > 80 ? '#f59e0b' : '#22c55e';
+          html += '<tr>' +
+            '<td><strong>' + _esc(b.itemName || '-') + '</strong></td>' +
+            '<td>' + _esc(_acctName(b.accountCode)) + ' <span style="font-size:11px;color:var(--text-muted)">' + b.accountCode + '</span></td>' +
+            '<td class="num">' + _fmtW(b.amount) + '</td>' +
+            '<td class="num">' + _fmtW(spent) + '</td>' +
+            '<td class="num" style="color:' + (remain < 0 ? '#ef4444' : 'var(--text-primary)') + '">' + _fmtW(remain) + '</td>' +
+            '<td><div class="acct-progress-track" style="width:100px;display:inline-block;vertical-align:middle;margin-right:8px"><div class="acct-progress-fill" style="width:' + Math.min(100, pct) + '%;background:' + color + '"></div></div>' +
+            '<span style="font-weight:700;color:' + color + ';font-size:12px">' + pct + '%</span>' + (over ? ' <span style="color:#ef4444;font-weight:800">⚠️ 초과</span>' : '') + '</td>' +
+            '<td style="text-align:center">' +
+            '<button class="btn-icon-sm edit" onclick="ACCT.openBudgetModal(' + b.id + ')" title="수정"><i data-lucide="edit-3" class="icon-sm"></i></button>' +
+            '<button class="btn-icon-sm delete" onclick="ACCT.deleteBudget(' + b.id + ')" title="삭제"><i data-lucide="trash-2" class="icon-sm"></i></button>' +
+            '</td></tr>';
+        });
+
+        var totalPct = totalBudget > 0 ? Math.round(totalSpent / totalBudget * 100) : 0;
+        html += '<tr style="font-weight:800;background:var(--bg-tertiary)">' +
+          '<td colspan="2">합계</td><td class="num">' + _fmtW(totalBudget) + '</td>' +
+          '<td class="num">' + _fmtW(totalSpent) + '</td>' +
+          '<td class="num">' + _fmtW(totalBudget - totalSpent) + '</td>' +
+          '<td><span style="font-weight:800">' + totalPct + '%</span></td><td></td></tr>';
+        html += '</tbody></table>';
+      }
+      html += '</div>';
+    }
+
+    // 모달들
     html += _budgetModalHTML();
+    html += _budgetCatModalHTML();
 
     el.innerHTML = html;
     _ri();
   }
 
+  function selectBudgetCat(catId) {
+    _selectedBudgetCatId = catId;
+    renderAcctBudget();
+  }
+
+  /* ── 예산구분 CRUD 모달 ── */
+  function _budgetCatModalHTML() {
+    return '<div class="modal-overlay" id="budgetCatModal" style="display:none" onclick="if(event.target===this)ACCT.closeBudgetCatModal()">' +
+      '<div class="modal-box" style="max-width:460px">' +
+      '<div class="modal-head"><div class="modal-title" id="bcmTitle">예산구분 추가</div><button class="modal-close" onclick="ACCT.closeBudgetCatModal()">✕</button></div>' +
+      '<div class="modal-body" style="display:flex;flex-direction:column;gap:14px">' +
+      '<div class="form-group"><label class="form-label">예산구분명 *</label>' +
+      '<input class="form-input" id="bcm_name" placeholder="예) 문화재청, 자체예산"></div>' +
+      '<div class="form-group"><label class="form-label">통장정보</label>' +
+      '<input class="form-input" id="bcm_bank" placeholder="예) 기업은행 10110-11001-12"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+      '<div class="form-group" style="margin:0"><label class="form-label">시작일</label>' +
+      '<input class="form-input" id="bcm_from" type="date" value="' + new Date().getFullYear() + '-01-01"></div>' +
+      '<div class="form-group" style="margin:0"><label class="form-label">종료일</label>' +
+      '<input class="form-input" id="bcm_to" type="date" value="' + new Date().getFullYear() + '-12-31"></div>' +
+      '</div>' +
+      '</div>' +
+      '<div class="modal-foot"><button class="btn" onclick="ACCT.closeBudgetCatModal()">취소</button>' +
+      '<button class="btn btn-blue" onclick="ACCT.saveBudgetCat()">저장</button></div>' +
+      '</div></div>';
+  }
+
+  var _budgetCatEditId = null;
+  function openBudgetCatModal(editId) {
+    _budgetCatEditId = editId || null;
+    var title = document.getElementById('bcmTitle');
+    var nameEl = document.getElementById('bcm_name');
+    var bankEl = document.getElementById('bcm_bank');
+    var fromEl = document.getElementById('bcm_from');
+    var toEl = document.getElementById('bcm_to');
+    if (editId) {
+      var c = _budgetCats().find(function (x) { return x.id === editId; });
+      if (c) {
+        if (title) title.textContent = '예산구분 수정';
+        if (nameEl) nameEl.value = c.name || '';
+        if (bankEl) bankEl.value = c.bank || '';
+        if (fromEl) fromEl.value = c.periodFrom || '';
+        if (toEl) toEl.value = c.periodTo || '';
+      }
+    } else {
+      if (title) title.textContent = '예산구분 추가';
+      if (nameEl) nameEl.value = '';
+      if (bankEl) bankEl.value = '';
+      if (fromEl) fromEl.value = new Date().getFullYear() + '-01-01';
+      if (toEl) toEl.value = new Date().getFullYear() + '-12-31';
+    }
+    var m = document.getElementById('budgetCatModal'); if (m) m.style.display = 'flex';
+  }
+  function closeBudgetCatModal() {
+    var m = document.getElementById('budgetCatModal'); if (m) m.style.display = 'none';
+    _budgetCatEditId = null;
+  }
+  function saveBudgetCat() {
+    var name = (document.getElementById('bcm_name') || {}).value || '';
+    var bank = (document.getElementById('bcm_bank') || {}).value || '';
+    var from = (document.getElementById('bcm_from') || {}).value || '';
+    var to = (document.getElementById('bcm_to') || {}).value || '';
+    if (!name.trim()) { _toast('error', '예산구분명을 입력하세요'); return; }
+    var cats = _budgetCats();
+    if (_budgetCatEditId) {
+      cats = cats.map(function (c) {
+        if (c.id !== _budgetCatEditId) return c;
+        return Object.assign({}, c, { name: name.trim(), bank: bank, periodFrom: from, periodTo: to });
+      });
+      _toast('info', '예산구분이 수정되었습니다');
+    } else {
+      cats.push({ id: _uid(), name: name.trim(), bank: bank, periodFrom: from, periodTo: to });
+      _toast('success', '"' + name + '" 예산구분이 추가되었습니다');
+    }
+    _ls('acct_budget_cats', cats);
+    closeBudgetCatModal();
+    _selectedBudgetCatId = cats[cats.length - 1].id;
+    renderAcctBudget();
+  }
+  function deleteBudgetCat(id) {
+    var cats = _budgetCats().filter(function (c) { return c.id !== id; });
+    _ls('acct_budget_cats', cats);
+    // 해당 구분의 예산도 삭제
+    var budgets = _budgets().filter(function (b) { return b.catId !== id; });
+    _ls('acct_budgets', budgets);
+    if (_selectedBudgetCatId === id) _selectedBudgetCatId = cats.length > 0 ? cats[0].id : null;
+    _toast('info', '예산구분이 삭제되었습니다');
+    renderAcctBudget();
+  }
+
+  /* ── 예산 항목 CRUD 모달 ── */
   function _budgetModalHTML() {
     var accounts = _accounts().filter(function (a) { return a.type === 'expense'; });
     return '<div class="modal-overlay" id="budgetModal" style="display:none" onclick="if(event.target===this)ACCT.closeBudgetModal()">' +
-      '<div class="modal-box" style="max-width:440px">' +
+      '<div class="modal-box" style="max-width:460px">' +
       '<div class="modal-head"><div class="modal-title" id="budgetModalTitle">예산 추가</div><button class="modal-close" onclick="ACCT.closeBudgetModal()">✕</button></div>' +
       '<div class="modal-body" style="display:flex;flex-direction:column;gap:14px">' +
+      '<div class="form-group"><label class="form-label">예산목 *</label>' +
+      '<input class="form-input" id="bm_itemName" placeholder="예) 인건비, 소모품비, 외주용역비"></div>' +
       '<div class="form-group"><label class="form-label">계정과목 *</label>' +
       '<select class="form-input" id="bm_account">' +
       '<option value="">-- 선택 --</option>' +
@@ -457,6 +603,7 @@
   function openBudgetModal(editId) {
     _budgetEditId = editId || null;
     var title = document.getElementById('budgetModalTitle');
+    var itemNameEl = document.getElementById('bm_itemName');
     var acctEl = document.getElementById('bm_account');
     var amtEl = document.getElementById('bm_amount');
     var memoEl = document.getElementById('bm_memo');
@@ -464,12 +611,14 @@
       var b = _budgets().find(function (x) { return x.id === editId; });
       if (b) {
         if (title) title.textContent = '예산 수정';
+        if (itemNameEl) itemNameEl.value = b.itemName || '';
         if (acctEl) acctEl.value = b.accountCode;
         if (amtEl) amtEl.value = b.amount;
         if (memoEl) memoEl.value = b.memo || '';
       }
     } else {
       if (title) title.textContent = '예산 추가';
+      if (itemNameEl) itemNameEl.value = '';
       if (acctEl) acctEl.value = '';
       if (amtEl) amtEl.value = '';
       if (memoEl) memoEl.value = '';
@@ -485,9 +634,11 @@
   }
 
   function saveBudget() {
+    var itemName = (document.getElementById('bm_itemName') || {}).value || '';
     var code = (document.getElementById('bm_account') || {}).value;
     var amt = parseInt((document.getElementById('bm_amount') || {}).value) || 0;
     var memo = (document.getElementById('bm_memo') || {}).value || '';
+    if (!itemName.trim()) { _toast('error', '예산목을 입력하세요'); return; }
     if (!code) { _toast('error', '계정과목을 선택하세요'); return; }
     if (amt <= 0) { _toast('error', '예산액을 입력하세요'); return; }
 
@@ -495,12 +646,12 @@
     if (_budgetEditId) {
       budgets = budgets.map(function (b) {
         if (b.id !== _budgetEditId) return b;
-        return Object.assign({}, b, { accountCode: code, amount: amt, memo: memo });
+        return Object.assign({}, b, { itemName: itemName.trim(), accountCode: code, amount: amt, memo: memo });
       });
       _toast('info', '예산이 수정되었습니다');
     } else {
-      budgets.push({ id: _uid(), year: new Date().getFullYear(), accountCode: code, amount: amt, spent: 0, memo: memo });
-      _toast('success', _acctName(code) + ' 예산이 추가되었습니다');
+      budgets.push({ id: _uid(), catId: _selectedBudgetCatId, year: new Date().getFullYear(), itemName: itemName.trim(), accountCode: code, amount: amt, spent: 0, memo: memo });
+      _toast('success', itemName + ' 예산이 추가되었습니다');
     }
     _ls('acct_budgets', budgets);
     closeBudgetModal();
@@ -1226,6 +1377,12 @@
     showPage: showAcctPage,
     // 대시보드
     renderOverview: renderAcctOverview,
+    // 예산구분
+    selectBudgetCat: selectBudgetCat,
+    openBudgetCatModal: openBudgetCatModal,
+    closeBudgetCatModal: closeBudgetCatModal,
+    saveBudgetCat: saveBudgetCat,
+    deleteBudgetCat: deleteBudgetCat,
     // 예산
     openBudgetModal: openBudgetModal,
     closeBudgetModal: closeBudgetModal,
