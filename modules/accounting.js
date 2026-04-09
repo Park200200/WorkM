@@ -1,640 +1,1259 @@
-/**
- * modules/accounting.js
- * 회계관리 모듈 – 예산 · 품의 · 전표 · 입출금 통합 경리 시스템
- * localStorage 키: acct_budgets, acct_approvals, acct_slips
- */
+/* ═══════════════════════════════════════════════════════════
+   📒 WorkM 회계관리 모듈 (modules/accounting.js)
+   예산 → 품의 → 전표 → 입출금 → 보고서 자동 연결 경리 시스템
+   ═══════════════════════════════════════════════════════════ */
 
-/* ══════════════════════════════════════════
-   모드 진입 / 이탈
-══════════════════════════════════════════ */
+(function () {
+  'use strict';
 
-function enterAccountingMode() {
-  var mainNav = document.getElementById('mainNav');
-  var acctNav = document.getElementById('acctNav');
-  var homepageNav = document.getElementById('homepageNav');
-  if (mainNav) mainNav.style.display = 'none';
-  if (homepageNav) homepageNav.style.display = 'none';
-  if (acctNav) acctNav.style.display = 'block';
-  // 첫 서브페이지(기본현황) 자동 표시
-  var firstItem = document.querySelector('#acctNav [data-acct-page="acct-overview"]');
-  showAcctPage('acct-overview', firstItem);
-  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 60);
-}
-
-function exitAccountingMode() {
-  var mainNav = document.getElementById('mainNav');
-  var acctNav = document.getElementById('acctNav');
-  if (acctNav) acctNav.style.display = 'none';
-  if (mainNav) mainNav.style.display = 'block';
-  var headerSearch = document.getElementById('headerSearch');
-  var acctBar = document.getElementById('acctModeBar');
-  if (headerSearch) headerSearch.style.display = '';
-  if (acctBar) acctBar.style.display = 'none';
-  var dashEl = document.querySelector('[data-page="dashboard"]');
-  if (typeof showPage === 'function') showPage('dashboard', dashEl);
-  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 60);
-}
-
-/* ── 서브페이지 전환 ── */
-function showAcctPage(pageId, navEl) {
-  var subPages = ['acct-overview','acct-budget','acct-approval','acct-expense','acct-income','acct-payment'];
-  subPages.forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) { el.style.display = 'none'; el.classList.remove('active'); }
-  });
-  var target = document.getElementById(pageId);
-  if (target) { target.style.display = 'block'; target.classList.add('active'); }
-  document.querySelectorAll('#acctNav .nav-item').forEach(function(n) { n.classList.remove('active'); });
-  if (navEl) navEl.classList.add('active');
-
-  // 페이지별 렌더
-  if (pageId === 'acct-overview') _acctRenderOverview();
-  if (pageId === 'acct-budget') _acctRenderBudget();
-  if (pageId === 'acct-approval') _acctRenderApproval();
-  if (pageId === 'acct-expense') _acctRenderSlips('expense');
-  if (pageId === 'acct-income') _acctRenderSlips('income');
-  if (pageId === 'acct-payment') _acctRenderSlips('expense');
-  if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 80);
-}
-
-/* ══════════════════════════════════════════
-   데이터 유틸
-══════════════════════════════════════════ */
-function _acctLoad(key, fallback) {
-  try { var r = localStorage.getItem(key); return r ? JSON.parse(r) : (fallback || []); }
-  catch(e) { return fallback || []; }
-}
-function _acctSave(key, data) {
-  try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
-}
-function _acctNextId(arr) {
-  var max = 0; arr.forEach(function(a) { if (a.id > max) max = a.id; }); return max + 1;
-}
-function _acctFmt(n) {
-  if (n === undefined || n === null) return '0';
-  return Number(n).toLocaleString('ko-KR');
-}
-function _acctToday() {
-  var d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-}
-function _acctEsc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-
-/* ══════════════════════════════════════════
-   ① 기본현황 대시보드
-══════════════════════════════════════════ */
-function _acctRenderOverview() {
-  var el = document.getElementById('acct-overview');
-  if (!el) return;
-  var budgets = _acctLoad('acct_budgets');
-  var slips = _acctLoad('acct_slips');
-  var approvals = _acctLoad('acct_approvals');
-
-  var totalBudget = 0, totalUsed = 0;
-  budgets.forEach(function(b) { totalBudget += (Number(b.amount)||0); totalUsed += (Number(b.used)||0); });
-  var totalIncome = 0, totalExpense = 0;
-  slips.forEach(function(s) {
-    if (s.type === 'income') totalIncome += (Number(s.amount)||0);
-    else totalExpense += (Number(s.amount)||0);
-  });
-  var balance = totalBudget - totalExpense + totalIncome;
-  var pendingCount = approvals.filter(function(a) { return a.status === 'pending'; }).length;
-
-  var cardStyle = 'flex:1;min-width:160px;background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:14px;padding:18px 20px';
-  var labelStyle = 'font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px';
-  var valStyle = 'font-size:22px;font-weight:900;letter-spacing:-.5px';
-
-  var html = '';
-  html += '<div class="page-header"><div>';
-  html += '<div class="page-title">기본현황</div>';
-  html += '<div class="page-subtitle">전체 수입·지출 현황 요약</div>';
-  html += '</div></div>';
-
-  // 요약 카드 4개
-  html += '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px">';
-  html += '<div style="' + cardStyle + '">';
-  html += '<div style="' + labelStyle + '"><i data-lucide="wallet" style="width:14px;height:14px;color:#4f6ef7"></i> 총 예산</div>';
-  html += '<div style="' + valStyle + 'color:#4f6ef7">₩' + _acctFmt(totalBudget) + '</div>';
-  html += '</div>';
-  html += '<div style="' + cardStyle + '">';
-  html += '<div style="' + labelStyle + '"><i data-lucide="trending-down" style="width:14px;height:14px;color:#ef4444"></i> 총 지출</div>';
-  html += '<div style="' + valStyle + 'color:#ef4444">₩' + _acctFmt(totalExpense) + '</div>';
-  html += '</div>';
-  html += '<div style="' + cardStyle + '">';
-  html += '<div style="' + labelStyle + '"><i data-lucide="trending-up" style="width:14px;height:14px;color:#22c55e"></i> 총 입금</div>';
-  html += '<div style="' + valStyle + 'color:#22c55e">₩' + _acctFmt(totalIncome) + '</div>';
-  html += '</div>';
-  html += '<div style="' + cardStyle + '">';
-  html += '<div style="' + labelStyle + '"><i data-lucide="banknote" style="width:14px;height:14px;color:#f59e0b"></i> 잔액</div>';
-  html += '<div style="' + valStyle + 'color:#f59e0b">₩' + _acctFmt(balance) + '</div>';
-  html += '</div>';
-  html += '</div>';
-
-  // 2컬럼: 예산 사용률 + 최근 전표
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">';
-
-  // 예산 사용률
-  html += '<div style="background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:14px;padding:18px">';
-  html += '<div style="font-size:13px;font-weight:800;color:var(--text-primary);margin-bottom:14px;display:flex;align-items:center;gap:6px"><i data-lucide="bar-chart-3" style="width:15px;height:15px;color:#4f6ef7"></i> 예산 사용률</div>';
-  if (!budgets.length) {
-    html += '<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px"><i data-lucide="inbox" style="width:28px;height:28px;display:block;margin:0 auto 8px;opacity:.3"></i>등록된 예산이 없습니다</div>';
-  } else {
-    budgets.forEach(function(b) {
-      var pct = b.amount > 0 ? Math.min(100, Math.round((b.used / b.amount) * 100)) : 0;
-      var barColor = pct > 90 ? '#ef4444' : pct > 70 ? '#f59e0b' : '#4f6ef7';
-      html += '<div style="margin-bottom:12px">';
-      html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:700;color:var(--text-secondary)">' + _acctEsc(b.name) + '</span><span style="font-size:11px;font-weight:800;color:' + barColor + '">' + pct + '%</span></div>';
-      html += '<div style="height:6px;background:var(--border-color);border-radius:100px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:100px;transition:width .4s"></div></div>';
-      html += '<div style="font-size:10px;color:var(--text-muted);margin-top:2px">₩' + _acctFmt(b.used) + ' / ₩' + _acctFmt(b.amount) + '</div>';
-      html += '</div>';
-    });
+  /* ══════════════════════════
+     유틸리티
+  ══════════════════════════ */
+  function _ls(key, val) {
+    if (val === undefined) {
+      try { return JSON.parse(localStorage.getItem(key)) || null; } catch (e) { return null; }
+    }
+    localStorage.setItem(key, JSON.stringify(val));
   }
-  html += '</div>';
-
-  // 최근 전표
-  html += '<div style="background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:14px;padding:18px">';
-  html += '<div style="font-size:13px;font-weight:800;color:var(--text-primary);margin-bottom:14px;display:flex;align-items:center;gap:6px"><i data-lucide="receipt" style="width:15px;height:15px;color:#8b5cf6"></i> 최근 전표</div>';
-  var recentSlips = slips.slice().sort(function(a,b) { return (b.id||0) - (a.id||0); }).slice(0, 8);
-  if (!recentSlips.length) {
-    html += '<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px"><i data-lucide="inbox" style="width:28px;height:28px;display:block;margin:0 auto 8px;opacity:.3"></i>등록된 전표가 없습니다</div>';
-  } else {
-    recentSlips.forEach(function(s) {
-      var isIncome = s.type === 'income';
-      var icon = isIncome ? 'arrow-down-circle' : 'arrow-up-circle';
-      var color = isIncome ? '#22c55e' : '#ef4444';
-      var sign = isIncome ? '+' : '-';
-      html += '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border-color)">';
-      html += '<i data-lucide="' + icon + '" style="width:16px;height:16px;color:' + color + ';flex-shrink:0"></i>';
-      html += '<span style="flex:1;font-size:12px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _acctEsc(s.memo || s.counterpart || '-') + '</span>';
-      html += '<span style="font-size:12px;font-weight:800;color:' + color + '">' + sign + '₩' + _acctFmt(s.amount) + '</span>';
-      html += '<span style="font-size:10px;color:var(--text-muted);flex-shrink:0">' + (s.date || '') + '</span>';
-      html += '</div>';
-    });
+  function _fmt(n) {
+    if (n === null || n === undefined) return '0';
+    return Number(n).toLocaleString('ko-KR');
   }
-  html += '</div>';
-  html += '</div>';
+  function _fmtW(n) { return _fmt(n) + '원'; }
+  function _now() { return new Date().toISOString(); }
+  function _today() { return new Date().toISOString().slice(0, 10); }
+  function _uid() { return Date.now() + Math.floor(Math.random() * 1000); }
+  function _esc(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+  function _ri() { if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 30); }
+  function _toast(type, msg) { if (typeof showToast === 'function') showToast(type, msg); }
+  function _month(dateStr) { return dateStr ? dateStr.slice(0, 7) : ''; }
 
-  // 대기중 품의
-  if (pendingCount > 0) {
-    var pending = approvals.filter(function(a) { return a.status === 'pending'; });
-    html += '<div style="background:var(--bg-tertiary);border:1.5px solid rgba(245,158,11,.3);border-radius:14px;padding:18px">';
-    html += '<div style="font-size:13px;font-weight:800;color:var(--text-primary);margin-bottom:12px;display:flex;align-items:center;gap:6px"><i data-lucide="clock" style="width:15px;height:15px;color:#f59e0b"></i> 승인 대기 품의 <span style="font-size:11px;background:#f59e0b22;color:#f59e0b;border-radius:10px;padding:1px 8px;font-weight:700">' + pendingCount + '건</span></div>';
-    pending.forEach(function(a) {
-      html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-secondary);border-radius:10px;margin-bottom:6px">';
-      html += '<span style="flex:1;font-size:12.5px;font-weight:700;color:var(--text-primary)">' + _acctEsc(a.title) + '</span>';
-      html += '<span style="font-size:12px;font-weight:800;color:#ef4444">₩' + _acctFmt(a.amount) + '</span>';
-      html += '<button onclick="_acctApprove(' + a.id + ')" style="padding:4px 12px;border-radius:8px;background:#22c55e;color:#fff;border:none;font-size:11px;font-weight:700;cursor:pointer">승인</button>';
-      html += '<button onclick="_acctReject(' + a.id + ')" style="padding:4px 12px;border-radius:8px;background:#ef4444;color:#fff;border:none;font-size:11px;font-weight:700;cursor:pointer">반려</button>';
-      html += '</div>';
-    });
-    html += '</div>';
-  }
-
-  el.innerHTML = html;
-  if (typeof refreshIcons === 'function') refreshIcons();
-}
-
-/* ══════════════════════════════════════════
-   ② 예산설정
-══════════════════════════════════════════ */
-function _acctRenderBudget() {
-  var el = document.getElementById('acct-budget');
-  if (!el) return;
-  var budgets = _acctLoad('acct_budgets');
-
-  var html = '';
-  html += '<div class="page-header"><div>';
-  html += '<div class="page-title">예산설정</div>';
-  html += '<div class="page-subtitle">부서별·항목별 예산 배정 및 관리</div>';
-  html += '</div><div>';
-  html += '<button onclick="_acctOpenBudgetModal()" class="btn btn-blue" style="display:inline-flex;align-items:center;gap:5px"><i data-lucide="plus" style="width:14px;height:14px"></i> 예산 추가</button>';
-  html += '</div></div>';
-
-  html += '<div style="background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:14px;overflow:hidden">';
-  html += '<table style="width:100%;border-collapse:collapse;font-size:12.5px">';
-  html += '<thead><tr style="background:var(--bg-secondary);border-bottom:1.5px solid var(--border-color)">';
-  html += '<th style="padding:12px 16px;text-align:left;font-weight:800;color:var(--text-muted);font-size:11px;letter-spacing:.5px">분류</th>';
-  html += '<th style="padding:12px 16px;text-align:left;font-weight:800;color:var(--text-muted);font-size:11px">예산명</th>';
-  html += '<th style="padding:12px 16px;text-align:right;font-weight:800;color:var(--text-muted);font-size:11px">배정액</th>';
-  html += '<th style="padding:12px 16px;text-align:right;font-weight:800;color:var(--text-muted);font-size:11px">사용액</th>';
-  html += '<th style="padding:12px 16px;text-align:right;font-weight:800;color:var(--text-muted);font-size:11px">잔액</th>';
-  html += '<th style="padding:12px 16px;text-align:center;font-weight:800;color:var(--text-muted);font-size:11px;width:140px">사용률</th>';
-  html += '<th style="padding:12px 16px;text-align:center;font-weight:800;color:var(--text-muted);font-size:11px;width:80px">관리</th>';
-  html += '</tr></thead><tbody>';
-
-  if (!budgets.length) {
-    html += '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">';
-    html += '<i data-lucide="wallet" style="width:32px;height:32px;display:block;margin:0 auto 10px;opacity:.25"></i>';
-    html += '등록된 예산이 없습니다</td></tr>';
-  } else {
-    budgets.forEach(function(b) {
-      var remain = (b.amount || 0) - (b.used || 0);
-      var pct = b.amount > 0 ? Math.min(100, Math.round((b.used / b.amount) * 100)) : 0;
-      var barColor = pct > 90 ? '#ef4444' : pct > 70 ? '#f59e0b' : '#4f6ef7';
-      html += '<tr style="border-bottom:1px solid var(--border-color)">';
-      html += '<td style="padding:12px 16px"><span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:rgba(79,110,247,.1);color:#4f6ef7;font-size:11px;font-weight:700">' + _acctEsc(b.category || '기타') + '</span></td>';
-      html += '<td style="padding:12px 16px;font-weight:700;color:var(--text-primary)">' + _acctEsc(b.name) + '</td>';
-      html += '<td style="padding:12px 16px;text-align:right;font-weight:700;color:var(--text-primary)">₩' + _acctFmt(b.amount) + '</td>';
-      html += '<td style="padding:12px 16px;text-align:right;font-weight:700;color:#ef4444">₩' + _acctFmt(b.used) + '</td>';
-      html += '<td style="padding:12px 16px;text-align:right;font-weight:700;color:' + (remain >= 0 ? '#22c55e' : '#ef4444') + '">₩' + _acctFmt(remain) + '</td>';
-      html += '<td style="padding:12px 16px;text-align:center"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:5px;background:var(--border-color);border-radius:100px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:100px"></div></div><span style="font-size:11px;font-weight:800;color:' + barColor + ';min-width:32px">' + pct + '%</span></div></td>';
-      html += '<td style="padding:12px 16px;text-align:center"><button onclick="_acctDeleteBudget(' + b.id + ')" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:14px" title="삭제">✕</button></td>';
-      html += '</tr>';
-    });
-  }
-
-  html += '</tbody></table></div>';
-  el.innerHTML = html;
-  if (typeof refreshIcons === 'function') refreshIcons();
-}
-
-/* ══════════════════════════════════════════
-   ③ 품의하기
-══════════════════════════════════════════ */
-var _acctApprovalFilter = 'all';
-
-function _acctRenderApproval() {
-  var el = document.getElementById('acct-approval');
-  if (!el) return;
-  var approvals = _acctLoad('acct_approvals');
-  var budgets = _acctLoad('acct_budgets');
-  var filtered = _acctApprovalFilter === 'all' ? approvals : approvals.filter(function(a) { return a.status === _acctApprovalFilter; });
-
-  var counts = { all: approvals.length, pending: 0, approved: 0, rejected: 0 };
-  approvals.forEach(function(a) { if (counts[a.status] !== undefined) counts[a.status]++; });
-
-  var html = '';
-  html += '<div class="page-header"><div>';
-  html += '<div class="page-title">품의하기</div>';
-  html += '<div class="page-subtitle">지출·입금 품의 결재 신청 및 관리</div>';
-  html += '</div><div>';
-  html += '<button onclick="_acctOpenApprovalModal()" class="btn btn-blue" style="display:inline-flex;align-items:center;gap:5px"><i data-lucide="plus" style="width:14px;height:14px"></i> 품의 작성</button>';
-  html += '</div></div>';
-
-  // 필터 탭
-  var tabs = [
-    { key:'all', label:'전체', count:counts.all },
-    { key:'pending', label:'대기', count:counts.pending },
-    { key:'approved', label:'승인', count:counts.approved },
-    { key:'rejected', label:'반려', count:counts.rejected }
+  /* ══════════════════════════
+     기본 계정과목
+  ══════════════════════════ */
+  var DEFAULT_ACCOUNTS = [
+    // 자산
+    { code: '1010', name: '현금', type: 'asset', group: '유동자산' },
+    { code: '1020', name: '보통예금', type: 'asset', group: '유동자산' },
+    { code: '1030', name: '미수금', type: 'asset', group: '유동자산' },
+    { code: '1040', name: '선급금', type: 'asset', group: '유동자산' },
+    { code: '1050', name: '재고자산', type: 'asset', group: '유동자산' },
+    { code: '1510', name: '건물', type: 'asset', group: '비유동자산' },
+    { code: '1520', name: '차량운반구', type: 'asset', group: '비유동자산' },
+    { code: '1530', name: '비품', type: 'asset', group: '비유동자산' },
+    // 부채
+    { code: '2010', name: '미지급금', type: 'liability', group: '유동부채' },
+    { code: '2020', name: '선수금', type: 'liability', group: '유동부채' },
+    { code: '2030', name: '예수금', type: 'liability', group: '유동부채' },
+    { code: '2510', name: '장기차입금', type: 'liability', group: '비유동부채' },
+    // 자본
+    { code: '3010', name: '자본금', type: 'equity', group: '자본' },
+    { code: '3020', name: '이익잉여금', type: 'equity', group: '자본' },
+    // 수익
+    { code: '4010', name: '매출', type: 'revenue', group: '매출' },
+    { code: '4020', name: '이자수익', type: 'revenue', group: '영업외수익' },
+    { code: '4030', name: '기타수익', type: 'revenue', group: '영업외수익' },
+    // 비용
+    { code: '5010', name: '급여', type: 'expense', group: '인건비' },
+    { code: '5020', name: '복리후생비', type: 'expense', group: '인건비' },
+    { code: '5030', name: '임차료', type: 'expense', group: '임차료' },
+    { code: '5040', name: '통신비', type: 'expense', group: '경비' },
+    { code: '5050', name: '수도광열비', type: 'expense', group: '경비' },
+    { code: '5060', name: '소모품비', type: 'expense', group: '경비' },
+    { code: '5070', name: '운반비', type: 'expense', group: '경비' },
+    { code: '5080', name: '접대비', type: 'expense', group: '경비' },
+    { code: '5090', name: '광고선전비', type: 'expense', group: '경비' },
+    { code: '5100', name: '여비교통비', type: 'expense', group: '경비' },
+    { code: '5110', name: '세금과공과', type: 'expense', group: '경비' },
+    { code: '5120', name: '보험료', type: 'expense', group: '경비' },
+    { code: '5130', name: '감가상각비', type: 'expense', group: '경비' },
+    { code: '5140', name: '수선비', type: 'expense', group: '경비' },
+    { code: '5150', name: '도서인쇄비', type: 'expense', group: '경비' },
+    { code: '5160', name: '교육훈련비', type: 'expense', group: '경비' },
+    { code: '5170', name: '차량유지비', type: 'expense', group: '경비' },
+    { code: '5180', name: '외주용역비', type: 'expense', group: '경비' },
+    { code: '5190', name: '잡비', type: 'expense', group: '경비' }
   ];
-  html += '<div style="display:flex;gap:6px;margin-bottom:16px">';
-  tabs.forEach(function(t) {
-    var isActive = _acctApprovalFilter === t.key;
-    html += '<button onclick="_acctApprovalFilter=\'' + t.key + '\';_acctRenderApproval()" style="padding:6px 14px;border-radius:20px;border:1.5px solid ' + (isActive ? 'var(--accent-blue)' : 'var(--border-color)') + ';background:' + (isActive ? 'var(--accent-blue)' : 'transparent') + ';color:' + (isActive ? '#fff' : 'var(--text-secondary)') + ';font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px">';
-    html += t.label + ' <span style="font-size:10px;opacity:.8">' + t.count + '</span></button>';
-  });
-  html += '</div>';
 
-  // 리스트
-  html += '<div style="background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:14px;overflow:hidden">';
-  if (!filtered.length) {
-    html += '<div style="text-align:center;padding:50px;color:var(--text-muted);font-size:13px">';
-    html += '<i data-lucide="file-check" style="width:32px;height:32px;display:block;margin:0 auto 10px;opacity:.25"></i>';
-    html += '해당하는 품의가 없습니다</div>';
-  } else {
-    filtered.slice().reverse().forEach(function(a) {
-      var statusMap = { pending: { label:'대기중', bg:'#f59e0b22', color:'#f59e0b', border:'#f59e0b' },
-                        approved: { label:'승인', bg:'#22c55e22', color:'#22c55e', border:'#22c55e' },
-                        rejected: { label:'반려', bg:'#ef444422', color:'#ef4444', border:'#ef4444' } };
-      var st = statusMap[a.status] || statusMap.pending;
-      var budgetName = '-';
-      if (a.budgetId) { var bm = budgets.find(function(b){ return b.id === a.budgetId; }); if (bm) budgetName = bm.name; }
-      var typeLabel = a.type === 'income' ? '입금' : '지출';
-      var typeColor = a.type === 'income' ? '#22c55e' : '#ef4444';
+  var DEFAULT_AUTO_MAP = [
+    { keyword: '급여', accountCode: '5010' },
+    { keyword: '월급', accountCode: '5010' },
+    { keyword: '상여', accountCode: '5010' },
+    { keyword: '식대', accountCode: '5020' },
+    { keyword: '복리', accountCode: '5020' },
+    { keyword: '임대', accountCode: '5030' },
+    { keyword: '월세', accountCode: '5030' },
+    { keyword: '전화', accountCode: '5040' },
+    { keyword: '인터넷', accountCode: '5040' },
+    { keyword: '전기', accountCode: '5050' },
+    { keyword: '수도', accountCode: '5050' },
+    { keyword: '가스', accountCode: '5050' },
+    { keyword: '사무용품', accountCode: '5060' },
+    { keyword: '소모품', accountCode: '5060' },
+    { keyword: '택배', accountCode: '5070' },
+    { keyword: '배송', accountCode: '5070' },
+    { keyword: '접대', accountCode: '5080' },
+    { keyword: '회식', accountCode: '5080' },
+    { keyword: '광고', accountCode: '5090' },
+    { keyword: '출장', accountCode: '5100' },
+    { keyword: '교통', accountCode: '5100' },
+    { keyword: '주차', accountCode: '5100' },
+    { keyword: '세금', accountCode: '5110' },
+    { keyword: '보험', accountCode: '5120' },
+    { keyword: '수리', accountCode: '5140' },
+    { keyword: '도서', accountCode: '5150' },
+    { keyword: '교육', accountCode: '5160' },
+    { keyword: '주유', accountCode: '5170' },
+    { keyword: '외주', accountCode: '5180' },
+    { keyword: '매출', accountCode: '4010' },
+    { keyword: '판매', accountCode: '4010' },
+    { keyword: '용역', accountCode: '4010' },
+    { keyword: '이자', accountCode: '4020' }
+  ];
 
-      html += '<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border-color)">';
-      // 상태 뱃지
-      html += '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:' + st.bg + ';color:' + st.color + ';border:1px solid ' + st.border + ';flex-shrink:0">' + st.label + '</span>';
-      // 구분
-      html += '<span style="font-size:11px;font-weight:700;color:' + typeColor + ';flex-shrink:0;min-width:32px">' + typeLabel + '</span>';
-      // 제목
-      html += '<span style="flex:1;font-size:13px;font-weight:700;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _acctEsc(a.title) + '</span>';
-      // 예산항목
-      html += '<span style="font-size:11px;color:var(--text-muted);flex-shrink:0">' + _acctEsc(budgetName) + '</span>';
-      // 금액
-      html += '<span style="font-size:13px;font-weight:800;color:' + typeColor + ';flex-shrink:0;min-width:100px;text-align:right">₩' + _acctFmt(a.amount) + '</span>';
-      // 일자
-      html += '<span style="font-size:11px;color:var(--text-muted);flex-shrink:0">' + (a.date || '-') + '</span>';
-      // 액션
-      if (a.status === 'pending') {
-        html += '<button onclick="_acctApprove(' + a.id + ')" style="padding:4px 10px;border-radius:8px;background:#22c55e;color:#fff;border:none;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">승인</button>';
-        html += '<button onclick="_acctReject(' + a.id + ')" style="padding:4px 10px;border-radius:8px;background:transparent;border:1.5px solid #ef4444;color:#ef4444;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">반려</button>';
-      }
-      html += '<button onclick="_acctDeleteApproval(' + a.id + ')" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:14px;flex-shrink:0" title="삭제">✕</button>';
-      html += '</div>';
-    });
+  function _initDefaults() {
+    if (!_ls('acct_accounts')) _ls('acct_accounts', DEFAULT_ACCOUNTS);
+    if (!_ls('acct_auto_map')) _ls('acct_auto_map', DEFAULT_AUTO_MAP);
+    if (!_ls('acct_budgets')) _ls('acct_budgets', []);
+    if (!_ls('acct_approvals')) _ls('acct_approvals', []);
+    if (!_ls('acct_vouchers')) _ls('acct_vouchers', []);
+    if (!_ls('acct_cashflows')) _ls('acct_cashflows', []);
   }
-  html += '</div>';
 
-  el.innerHTML = html;
-  if (typeof refreshIcons === 'function') refreshIcons();
-}
+  function _accounts() { return _ls('acct_accounts') || []; }
+  function _budgets() { return _ls('acct_budgets') || []; }
+  function _approvals() { return _ls('acct_approvals') || []; }
+  function _vouchers() { return _ls('acct_vouchers') || []; }
+  function _cashflows() { return _ls('acct_cashflows') || []; }
+  function _autoMap() { return _ls('acct_auto_map') || []; }
 
-/* ══════════════════════════════════════════
-   ④⑤⑥ 전표 (입금/출금/지출)
-══════════════════════════════════════════ */
-function _acctRenderSlips(filterType) {
-  // acct-expense, acct-income, acct-payment 모두 이 함수로 렌더
-  var pageMap = { income: 'acct-income', expense: 'acct-expense' };
-  var el = document.getElementById(pageMap[filterType]);
-  // acct-payment도 expense 타입
-  if (!el) el = document.getElementById('acct-payment');
-  if (!el) return;
-
-  var slips = _acctLoad('acct_slips');
-  var filtered = slips.filter(function(s) { return s.type === filterType; });
-  var titleMap = { income: { title:'입금전표', sub:'수입 입금 전표 등록 및 조회', icon:'arrow-down-circle', color:'#22c55e' },
-                   expense: { title:'출금전표', sub:'지출 출금 전표 등록 및 조회', icon:'arrow-up-circle', color:'#ef4444' } };
-  var info = titleMap[filterType] || titleMap.expense;
-
-  var html = '';
-  html += '<div class="page-header"><div>';
-  html += '<div class="page-title">' + info.title + '</div>';
-  html += '<div class="page-subtitle">' + info.sub + '</div>';
-  html += '</div><div>';
-  html += '<button onclick="_acctOpenSlipModal(\'' + filterType + '\')" class="btn btn-blue" style="display:inline-flex;align-items:center;gap:5px"><i data-lucide="plus" style="width:14px;height:14px"></i> 전표 등록</button>';
-  html += '</div></div>';
-
-  // 합계
-  var total = 0; filtered.forEach(function(s) { total += (Number(s.amount)||0); });
-  html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px 18px;background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:12px">';
-  html += '<i data-lucide="' + info.icon + '" style="width:20px;height:20px;color:' + info.color + '"></i>';
-  html += '<span style="font-size:13px;font-weight:700;color:var(--text-secondary)">총 ' + filtered.length + '건</span>';
-  html += '<span style="margin-left:auto;font-size:18px;font-weight:900;color:' + info.color + '">₩' + _acctFmt(total) + '</span>';
-  html += '</div>';
-
-  // 테이블
-  html += '<div style="background:var(--bg-tertiary);border:1.5px solid var(--border-color);border-radius:14px;overflow:hidden">';
-  html += '<table style="width:100%;border-collapse:collapse;font-size:12.5px">';
-  html += '<thead><tr style="background:var(--bg-secondary);border-bottom:1.5px solid var(--border-color)">';
-  html += '<th style="padding:12px 16px;text-align:center;font-weight:800;color:var(--text-muted);font-size:11px;width:70px">전표번호</th>';
-  html += '<th style="padding:12px 16px;text-align:center;font-weight:800;color:var(--text-muted);font-size:11px;width:100px">일자</th>';
-  html += '<th style="padding:12px 16px;text-align:left;font-weight:800;color:var(--text-muted);font-size:11px">계정과목</th>';
-  html += '<th style="padding:12px 16px;text-align:left;font-weight:800;color:var(--text-muted);font-size:11px">거래처</th>';
-  html += '<th style="padding:12px 16px;text-align:right;font-weight:800;color:var(--text-muted);font-size:11px;width:120px">금액</th>';
-  html += '<th style="padding:12px 16px;text-align:left;font-weight:800;color:var(--text-muted);font-size:11px">적요</th>';
-  html += '<th style="padding:12px 16px;text-align:center;font-weight:800;color:var(--text-muted);font-size:11px;width:60px">출처</th>';
-  html += '<th style="padding:12px 16px;text-align:center;font-weight:800;color:var(--text-muted);font-size:11px;width:50px">관리</th>';
-  html += '</tr></thead><tbody>';
-
-  if (!filtered.length) {
-    html += '<tr><td colspan="8" style="text-align:center;padding:50px;color:var(--text-muted)">';
-    html += '<i data-lucide="receipt" style="width:32px;height:32px;display:block;margin:0 auto 10px;opacity:.25"></i>';
-    html += '등록된 전표가 없습니다</td></tr>';
-  } else {
-    filtered.slice().reverse().forEach(function(s) {
-      var src = s.approvalId ? '품의' : '직접';
-      var srcColor = s.approvalId ? '#8b5cf6' : '#64748b';
-      html += '<tr style="border-bottom:1px solid var(--border-color)">';
-      html += '<td style="padding:10px 16px;text-align:center;font-weight:700;color:var(--text-muted);font-size:11px">SL-' + String(s.id).padStart(4,'0') + '</td>';
-      html += '<td style="padding:10px 16px;text-align:center;color:var(--text-secondary)">' + (s.date || '-') + '</td>';
-      html += '<td style="padding:10px 16px;font-weight:700;color:var(--text-primary)">' + _acctEsc(s.account || '-') + '</td>';
-      html += '<td style="padding:10px 16px;color:var(--text-secondary)">' + _acctEsc(s.counterpart || '-') + '</td>';
-      html += '<td style="padding:10px 16px;text-align:right;font-weight:800;color:' + info.color + '">₩' + _acctFmt(s.amount) + '</td>';
-      html += '<td style="padding:10px 16px;color:var(--text-secondary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _acctEsc(s.memo || '-') + '</td>';
-      html += '<td style="padding:10px 16px;text-align:center"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:' + srcColor + '18;color:' + srcColor + '">' + src + '</span></td>';
-      html += '<td style="padding:10px 16px;text-align:center"><button onclick="_acctDeleteSlip(' + s.id + ',\'' + filterType + '\')" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:14px" title="삭제">✕</button></td>';
-      html += '</tr>';
-    });
+  function _acctName(code) {
+    var a = _accounts().find(function (x) { return x.code === code; });
+    return a ? a.name : code;
   }
-  html += '</tbody></table></div>';
+  function _acctByType(type) {
+    return _accounts().filter(function (a) { return a.type === type; });
+  }
 
-  el.innerHTML = html;
-  if (typeof refreshIcons === 'function') refreshIcons();
-}
+  /* 키워드 → 계정과목 자동매핑 */
+  function _autoMapAccount(text) {
+    if (!text) return null;
+    var maps = _autoMap();
+    var lower = text.toLowerCase();
+    for (var i = 0; i < maps.length; i++) {
+      if (lower.indexOf(maps[i].keyword) >= 0) return maps[i].accountCode;
+    }
+    return null;
+  }
 
-/* ══════════════════════════════════════════
-   품의 승인 / 반려 → 전표 자동 생성
-══════════════════════════════════════════ */
-function _acctApprove(id) {
-  var approvals = _acctLoad('acct_approvals');
-  var a = approvals.find(function(x) { return x.id === id; });
-  if (!a) return;
-  a.status = 'approved';
+  /* ══════════════════════════
+     모드 전환
+  ══════════════════════════ */
+  function enterAccountingMode() {
+    _initDefaults();
+    var mainNav = document.getElementById('mainNav');
+    var acctNav = document.getElementById('acctNav');
+    var hpNav = document.getElementById('homepageNav');
+    var headerSearch = document.getElementById('headerSearch');
+    var hpBar = document.getElementById('homepageModeBar');
+    var acctBar = document.getElementById('acctModeBar');
 
-  // 자동 전표 생성
-  var slips = _acctLoad('acct_slips');
-  var slip = {
-    id: _acctNextId(slips),
-    type: a.type || 'expense',
-    approvalId: a.id,
-    amount: a.amount,
-    date: _acctToday(),
-    account: a.account || '미지정',
-    counterpart: a.counterpart || '',
-    memo: '품의승인: ' + a.title,
-    category: a.category || ''
-  };
-  slips.push(slip);
-  a.slipId = slip.id;
+    if (mainNav) mainNav.style.display = 'none';
+    if (hpNav) hpNav.style.display = 'none';
+    if (acctNav) { acctNav.style.display = 'block'; }
+    if (headerSearch) headerSearch.style.display = 'none';
+    if (hpBar) hpBar.style.display = 'none';
+    if (acctBar) acctBar.style.display = 'flex';
 
-  // 예산 차감 (지출일 때)
-  if (a.type !== 'income' && a.budgetId) {
-    var budgets = _acctLoad('acct_budgets');
-    var b = budgets.find(function(x) { return x.id === a.budgetId; });
-    if (b) {
-      b.used = (b.used || 0) + (Number(a.amount) || 0);
-      _acctSave('acct_budgets', budgets);
+    // 시작 시간 표시
+    var st = document.getElementById('acctStartTime');
+    if (st) {
+      var n = new Date();
+      st.textContent = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0');
+    }
+
+    // 첫 서브페이지 활성화
+    var firstItem = document.querySelector('#acctNav [data-acct-page="acct-overview"]');
+    showAcctPage('acct-overview', firstItem);
+    _ri();
+  }
+
+  function exitAccountingMode() {
+    var mainNav = document.getElementById('mainNav');
+    var acctNav = document.getElementById('acctNav');
+    var acctBar = document.getElementById('acctModeBar');
+    var headerSearch = document.getElementById('headerSearch');
+
+    if (acctNav) acctNav.style.display = 'none';
+    if (mainNav) mainNav.style.display = 'block';
+    if (acctBar) acctBar.style.display = 'none';
+    if (headerSearch) headerSearch.style.display = '';
+
+    if (typeof showPage === 'function') {
+      showPage('dashboard', document.querySelector('[data-page="dashboard"]'));
     }
   }
 
-  _acctSave('acct_approvals', approvals);
-  _acctSave('acct_slips', slips);
+  function showAcctPage(pageId, navEl) {
+    // 서브페이지 전환
+    document.querySelectorAll('.acct-sub-page').forEach(function (p) { p.style.display = 'none'; });
+    var target = document.getElementById(pageId);
+    if (target) target.style.display = 'block';
 
-  if (typeof showToast === 'function') showToast('success', '품의가 승인되었습니다. 전표 SL-' + String(slip.id).padStart(4,'0') + '이 자동 생성되었습니다.');
-  // 현재 페이지 다시 렌더
-  _acctRenderApproval();
-}
+    // 사이드 네비 활성화
+    document.querySelectorAll('#acctNav .nav-item').forEach(function (n) { n.classList.remove('active'); });
+    if (navEl) navEl.classList.add('active');
 
-function _acctReject(id) {
-  var approvals = _acctLoad('acct_approvals');
-  var a = approvals.find(function(x) { return x.id === id; });
-  if (!a) return;
-  a.status = 'rejected';
-  _acctSave('acct_approvals', approvals);
-  if (typeof showToast === 'function') showToast('info', '품의가 반려되었습니다.');
-  _acctRenderApproval();
-}
+    // 페이지별 렌더
+    if (pageId === 'acct-overview') renderAcctOverview();
+    if (pageId === 'acct-budget') renderAcctBudget();
+    if (pageId === 'acct-approval') renderAcctApproval();
+    if (pageId === 'acct-expense') renderAcctExpense();
+    if (pageId === 'acct-income') renderAcctIncome();
+    if (pageId === 'acct-payment') renderAcctPayment();
+    _ri();
+  }
 
-/* ══════════════════════════════════════════
-   삭제 함수
-══════════════════════════════════════════ */
-function _acctDeleteBudget(id) {
-  if (!confirm('이 예산 항목을 삭제하시겠습니까?')) return;
-  var arr = _acctLoad('acct_budgets').filter(function(x) { return x.id !== id; });
-  _acctSave('acct_budgets', arr);
-  _acctRenderBudget();
-}
-function _acctDeleteApproval(id) {
-  if (!confirm('이 품의를 삭제하시겠습니까?')) return;
-  var arr = _acctLoad('acct_approvals').filter(function(x) { return x.id !== id; });
-  _acctSave('acct_approvals', arr);
-  _acctRenderApproval();
-}
-function _acctDeleteSlip(id, type) {
-  if (!confirm('이 전표를 삭제하시겠습니까?')) return;
-  var arr = _acctLoad('acct_slips').filter(function(x) { return x.id !== id; });
-  _acctSave('acct_slips', arr);
-  _acctRenderSlips(type);
-}
+  /* ══════════════════════════
+     1. 기본현황 (대시보드)
+  ══════════════════════════ */
+  function renderAcctOverview() {
+    var el = document.getElementById('acct-overview');
+    if (!el) return;
+    _initDefaults();
 
-/* ══════════════════════════════════════════
-   모달: 예산 추가
-══════════════════════════════════════════ */
-function _acctOpenBudgetModal() {
-  var m = document.getElementById('acctBudgetModal');
-  if (m) { m.style.display = 'flex'; return; }
-  // 동적 생성
-  m = document.createElement('div');
-  m.id = 'acctBudgetModal'; m.className = 'modal-overlay'; m.style.display = 'flex';
-  m.onclick = function(e) { if (e.target === m) m.style.display = 'none'; };
-  m.innerHTML =
-    '<div class="modal-box" style="max-width:460px">' +
-    '<div class="modal-head"><div class="modal-title" style="display:flex;align-items:center;gap:8px"><i data-lucide="wallet" style="width:16px;height:16px;color:var(--accent-blue)"></i> 예산 추가</div><button class="modal-close" onclick="document.getElementById(\'acctBudgetModal\').style.display=\'none\'">✕</button></div>' +
-    '<div class="modal-body" style="display:flex;flex-direction:column;gap:12px">' +
-    '<div class="form-group" style="margin:0"><label class="form-label">분류</label><input class="form-input" id="acctBdgCategory" placeholder="예) 마케팅, 인건비, 운영비"></div>' +
-    '<div class="form-group" style="margin:0"><label class="form-label">예산명 *</label><input class="form-input" id="acctBdgName" placeholder="예) 2025년 1분기 마케팅 예산"></div>' +
-    '<div class="form-group" style="margin:0"><label class="form-label">배정액 (원) *</label><input class="form-input" id="acctBdgAmount" type="number" placeholder="예) 5000000"></div>' +
-    '</div>' +
-    '<div class="modal-foot"><button class="btn" onclick="document.getElementById(\'acctBudgetModal\').style.display=\'none\'">취소</button><button class="btn btn-blue" onclick="_acctSaveBudget()">저장</button></div>' +
-    '</div>';
-  document.body.appendChild(m);
-  if (typeof refreshIcons === 'function') refreshIcons();
-}
+    var vouchers = _vouchers();
+    var cashflows = _cashflows();
+    var budgets = _budgets();
+    var approvals = _approvals();
 
-function _acctSaveBudget() {
-  var name = (document.getElementById('acctBdgName') || {}).value;
-  var amount = (document.getElementById('acctBdgAmount') || {}).value;
-  var category = (document.getElementById('acctBdgCategory') || {}).value;
-  if (!name || !name.trim()) { if (typeof showToast === 'function') showToast('error', '예산명을 입력하세요.'); return; }
-  if (!amount || isNaN(Number(amount))) { if (typeof showToast === 'function') showToast('error', '배정액을 입력하세요.'); return; }
-  var budgets = _acctLoad('acct_budgets');
-  budgets.push({ id: _acctNextId(budgets), category: category.trim() || '기타', name: name.trim(), amount: Number(amount), used: 0 });
-  _acctSave('acct_budgets', budgets);
-  document.getElementById('acctBudgetModal').style.display = 'none';
-  if (typeof showToast === 'function') showToast('success', '예산이 등록되었습니다.');
-  _acctRenderBudget();
-}
+    // 통계 계산
+    var totalIncome = 0, totalExpense = 0;
+    cashflows.forEach(function (c) {
+      if (c.type === 'income') totalIncome += (c.amount || 0);
+      else totalExpense += (c.amount || 0);
+    });
+    var balance = totalIncome - totalExpense;
+    var pendingCount = approvals.filter(function (a) { return a.status === 'pending'; }).length;
 
-/* ══════════════════════════════════════════
-   모달: 품의 작성
-══════════════════════════════════════════ */
-function _acctOpenApprovalModal() {
-  var m = document.getElementById('acctApprovalModal');
-  if (m) { _acctRefreshApprovalBudgetSelect(); m.style.display = 'flex'; return; }
-  m = document.createElement('div');
-  m.id = 'acctApprovalModal'; m.className = 'modal-overlay'; m.style.display = 'flex';
-  m.onclick = function(e) { if (e.target === m) m.style.display = 'none'; };
-  m.innerHTML =
-    '<div class="modal-box" style="max-width:520px">' +
-    '<div class="modal-head"><div class="modal-title" style="display:flex;align-items:center;gap:8px"><i data-lucide="file-check" style="width:16px;height:16px;color:var(--accent-blue)"></i> 품의 작성</div><button class="modal-close" onclick="document.getElementById(\'acctApprovalModal\').style.display=\'none\'">✕</button></div>' +
-    '<div class="modal-body" style="display:flex;flex-direction:column;gap:12px">' +
-    '<div class="form-group" style="margin:0"><label class="form-label">품의 제목 *</label><input class="form-input" id="acctAppTitle" placeholder="예) 4월 마케팅 광고비 집행"></div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-    '<div class="form-group" style="margin:0"><label class="form-label">금액 (원) *</label><input class="form-input" id="acctAppAmount" type="number" placeholder="예) 1500000"></div>' +
-    '<div class="form-group" style="margin:0"><label class="form-label">구분</label><select class="form-input" id="acctAppType"><option value="expense">지출</option><option value="income">입금</option></select></div>' +
-    '</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-    '<div class="form-group" style="margin:0"><label class="form-label">예산항목</label><select class="form-input" id="acctAppBudget"><option value="">-- 선택 --</option></select></div>' +
-    '<div class="form-group" style="margin:0"><label class="form-label">계정과목</label><input class="form-input" id="acctAppAccount" placeholder="예) 광고선전비"></div>' +
-    '</div>' +
-    '<div class="form-group" style="margin:0"><label class="form-label">거래처</label><input class="form-input" id="acctAppCounterpart" placeholder="예) (주)구글코리아"></div>' +
-    '<div class="form-group" style="margin:0"><label class="form-label">사유</label><textarea class="form-input" id="acctAppDesc" rows="3" placeholder="품의 사유를 입력하세요..." style="resize:vertical"></textarea></div>' +
-    '</div>' +
-    '<div class="modal-foot"><button class="btn" onclick="document.getElementById(\'acctApprovalModal\').style.display=\'none\'">취소</button><button class="btn btn-blue" onclick="_acctSaveApproval()">등록</button></div>' +
-    '</div>';
-  document.body.appendChild(m);
-  _acctRefreshApprovalBudgetSelect();
-  if (typeof refreshIcons === 'function') refreshIcons();
-}
+    // 최근 전표 5건
+    var recent = vouchers.slice().sort(function (a, b) {
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    }).slice(0, 5);
 
-function _acctRefreshApprovalBudgetSelect() {
-  var sel = document.getElementById('acctAppBudget');
-  if (!sel) return;
-  var budgets = _acctLoad('acct_budgets');
-  sel.innerHTML = '<option value="">-- 선택 --</option>';
-  budgets.forEach(function(b) {
-    sel.innerHTML += '<option value="' + b.id + '">' + b.name + ' (잔액: ₩' + _acctFmt((b.amount||0) - (b.used||0)) + ')</option>';
-  });
-}
+    // 예산 소진율 상위 5
+    var budgetBars = budgets.slice().map(function (b) {
+      var pct = b.amount > 0 ? Math.round((b.spent || 0) / b.amount * 100) : 0;
+      return { name: _acctName(b.accountCode), pct: pct, spent: b.spent || 0, amount: b.amount, over: pct > 100 };
+    }).sort(function (a, b) { return b.pct - a.pct; }).slice(0, 5);
 
-function _acctSaveApproval() {
-  var title = (document.getElementById('acctAppTitle') || {}).value;
-  var amount = (document.getElementById('acctAppAmount') || {}).value;
-  var type = (document.getElementById('acctAppType') || {}).value || 'expense';
-  var budgetId = (document.getElementById('acctAppBudget') || {}).value;
-  var account = (document.getElementById('acctAppAccount') || {}).value;
-  var counterpart = (document.getElementById('acctAppCounterpart') || {}).value;
-  var desc = (document.getElementById('acctAppDesc') || {}).value;
-  if (!title || !title.trim()) { if (typeof showToast === 'function') showToast('error', '품의 제목을 입력하세요.'); return; }
-  if (!amount || isNaN(Number(amount))) { if (typeof showToast === 'function') showToast('error', '금액을 입력하세요.'); return; }
-  var approvals = _acctLoad('acct_approvals');
-  approvals.push({
-    id: _acctNextId(approvals), title: title.trim(), amount: Number(amount), type: type,
-    budgetId: budgetId ? Number(budgetId) : null, account: account.trim(), counterpart: counterpart.trim(),
-    desc: desc.trim(), status: 'pending', date: _acctToday(), slipId: null
-  });
-  _acctSave('acct_approvals', approvals);
-  document.getElementById('acctApprovalModal').style.display = 'none';
-  // 입력 초기화
-  ['acctAppTitle','acctAppAmount','acctAppAccount','acctAppCounterpart','acctAppDesc'].forEach(function(id) {
-    var el = document.getElementById(id); if (el) el.value = '';
-  });
-  if (typeof showToast === 'function') showToast('success', '품의가 등록되었습니다.');
-  _acctRenderApproval();
-}
+    // 월별 수입/지출 (최근 6개월)
+    var monthData = {};
+    var now = new Date();
+    for (var mi = 5; mi >= 0; mi--) {
+      var md = new Date(now.getFullYear(), now.getMonth() - mi, 1);
+      var key = md.getFullYear() + '-' + String(md.getMonth() + 1).padStart(2, '0');
+      monthData[key] = { income: 0, expense: 0 };
+    }
+    cashflows.forEach(function (c) {
+      var mk = _month(c.date);
+      if (monthData[mk]) {
+        if (c.type === 'income') monthData[mk].income += (c.amount || 0);
+        else monthData[mk].expense += (c.amount || 0);
+      }
+    });
+    var maxMonthVal = 1;
+    Object.keys(monthData).forEach(function (k) {
+      maxMonthVal = Math.max(maxMonthVal, monthData[k].income, monthData[k].expense);
+    });
 
-/* ══════════════════════════════════════════
-   모달: 전표 직접 등록
-══════════════════════════════════════════ */
-function _acctOpenSlipModal(type) {
-  var m = document.getElementById('acctSlipModal');
-  if (m) m.remove();
-  var isIncome = type === 'income';
-  var title = isIncome ? '입금전표 등록' : '출금전표 등록';
-  var icon = isIncome ? 'arrow-down-circle' : 'arrow-up-circle';
+    var html = '' +
+      '<div class="page-header"><div>' +
+      '<div class="page-title">기본현황</div>' +
+      '<div class="page-subtitle">전체 수입·지출·예산 요약 대시보드</div>' +
+      '</div></div>' +
 
-  m = document.createElement('div');
-  m.id = 'acctSlipModal'; m.className = 'modal-overlay'; m.style.display = 'flex';
-  m.onclick = function(e) { if (e.target === m) m.style.display = 'none'; };
-  m.innerHTML =
-    '<div class="modal-box" style="max-width:480px">' +
-    '<div class="modal-head"><div class="modal-title" style="display:flex;align-items:center;gap:8px"><i data-lucide="' + icon + '" style="width:16px;height:16px;color:var(--accent-blue)"></i> ' + title + '</div><button class="modal-close" onclick="document.getElementById(\'acctSlipModal\').style.display=\'none\'">✕</button></div>' +
-    '<div class="modal-body" style="display:flex;flex-direction:column;gap:12px">' +
-    '<input type="hidden" id="acctSlipType" value="' + type + '">' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-    '<div class="form-group" style="margin:0"><label class="form-label">일자 *</label><input class="form-input" id="acctSlipDate" type="date" value="' + _acctToday() + '"></div>' +
-    '<div class="form-group" style="margin:0"><label class="form-label">금액 (원) *</label><input class="form-input" id="acctSlipAmount" type="number" placeholder="금액"></div>' +
-    '</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-    '<div class="form-group" style="margin:0"><label class="form-label">계정과목</label><input class="form-input" id="acctSlipAccount" placeholder="예) 광고선전비"></div>' +
-    '<div class="form-group" style="margin:0"><label class="form-label">거래처</label><input class="form-input" id="acctSlipCounterpart" placeholder="거래처명"></div>' +
-    '</div>' +
-    '<div class="form-group" style="margin:0"><label class="form-label">적요</label><input class="form-input" id="acctSlipMemo" placeholder="적요를 입력하세요..."></div>' +
-    '</div>' +
-    '<div class="modal-foot"><button class="btn" onclick="document.getElementById(\'acctSlipModal\').style.display=\'none\'">취소</button><button class="btn btn-blue" onclick="_acctSaveSlip()">등록</button></div>' +
-    '</div>';
-  document.body.appendChild(m);
-  if (typeof refreshIcons === 'function') refreshIcons();
-}
+      // 통계 카드 4개
+      '<div class="acct-stat-row">' +
+      _statCard('arrow-down-circle', '총 수입', _fmtW(totalIncome), '#22c55e') +
+      _statCard('arrow-up-circle', '총 지출', _fmtW(totalExpense), '#ef4444') +
+      _statCard('wallet', '잔액', _fmtW(balance), balance >= 0 ? '#4f6ef7' : '#ef4444') +
+      _statCard('file-check', '결재 대기', pendingCount + '건', '#f59e0b') +
+      '</div>' +
 
-function _acctSaveSlip() {
-  var type = (document.getElementById('acctSlipType') || {}).value || 'expense';
-  var date = (document.getElementById('acctSlipDate') || {}).value;
-  var amount = (document.getElementById('acctSlipAmount') || {}).value;
-  var account = (document.getElementById('acctSlipAccount') || {}).value;
-  var counterpart = (document.getElementById('acctSlipCounterpart') || {}).value;
-  var memo = (document.getElementById('acctSlipMemo') || {}).value;
-  if (!amount || isNaN(Number(amount))) { if (typeof showToast === 'function') showToast('error', '금액을 입력하세요.'); return; }
-  var slips = _acctLoad('acct_slips');
-  slips.push({
-    id: _acctNextId(slips), type: type, approvalId: null,
-    amount: Number(amount), date: date || _acctToday(),
-    account: account.trim(), counterpart: counterpart.trim(), memo: memo.trim(), category: ''
-  });
-  _acctSave('acct_slips', slips);
-  document.getElementById('acctSlipModal').style.display = 'none';
-  if (typeof showToast === 'function') showToast('success', '전표가 등록되었습니다.');
-  _acctRenderSlips(type);
-}
+      '<div class="acct-grid-2">' +
+
+      // 월별 차트
+      '<div class="acct-card">' +
+      '<div class="acct-card-head"><i data-lucide="bar-chart-3" style="width:16px;height:16px"></i> 월별 수입 · 지출</div>' +
+      '<div class="acct-chart-area">' +
+      Object.keys(monthData).map(function (k) {
+        var d = monthData[k];
+        var ih = Math.max(2, d.income / maxMonthVal * 120);
+        var eh = Math.max(2, d.expense / maxMonthVal * 120);
+        return '<div class="acct-chart-col">' +
+          '<div class="acct-chart-bars">' +
+          '<div class="acct-bar income" style="height:' + ih + 'px" title="수입 ' + _fmtW(d.income) + '"></div>' +
+          '<div class="acct-bar expense" style="height:' + eh + 'px" title="지출 ' + _fmtW(d.expense) + '"></div>' +
+          '</div>' +
+          '<div class="acct-chart-label">' + k.slice(5) + '월</div>' +
+          '</div>';
+      }).join('') +
+      '</div>' +
+      '<div class="acct-chart-legend">' +
+      '<span><span class="acct-dot" style="background:#22c55e"></span>수입</span>' +
+      '<span><span class="acct-dot" style="background:#ef4444"></span>지출</span>' +
+      '</div></div>' +
+
+      // 예산 소진율
+      '<div class="acct-card">' +
+      '<div class="acct-card-head"><i data-lucide="gauge" style="width:16px;height:16px"></i> 예산 소진율 TOP 5</div>' +
+      (budgetBars.length === 0
+        ? '<div class="acct-empty">등록된 예산이 없습니다</div>'
+        : budgetBars.map(function (b) {
+          var color = b.over ? '#ef4444' : b.pct > 80 ? '#f59e0b' : '#4f6ef7';
+          return '<div class="acct-budget-row">' +
+            '<div class="acct-budget-label">' +
+            '<span>' + _esc(b.name) + '</span>' +
+            '<span style="color:' + color + ';font-weight:800">' + b.pct + '%' + (b.over ? ' ⚠️' : '') + '</span>' +
+            '</div>' +
+            '<div class="acct-progress-track"><div class="acct-progress-fill" style="width:' + Math.min(100, b.pct) + '%;background:' + color + '"></div></div>' +
+            '<div class="acct-budget-sub">' + _fmtW(b.spent) + ' / ' + _fmtW(b.amount) + '</div>' +
+            '</div>';
+        }).join('')) +
+      '</div>' +
+
+      '</div>' +
+
+      // 최근 전표
+      '<div class="acct-card" style="margin-top:16px">' +
+      '<div class="acct-card-head"><i data-lucide="scroll-text" style="width:16px;height:16px"></i> 최근 전표</div>' +
+      (recent.length === 0
+        ? '<div class="acct-empty">등록된 전표가 없습니다</div>'
+        : '<table class="acct-table"><thead><tr>' +
+        '<th>날짜</th><th>유형</th><th>적요</th><th>차변</th><th>대변</th>' +
+        '</tr></thead><tbody>' +
+        recent.map(function (v) {
+          var debitSum = 0, creditSum = 0;
+          (v.entries || []).forEach(function (e) {
+            if (e.side === 'debit') debitSum += e.amount;
+            else creditSum += e.amount;
+          });
+          var typeBadge = v.type === 'income' ? '<span class="acct-badge income">입금</span>'
+            : v.type === 'expense' ? '<span class="acct-badge expense">출금</span>'
+              : '<span class="acct-badge etc">대체</span>';
+          return '<tr><td>' + (v.date || '') + '</td><td>' + typeBadge + '</td>' +
+            '<td>' + _esc(v.description || '') + '</td>' +
+            '<td class="num">' + _fmtW(debitSum) + '</td>' +
+            '<td class="num">' + _fmtW(creditSum) + '</td></tr>';
+        }).join('') +
+        '</tbody></table>') +
+      '</div>';
+
+    el.innerHTML = html;
+    _ri();
+  }
+
+  function _statCard(icon, label, value, color) {
+    return '<div class="acct-stat-card">' +
+      '<div class="acct-stat-icon" style="background:' + color + '22;color:' + color + '">' +
+      '<i data-lucide="' + icon + '"></i></div>' +
+      '<div class="acct-stat-info">' +
+      '<div class="acct-stat-label">' + label + '</div>' +
+      '<div class="acct-stat-value" style="color:' + color + '">' + value + '</div>' +
+      '</div></div>';
+  }
+
+  /* ══════════════════════════
+     2. 예산설정
+  ══════════════════════════ */
+  function renderAcctBudget() {
+    var el = document.getElementById('acct-budget');
+    if (!el) return;
+    var budgets = _budgets();
+    var year = new Date().getFullYear();
+
+    var html = '' +
+      '<div class="page-header"><div>' +
+      '<div class="page-title">예산설정</div>' +
+      '<div class="page-subtitle">계정과목별 연간 예산을 설정하고 소진 현황을 확인합니다</div>' +
+      '</div>' +
+      '<button class="btn btn-blue" onclick="ACCT.openBudgetModal()"><i data-lucide="plus" style="width:14px;height:14px"></i> 예산 추가</button>' +
+      '</div>' +
+
+      '<div class="acct-card">' +
+      '<div class="acct-card-head"><i data-lucide="wallet" style="width:16px;height:16px"></i> ' + year + '년 예산 현황</div>';
+
+    if (budgets.length === 0) {
+      html += '<div class="acct-empty"><i data-lucide="inbox" style="width:36px;height:36px;opacity:.3;display:block;margin:0 auto 10px"></i>등록된 예산이 없습니다<br><span style="font-size:12px;color:var(--text-muted)">위 "예산 추가" 버튼을 눌러 등록하세요</span></div>';
+    } else {
+      var totalBudget = 0, totalSpent = 0;
+      budgets.forEach(function (b) { totalBudget += (b.amount || 0); totalSpent += (b.spent || 0); });
+
+      html += '<table class="acct-table"><thead><tr>' +
+        '<th>계정과목</th><th style="text-align:right">예산액</th><th style="text-align:right">집행액</th>' +
+        '<th style="text-align:right">잔액</th><th>소진율</th><th style="text-align:center;width:80px">관리</th>' +
+        '</tr></thead><tbody>';
+
+      budgets.forEach(function (b) {
+        var spent = b.spent || 0;
+        var remain = b.amount - spent;
+        var pct = b.amount > 0 ? Math.round(spent / b.amount * 100) : 0;
+        var over = pct > 100;
+        var color = over ? '#ef4444' : pct > 80 ? '#f59e0b' : '#22c55e';
+        html += '<tr>' +
+          '<td><strong>' + _esc(_acctName(b.accountCode)) + '</strong> <span style="font-size:11px;color:var(--text-muted)">' + b.accountCode + '</span></td>' +
+          '<td class="num">' + _fmtW(b.amount) + '</td>' +
+          '<td class="num">' + _fmtW(spent) + '</td>' +
+          '<td class="num" style="color:' + (remain < 0 ? '#ef4444' : 'var(--text-primary)') + '">' + _fmtW(remain) + '</td>' +
+          '<td><div class="acct-progress-track" style="width:100px;display:inline-block;vertical-align:middle;margin-right:8px"><div class="acct-progress-fill" style="width:' + Math.min(100, pct) + '%;background:' + color + '"></div></div>' +
+          '<span style="font-weight:700;color:' + color + ';font-size:12px">' + pct + '%</span>' + (over ? ' <span style="color:#ef4444;font-weight:800">⚠️ 초과</span>' : '') + '</td>' +
+          '<td style="text-align:center">' +
+          '<button class="btn-icon-sm edit" onclick="ACCT.openBudgetModal(' + b.id + ')" title="수정"><i data-lucide="edit-3" class="icon-sm"></i></button>' +
+          '<button class="btn-icon-sm delete" onclick="ACCT.deleteBudget(' + b.id + ')" title="삭제"><i data-lucide="trash-2" class="icon-sm"></i></button>' +
+          '</td></tr>';
+      });
+
+      var totalPct = totalBudget > 0 ? Math.round(totalSpent / totalBudget * 100) : 0;
+      html += '<tr style="font-weight:800;background:var(--bg-tertiary)">' +
+        '<td>합계</td><td class="num">' + _fmtW(totalBudget) + '</td>' +
+        '<td class="num">' + _fmtW(totalSpent) + '</td>' +
+        '<td class="num">' + _fmtW(totalBudget - totalSpent) + '</td>' +
+        '<td><span style="font-weight:800">' + totalPct + '%</span></td><td></td></tr>';
+
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+
+    // 예산 모달
+    html += _budgetModalHTML();
+
+    el.innerHTML = html;
+    _ri();
+  }
+
+  function _budgetModalHTML() {
+    var accounts = _accounts().filter(function (a) { return a.type === 'expense'; });
+    return '<div class="modal-overlay" id="budgetModal" style="display:none" onclick="if(event.target===this)ACCT.closeBudgetModal()">' +
+      '<div class="modal-box" style="max-width:440px">' +
+      '<div class="modal-head"><div class="modal-title" id="budgetModalTitle">예산 추가</div><button class="modal-close" onclick="ACCT.closeBudgetModal()">✕</button></div>' +
+      '<div class="modal-body" style="display:flex;flex-direction:column;gap:14px">' +
+      '<div class="form-group"><label class="form-label">계정과목 *</label>' +
+      '<select class="form-input" id="bm_account">' +
+      '<option value="">-- 선택 --</option>' +
+      accounts.map(function (a) { return '<option value="' + a.code + '">' + a.code + ' ' + a.name + '</option>'; }).join('') +
+      '</select></div>' +
+      '<div class="form-group"><label class="form-label">연간 예산액 (원) *</label>' +
+      '<input class="form-input" id="bm_amount" type="number" placeholder="예) 50000000" onkeydown="if(event.key===\'Enter\')ACCT.saveBudget()"></div>' +
+      '<div class="form-group"><label class="form-label">메모</label>' +
+      '<input class="form-input" id="bm_memo" placeholder="예산 설명"></div>' +
+      '</div>' +
+      '<div class="modal-foot"><button class="btn" onclick="ACCT.closeBudgetModal()">취소</button>' +
+      '<button class="btn btn-blue" onclick="ACCT.saveBudget()">저장</button></div>' +
+      '</div></div>';
+  }
+
+  var _budgetEditId = null;
+  function openBudgetModal(editId) {
+    _budgetEditId = editId || null;
+    var title = document.getElementById('budgetModalTitle');
+    var acctEl = document.getElementById('bm_account');
+    var amtEl = document.getElementById('bm_amount');
+    var memoEl = document.getElementById('bm_memo');
+    if (editId) {
+      var b = _budgets().find(function (x) { return x.id === editId; });
+      if (b) {
+        if (title) title.textContent = '예산 수정';
+        if (acctEl) acctEl.value = b.accountCode;
+        if (amtEl) amtEl.value = b.amount;
+        if (memoEl) memoEl.value = b.memo || '';
+      }
+    } else {
+      if (title) title.textContent = '예산 추가';
+      if (acctEl) acctEl.value = '';
+      if (amtEl) amtEl.value = '';
+      if (memoEl) memoEl.value = '';
+    }
+    var m = document.getElementById('budgetModal');
+    if (m) m.style.display = 'flex';
+  }
+
+  function closeBudgetModal() {
+    var m = document.getElementById('budgetModal');
+    if (m) m.style.display = 'none';
+    _budgetEditId = null;
+  }
+
+  function saveBudget() {
+    var code = (document.getElementById('bm_account') || {}).value;
+    var amt = parseInt((document.getElementById('bm_amount') || {}).value) || 0;
+    var memo = (document.getElementById('bm_memo') || {}).value || '';
+    if (!code) { _toast('error', '계정과목을 선택하세요'); return; }
+    if (amt <= 0) { _toast('error', '예산액을 입력하세요'); return; }
+
+    var budgets = _budgets();
+    if (_budgetEditId) {
+      budgets = budgets.map(function (b) {
+        if (b.id !== _budgetEditId) return b;
+        return Object.assign({}, b, { accountCode: code, amount: amt, memo: memo });
+      });
+      _toast('info', '예산이 수정되었습니다');
+    } else {
+      budgets.push({ id: _uid(), year: new Date().getFullYear(), accountCode: code, amount: amt, spent: 0, memo: memo });
+      _toast('success', _acctName(code) + ' 예산이 추가되었습니다');
+    }
+    _ls('acct_budgets', budgets);
+    closeBudgetModal();
+    renderAcctBudget();
+  }
+
+  function deleteBudget(id) {
+    var budgets = _budgets().filter(function (b) { return b.id !== id; });
+    _ls('acct_budgets', budgets);
+    _toast('info', '예산이 삭제되었습니다');
+    renderAcctBudget();
+  }
+
+  /* 예산 소진 업데이트 */
+  function _updateBudgetSpent(accountCode, amount) {
+    var budgets = _budgets();
+    var updated = false;
+    budgets.forEach(function (b) {
+      if (b.accountCode === accountCode) {
+        b.spent = (b.spent || 0) + amount;
+        updated = true;
+        if (b.spent > b.amount) {
+          _toast('warning', '⚠️ ' + _acctName(accountCode) + ' 예산이 초과되었습니다! (' + Math.round(b.spent / b.amount * 100) + '%)');
+        }
+      }
+    });
+    if (updated) _ls('acct_budgets', budgets);
+  }
+
+  /* ══════════════════════════
+     3. 품의하기
+  ══════════════════════════ */
+  function renderAcctApproval() {
+    var el = document.getElementById('acct-approval');
+    if (!el) return;
+    var approvals = _approvals();
+    var pendings = approvals.filter(function (a) { return a.status === 'pending'; });
+    var approveds = approvals.filter(function (a) { return a.status === 'approved'; });
+    var rejecteds = approvals.filter(function (a) { return a.status === 'rejected'; });
+
+    var html = '' +
+      '<div class="page-header"><div>' +
+      '<div class="page-title">품의하기</div>' +
+      '<div class="page-subtitle">지출 품의를 등록하고 결재 상태를 관리합니다</div>' +
+      '</div>' +
+      '<button class="btn btn-blue" onclick="ACCT.openApprovalModal()"><i data-lucide="plus" style="width:14px;height:14px"></i> 품의 등록</button>' +
+      '</div>' +
+
+      // 탭
+      '<div class="acct-tab-bar">' +
+      '<button class="acct-tab active" onclick="ACCT.switchApprovalTab(\'pending\',this)">결재대기 <span class="acct-tab-count">' + pendings.length + '</span></button>' +
+      '<button class="acct-tab" onclick="ACCT.switchApprovalTab(\'approved\',this)">승인완료 <span class="acct-tab-count">' + approveds.length + '</span></button>' +
+      '<button class="acct-tab" onclick="ACCT.switchApprovalTab(\'rejected\',this)">반려 <span class="acct-tab-count">' + rejecteds.length + '</span></button>' +
+      '</div>' +
+
+      '<div id="approvalListWrap">' + _approvalList(pendings, 'pending') + '</div>';
+
+    // 품의 등록 모달
+    html += _approvalModalHTML();
+
+    el.innerHTML = html;
+    _ri();
+  }
+
+  function _approvalList(list, status) {
+    if (list.length === 0) {
+      return '<div class="acct-card"><div class="acct-empty"><i data-lucide="inbox" style="width:36px;height:36px;opacity:.3;display:block;margin:0 auto 10px"></i>' +
+        (status === 'pending' ? '결재 대기 중인 품의가 없습니다' : status === 'approved' ? '승인 완료된 품의가 없습니다' : '반려된 품의가 없습니다') +
+        '</div></div>';
+    }
+
+    var html = '<div class="acct-card"><table class="acct-table"><thead><tr>' +
+      '<th>등록일</th><th>품의명</th><th>계정과목</th><th style="text-align:right">금액</th><th>신청자</th><th>상태</th><th style="text-align:center;width:100px">관리</th>' +
+      '</tr></thead><tbody>';
+
+    list.forEach(function (a) {
+      var badge = a.status === 'pending' ? '<span class="acct-badge pending">대기</span>'
+        : a.status === 'approved' ? '<span class="acct-badge approved">승인</span>'
+          : '<span class="acct-badge rejected">반려</span>';
+      var actions = '';
+      if (a.status === 'pending') {
+        actions = '<button class="btn-icon-sm edit" onclick="ACCT.approveItem(' + a.id + ')" title="승인" style="color:#22c55e"><i data-lucide="check" class="icon-sm"></i></button>' +
+          '<button class="btn-icon-sm delete" onclick="ACCT.rejectItem(' + a.id + ')" title="반려"><i data-lucide="x" class="icon-sm"></i></button>';
+      }
+      html += '<tr>' +
+        '<td>' + (a.date || '') + '</td>' +
+        '<td><strong>' + _esc(a.title) + '</strong></td>' +
+        '<td>' + _acctName(a.accountCode) + '</td>' +
+        '<td class="num">' + _fmtW(a.amount) + '</td>' +
+        '<td>' + _esc(a.requesterName || '') + '</td>' +
+        '<td>' + badge + '</td>' +
+        '<td style="text-align:center">' + actions + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table></div>';
+    return html;
+  }
+
+  function switchApprovalTab(status, btnEl) {
+    document.querySelectorAll('.acct-tab').forEach(function (b) { b.classList.remove('active'); });
+    if (btnEl) btnEl.classList.add('active');
+    var approvals = _approvals();
+    var filtered = approvals.filter(function (a) { return a.status === status; });
+    var wrap = document.getElementById('approvalListWrap');
+    if (wrap) wrap.innerHTML = _approvalList(filtered, status);
+    _ri();
+  }
+
+  function _approvalModalHTML() {
+    var accounts = _accounts().filter(function (a) { return a.type === 'expense'; });
+    var userName = (typeof WS !== 'undefined' && WS.currentUser) ? WS.currentUser.name : '';
+    return '<div class="modal-overlay" id="approvalModal" style="display:none" onclick="if(event.target===this)ACCT.closeApprovalModal()">' +
+      '<div class="modal-box" style="max-width:500px">' +
+      '<div class="modal-head"><div class="modal-title">품의 등록</div><button class="modal-close" onclick="ACCT.closeApprovalModal()">✕</button></div>' +
+      '<div class="modal-body" style="display:flex;flex-direction:column;gap:14px">' +
+      '<div class="form-group"><label class="form-label">품의명 *</label>' +
+      '<input class="form-input" id="am_title" placeholder="예) 사무용품 구매"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+      '<div class="form-group" style="margin:0"><label class="form-label">계정과목 *</label>' +
+      '<select class="form-input" id="am_account">' +
+      '<option value="">-- 선택 --</option>' +
+      accounts.map(function (a) { return '<option value="' + a.code + '">' + a.code + ' ' + a.name + '</option>'; }).join('') +
+      '</select></div>' +
+      '<div class="form-group" style="margin:0"><label class="form-label">금액 (원) *</label>' +
+      '<input class="form-input" id="am_amount" type="number" placeholder="0"></div></div>' +
+      '<div class="form-group"><label class="form-label">신청자</label>' +
+      '<input class="form-input" id="am_requester" value="' + _esc(userName) + '"></div>' +
+      '<div class="form-group"><label class="form-label">사유/메모</label>' +
+      '<textarea class="form-input" id="am_memo" rows="2" placeholder="품의 사유를 입력하세요"></textarea></div>' +
+      '</div>' +
+      '<div class="modal-foot"><button class="btn" onclick="ACCT.closeApprovalModal()">취소</button>' +
+      '<button class="btn btn-blue" onclick="ACCT.submitApproval()">제출</button></div>' +
+      '</div></div>';
+  }
+
+  function openApprovalModal() {
+    var m = document.getElementById('approvalModal');
+    ['am_title', 'am_amount', 'am_memo'].forEach(function (id) {
+      var e = document.getElementById(id); if (e) e.value = '';
+    });
+    var sel = document.getElementById('am_account'); if (sel) sel.value = '';
+    if (m) m.style.display = 'flex';
+  }
+  function closeApprovalModal() {
+    var m = document.getElementById('approvalModal'); if (m) m.style.display = 'none';
+  }
+
+  function submitApproval() {
+    var title = (document.getElementById('am_title') || {}).value || '';
+    var code = (document.getElementById('am_account') || {}).value || '';
+    var amt = parseInt((document.getElementById('am_amount') || {}).value) || 0;
+    var requester = (document.getElementById('am_requester') || {}).value || '';
+    var memo = (document.getElementById('am_memo') || {}).value || '';
+    if (!title.trim()) { _toast('error', '품의명을 입력하세요'); return; }
+    if (!code) { _toast('error', '계정과목을 선택하세요'); return; }
+    if (amt <= 0) { _toast('error', '금액을 입력하세요'); return; }
+
+    // 예산 초과 체크
+    var budget = _budgets().find(function (b) { return b.accountCode === code; });
+    if (budget) {
+      var afterSpent = (budget.spent || 0) + amt;
+      if (afterSpent > budget.amount) {
+        _toast('warning', '⚠️ ' + _acctName(code) + ' 예산 초과 예정! (현재 ' + Math.round((budget.spent || 0) / budget.amount * 100) + '% → ' + Math.round(afterSpent / budget.amount * 100) + '%)');
+      }
+    }
+
+    var approvals = _approvals();
+    approvals.push({
+      id: _uid(), date: _today(), title: title.trim(), accountCode: code,
+      amount: amt, requesterId: (typeof WS !== 'undefined' && WS.currentUser) ? WS.currentUser.id : null,
+      requesterName: requester, status: 'pending', memo: memo,
+      createdAt: _now(), approvedAt: null, voucherId: null
+    });
+    _ls('acct_approvals', approvals);
+    closeApprovalModal();
+    _toast('success', '"' + title + '" 품의가 등록되었습니다');
+    renderAcctApproval();
+  }
+
+  function approveItem(id) {
+    var approvals = _approvals();
+    var item = approvals.find(function (a) { return a.id === id; });
+    if (!item) return;
+    item.status = 'approved';
+    item.approvedAt = _now();
+
+    // 전표 자동생성
+    var vId = _uid();
+    var vouchers = _vouchers();
+    vouchers.push({
+      id: vId, date: _today(), type: 'expense',
+      description: '[품의] ' + item.title,
+      entries: [
+        { side: 'debit', accountCode: item.accountCode, amount: item.amount },
+        { side: 'credit', accountCode: '1010', amount: item.amount }
+      ],
+      sourceType: 'approval', sourceId: item.id,
+      createdAt: _now(), createdBy: '시스템'
+    });
+    item.voucherId = vId;
+    _ls('acct_vouchers', vouchers);
+
+    // 예산 소진
+    _updateBudgetSpent(item.accountCode, item.amount);
+
+    _ls('acct_approvals', approvals);
+    _toast('success', '"' + item.title + '" 승인 완료 → 전표가 자동 생성되었습니다');
+    renderAcctApproval();
+  }
+
+  function rejectItem(id) {
+    var approvals = _approvals();
+    var item = approvals.find(function (a) { return a.id === id; });
+    if (!item) return;
+    item.status = 'rejected';
+    _ls('acct_approvals', approvals);
+    _toast('info', '"' + item.title + '" 품의가 반려되었습니다');
+    renderAcctApproval();
+  }
+
+  /* ══════════════════════════
+     4. 지출하기 (간편 UI)
+  ══════════════════════════ */
+  function renderAcctExpense() {
+    var el = document.getElementById('acct-expense');
+    if (!el) return;
+    var cashflows = _cashflows().filter(function (c) { return c.type === 'expense'; })
+      .sort(function (a, b) { return (b.createdAt || '').localeCompare(a.createdAt || ''); });
+
+    var html = '' +
+      '<div class="page-header"><div>' +
+      '<div class="page-title">지출하기</div>' +
+      '<div class="page-subtitle">간편하게 지출을 등록하면 전표가 자동 생성됩니다</div>' +
+      '</div></div>' +
+
+      // 간편 입력 폼
+      '<div class="acct-card">' +
+      '<div class="acct-card-head"><i data-lucide="edit-3" style="width:16px;height:16px"></i> 간편 지출 등록</div>' +
+      '<div class="acct-simple-form">' +
+      '<div class="acct-form-row">' +
+      '<div class="form-group" style="flex:2"><label class="form-label">지출 내용 *</label>' +
+      '<input class="form-input" id="exp_desc" placeholder="예) 사무용품 구매, 택배비" oninput="ACCT.autoSuggestAccount(\'exp\')"></div>' +
+      '<div class="form-group" style="flex:1"><label class="form-label">금액 (원) *</label>' +
+      '<input class="form-input" id="exp_amount" type="number" placeholder="0"></div>' +
+      '<div class="form-group" style="flex:1"><label class="form-label">거래처</label>' +
+      '<input class="form-input" id="exp_counter" placeholder="거래처명"></div>' +
+      '</div>' +
+      '<div class="acct-form-row">' +
+      '<div class="form-group" style="flex:1"><label class="form-label">결제수단</label>' +
+      '<select class="form-input" id="exp_method"><option value="현금">현금</option><option value="계좌이체">계좌이체</option><option value="카드">카드</option><option value="기타">기타</option></select></div>' +
+      '<div class="form-group" style="flex:1"><label class="form-label">날짜</label>' +
+      '<input class="form-input" id="exp_date" type="date" value="' + _today() + '"></div>' +
+      '<div class="form-group" style="flex:2"><label class="form-label">자동매핑 계정 <span id="exp_auto_label" style="color:var(--accent-blue);font-weight:700"></span></label>' +
+      '<select class="form-input" id="exp_account">' +
+      '<option value="">자동 매핑됨</option>' +
+      _accounts().filter(function (a) { return a.type === 'expense'; }).map(function (a) { return '<option value="' + a.code + '">' + a.code + ' ' + a.name + '</option>'; }).join('') +
+      '</select></div>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px">' +
+      '<button class="btn btn-blue" onclick="ACCT.saveExpense()" style="padding:8px 20px"><i data-lucide="save" style="width:14px;height:14px"></i> 지출 등록</button>' +
+      '</div></div></div>' +
+
+      // 지출 내역 리스트
+      '<div class="acct-card" style="margin-top:16px">' +
+      '<div class="acct-card-head"><i data-lucide="list" style="width:16px;height:16px"></i> 지출 내역</div>';
+
+    if (cashflows.length === 0) {
+      html += '<div class="acct-empty">등록된 지출이 없습니다</div>';
+    } else {
+      html += '<table class="acct-table"><thead><tr>' +
+        '<th>날짜</th><th>내용</th><th>계정과목</th><th>거래처</th><th>결제수단</th><th style="text-align:right">금액</th><th style="text-align:center;width:60px">삭제</th>' +
+        '</tr></thead><tbody>';
+      cashflows.forEach(function (c) {
+        html += '<tr><td>' + (c.date || '') + '</td>' +
+          '<td>' + _esc(c.memo || '') + '</td>' +
+          '<td>' + _acctName(c.accountCode) + '</td>' +
+          '<td>' + _esc(c.counterpart || '') + '</td>' +
+          '<td>' + _esc(c.paymentMethod || '') + '</td>' +
+          '<td class="num" style="color:#ef4444">' + _fmtW(c.amount) + '</td>' +
+          '<td style="text-align:center"><button class="btn-icon-sm delete" onclick="ACCT.deleteCashflow(' + c.id + ',\'expense\')"><i data-lucide="trash-2" class="icon-sm"></i></button></td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+    el.innerHTML = html;
+    _ri();
+  }
+
+  function autoSuggestAccount(prefix) {
+    var desc = (document.getElementById(prefix + '_desc') || {}).value || '';
+    var code = _autoMapAccount(desc);
+    var label = document.getElementById(prefix + '_auto_label');
+    var sel = document.getElementById(prefix + '_account');
+    if (code) {
+      if (label) label.textContent = '→ ' + _acctName(code);
+      if (sel) sel.value = code;
+    } else {
+      if (label) label.textContent = '';
+      if (sel) sel.value = '';
+    }
+  }
+
+  function saveExpense() {
+    var desc = (document.getElementById('exp_desc') || {}).value || '';
+    var amt = parseInt((document.getElementById('exp_amount') || {}).value) || 0;
+    var counter = (document.getElementById('exp_counter') || {}).value || '';
+    var method = (document.getElementById('exp_method') || {}).value || '현금';
+    var date = (document.getElementById('exp_date') || {}).value || _today();
+    var code = (document.getElementById('exp_account') || {}).value || _autoMapAccount(desc) || '5190';
+
+    if (!desc.trim()) { _toast('error', '지출 내용을 입력하세요'); return; }
+    if (amt <= 0) { _toast('error', '금액을 입력하세요'); return; }
+
+    var cfId = _uid();
+    var vId = _uid();
+
+    // 전표 자동 생성
+    var vouchers = _vouchers();
+    vouchers.push({
+      id: vId, date: date, type: 'expense',
+      description: desc,
+      entries: [
+        { side: 'debit', accountCode: code, amount: amt },
+        { side: 'credit', accountCode: '1010', amount: amt }
+      ],
+      sourceType: 'cashflow', sourceId: cfId,
+      createdAt: _now(), createdBy: (typeof WS !== 'undefined' && WS.currentUser) ? WS.currentUser.name : '시스템'
+    });
+    _ls('acct_vouchers', vouchers);
+
+    // 입출금 저장
+    var cashflows = _cashflows();
+    cashflows.push({
+      id: cfId, date: date, type: 'expense', category: _acctName(code),
+      accountCode: code, counterpart: counter, amount: amt,
+      paymentMethod: method, memo: desc, voucherId: vId, createdAt: _now()
+    });
+    _ls('acct_cashflows', cashflows);
+
+    // 예산 소진
+    _updateBudgetSpent(code, amt);
+
+    // 폼 리셋
+    ['exp_desc', 'exp_amount', 'exp_counter'].forEach(function (id) {
+      var e = document.getElementById(id); if (e) e.value = '';
+    });
+    var autoLabel = document.getElementById('exp_auto_label');
+    if (autoLabel) autoLabel.textContent = '';
+
+    _toast('success', '지출 ' + _fmtW(amt) + ' 등록 완료 (전표 자동생성)');
+    renderAcctExpense();
+  }
+
+  /* ══════════════════════════
+     5. 입금전표 (간편 UI)
+  ══════════════════════════ */
+  function renderAcctIncome() {
+    var el = document.getElementById('acct-income');
+    if (!el) return;
+    var cashflows = _cashflows().filter(function (c) { return c.type === 'income'; })
+      .sort(function (a, b) { return (b.createdAt || '').localeCompare(a.createdAt || ''); });
+
+    var html = '' +
+      '<div class="page-header"><div>' +
+      '<div class="page-title">입금전표</div>' +
+      '<div class="page-subtitle">간편하게 입금을 등록하면 전표가 자동 생성됩니다</div>' +
+      '</div></div>' +
+
+      '<div class="acct-card">' +
+      '<div class="acct-card-head"><i data-lucide="edit-3" style="width:16px;height:16px"></i> 간편 입금 등록</div>' +
+      '<div class="acct-simple-form">' +
+      '<div class="acct-form-row">' +
+      '<div class="form-group" style="flex:2"><label class="form-label">입금 내용 *</label>' +
+      '<input class="form-input" id="inc_desc" placeholder="예) 4월 매출, 이자수익" oninput="ACCT.autoSuggestAccount(\'inc\')"></div>' +
+      '<div class="form-group" style="flex:1"><label class="form-label">금액 (원) *</label>' +
+      '<input class="form-input" id="inc_amount" type="number" placeholder="0"></div>' +
+      '<div class="form-group" style="flex:1"><label class="form-label">거래처</label>' +
+      '<input class="form-input" id="inc_counter" placeholder="거래처명"></div>' +
+      '</div>' +
+      '<div class="acct-form-row">' +
+      '<div class="form-group" style="flex:1"><label class="form-label">입금수단</label>' +
+      '<select class="form-input" id="inc_method"><option value="계좌이체">계좌이체</option><option value="현금">현금</option><option value="카드">카드</option><option value="기타">기타</option></select></div>' +
+      '<div class="form-group" style="flex:1"><label class="form-label">날짜</label>' +
+      '<input class="form-input" id="inc_date" type="date" value="' + _today() + '"></div>' +
+      '<div class="form-group" style="flex:2"><label class="form-label">자동매핑 계정 <span id="inc_auto_label" style="color:var(--accent-blue);font-weight:700"></span></label>' +
+      '<select class="form-input" id="inc_account">' +
+      '<option value="">자동 매핑됨</option>' +
+      _accounts().filter(function (a) { return a.type === 'revenue'; }).map(function (a) { return '<option value="' + a.code + '">' + a.code + ' ' + a.name + '</option>'; }).join('') +
+      '</select></div>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px">' +
+      '<button class="btn btn-blue" onclick="ACCT.saveIncome()" style="padding:8px 20px"><i data-lucide="save" style="width:14px;height:14px"></i> 입금 등록</button>' +
+      '</div></div></div>' +
+
+      '<div class="acct-card" style="margin-top:16px">' +
+      '<div class="acct-card-head"><i data-lucide="list" style="width:16px;height:16px"></i> 입금 내역</div>';
+
+    if (cashflows.length === 0) {
+      html += '<div class="acct-empty">등록된 입금이 없습니다</div>';
+    } else {
+      html += '<table class="acct-table"><thead><tr>' +
+        '<th>날짜</th><th>내용</th><th>계정과목</th><th>거래처</th><th>입금수단</th><th style="text-align:right">금액</th><th style="text-align:center;width:60px">삭제</th>' +
+        '</tr></thead><tbody>';
+      cashflows.forEach(function (c) {
+        html += '<tr><td>' + (c.date || '') + '</td>' +
+          '<td>' + _esc(c.memo || '') + '</td>' +
+          '<td>' + _acctName(c.accountCode) + '</td>' +
+          '<td>' + _esc(c.counterpart || '') + '</td>' +
+          '<td>' + _esc(c.paymentMethod || '') + '</td>' +
+          '<td class="num" style="color:#22c55e">' + _fmtW(c.amount) + '</td>' +
+          '<td style="text-align:center"><button class="btn-icon-sm delete" onclick="ACCT.deleteCashflow(' + c.id + ',\'income\')"><i data-lucide="trash-2" class="icon-sm"></i></button></td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+    el.innerHTML = html;
+    _ri();
+  }
+
+  function saveIncome() {
+    var desc = (document.getElementById('inc_desc') || {}).value || '';
+    var amt = parseInt((document.getElementById('inc_amount') || {}).value) || 0;
+    var counter = (document.getElementById('inc_counter') || {}).value || '';
+    var method = (document.getElementById('inc_method') || {}).value || '계좌이체';
+    var date = (document.getElementById('inc_date') || {}).value || _today();
+    var code = (document.getElementById('inc_account') || {}).value || _autoMapAccount(desc) || '4030';
+
+    if (!desc.trim()) { _toast('error', '입금 내용을 입력하세요'); return; }
+    if (amt <= 0) { _toast('error', '금액을 입력하세요'); return; }
+
+    var cfId = _uid();
+    var vId = _uid();
+
+    // 전표 자동 생성
+    var vouchers = _vouchers();
+    vouchers.push({
+      id: vId, date: date, type: 'income',
+      description: desc,
+      entries: [
+        { side: 'debit', accountCode: '1020', amount: amt },
+        { side: 'credit', accountCode: code, amount: amt }
+      ],
+      sourceType: 'cashflow', sourceId: cfId,
+      createdAt: _now(), createdBy: (typeof WS !== 'undefined' && WS.currentUser) ? WS.currentUser.name : '시스템'
+    });
+    _ls('acct_vouchers', vouchers);
+
+    var cashflows = _cashflows();
+    cashflows.push({
+      id: cfId, date: date, type: 'income', category: _acctName(code),
+      accountCode: code, counterpart: counter, amount: amt,
+      paymentMethod: method, memo: desc, voucherId: vId, createdAt: _now()
+    });
+    _ls('acct_cashflows', cashflows);
+
+    ['inc_desc', 'inc_amount', 'inc_counter'].forEach(function (id) {
+      var e = document.getElementById(id); if (e) e.value = '';
+    });
+    var autoLabel = document.getElementById('inc_auto_label');
+    if (autoLabel) autoLabel.textContent = '';
+
+    _toast('success', '입금 ' + _fmtW(amt) + ' 등록 완료 (전표 자동생성)');
+    renderAcctIncome();
+  }
+
+  /* 입출금 삭제 (+ 관련 전표 삭제) */
+  function deleteCashflow(id, type) {
+    var cashflows = _cashflows();
+    var item = cashflows.find(function (c) { return c.id === id; });
+    if (item && item.voucherId) {
+      var vouchers = _vouchers().filter(function (v) { return v.id !== item.voucherId; });
+      _ls('acct_vouchers', vouchers);
+    }
+    _ls('acct_cashflows', cashflows.filter(function (c) { return c.id !== id; }));
+    _toast('info', '삭제되었습니다');
+    if (type === 'expense') renderAcctExpense();
+    else renderAcctIncome();
+  }
+
+  /* ══════════════════════════
+     6. 전표장부 (회계담당자 UI)
+  ══════════════════════════ */
+  function renderAcctPayment() {
+    var el = document.getElementById('acct-payment');
+    if (!el) return;
+    var vouchers = _vouchers().sort(function (a, b) { return (b.date || '').localeCompare(a.date || '') || (b.createdAt || '').localeCompare(a.createdAt || ''); });
+
+    var html = '' +
+      '<div class="page-header"><div>' +
+      '<div class="page-title">전표장부</div>' +
+      '<div class="page-subtitle">모든 전표를 조회·수정할 수 있습니다 (회계담당자용)</div>' +
+      '</div>' +
+      '<button class="btn btn-blue" onclick="ACCT.openVoucherModal()"><i data-lucide="plus" style="width:14px;height:14px"></i> 전표 직접 등록</button>' +
+      '</div>';
+
+    if (vouchers.length === 0) {
+      html += '<div class="acct-card"><div class="acct-empty"><i data-lucide="scroll-text" style="width:36px;height:36px;opacity:.3;display:block;margin:0 auto 10px"></i>등록된 전표가 없습니다</div></div>';
+    } else {
+      html += '<div class="acct-card">';
+      vouchers.forEach(function (v, idx) {
+        var debitSum = 0, creditSum = 0;
+        (v.entries || []).forEach(function (e) {
+          if (e.side === 'debit') debitSum += e.amount; else creditSum += e.amount;
+        });
+        var typeBadge = v.type === 'income' ? '<span class="acct-badge income">입금</span>'
+          : v.type === 'expense' ? '<span class="acct-badge expense">출금</span>'
+            : '<span class="acct-badge etc">대체</span>';
+        var sourceStr = v.sourceType === 'approval' ? '품의' : v.sourceType === 'cashflow' ? '입출금' : '수동';
+
+        html += '<div class="acct-voucher-item' + (idx > 0 ? ' border-top' : '') + '">' +
+          '<div class="acct-voucher-header">' +
+          '<div class="acct-voucher-meta">' +
+          '<span class="acct-voucher-date">' + (v.date || '') + '</span>' +
+          typeBadge +
+          '<span class="acct-voucher-src">' + sourceStr + '</span>' +
+          '</div>' +
+          '<div class="acct-voucher-desc">' + _esc(v.description || '') + '</div>' +
+          '<div class="acct-voucher-actions">' +
+          '<button class="btn-icon-sm edit" onclick="ACCT.openVoucherModal(' + v.id + ')" title="수정"><i data-lucide="edit-3" class="icon-sm"></i></button>' +
+          '<button class="btn-icon-sm delete" onclick="ACCT.deleteVoucher(' + v.id + ')" title="삭제"><i data-lucide="trash-2" class="icon-sm"></i></button>' +
+          '</div>' +
+          '</div>' +
+
+          // 차변/대변 테이블
+          '<table class="acct-entry-table">' +
+          '<thead><tr><th>구분</th><th>계정과목</th><th style="text-align:right">금액</th></tr></thead>' +
+          '<tbody>' +
+          (v.entries || []).map(function (e) {
+            return '<tr>' +
+              '<td><span class="acct-side-badge ' + e.side + '">' + (e.side === 'debit' ? '차변' : '대변') + '</span></td>' +
+              '<td>' + e.accountCode + ' ' + _acctName(e.accountCode) + '</td>' +
+              '<td class="num">' + _fmtW(e.amount) + '</td></tr>';
+          }).join('') +
+          '<tr class="acct-entry-sum"><td></td><td style="text-align:right;font-weight:800">합계</td>' +
+          '<td class="num" style="font-weight:800">' + _fmtW(debitSum) + '</td></tr>' +
+          '</tbody></table>' +
+          '</div>';
+      });
+      html += '</div>';
+    }
+
+    // 전표 등록 모달
+    html += _voucherModalHTML();
+
+    el.innerHTML = html;
+    _ri();
+  }
+
+  function _voucherModalHTML() {
+    var allAccts = _accounts();
+    var optGroup = function (type, label) {
+      var items = allAccts.filter(function (a) { return a.type === type; });
+      if (!items.length) return '';
+      return '<optgroup label="' + label + '">' +
+        items.map(function (a) { return '<option value="' + a.code + '">' + a.code + ' ' + a.name + '</option>'; }).join('') +
+        '</optgroup>';
+    };
+    var acctOptions = '<option value="">-- 선택 --</option>' +
+      optGroup('asset', '자산') + optGroup('liability', '부채') + optGroup('equity', '자본') +
+      optGroup('revenue', '수익') + optGroup('expense', '비용');
+
+    return '<div class="modal-overlay" id="voucherModal" style="display:none" onclick="if(event.target===this)ACCT.closeVoucherModal()">' +
+      '<div class="modal-box" style="max-width:600px">' +
+      '<div class="modal-head"><div class="modal-title" id="voucherModalTitle">전표 등록</div><button class="modal-close" onclick="ACCT.closeVoucherModal()">✕</button></div>' +
+      '<div class="modal-body" style="display:flex;flex-direction:column;gap:14px">' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+      '<div class="form-group" style="margin:0"><label class="form-label">날짜 *</label><input class="form-input" id="vm_date" type="date" value="' + _today() + '"></div>' +
+      '<div class="form-group" style="margin:0"><label class="form-label">유형</label>' +
+      '<select class="form-input" id="vm_type"><option value="expense">출금</option><option value="income">입금</option><option value="transfer">대체</option></select></div>' +
+      '</div>' +
+      '<div class="form-group"><label class="form-label">적요 *</label><input class="form-input" id="vm_desc" placeholder="거래 내용"></div>' +
+
+      '<div style="font-size:12px;font-weight:800;color:var(--text-secondary);margin-bottom:4px">차변 / 대변 항목</div>' +
+      '<div id="vm_entries">' +
+      '<div class="acct-entry-row">' +
+      '<select class="form-input" style="flex:.8"><option value="debit">차변</option><option value="credit">대변</option></select>' +
+      '<select class="form-input" style="flex:2">' + acctOptions + '</select>' +
+      '<input class="form-input" type="number" placeholder="금액" style="flex:1">' +
+      '</div>' +
+      '<div class="acct-entry-row">' +
+      '<select class="form-input" style="flex:.8"><option value="debit">차변</option><option value="credit" selected>대변</option></select>' +
+      '<select class="form-input" style="flex:2">' + acctOptions + '</select>' +
+      '<input class="form-input" type="number" placeholder="금액" style="flex:1">' +
+      '</div>' +
+      '</div>' +
+      '<button class="btn" onclick="ACCT.addVoucherEntry()" style="align-self:flex-start"><i data-lucide="plus" style="width:12px;height:12px"></i> 항목 추가</button>' +
+      '</div>' +
+      '<div class="modal-foot"><button class="btn" onclick="ACCT.closeVoucherModal()">취소</button>' +
+      '<button class="btn btn-blue" onclick="ACCT.saveVoucher()">저장</button></div>' +
+      '</div></div>';
+  }
+
+  var _voucherEditId = null;
+  function openVoucherModal(editId) {
+    _voucherEditId = editId || null;
+    var title = document.getElementById('voucherModalTitle');
+    if (editId) {
+      var v = _vouchers().find(function (x) { return x.id === editId; });
+      if (v) {
+        if (title) title.textContent = '전표 수정';
+        var dateEl = document.getElementById('vm_date'); if (dateEl) dateEl.value = v.date || '';
+        var typeEl = document.getElementById('vm_type'); if (typeEl) typeEl.value = v.type || 'expense';
+        var descEl = document.getElementById('vm_desc'); if (descEl) descEl.value = v.description || '';
+        // entries 재생성
+        _rebuildVoucherEntries(v.entries || []);
+      }
+    } else {
+      if (title) title.textContent = '전표 등록';
+      var dateEl2 = document.getElementById('vm_date'); if (dateEl2) dateEl2.value = _today();
+      var typeEl2 = document.getElementById('vm_type'); if (typeEl2) typeEl2.value = 'expense';
+      var descEl2 = document.getElementById('vm_desc'); if (descEl2) descEl2.value = '';
+    }
+    var m = document.getElementById('voucherModal'); if (m) m.style.display = 'flex';
+    _ri();
+  }
+
+  function _rebuildVoucherEntries(entries) {
+    var container = document.getElementById('vm_entries');
+    if (!container) return;
+    var allAccts = _accounts();
+    var acctOptions = '<option value="">-- 선택 --</option>';
+    ['asset', 'liability', 'equity', 'revenue', 'expense'].forEach(function (type) {
+      var label = { asset: '자산', liability: '부채', equity: '자본', revenue: '수익', expense: '비용' }[type];
+      var items = allAccts.filter(function (a) { return a.type === type; });
+      if (items.length) {
+        acctOptions += '<optgroup label="' + label + '">' +
+          items.map(function (a) { return '<option value="' + a.code + '">' + a.code + ' ' + a.name + '</option>'; }).join('') + '</optgroup>';
+      }
+    });
+    container.innerHTML = entries.map(function (e) {
+      return '<div class="acct-entry-row">' +
+        '<select class="form-input" style="flex:.8"><option value="debit"' + (e.side === 'debit' ? ' selected' : '') + '>차변</option><option value="credit"' + (e.side === 'credit' ? ' selected' : '') + '>대변</option></select>' +
+        '<select class="form-input" style="flex:2">' + acctOptions.replace('value="' + e.accountCode + '"', 'value="' + e.accountCode + '" selected') + '</select>' +
+        '<input class="form-input" type="number" placeholder="금액" style="flex:1" value="' + (e.amount || '') + '">' +
+        '<button class="btn-icon-sm delete" onclick="this.parentElement.remove()" title="삭제"><i data-lucide="x" class="icon-sm"></i></button>' +
+        '</div>';
+    }).join('');
+    _ri();
+  }
+
+  function addVoucherEntry() {
+    var container = document.getElementById('vm_entries');
+    if (!container) return;
+    var allAccts = _accounts();
+    var acctOptions = '<option value="">-- 선택 --</option>';
+    ['asset', 'liability', 'equity', 'revenue', 'expense'].forEach(function (type) {
+      var label = { asset: '자산', liability: '부채', equity: '자본', revenue: '수익', expense: '비용' }[type];
+      var items = allAccts.filter(function (a) { return a.type === type; });
+      if (items.length) {
+        acctOptions += '<optgroup label="' + label + '">' +
+          items.map(function (a) { return '<option value="' + a.code + '">' + a.code + ' ' + a.name + '</option>'; }).join('') + '</optgroup>';
+      }
+    });
+    var div = document.createElement('div');
+    div.className = 'acct-entry-row';
+    div.innerHTML = '<select class="form-input" style="flex:.8"><option value="debit">차변</option><option value="credit">대변</option></select>' +
+      '<select class="form-input" style="flex:2">' + acctOptions + '</select>' +
+      '<input class="form-input" type="number" placeholder="금액" style="flex:1">' +
+      '<button class="btn-icon-sm delete" onclick="this.parentElement.remove()" title="삭제"><i data-lucide="x" class="icon-sm"></i></button>';
+    container.appendChild(div);
+    _ri();
+  }
+
+  function closeVoucherModal() {
+    var m = document.getElementById('voucherModal'); if (m) m.style.display = 'none';
+    _voucherEditId = null;
+  }
+
+  function saveVoucher() {
+    var date = (document.getElementById('vm_date') || {}).value || _today();
+    var type = (document.getElementById('vm_type') || {}).value || 'expense';
+    var desc = (document.getElementById('vm_desc') || {}).value || '';
+    if (!desc.trim()) { _toast('error', '적요를 입력하세요'); return; }
+
+    var container = document.getElementById('vm_entries');
+    var rows = container ? container.querySelectorAll('.acct-entry-row') : [];
+    var entries = [];
+    rows.forEach(function (row) {
+      var selects = row.querySelectorAll('select');
+      var input = row.querySelector('input[type="number"]');
+      if (selects.length >= 2 && input) {
+        var side = selects[0].value;
+        var code = selects[1].value;
+        var amt = parseInt(input.value) || 0;
+        if (code && amt > 0) entries.push({ side: side, accountCode: code, amount: amt });
+      }
+    });
+
+    if (entries.length < 2) { _toast('error', '차변과 대변 항목을 최소 각 1개씩 입력하세요'); return; }
+
+    var vouchers = _vouchers();
+    if (_voucherEditId) {
+      vouchers = vouchers.map(function (v) {
+        if (v.id !== _voucherEditId) return v;
+        return Object.assign({}, v, { date: date, type: type, description: desc, entries: entries });
+      });
+      _toast('info', '전표가 수정되었습니다');
+    } else {
+      vouchers.push({
+        id: _uid(), date: date, type: type, description: desc, entries: entries,
+        sourceType: 'manual', sourceId: null,
+        createdAt: _now(), createdBy: (typeof WS !== 'undefined' && WS.currentUser) ? WS.currentUser.name : '수동'
+      });
+      _toast('success', '전표가 등록되었습니다');
+    }
+    _ls('acct_vouchers', vouchers);
+    closeVoucherModal();
+    renderAcctPayment();
+  }
+
+  function deleteVoucher(id) {
+    _ls('acct_vouchers', _vouchers().filter(function (v) { return v.id !== id; }));
+    _toast('info', '전표가 삭제되었습니다');
+    renderAcctPayment();
+  }
+
+  /* ══════════════════════════
+     글로벌 노출
+  ══════════════════════════ */
+  window.ACCT = {
+    enter: enterAccountingMode,
+    exit: exitAccountingMode,
+    showPage: showAcctPage,
+    // 대시보드
+    renderOverview: renderAcctOverview,
+    // 예산
+    openBudgetModal: openBudgetModal,
+    closeBudgetModal: closeBudgetModal,
+    saveBudget: saveBudget,
+    deleteBudget: deleteBudget,
+    // 품의
+    openApprovalModal: openApprovalModal,
+    closeApprovalModal: closeApprovalModal,
+    submitApproval: submitApproval,
+    approveItem: approveItem,
+    rejectItem: rejectItem,
+    switchApprovalTab: switchApprovalTab,
+    // 입출금
+    autoSuggestAccount: autoSuggestAccount,
+    saveExpense: saveExpense,
+    saveIncome: saveIncome,
+    deleteCashflow: deleteCashflow,
+    // 전표
+    openVoucherModal: openVoucherModal,
+    closeVoucherModal: closeVoucherModal,
+    addVoucherEntry: addVoucherEntry,
+    saveVoucher: saveVoucher,
+    deleteVoucher: deleteVoucher
+  };
+
+  // 글로벌 함수 노출 (사이드바/헤더에서 직접 호출)
+  window.enterAccountingMode = enterAccountingMode;
+  window.exitAccountingMode = exitAccountingMode;
+  window.showAcctPage = showAcctPage;
+
+})();

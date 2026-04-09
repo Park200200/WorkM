@@ -1625,11 +1625,26 @@ function closeAllModals() {
         }
         if (typeof refreshIcons === 'function') refreshIcons();
       }, 20);
+    } else if (pid === 'accounting') {
+      setTimeout(function () {
+        var mainNav = document.getElementById('mainNav');
+        var acctNav = document.getElementById('acctNav');
+        var homepageNav = document.getElementById('homepageNav');
+        if (mainNav) mainNav.style.display = 'none';
+        if (homepageNav) homepageNav.style.display = 'none';
+        if (acctNav) acctNav.style.display = 'block';
+        if (typeof refreshIcons === 'function') refreshIcons();
+      }, 20);
     } else {
       var mainNav2 = document.getElementById('mainNav');
       var homepageNav2 = document.getElementById('homepageNav');
+      var acctNav2 = document.getElementById('acctNav');
       if (homepageNav2 && homepageNav2.style.display !== 'none') {
         homepageNav2.style.display = 'none';
+        if (mainNav2) mainNav2.style.display = 'block';
+      }
+      if (acctNav2 && acctNav2.style.display !== 'none') {
+        acctNav2.style.display = 'none';
         if (mainNav2) mainNav2.style.display = 'block';
       }
     }

@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 
 let sidebarTimer = null;
 
@@ -87,11 +87,10 @@ function showPage(name, navEl) {
   if (name === 'rank-mgmt') renderPage_RankMgmt();
 
 
-  // homepage / accounting 모드: 헤더 검색창 가시성 전환
+  // homepage 모드: 헤더 검색창 가시성 전환
   var headerSearch = document.getElementById('headerSearch');
   var homepageBar  = document.getElementById('homepageModeBar');
   var acctBar      = document.getElementById('acctModeBar');
-
   if (name === 'homepage') {
     if (headerSearch) headerSearch.style.display = 'none';
     if (homepageBar)  homepageBar.style.display  = 'flex';

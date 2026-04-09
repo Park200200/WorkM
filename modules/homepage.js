@@ -236,6 +236,7 @@ window._rivetPreview = function () {
   var bgEl = document.getElementById('rivet_bg_color');
   var fcEl = document.getElementById('rivet_font_color');
   var fsEl = document.getElementById('rivet_font_size');
+  var fwEl = document.getElementById('rivet_font_weight');
   var alEl = document.getElementById('rivet_align');
   var prev = document.getElementById('rivet_preview');
   var bgLbl = document.getElementById('rivet_bg_label');
@@ -244,12 +245,14 @@ window._rivetPreview = function () {
   var bg = bgEl ? bgEl.value : '#1e40af';
   var fc = fcEl ? fcEl.value : '#ffffff';
   var fs = fsEl ? fsEl.value : '13';
+  var fw = fwEl ? fwEl.value : '400';
   var align = alEl ? alEl.value : 'center';
   if (bgLbl) bgLbl.value = bg;
   if (fcLbl) fcLbl.value = fc;
   prev.style.background = bg;
   prev.style.color = fc;
   prev.style.fontSize = fs + 'px';
+  prev.style.fontWeight = fw;
   prev.style.textAlign = align;
   prev.textContent = _rivetTags.length > 0 ? _rivetTags.join('  ·  ') : '공지 텍스트를 입력하세요';
 };
@@ -258,11 +261,13 @@ window._rivetSave = function () {
   var bgEl = document.getElementById('rivet_bg_color');
   var fcEl = document.getElementById('rivet_font_color');
   var fsEl = document.getElementById('rivet_font_size');
+  var fwEl = document.getElementById('rivet_font_weight');
   var alEl = document.getElementById('rivet_align');
   var data = {
     bgColor: bgEl ? bgEl.value : '#1e40af',
     fontColor: fcEl ? fcEl.value : '#ffffff',
     fontSize: fsEl ? parseInt(fsEl.value) : 13,
+    fontWeight: fwEl ? parseInt(fwEl.value) : 400,
     align: alEl ? alEl.value : 'center',
     tags: _rivetTags.slice()
   };
@@ -282,11 +287,32 @@ window._rivetRestore = function () {
     if (bgEl && data.bgColor) bgEl.value = data.bgColor;
     if (fcEl && data.fontColor) fcEl.value = data.fontColor;
     if (fsEl && data.fontSize) { fsEl.value = data.fontSize; if (lbl) lbl.textContent = data.fontSize + 'px'; }
+    if (data.fontWeight) _rivetSetFontWeight(data.fontWeight);
     if (data.align) _rivetSetAlign(data.align);
     if (Array.isArray(data.tags)) { _rivetTags = data.tags.slice(); _rivetRenderTags(); }
     setTimeout(window._rivetPreview, 50);
   } catch (e) { }
 };
+
+/* ══ 리벳 폰트 굵기 토글 ══ */
+window._rivetSetFontWeight = function (fw) {
+  var fwEl = document.getElementById('rivet_font_weight');
+  if (fwEl) fwEl.value = String(fw);
+  [300, 400, 700, 900].forEach(function (w) {
+    var btn = document.getElementById('rivet_fw_' + w);
+    if (!btn) return;
+    if (w === fw) {
+      btn.style.background = 'var(--accent-blue)';
+      btn.style.color = '#fff';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text-secondary)';
+    }
+  });
+  if (typeof window._rivetPreview === 'function') window._rivetPreview();
+};
+/* 로컬 별칭 */
+var _rivetSetFontWeight = window._rivetSetFontWeight;
 
 /* ══ 리벳 정렬 재정의 (window._rivetPreview 참조) ══ */
 window._rivetSetAlign = function (align) {
@@ -3969,6 +3995,7 @@ function _hpMcCancel() {
       bg: (document.getElementById('hp_menu_bg') || {}).value || '#1e293b',
       fc: (document.getElementById('hp_menu_fc') || {}).value || '#ffffff',
       fs: (document.getElementById('hp_menu_fs') || {}).value || 15,
+      fw: (document.getElementById('hp_menu_fw') || {}).value || 700,
       h: (document.getElementById('hp_menu_h') || {}).value || 52,
       gap: (document.getElementById('hp_menu_gap') || {}).value || 20,
       align: (document.getElementById('hp_menu_align') || {}).value || 'center',
@@ -4003,6 +4030,8 @@ function _hpMcCancel() {
       /* 폰트 사이즈 */
       _setVal('hp_menu_fs', s.fs);
       _setTxt('hp_menu_fs_v', s.fs + 'px');
+      /* 폰트 굵기 */
+      if (s.fw && typeof window._hpMenuSetFw === 'function') window._hpMenuSetFw(parseInt(s.fw));
       /* 높이 */
       _setVal('hp_menu_h', s.h);
       _setTxt('hp_menu_h_v', s.h + 'px');
@@ -4065,10 +4094,28 @@ function _hpMcCancel() {
       'justify-content:' + s.align + ';gap:' + s.gap + 'px;border-radius:10px;min-height:' + s.h + 'px;flex-wrap:wrap';
     bar.innerHTML = _hpMenuItems.map(function (m) {
       var name = typeof m === 'string' ? m : (m.name || m.label || String(m));
-      return '<span style="font-size:' + s.fs + 'px;color:' + s.fc + ';font-weight:600;cursor:pointer;' +
+      return '<span style="font-size:' + s.fs + 'px;color:' + s.fc + ';font-weight:' + (s.fw || 700) + ';cursor:pointer;' +
         'padding:4px 6px;border-radius:4px;transition:opacity .15s" ' +
         'onmouseover="this.style.opacity=.7" onmouseout="this.style.opacity=1">' + name + '</span>';
     }).join('');
+  };
+
+  /* ── 폰트 굵기 토글 ── */
+  window._hpMenuSetFw = function (fw) {
+    var fwEl = document.getElementById('hp_menu_fw');
+    if (fwEl) fwEl.value = String(fw);
+    [300, 400, 700, 900].forEach(function (w) {
+      var btn = document.getElementById('hp_menu_fw_' + w);
+      if (!btn) return;
+      if (w === fw) {
+        btn.style.background = '#6366f1';
+        btn.style.color = '#fff';
+      } else {
+        btn.style.background = 'transparent';
+        btn.style.color = 'var(--text-secondary)';
+      }
+    });
+    window._hpMenuPreview();
   };
 
 
@@ -4286,47 +4333,107 @@ function _hpMcCancel() {
   /* 샘플 문서 */
   var _TERMS_SAMPLES = {
     tos: `<h1 style="font-size:22px;font-weight:900;color:var(--text-primary);border-bottom:2.5px solid #6366f1;padding-bottom:10px;margin-bottom:20px">홈페이지 이용약관</h1>
-<p style="font-size:12px;color:var(--text-muted);margin-bottom:24px">시행일: <strong>2026년 1월 1일</strong> &nbsp;|  버전: <strong>v1.0</strong></p>
+<p style="font-size:12px;color:var(--text-muted);margin-bottom:24px">시행일자: <strong>2025년 1월 1일</strong> &nbsp;|&nbsp; 최종 개정일: <strong>2025년 1월 1일</strong> &nbsp;|&nbsp; 버전: <strong>v1.0</strong></p>
 
-<h2 style="font-size:16px;font-weight:800;color:var(--text-primary);margin:28px 0 10px;display:flex;align-items:center;gap:8px">📄 제1조 (목적)</h2>
-<p>이 약관은 <strong>우리 회사</strong>(이하 ‘회사’)(이) 운영하는 웹사이트의 서비스 이용에 관한 조건과 절차를 규정합니다.</p>
+<h2 style="font-size:16px;font-weight:800;color:var(--accent-indigo);margin:28px 0 10px">제1장 총칙</h2>
 
-<h2 style="font-size:16px;font-weight:800;color:var(--text-primary);margin:28px 0 10px;display:flex;align-items:center;gap:8px">📄 제2조 (용어의 정의)</h2>
-<ul style="padding-left:20px;margin:10px 0">
-  <li style="margin-bottom:6px"><strong>서비스</strong>: 회사가 제공하는 일체의 웹사이트, 앱 등 디지트 플랫폼</li>
-  <li style="margin-bottom:6px"><strong>이용자</strong>: 서비스에 접속하여 본 약관에 동의한 자</li>
-  <li style="margin-bottom:6px"><strong>콘텐츠</strong>: 이용자가 췭로드 하거나 발행한 텍스트, 이미지, 동영상 등</li>
-</ul>
+<h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:16px 0 6px">제1조 (목적)</h3>
+<p style="font-size:13.5px;color:var(--text-secondary);line-height:1.9;margin:0 0 12px">이 약관은 <strong>(주)워크엠</strong>(이하 "회사"라 합니다)이 운영하는 홈페이지(이하 "사이트"라 합니다)에서 제공하는 인터넷 관련 서비스(이하 "서비스"라 합니다)를 이용함에 있어 회사와 이용자의 권리·의무 및 책임사항을 규정함을 목적으로 합니다.</p>
 
-<h2 style="font-size:16px;font-weight:800;color:var(--text-primary);margin:28px 0 10px;display:flex;align-items:center;gap:8px">📄 제3조 (서비스 제공 및 변경)</h2>
-<p>회사는 서비스의 내용을 다음과 같이 또는 다른 방식으로 변경할 수 있으멤 이를 사전에 비식 제한 없이 안무무모드를 통해 수정할 수 있습니다.</p>
-<blockquote style="border-left:4px solid #6366f1;padding:10px 16px;margin:16px 0;background:rgba(99,102,241,.07);border-radius:0 8px 8px 0;color:var(--text-secondary);font-style:italic">서비스 변경 등의 중요한 안내는 이메일 또는 알림으로 전달됩니다.</blockquote>
-
-<h2 style="font-size:16px;font-weight:800;color:var(--text-primary);margin:28px 0 10px;display:flex;align-items:center;gap:8px">📄 제4조 (이용자 의무)</h2>
-<p>이용자는 아래 행위를 하여서는 안 됩니다.</p>
-<ol style="padding-left:20px;margin:10px 0">
-  <li style="margin-bottom:6px">🚫 타인의 정보 미정켜 사M용</li>
-  <li style="margin-bottom:6px">🚫 회사의 지적재산권 침해</li>
-  <li style="margin-bottom:6px">🚫 할라한 또는 불법콘텐츠 유포</li>
+<h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:16px 0 6px">제2조 (용어의 정의)</h3>
+<p style="font-size:13.5px;color:var(--text-secondary);margin:0 0 8px">이 약관에서 사용하는 용어의 정의는 다음과 같습니다.</p>
+<ol style="padding-left:20px;margin:0 0 12px;color:var(--text-secondary);font-size:13.5px;line-height:2">
+  <li>"사이트"란 회사가 서비스를 이용자에게 제공하기 위하여 컴퓨터 등 정보통신설비를 이용하여 재화 또는 용역을 거래할 수 있도록 설정한 가상의 영업장을 말합니다.</li>
+  <li>"이용자"란 사이트에 접속하여 이 약관에 따라 회사가 제공하는 서비스를 받는 회원 및 비회원을 말합니다.</li>
+  <li>"회원"이란 회사에 개인정보를 제공하여 회원등록을 한 자로서, 회사의 정보를 지속적으로 제공받으며 회사가 제공하는 서비스를 계속적으로 이용할 수 있는 자를 말합니다.</li>
+  <li>"비회원"이란 회원에 가입하지 않고 회사가 제공하는 서비스를 이용하는 자를 말합니다.</li>
 </ol>
 
-<hr style="margin:32px 0;border:none;border-top:1.5px solid var(--border-color)">
+<h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:16px 0 6px">제3조 (약관의 명시와 개정)</h3>
+<ol style="padding-left:20px;margin:0 0 12px;color:var(--text-secondary);font-size:13.5px;line-height:2">
+  <li>회사는 이 약관의 내용과 상호, 영업소 소재지 주소, 전화번호, 팩스번호, 전자우편주소, 사업자등록번호 등을 이용자가 쉽게 알 수 있도록 사이트의 초기 서비스 화면에 게시합니다.</li>
+  <li>회사는 「약관의 규제에 관한 법률」, 「정보통신망 이용촉진 및 정보보호 등에 관한 법률」 등 관련 법을 위배하지 않는 범위에서 이 약관을 개정할 수 있습니다.</li>
+  <li>회사가 약관을 개정할 경우에는 적용일자 및 개정 사유를 명시하여 현행 약관과 함께 사이트의 초기화면에 그 적용일자 7일 이전부터 적용일자 전일까지 공지합니다.</li>
+</ol>
 
-<h2 style="font-size:16px;font-weight:800;color:var(--text-primary);margin:28px 0 10px;display:flex;align-items:center;gap:8px">✅ 동의 확인</h2>
-<div style="background:var(--bg-secondary);border:1.5px solid var(--border-color);border-radius:12px;padding:20px;margin-top:12px">
+<h2 style="font-size:16px;font-weight:800;color:var(--accent-indigo);margin:32px 0 10px">제2장 서비스 이용</h2>
+
+<h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:16px 0 6px">제4조 (서비스의 제공 및 변경)</h3>
+<ol style="padding-left:20px;margin:0 0 12px;color:var(--text-secondary);font-size:13.5px;line-height:2">
+  <li>회사는 다음과 같은 업무를 수행합니다.
+    <ul style="margin:4px 0;padding-left:18px">
+      <li>재화 또는 용역에 대한 정보 제공 및 구매계약의 체결</li>
+      <li>구매계약이 체결된 재화 또는 용역의 배송</li>
+      <li>기타 회사가 정하는 업무</li>
+    </ul>
+  </li>
+  <li>회사는 재화 또는 용역의 품절 또는 기술적 사양의 변경 등의 경우에는 장차 체결되는 계약에 의해 제공할 재화 또는 용역의 내용을 변경할 수 있습니다.</li>
+</ol>
+
+<h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:16px 0 6px">제5조 (서비스의 중단)</h3>
+<ol style="padding-left:20px;margin:0 0 12px;color:var(--text-secondary);font-size:13.5px;line-height:2">
+  <li>회사는 컴퓨터 등 정보통신설비의 보수점검·교체 및 고장, 통신의 두절 등의 사유가 발생한 경우에는 서비스의 제공을 일시적으로 중단할 수 있습니다.</li>
+  <li>회사는 제1항의 사유로 서비스의 제공이 일시적으로 중단됨으로 인하여 이용자 또는 제3자가 입은 손해에 대하여 배상합니다. 단, 회사가 고의 또는 과실이 없음을 입증하는 경우에는 그러하지 아니합니다.</li>
+</ol>
+
+<h2 style="font-size:16px;font-weight:800;color:var(--accent-indigo);margin:32px 0 10px">제3장 회원 가입 및 관리</h2>
+
+<h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:16px 0 6px">제6조 (회원가입)</h3>
+<p style="font-size:13.5px;color:var(--text-secondary);margin:0 0 8px">이용자는 회사가 정한 가입 양식에 따라 회원정보를 기입한 후 이 약관에 동의한다는 의사표시를 함으로써 회원가입을 신청합니다. 회사는 다음 각 호에 해당하지 않는 한 회원으로 등록합니다.</p>
+<ol style="padding-left:20px;margin:0 0 12px;color:var(--text-secondary);font-size:13.5px;line-height:2">
+  <li>가입신청자가 이 약관에 의하여 이전에 회원자격을 상실한 적이 있는 경우 (단, 회원자격 상실 후 3년이 경과한 자로서 회사의 회원 재가입 승낙을 얻은 경우는 예외)</li>
+  <li>등록 내용에 허위, 기재누락, 오기가 있는 경우</li>
+  <li>기타 회원으로 등록하는 것이 회사의 기술상 현저히 지장이 있다고 판단되는 경우</li>
+</ol>
+
+<h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:16px 0 6px">제7조 (회원 탈퇴 및 자격 상실)</h3>
+<ol style="padding-left:20px;margin:0 0 12px;color:var(--text-secondary);font-size:13.5px;line-height:2">
+  <li>회원은 회사에 언제든지 탈퇴를 요청할 수 있으며 회사는 즉시 회원탈퇴를 처리합니다.</li>
+  <li>회원이 다음 각 호의 사유에 해당하는 경우, 회사는 회원자격을 제한 및 정지시킬 수 있습니다.
+    <ul style="margin:4px 0;padding-left:18px">
+      <li>가입 신청 시에 허위 내용을 등록한 경우</li>
+      <li>다른 사람의 서비스 이용을 방해하거나 그 정보를 도용하는 등 전자상거래 질서를 위협하는 경우</li>
+      <li>서비스를 이용하여 법령 또는 이 약관이 금지하거나 공서양속에 반하는 행위를 하는 경우</li>
+    </ul>
+  </li>
+</ol>
+
+<h2 style="font-size:16px;font-weight:800;color:var(--accent-indigo);margin:32px 0 10px">제4장 개인정보 보호</h2>
+
+<h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:16px 0 6px">제8조 (개인정보 보호)</h3>
+<p style="font-size:13.5px;color:var(--text-secondary);margin:0 0 12px">회사는 이용자의 개인정보 수집 시 서비스 제공을 위하여 필요한 최소한의 개인정보를 수집합니다. 회사는 회원가입 시 구매계약 이행에 필요한 정보를 미리 수집하지 않습니다. 다만, 관련 법령상 의무이행을 위하여 구매계약 이전에 본인확인이 필요한 경우에는 최소한의 특정 개인정보를 수집할 수 있습니다.</p>
+
+<h2 style="font-size:16px;font-weight:800;color:var(--accent-indigo);margin:32px 0 10px">제5장 기타</h2>
+
+<h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:16px 0 6px">제9조 (분쟁 해결)</h3>
+<ol style="padding-left:20px;margin:0 0 12px;color:var(--text-secondary);font-size:13.5px;line-height:2">
+  <li>회사는 이용자가 제기하는 정당한 의견이나 불만을 반영하고 그 피해를 보상·처리하기 위하여 피해보상처리기구를 설치·운영합니다.</li>
+  <li>회사는 이용자로부터 제출되는 불만사항 및 의견은 우선적으로 그 사항을 처리합니다. 다만, 신속한 처리가 곤란한 경우에는 이용자에게 그 사유와 처리일정을 즉시 통보해 드립니다.</li>
+  <li>회사와 이용자 간에 발생한 전자상거래 분쟁에 관련하여 이용자의 피해구제신청이 있는 경우에는 공정거래위원회 또는 시·도지사가 의뢰하는 분쟁조정기관의 조정에 따를 수 있습니다.</li>
+</ol>
+
+<h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:16px 0 6px">제10조 (재판권 및 준거법)</h3>
+<p style="font-size:13.5px;color:var(--text-secondary);margin:0 0 24px">회사와 이용자 간에 발생한 전자상거래 분쟁에 관한 소송은 제소 당시의 이용자의 주소에 의하고, 주소가 없는 경우에는 거소를 관할하는 지방법원의 전속관할로 합니다. 회사와 이용자 간에 제기된 전자상거래 소송에는 한국법을 적용합니다.</p>
+
+<hr style="border:none;border-top:1.5px solid var(--border-color);margin:28px 0">
+
+<h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin:16px 0 10px">✅ 이용약관 동의</h3>
+<div style="background:var(--bg-secondary);border:1.5px solid var(--border-color);border-radius:12px;padding:20px;margin-top:8px">
   <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:12px">
     <input type="checkbox" style="width:16px;height:16px;margin-top:2px;accent-color:#6366f1" checked>
-    <span style="font-size:13px;color:var(--text-primary)">하비하면 (14세 이상) 이용약관에 동의합니다. <span style="color:#ef4444;font-weight:700">[필수]</span></span>
+    <span style="font-size:13px;color:var(--text-primary)">(필수) 만 14세 이상이며, 홈페이지 이용약관에 동의합니다. <span style="color:#ef4444;font-weight:700">[필수]</span></span>
   </label>
   <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:12px">
     <input type="checkbox" style="width:16px;height:16px;margin-top:2px;accent-color:#6366f1" checked>
-    <span style="font-size:13px;color:var(--text-primary)">개인정보 수집 및 이용에 동의합니다. <span style="color:#ef4444;font-weight:700">[필수]</span></span>
+    <span style="font-size:13px;color:var(--text-primary)">(필수) 개인정보 수집 및 이용에 동의합니다. <span style="color:#ef4444;font-weight:700">[필수]</span></span>
   </label>
   <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
     <input type="checkbox" style="width:16px;height:16px;margin-top:2px;accent-color:#6366f1">
-    <span style="font-size:13px;color:var(--text-secondary)">마케팅 활용에 동의합니다. [선택]</span>
+    <span style="font-size:13px;color:var(--text-secondary)">(선택) 마케팅 정보 수신 및 활용에 동의합니다. [선택]</span>
   </label>
-</div>`,
+</div>
+
+<p style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:24px">본 약관은 2025년 1월 1일부터 시행됩니다. &nbsp;|&nbsp; (주)워크엠</p>`,
 
     privacy: `<h1 style="font-size:22px;font-weight:900;color:var(--text-primary);border-bottom:2.5px solid #10b981;padding-bottom:10px;margin-bottom:20px">개인정보 수집·이용 및 처리방침</h1>
 <p style="font-size:12px;color:var(--text-muted);margin-bottom:24px">시행일: <strong>2026년 1월 1일</strong> &nbsp;|  개인정보보호법 제30조</p>
