@@ -1877,6 +1877,16 @@
               </div>
               <input type="hidden" id="chub-tags">
             </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+              <div>
+                <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">♥ 좋아요</label>
+                <input id="chub-likes" type="number" min="0" value="0" placeholder="0" style="width:100%;height:38px;padding:0 12px;border:1.5px solid var(--border-color);border-radius:8px;font-size:13px;background:var(--bg-tertiary);color:var(--text-primary);box-sizing:border-box">
+              </div>
+              <div>
+                <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">👁 조회수</label>
+                <input id="chub-views" type="number" min="0" value="0" placeholder="0" style="width:100%;height:38px;padding:0 12px;border:1.5px solid var(--border-color);border-radius:8px;font-size:13px;background:var(--bg-tertiary);color:var(--text-primary);box-sizing:border-box">
+              </div>
+            </div>
             <div style="display:flex;gap:10px;justify-content:flex-end">
               <button onclick="chubCloseModal()" style="padding:10px 20px;border:1.5px solid var(--border-color);border-radius:8px;background:transparent;color:var(--text-secondary);font-size:13px;font-weight:700;cursor:pointer">취소</button>
               <button onclick="chubSave()" class="btn btn-blue" style="padding:10px 24px">등록</button>

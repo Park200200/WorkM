@@ -3779,6 +3779,9 @@ function _hpMcCancel() {
     if (summaryEl) summaryEl.value = it.summary || '';
     /* 이미지 복원 */
     _chubShowPreview(it.img || '');
+    /* 좋아요/조회수 복원 */
+    var likesEl = document.getElementById('chub-likes'); if (likesEl) likesEl.value = it.likes || 0;
+    var viewsEl = document.getElementById('chub-views'); if (viewsEl) viewsEl.value = it.views || 0;
     /* 태그 복원 */
     if (typeof window._tagReset === 'function') window._tagReset('chub');
     var tagsHidden = document.getElementById('chub-tags');
@@ -3822,6 +3825,8 @@ function _hpMcCancel() {
     chubLoad();
 
     var imgVal = window._chubPendingImg || '';
+    var likesVal = parseInt((document.getElementById('chub-likes') || {}).value) || 0;
+    var viewsVal = parseInt((document.getElementById('chub-views') || {}).value) || 0;
 
     if (window._chubEditId) {
       /* 수정 모드 */
@@ -3829,6 +3834,7 @@ function _hpMcCancel() {
         if (it.id !== window._chubEditId) return it;
         return Object.assign({}, it, {
           type: type, title: title, url: url, summary: desc, img: imgVal,
+          likes: likesVal, views: viewsVal,
           tags: tags.split(',').map(function (t) { return t.trim(); }).filter(Boolean)
         });
       });
@@ -3839,7 +3845,7 @@ function _hpMcCancel() {
       window._chubItems.unshift({
         id: 'c' + Date.now(), type: type, title: title, url: url, img: imgVal,
         summary: desc, tags: tags.split(',').map(function (t) { return t.trim(); }).filter(Boolean),
-        likes: 0, views: 0, regDate: new Date().toISOString().split('T')[0]
+        likes: likesVal, views: viewsVal, regDate: new Date().toISOString().split('T')[0]
       });
       if (typeof showToast === 'function') showToast('success', '콘텐츠가 등록되었습니다');
     }
@@ -3860,6 +3866,9 @@ function _hpMcCancel() {
     ['chub-title', 'chub-url', 'chub-summary', 'chub-desc'].forEach(function (id) {
       var el = document.getElementById(id); if (el) el.value = '';
     });
+    /* 좋아요/조회수 초기화 */
+    var likesEl = document.getElementById('chub-likes'); if (likesEl) likesEl.value = 0;
+    var viewsEl = document.getElementById('chub-views'); if (viewsEl) viewsEl.value = 0;
     /* 이미지 초기화 */
     _chubShowPreview('');
     var fileInput = document.getElementById('chub-img-file');
