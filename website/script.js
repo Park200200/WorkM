@@ -418,7 +418,7 @@
       if (!imgSrc) return;
 
       var hasText = item.text1 || item.text2 || item.text3;
-      var isValidImg = function(v) { return v && (v.startsWith('data:') || v.startsWith('http')); };
+      var isValidImg = function(v) { return !!v && typeof v === 'string' && v.length > 3; };
       var hasVertical = isValidImg(imgV);
 
       html += '<div class="hp-content-item' + (hasVertical ? ' has-vertical' : '') + '">';
@@ -1226,12 +1226,20 @@
     var colCount = Math.min(imgItems.length, 4);
     var html = '<div class="hp-content-line"><div class="line-grid cols-' + colCount + '">';
     imgItems.forEach(function (item) {
-      var imgSrc = item.imgH || item.imgV || '';
+      var imgH = item.imgH || '';
+      var imgV = item.imgV || '';
+      var isValidImg = function(v) { return !!v && typeof v === 'string' && v.length > 3; };
+      var hasVertical = isValidImg(imgH) && isValidImg(imgV);
       var linkUrl = item.url || '';
       var isBlank = item.blank || false;
-      html += '<div class="hp-content-item">';
+      html += '<div class="hp-content-item' + (hasVertical ? ' has-vertical' : '') + '">';
       if (linkUrl) html += '<a href="' + escAttr(linkUrl) + '"' + (isBlank ? ' target="_blank" rel="noopener"' : '') + '>';
-      html += '<img src="' + escAttr(imgSrc) + '" alt="' + escAttr(item.desc || subMenuName) + '" loading="lazy">';
+      if (hasVertical) {
+        html += '<img class="mc-img-h" src="' + escAttr(imgH) + '" alt="' + escAttr(item.desc || subMenuName) + '" loading="lazy">';
+        html += '<img class="mc-img-v" src="' + escAttr(imgV) + '" alt="' + escAttr(item.desc || subMenuName) + '" loading="lazy">';
+      } else {
+        html += '<img src="' + escAttr(imgH || imgV) + '" alt="' + escAttr(item.desc || subMenuName) + '" loading="lazy">';
+      }
       if (item.desc) html += '<div class="item-overlay"><div class="item-desc">' + escHtml(item.desc) + '</div></div>';
       if (linkUrl) html += '</a>';
       html += '</div>';
