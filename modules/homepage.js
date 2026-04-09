@@ -3646,6 +3646,50 @@ function _hpMcCancel() {
     }
   };
 
+  /* ── 이미지 처리 헬퍼 ── */
+  window._chubPendingImg = '';
+
+  function _chubShowPreview(src) {
+    window._chubPendingImg = src || '';
+    var wrap = document.getElementById('chub-img-preview');
+    var img = document.getElementById('chub-img-preview-img');
+    var urlInput = document.getElementById('chub-img-url');
+    if (src) {
+      if (img) img.src = src;
+      if (wrap) wrap.style.display = 'block';
+      if (urlInput && !src.startsWith('data:')) urlInput.value = src;
+    } else {
+      if (wrap) wrap.style.display = 'none';
+      if (img) img.src = '';
+      if (urlInput) urlInput.value = '';
+    }
+  }
+
+  window.chubHandleImageFile = function (input) {
+    if (!input.files || !input.files[0]) return;
+    var file = input.files[0];
+    if (file.size > 2 * 1024 * 1024) {
+      if (typeof showToast === 'function') showToast('warn', '이미지 크기는 2MB 이하로 제한됩니다');
+      input.value = '';
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function (e) { _chubShowPreview(e.target.result); };
+    reader.readAsDataURL(file);
+  };
+
+  window.chubHandleImageUrl = function (url) {
+    if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+      _chubShowPreview(url);
+    }
+  };
+
+  window.chubClearImage = function () {
+    _chubShowPreview('');
+    var fileInput = document.getElementById('chub-img-file');
+    if (fileInput) fileInput.value = '';
+  };
+
   window.chubOpenDetail = function (id) {
     chubLoad();
     var it = (window._chubItems || []).find(function (x) { return x.id === id; });
@@ -3733,6 +3777,8 @@ function _hpMcCancel() {
     var urlEl = document.getElementById('chub-url'); if (urlEl) urlEl.value = it.url || '';
     var summaryEl = document.getElementById('chub-summary') || document.getElementById('chub-desc');
     if (summaryEl) summaryEl.value = it.summary || '';
+    /* 이미지 복원 */
+    _chubShowPreview(it.img || '');
     /* 태그 복원 */
     if (typeof window._tagReset === 'function') window._tagReset('chub');
     var tagsHidden = document.getElementById('chub-tags');
@@ -3775,12 +3821,14 @@ function _hpMcCancel() {
     if (!title) { if (typeof showToast === 'function') showToast('warn', '제목을 입력하세요'); return; }
     chubLoad();
 
+    var imgVal = window._chubPendingImg || '';
+
     if (window._chubEditId) {
       /* 수정 모드 */
       window._chubItems = (window._chubItems || []).map(function (it) {
         if (it.id !== window._chubEditId) return it;
         return Object.assign({}, it, {
-          type: type, title: title, url: url, summary: desc,
+          type: type, title: title, url: url, summary: desc, img: imgVal,
           tags: tags.split(',').map(function (t) { return t.trim(); }).filter(Boolean)
         });
       });
@@ -3789,12 +3837,13 @@ function _hpMcCancel() {
     } else {
       /* 신규 추가 */
       window._chubItems.unshift({
-        id: 'c' + Date.now(), type: type, title: title, url: url,
+        id: 'c' + Date.now(), type: type, title: title, url: url, img: imgVal,
         summary: desc, tags: tags.split(',').map(function (t) { return t.trim(); }).filter(Boolean),
         likes: 0, views: 0, regDate: new Date().toISOString().split('T')[0]
       });
       if (typeof showToast === 'function') showToast('success', '콘텐츠가 등록되었습니다');
     }
+    window._chubPendingImg = '';
     chubPersist();
     var m = document.getElementById('chubAddModal'); if (m) m.style.display = 'none';
     /* 태그 초기화 */
@@ -3811,6 +3860,10 @@ function _hpMcCancel() {
     ['chub-title', 'chub-url', 'chub-summary', 'chub-desc'].forEach(function (id) {
       var el = document.getElementById(id); if (el) el.value = '';
     });
+    /* 이미지 초기화 */
+    _chubShowPreview('');
+    var fileInput = document.getElementById('chub-img-file');
+    if (fileInput) fileInput.value = '';
     var typeEl = document.getElementById('chub-type'); if (typeEl) typeEl.value = 'website';
     /* 모달 제목 복원 */
     var modalTitle = document.querySelector('#chubAddModal div[style*="font-size:16px"]');
