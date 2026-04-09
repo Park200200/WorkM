@@ -228,10 +228,55 @@
     if (!el) return;
     _initDefaults();
 
-    var vouchers = _vouchers();
-    var cashflows = _cashflows();
-    var budgets = _budgets();
-    var approvals = _approvals();
+    var cats = _budgetCats();
+    var tabId = window._acctOverviewTab || 'all';
+
+    /* ── 탭 UI ── */
+    var tabHtml =
+      '<div class="page-header"><div>' +
+      '<div class="page-title">기본현황</div>' +
+      '<div class="page-subtitle">전체 수입·지출·예산 통합 대시보드</div>' +
+      '</div></div>' +
+      '<div style="display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap">' +
+      '<button onclick="window._acctOverviewTab=\'all\';window.AcctModule.renderOverview()" ' +
+      'style="padding:8px 18px;border-radius:20px;font-size:12.5px;font-weight:700;cursor:pointer;border:1.5px solid ' +
+      (tabId === 'all' ? 'var(--accent-blue);background:var(--accent-blue);color:#fff' : 'var(--border-color);background:transparent;color:var(--text-secondary)') +
+      ';transition:all .15s">📊 전체현황</button>';
+
+    cats.forEach(function (cat) {
+      var active = tabId === String(cat.id);
+      tabHtml += '<button onclick="window._acctOverviewTab=\'' + cat.id + '\';window.AcctModule.renderOverview()" ' +
+        'style="padding:8px 18px;border-radius:20px;font-size:12.5px;font-weight:700;cursor:pointer;border:1.5px solid ' +
+        (active ? 'var(--accent-blue);background:var(--accent-blue);color:#fff' : 'var(--border-color);background:transparent;color:var(--text-secondary)') +
+        ';transition:all .15s">' + _esc(cat.name) + '</button>';
+    });
+    tabHtml += '</div>';
+
+    /* ── 데이터 필터링 ── */
+    var allBudgets = _budgets();
+    var allVouchers = _vouchers();
+    var allCashflows = _cashflows();
+    var allApprovals = _approvals();
+
+    var budgets, vouchers, cashflows, approvals, catInfo;
+
+    if (tabId === 'all') {
+      budgets = allBudgets;
+      vouchers = allVouchers;
+      cashflows = allCashflows;
+      approvals = allApprovals;
+      catInfo = null;
+    } else {
+      var catIdNum = parseInt(tabId);
+      catInfo = cats.find(function (c) { return c.id === catIdNum; });
+      budgets = allBudgets.filter(function (b) { return b.catId === catIdNum; });
+      var budgetAcctCodes = budgets.map(function (b) { return b.accountCode; });
+      vouchers = allVouchers.filter(function (v) {
+        return (v.entries || []).some(function (e) { return budgetAcctCodes.indexOf(e.account) >= 0; });
+      });
+      cashflows = allCashflows.filter(function (c) { return budgetAcctCodes.indexOf(c.accountCode) >= 0; });
+      approvals = allApprovals.filter(function (a) { return budgetAcctCodes.indexOf(a.accountCode) >= 0; });
+    }
 
     // 통계 계산
     var totalIncome = 0, totalExpense = 0;
@@ -241,6 +286,27 @@
     });
     var balance = totalIncome - totalExpense;
     var pendingCount = approvals.filter(function (a) { return a.status === 'pending'; }).length;
+    var totalBudgetAmt = 0, totalBudgetSpent = 0;
+    budgets.forEach(function (b) {
+      totalBudgetAmt += (b.amount || 0);
+      totalBudgetSpent += (b.spent || 0);
+    });
+    var budgetRate = totalBudgetAmt > 0 ? Math.round(totalBudgetSpent / totalBudgetAmt * 100) : 0;
+
+    /* ── 예산구분 정보 카드 (개별 탭일 때) ── */
+    var catCardHtml = '';
+    if (catInfo) {
+      catCardHtml =
+        '<div class="acct-card" style="margin-bottom:16px;background:linear-gradient(135deg,rgba(79,110,247,.08),rgba(79,110,247,.02))">' +
+        '<div style="display:flex;align-items:center;gap:14px;padding:4px 0">' +
+        '<div style="width:48px;height:48px;border-radius:14px;background:var(--accent-blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800">\uD83C\uDFDB</div>' +
+        '<div style="flex:1">' +
+        '<div style="font-size:16px;font-weight:800;color:var(--text-primary);margin-bottom:3px">' + _esc(catInfo.name) + '</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--text-secondary)">' +
+        '<span>\uD83C\uDFE6 ' + _esc(catInfo.bank || '-') + '</span>' +
+        '<span>\uD83D\uDCC5 ' + (catInfo.periodFrom || '') + ' ~ ' + (catInfo.periodTo || '') + '</span>' +
+        '</div></div></div></div>';
+    }
 
     // 최근 전표 5건
     var recent = vouchers.slice().sort(function (a, b) {
@@ -250,7 +316,7 @@
     // 예산 소진율 상위 5
     var budgetBars = budgets.slice().map(function (b) {
       var pct = b.amount > 0 ? Math.round((b.spent || 0) / b.amount * 100) : 0;
-      return { name: _acctName(b.accountCode), pct: pct, spent: b.spent || 0, amount: b.amount, over: pct > 100 };
+      return { name: (b.budgetName || '') + ' ' + _acctName(b.accountCode), pct: pct, spent: b.spent || 0, amount: b.amount, over: pct > 100 };
     }).sort(function (a, b) { return b.pct - a.pct; }).slice(0, 5);
 
     // 월별 수입/지출 (최근 6개월)
@@ -273,25 +339,35 @@
       maxMonthVal = Math.max(maxMonthVal, monthData[k].income, monthData[k].expense);
     });
 
-    var html = '' +
-      '<div class="page-header"><div>' +
-      '<div class="page-title">기본현황</div>' +
-      '<div class="page-subtitle">전체 수입·지출·예산 요약 대시보드</div>' +
-      '</div></div>' +
+    var html = tabHtml + catCardHtml +
 
-      // 통계 카드 4개
+      // 통계 카드
       '<div class="acct-stat-row">' +
-      _statCard('arrow-down-circle', '총 수입', _fmtW(totalIncome), '#22c55e') +
-      _statCard('arrow-up-circle', '총 지출', _fmtW(totalExpense), '#ef4444') +
-      _statCard('wallet', '잔액', _fmtW(balance), balance >= 0 ? '#4f6ef7' : '#ef4444') +
-      _statCard('file-check', '결재 대기', pendingCount + '건', '#f59e0b') +
+      _statCard('arrow-down-circle', '\uCD1D \uC218\uC785', _fmtW(totalIncome), '#22c55e') +
+      _statCard('arrow-up-circle', '\uCD1D \uC9C0\uCD9C', _fmtW(totalExpense), '#ef4444') +
+      _statCard('wallet', '\uC794\uC561', _fmtW(balance), balance >= 0 ? '#4f6ef7' : '#ef4444') +
+      _statCard('file-check', '\uACB0\uC7AC \uB300\uAE30', pendingCount + '\uAC74', '#f59e0b') +
+      '</div>' +
+
+      // 예산 집행 현황
+      '<div class="acct-card" style="margin-bottom:16px">' +
+      '<div class="acct-card-head"><i data-lucide="pie-chart" style="width:16px;height:16px"></i> \uC608\uC0B0 \uC9D1\uD589 \uD604\uD669</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:10px">' +
+      '<div style="text-align:center"><div style="font-size:11px;color:var(--text-muted);margin-bottom:3px">\uCD1D \uD3B8\uC131\uC608\uC0B0</div><div style="font-size:16px;font-weight:800;color:var(--text-primary)">' + _fmtW(totalBudgetAmt) + '</div></div>' +
+      '<div style="text-align:center"><div style="font-size:11px;color:var(--text-muted);margin-bottom:3px">\uCD1D \uC9D1\uD589\uC561</div><div style="font-size:16px;font-weight:800;color:#ef4444">' + _fmtW(totalBudgetSpent) + '</div></div>' +
+      '<div style="text-align:center"><div style="font-size:11px;color:var(--text-muted);margin-bottom:3px">\uC794\uC5EC\uC608\uC0B0</div><div style="font-size:16px;font-weight:800;color:#22c55e">' + _fmtW(totalBudgetAmt - totalBudgetSpent) + '</div></div>' +
+      '</div>' +
+      '<div class="acct-progress-track" style="height:14px;border-radius:7px">' +
+      '<div class="acct-progress-fill" style="height:100%;width:' + Math.min(100, budgetRate) + '%;border-radius:7px;background:' + (budgetRate > 100 ? '#ef4444' : budgetRate > 80 ? '#f59e0b' : '#4f6ef7') + ';transition:width .4s"></div>' +
+      '</div>' +
+      '<div style="text-align:right;font-size:12px;font-weight:700;margin-top:4px;color:' + (budgetRate > 100 ? '#ef4444' : 'var(--text-muted)') + '">' + budgetRate + '% \uC9D1\uD589</div>' +
       '</div>' +
 
       '<div class="acct-grid-2">' +
 
       // 월별 차트
       '<div class="acct-card">' +
-      '<div class="acct-card-head"><i data-lucide="bar-chart-3" style="width:16px;height:16px"></i> 월별 수입 · 지출</div>' +
+      '<div class="acct-card-head"><i data-lucide="bar-chart-3" style="width:16px;height:16px"></i> \uC6D4\uBCC4 \uC218\uC785 \u00B7 \uC9C0\uCD9C</div>' +
       '<div class="acct-chart-area">' +
       Object.keys(monthData).map(function (k) {
         var d = monthData[k];
@@ -299,29 +375,29 @@
         var eh = Math.max(2, d.expense / maxMonthVal * 120);
         return '<div class="acct-chart-col">' +
           '<div class="acct-chart-bars">' +
-          '<div class="acct-bar income" style="height:' + ih + 'px" title="수입 ' + _fmtW(d.income) + '"></div>' +
-          '<div class="acct-bar expense" style="height:' + eh + 'px" title="지출 ' + _fmtW(d.expense) + '"></div>' +
+          '<div class="acct-bar income" style="height:' + ih + 'px" title="\uC218\uC785 ' + _fmtW(d.income) + '"></div>' +
+          '<div class="acct-bar expense" style="height:' + eh + 'px" title="\uC9C0\uCD9C ' + _fmtW(d.expense) + '"></div>' +
           '</div>' +
-          '<div class="acct-chart-label">' + k.slice(5) + '월</div>' +
+          '<div class="acct-chart-label">' + k.slice(5) + '\uC6D4</div>' +
           '</div>';
       }).join('') +
       '</div>' +
       '<div class="acct-chart-legend">' +
-      '<span><span class="acct-dot" style="background:#22c55e"></span>수입</span>' +
-      '<span><span class="acct-dot" style="background:#ef4444"></span>지출</span>' +
+      '<span><span class="acct-dot" style="background:#22c55e"></span>\uC218\uC785</span>' +
+      '<span><span class="acct-dot" style="background:#ef4444"></span>\uC9C0\uCD9C</span>' +
       '</div></div>' +
 
       // 예산 소진율
       '<div class="acct-card">' +
-      '<div class="acct-card-head"><i data-lucide="gauge" style="width:16px;height:16px"></i> 예산 소진율 TOP 5</div>' +
+      '<div class="acct-card-head"><i data-lucide="gauge" style="width:16px;height:16px"></i> \uC608\uC0B0 \uC18C\uC9C4\uC728 TOP 5</div>' +
       (budgetBars.length === 0
-        ? '<div class="acct-empty">등록된 예산이 없습니다</div>'
+        ? '<div class="acct-empty">\uB4F1\uB85D\uB41C \uC608\uC0B0\uC774 \uC5C6\uC2B5\uB2C8\uB2E4</div>'
         : budgetBars.map(function (b) {
           var color = b.over ? '#ef4444' : b.pct > 80 ? '#f59e0b' : '#4f6ef7';
           return '<div class="acct-budget-row">' +
             '<div class="acct-budget-label">' +
             '<span>' + _esc(b.name) + '</span>' +
-            '<span style="color:' + color + ';font-weight:800">' + b.pct + '%' + (b.over ? ' ⚠️' : '') + '</span>' +
+            '<span style="color:' + color + ';font-weight:800">' + b.pct + '%' + (b.over ? ' \u26A0\uFE0F' : '') + '</span>' +
             '</div>' +
             '<div class="acct-progress-track"><div class="acct-progress-fill" style="width:' + Math.min(100, b.pct) + '%;background:' + color + '"></div></div>' +
             '<div class="acct-budget-sub">' + _fmtW(b.spent) + ' / ' + _fmtW(b.amount) + '</div>' +
@@ -333,11 +409,11 @@
 
       // 최근 전표
       '<div class="acct-card" style="margin-top:16px">' +
-      '<div class="acct-card-head"><i data-lucide="scroll-text" style="width:16px;height:16px"></i> 최근 전표</div>' +
+      '<div class="acct-card-head"><i data-lucide="scroll-text" style="width:16px;height:16px"></i> \uCD5C\uADFC \uC804\uD45C</div>' +
       (recent.length === 0
-        ? '<div class="acct-empty">등록된 전표가 없습니다</div>'
+        ? '<div class="acct-empty">\uB4F1\uB85D\uB41C \uC804\uD45C\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4</div>'
         : '<table class="acct-table"><thead><tr>' +
-        '<th>날짜</th><th>유형</th><th>적요</th><th>차변</th><th>대변</th>' +
+        '<th>\uB0A0\uC9DC</th><th>\uC720\uD615</th><th>\uC801\uC694</th><th>\uCC28\uBCC0</th><th>\uB300\uBCC0</th>' +
         '</tr></thead><tbody>' +
         recent.map(function (v) {
           var debitSum = 0, creditSum = 0;
@@ -345,9 +421,9 @@
             if (e.side === 'debit') debitSum += e.amount;
             else creditSum += e.amount;
           });
-          var typeBadge = v.type === 'income' ? '<span class="acct-badge income">입금</span>'
-            : v.type === 'expense' ? '<span class="acct-badge expense">출금</span>'
-              : '<span class="acct-badge etc">대체</span>';
+          var typeBadge = v.type === 'income' ? '<span class="acct-badge income">\uC785\uAE08</span>'
+            : v.type === 'expense' ? '<span class="acct-badge expense">\uCD9C\uAE08</span>'
+              : '<span class="acct-badge etc">\uB300\uCCB4</span>';
           return '<tr><td>' + (v.date || '') + '</td><td>' + typeBadge + '</td>' +
             '<td>' + _esc(v.description || '') + '</td>' +
             '<td class="num">' + _fmtW(debitSum) + '</td>' +
