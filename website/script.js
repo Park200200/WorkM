@@ -107,7 +107,7 @@
     var menuSettings = getLS('hp_menu_settings');
     var menus = [];
     var settings = {
-      bg: '#ffffff', fc: '#1a1a2e', fs: 15, h: 64, gap: 28,
+      bg: '#ffffff', fc: '#1a1a2e', fs: 15, fw: 600, h: 64, gap: 28,
       align: 'center', opacity: 100
     };
 
@@ -223,7 +223,7 @@
         var a = document.createElement('a');
         a.href = escAttr(href);
         if (detail.blank) a.target = '_blank';
-        a.style.cssText = 'font-size:' + (settings.fs || 15) + 'px;color:' + (settings.fc || '#1a1a2e') + ';position:relative;font-weight:600;padding:6px 2px;transition:opacity .2s';
+        a.style.cssText = 'font-size:' + (settings.fs || 15) + 'px;color:' + (settings.fc || '#1a1a2e') + ';position:relative;font-weight:' + (settings.fw || 600) + ';padding:6px 2px;transition:opacity .2s';
         a.textContent = name;
         a.setAttribute('data-menu-idx', i);
         navEl.appendChild(a);
