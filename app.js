@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 
 let sidebarTimer = null;
 
@@ -87,21 +87,35 @@ function showPage(name, navEl) {
   if (name === 'rank-mgmt') renderPage_RankMgmt();
 
 
-  // homepage 모드: 헤더 검색창 가시성 전환
+  // homepage / accounting 모드: 헤더 검색창 가시성 전환
   var headerSearch = document.getElementById('headerSearch');
   var homepageBar  = document.getElementById('homepageModeBar');
+  var acctBar      = document.getElementById('acctModeBar');
+
   if (name === 'homepage') {
     if (headerSearch) headerSearch.style.display = 'none';
     if (homepageBar)  homepageBar.style.display  = 'flex';
+    if (acctBar)      acctBar.style.display      = 'none';
     if (typeof enterHomepageMode === 'function') enterHomepageMode();
+  } else if (name === 'accounting') {
+    if (headerSearch) headerSearch.style.display = 'none';
+    if (homepageBar)  homepageBar.style.display  = 'none';
+    if (acctBar)      acctBar.style.display      = 'flex';
+    if (typeof enterAccountingMode === 'function') enterAccountingMode();
   } else {
     if (headerSearch) headerSearch.style.display = '';
     if (homepageBar)  homepageBar.style.display  = 'none';
+    if (acctBar)      acctBar.style.display      = 'none';
     // 홈페이지 전용 nav 닫기 + mainNav 복원
     var mainNav2     = document.getElementById('mainNav');
     var homepageNav2 = document.getElementById('homepageNav');
+    var acctNav2     = document.getElementById('acctNav');
     if (homepageNav2 && homepageNav2.style.display !== 'none') {
       homepageNav2.style.display = 'none';
+      if (mainNav2) mainNav2.style.display = 'block';
+    }
+    if (acctNav2 && acctNav2.style.display !== 'none') {
+      acctNav2.style.display = 'none';
       if (mainNav2) mainNav2.style.display = 'block';
     }
   }
