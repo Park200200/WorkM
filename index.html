@@ -2305,6 +2305,16 @@
                 <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">설명</div>
                 <textarea id="med-desc" rows="3" placeholder="파일에 대한 설명을 입력하세요" style="width:100%;padding:10px 14px;border:1.5px solid var(--border-color);border-radius:10px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);outline:none;resize:vertical;box-sizing:border-box;line-height:1.6" onfocus="this.style.borderColor='var(--accent-blue)'" onblur="this.style.borderColor='var(--border-color)'"></textarea>
               </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div>
+                  <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">♥ 좋아요</div>
+                  <input id="med-likes" type="number" min="0" value="0" placeholder="0" style="width:100%;height:38px;padding:0 12px;border:1.5px solid var(--border-color);border-radius:10px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);box-sizing:border-box;outline:none" onfocus="this.style.borderColor='var(--accent-blue)'" onblur="this.style.borderColor='var(--border-color)'">
+                </div>
+                <div>
+                  <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">👁 조회수</div>
+                  <input id="med-views" type="number" min="0" value="0" placeholder="0" style="width:100%;height:38px;padding:0 12px;border:1.5px solid var(--border-color);border-radius:10px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);box-sizing:border-box;outline:none" onfocus="this.style.borderColor='var(--accent-blue)'" onblur="this.style.borderColor='var(--border-color)'">
+                </div>
+              </div>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 24px;border-top:1px solid var(--border-color);flex-shrink:0">
               <span id="med-file-count" style="font-size:12px;color:var(--text-muted)"></span>

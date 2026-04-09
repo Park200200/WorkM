@@ -2770,10 +2770,11 @@ function _hpMcCancel() {
     info.innerHTML =
       '<div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:5px;text-shadow:0 1px 4px rgba(0,0,0,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + it.title + '</div>' +
       (it.tags && it.tags.length ?
-        '<div style="display:flex;flex-wrap:wrap;gap:4px">' +
+        '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">' +
         it.tags.slice(0, 3).map(function (t, i) {
           return '<span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:' + tagColors[i % tagColors.length] + '33;color:#fff;backdrop-filter:blur(4px);border:1px solid ' + tagColors[i % tagColors.length] + '55">#' + t + '</span>';
-        }).join('') + '</div>' : '');
+        }).join('') + '</div>' : '') +
+      '<div style="display:flex;gap:10px"><span style="font-size:10px;color:rgba(255,255,255,.75)">♥ ' + (it.likes || 0) + '</span><span style="font-size:10px;color:rgba(255,255,255,.75)">👁 ' + (it.views || 0) + '</span></div>';
     wrap.appendChild(info);
     return wrap;
   }
@@ -2873,7 +2874,7 @@ function _hpMcCancel() {
         it.tags.map(function (t) {
           return '<span style="padding:2px 7px;border-radius:8px;font-size:10px;font-weight:600;background:rgba(245,158,11,.1);color:#d97706">#' + t + '</span>';
         }).join('') + '</div>' : '') +
-      '<div style="font-size:10px;color:var(--text-muted)">' + (it.regDate || '') + '</div>';
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><div style="display:flex;gap:8px"><span style="font-size:10px;color:var(--text-muted)">♥ ' + (it.likes || 0) + '</span><span style="font-size:10px;color:var(--text-muted)">👁 ' + (it.views || 0) + '</span></div><span style="font-size:10px;color:var(--text-muted)">' + (it.regDate || '') + '</span></div>';
     wrap.appendChild(info);
     return wrap;
   }
@@ -2949,7 +2950,7 @@ function _hpMcCancel() {
       '<div style="font-size:12px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px">' + it.title + '</div>' +
       (it.tags && it.tags.length ? '<div style="display:flex;flex-wrap:wrap;gap:3px">' +
         it.tags.slice(0, 4).map(function (t) { return '<span style="padding:1px 6px;border-radius:6px;font-size:9.5px;font-weight:600;background:rgba(245,158,11,.1);color:#d97706">#' + t + '</span>'; }).join('') + '</div>' : '') +
-      '<div style="font-size:10px;color:var(--text-muted);margin-top:4px">' + (it.regDate || '') + '</div>';
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><div style="display:flex;gap:8px"><span style="font-size:10px;color:var(--text-muted)">♥ ' + (it.likes || 0) + '</span><span style="font-size:10px;color:var(--text-muted)">👁 ' + (it.views || 0) + '</span></div><span style="font-size:10px;color:var(--text-muted)">' + (it.regDate || '') + '</span></div>';
     wrap.appendChild(info2);
     return wrap;
   }
@@ -2996,6 +2997,8 @@ function _hpMcCancel() {
       (it.desc ? '<div style="font-size:11.5px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px">' + it.desc + '</div>' : '') +
       '<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">' +
       (it.tags || []).slice(0, 5).map(function (t) { return '<span style="padding:1px 7px;border-radius:8px;font-size:10px;font-weight:600;background:rgba(245,158,11,.1);color:#d97706">#' + t + '</span>'; }).join('') +
+      '<span style="font-size:10px;color:var(--text-muted);margin-left:8px">♥ ' + (it.likes || 0) + '</span>' +
+      '<span style="font-size:10px;color:var(--text-muted)">👁 ' + (it.views || 0) + '</span>' +
       '<span style="font-size:10px;color:var(--text-muted);margin-left:auto">' + (it.regDate || '') + '</span></div>';
     row.appendChild(info);
 
@@ -3050,8 +3053,13 @@ function _hpMcCancel() {
     iBox.innerHTML =
       '<div style="font-size:16px;font-weight:800;margin-bottom:6px">' + it.title + '</div>' +
       (it.desc ? '<div style="font-size:13px;opacity:.8;margin-bottom:8px;line-height:1.6">' + it.desc + '</div>' : '') +
-      '<div style="display:flex;flex-wrap:wrap;gap:5px;justify-content:center">' +
+      '<div style="display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-bottom:8px">' +
       (it.tags || []).map(function (t) { return '<span style="padding:3px 10px;border-radius:12px;font-size:11.5px;font-weight:600;background:rgba(245,158,11,.25);color:#fcd34d">#' + t + '</span>'; }).join('') +
+      '</div>' +
+      '<div style="display:flex;gap:16px;justify-content:center;font-size:12px;color:rgba(255,255,255,.7)">' +
+      '<span>♥ 좋아요 ' + (it.likes || 0) + '</span>' +
+      '<span>👁 조회수 ' + (it.views || 0) + '</span>' +
+      '<span>📅 ' + (it.regDate || '') + '</span>' +
       '</div>';
 
     var modal = document.getElementById('medDetailModal');
@@ -3370,6 +3378,8 @@ function _hpMcCancel() {
     ['med-title', 'med-desc'].forEach(function (id) {
       var el = document.getElementById(id); if (el) el.value = '';
     });
+    var mLikes = document.getElementById('med-likes'); if (mLikes) mLikes.value = 0;
+    var mViews = document.getElementById('med-views'); if (mViews) mViews.value = 0;
     _tagReset('med');
     /* 다중 파일 상태 초기화 */
     window._pendingFiles = [];
@@ -3408,6 +3418,8 @@ function _hpMcCancel() {
         return;
       }
       medLoad();
+      var likesVal = parseInt((document.getElementById('med-likes') || {}).value) || 0;
+      var viewsVal = parseInt((document.getElementById('med-views') || {}).value) || 0;
       files.forEach(function (f, i) {
         window._medItems.unshift({
           id: 'm' + (Date.now() + i),
@@ -3416,6 +3428,7 @@ function _hpMcCancel() {
           tags: tags,
           desc: desc,
           dataUrl: f.dataUrl,
+          likes: likesVal, views: viewsVal,
           regDate: today
         });
       });
@@ -3432,6 +3445,8 @@ function _hpMcCancel() {
     var fileType = (document.getElementById('med-file-type') || {}).value || '';
     if (!title) { if (typeof showToast === 'function') showToast('warn', '제목을 입력하세요'); return; }
     if (!dataUrl) { if (typeof showToast === 'function') showToast('warn', '파일을 선택하세요'); return; }
+    var likesVal2 = parseInt((document.getElementById('med-likes') || {}).value) || 0;
+    var viewsVal2 = parseInt((document.getElementById('med-views') || {}).value) || 0;
     medLoad();
     window._medItems.unshift({
       id: 'm' + Date.now(),
@@ -3440,6 +3455,7 @@ function _hpMcCancel() {
       tags: tags,
       desc: desc,
       dataUrl: dataUrl,
+      likes: likesVal2, views: viewsVal2,
       regDate: today
     });
     medPersist();
