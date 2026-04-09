@@ -1869,6 +1869,13 @@
           </div>
         </div>
 
+        <!-- 콘텐츠 허브 상세보기 모달 -->
+        <div id="chubDetailModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:3000;align-items:center;justify-content:center" onclick="if(event.target===this)chubCloseDetail()">
+          <div style="background:var(--bg-secondary);border-radius:16px;width:600px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+            <div id="chubDetailBody" style="padding:24px"></div>
+          </div>
+        </div>
+
         <!-- ── 배너관리 서브페이지 ── -->
         <div id="page-hp-banner" style="display:none;height:100%;overflow-y:auto">
           <div class="page-header">

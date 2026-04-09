@@ -3659,27 +3659,108 @@ function _hpMcCancel() {
       var typeIcon = { news: '📰', blog: '✏️', youtube: '▶️', website: '🌐' };
       var typeColor = { news: '#3b82f6', blog: '#10b981', youtube: '#ef4444', website: '#8b5cf6' };
       var detailImg = it.img ? '<div style="width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;margin-bottom:16px;background:var(--bg-tertiary)"><img src="' + it.img + '" style="width:100%;height:100%;object-fit:cover"></div>' : '';
-      body.innerHTML = detailImg +
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">' +
+      body.innerHTML =
+        /* 상단 닫기 + 액션 버튼 */
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
         '<span style="font-size:20px">' + (typeIcon[it.type] || '📄') + '</span>' +
         '<span style="font-size:11px;font-weight:800;padding:3px 10px;border-radius:8px;color:#fff;background:' + (typeColor[it.type] || '#3b82f6') + '">' + it.type.toUpperCase() + '</span>' +
         '</div>' +
-        '<div style="font-size:20px;font-weight:800;color:var(--text-primary);line-height:1.3;margin-bottom:10px">' + it.title + '</div>' +
+        '<div style="display:flex;align-items:center;gap:6px">' +
+        '<button onclick="chubEditContent(\'' + it.id + '\')" style="padding:6px 14px;border-radius:8px;border:1.5px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px" title="수정"><i data-lucide="edit-3" style="width:13px;height:13px"></i> 수정</button>' +
+        '<button onclick="chubDeleteContent(\'' + it.id + '\')" style="padding:6px 14px;border-radius:8px;border:1.5px solid rgba(239,68,68,.3);background:rgba(239,68,68,.06);color:#ef4444;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px" title="삭제"><i data-lucide="trash-2" style="width:13px;height:13px"></i> 삭제</button>' +
+        '<button onclick="chubCloseDetail()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;line-height:1" title="닫기">✕</button>' +
+        '</div></div>' +
+
+        /* 이미지 */
+        detailImg +
+
+        /* 제목 */
+        '<div style="font-size:20px;font-weight:800;color:var(--text-primary);line-height:1.3;margin-bottom:10px">' + (it.title || '') + '</div>' +
+
+        /* 요약 */
         '<div style="font-size:13.5px;color:var(--text-secondary);line-height:1.7;margin-bottom:14px">' + (it.summary || '') + '</div>' +
+
+        /* 태그 */
         '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">' + (it.tags || []).map(function (t) { return '<span style="padding:3px 10px;border-radius:10px;font-size:11.5px;font-weight:700;background:rgba(59,130,246,.1);color:#3b82f6">#' + t + '</span>'; }).join('') + '</div>' +
-        '<a href="' + it.url + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:10px;background:var(--accent-blue);color:#fff;text-decoration:none;font-size:13px;font-weight:700">🔗 원문 보기</a>';
+
+        /* 관리 정보 테이블 */
+        '<div style="border:1.5px solid var(--border-color);border-radius:12px;overflow:hidden;margin-bottom:16px">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+        '<tr style="border-bottom:1px solid var(--border-color)"><td style="padding:10px 14px;font-weight:700;color:var(--text-muted);background:var(--bg-tertiary);width:100px">종류</td><td style="padding:10px 14px;color:var(--text-primary)">' + (typeIcon[it.type] || '') + ' ' + (it.type || '').toUpperCase() + '</td></tr>' +
+        '<tr style="border-bottom:1px solid var(--border-color)"><td style="padding:10px 14px;font-weight:700;color:var(--text-muted);background:var(--bg-tertiary)">등록일</td><td style="padding:10px 14px;color:var(--text-primary)">' + (it.regDate || '-') + '</td></tr>' +
+        '<tr style="border-bottom:1px solid var(--border-color)"><td style="padding:10px 14px;font-weight:700;color:var(--text-muted);background:var(--bg-tertiary)">URL</td><td style="padding:10px 14px"><a href="' + (it.url || '#') + '" target="_blank" style="color:var(--accent-blue);text-decoration:none;word-break:break-all">' + (it.url || '-') + '</a></td></tr>' +
+        '<tr style="border-bottom:1px solid var(--border-color)"><td style="padding:10px 14px;font-weight:700;color:var(--text-muted);background:var(--bg-tertiary)">조회수</td><td style="padding:10px 14px;color:var(--text-primary)">👁 ' + (it.views || 0) + '</td></tr>' +
+        '<tr><td style="padding:10px 14px;font-weight:700;color:var(--text-muted);background:var(--bg-tertiary)">좋아요</td><td style="padding:10px 14px;color:var(--text-primary)">♥ ' + (it.likes || 0) + '</td></tr>' +
+        '</table></div>' +
+
+        /* 액션 버튼 하단 */
+        '<div style="display:flex;gap:10px">' +
+        '<a href="' + (it.url || '#') + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:10px;background:var(--accent-blue);color:#fff;text-decoration:none;font-size:13px;font-weight:700">🔗 원문 보기</a>' +
+        '<button onclick="chubToggleLike(\'' + it.id + '\')" style="padding:10px 20px;border-radius:10px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:13px;font-weight:700;cursor:pointer">♥ 좋아요</button>' +
+        '</div>';
     }
     modal.style.display = 'flex';
+    if (typeof refreshIcons === 'function') setTimeout(refreshIcons, 30);
   };
 
   window.chubCloseDetail = function () {
     var m = document.getElementById('chubDetailModal'); if (m) m.style.display = 'none';
   };
 
+  /* ── 콘텐츠 삭제 ── */
+  window.chubDeleteContent = function (id) {
+    if (!confirm('이 콘텐츠를 삭제하시겠습니까?')) return;
+    chubLoad();
+    window._chubItems = (window._chubItems || []).filter(function (x) { return x.id !== id; });
+    chubPersist();
+    chubCloseDetail();
+    chubRender();
+    if (typeof showToast === 'function') showToast('info', '콘텐츠가 삭제되었습니다');
+  };
+
+  /* ── 콘텐츠 수정 (모달 전환) ── */
+  window._chubEditId = null;
+  window.chubEditContent = function (id) {
+    chubLoad();
+    var it = (window._chubItems || []).find(function (x) { return x.id === id; });
+    if (!it) return;
+    window._chubEditId = id;
+    chubCloseDetail();
+    /* 추가 모달 재활용 */
+    var typeEl = document.getElementById('chub-type'); if (typeEl) typeEl.value = it.type || 'website';
+    var titleEl = document.getElementById('chub-title'); if (titleEl) titleEl.value = it.title || '';
+    var urlEl = document.getElementById('chub-url'); if (urlEl) urlEl.value = it.url || '';
+    var summaryEl = document.getElementById('chub-summary') || document.getElementById('chub-desc');
+    if (summaryEl) summaryEl.value = it.summary || '';
+    /* 태그 복원 */
+    if (typeof window._tagReset === 'function') window._tagReset('chub');
+    var tagsHidden = document.getElementById('chub-tags');
+    if (tagsHidden) tagsHidden.value = (it.tags || []).join(',');
+    var tagsList = document.getElementById('chub-tags-list');
+    if (tagsList) {
+      tagsList.innerHTML = (it.tags || []).map(function (t) {
+        return '<span style="display:inline-flex;align-items:center;gap:3px;padding:3px 10px;border-radius:8px;font-size:12px;font-weight:700;background:rgba(59,130,246,.12);color:#3b82f6;cursor:pointer" onclick="this.remove();var h=document.getElementById(\'chub-tags\');if(h){var a=h.value.split(\',\').filter(function(x){return x&&x!==\'' + t + '\'});h.value=a.join(\',\')}">' + t + ' <span style="font-size:14px;opacity:.6">&times;</span></span>';
+      }).join('');
+    }
+    /* 모달 제목 변경 */
+    var modalTitle = document.querySelector('#chubAddModal div[style*="font-size:16px"]');
+    if (modalTitle) modalTitle.textContent = '콘텐츠 수정';
+    var m = document.getElementById('chubAddModal');
+    if (m) m.style.display = 'flex';
+  };
+
   window.chubToggleLike = function (id) {
     chubLoad();
     var it = (window._chubItems || []).find(function (x) { return x.id === id; });
-    if (it) { it.likes = (it.likes || 0) + 1; chubPersist(); chubRender(); }
+    if (it) {
+      it.likes = (it.likes || 0) + 1;
+      chubPersist();
+      /* 상세보기가 열려있으면 갱신 */
+      var modal = document.getElementById('chubDetailModal');
+      if (modal && modal.style.display === 'flex') chubOpenDetail(id);
+      chubRender();
+    }
   };
 
   window.chubSaveContent = function () {
@@ -3693,17 +3774,32 @@ function _hpMcCancel() {
     var desc = (document.getElementById('chub-summary') || document.getElementById('chub-desc') || {}).value || '';
     if (!title) { if (typeof showToast === 'function') showToast('warn', '제목을 입력하세요'); return; }
     chubLoad();
-    window._chubItems.unshift({
-      id: 'c' + Date.now(), type: type, title: title, url: url,
-      summary: desc, tags: tags.split(',').map(function (t) { return t.trim(); }).filter(Boolean),
-      likes: 0, views: 0, regDate: new Date().toISOString().split('T')[0]
-    });
+
+    if (window._chubEditId) {
+      /* 수정 모드 */
+      window._chubItems = (window._chubItems || []).map(function (it) {
+        if (it.id !== window._chubEditId) return it;
+        return Object.assign({}, it, {
+          type: type, title: title, url: url, summary: desc,
+          tags: tags.split(',').map(function (t) { return t.trim(); }).filter(Boolean)
+        });
+      });
+      if (typeof showToast === 'function') showToast('success', '콘텐츠가 수정되었습니다');
+      window._chubEditId = null;
+    } else {
+      /* 신규 추가 */
+      window._chubItems.unshift({
+        id: 'c' + Date.now(), type: type, title: title, url: url,
+        summary: desc, tags: tags.split(',').map(function (t) { return t.trim(); }).filter(Boolean),
+        likes: 0, views: 0, regDate: new Date().toISOString().split('T')[0]
+      });
+      if (typeof showToast === 'function') showToast('success', '콘텐츠가 등록되었습니다');
+    }
     chubPersist();
     var m = document.getElementById('chubAddModal'); if (m) m.style.display = 'none';
     /* 태그 초기화 */
     if (typeof window._tagReset === 'function') window._tagReset('chub');
     chubRender();
-    if (typeof showToast === 'function') showToast('success', '콘텐츠가 등록되었습니다');
   };
 
   /* chubSave 는 chubSaveContent 의 별칭 (HTML에서 호출) */
@@ -3711,10 +3807,14 @@ function _hpMcCancel() {
 
   /* chubOpenAddModal – 모달 열기 + 태그 초기화 */
   window.chubOpenAddModal = function () {
+    window._chubEditId = null;
     ['chub-title', 'chub-url', 'chub-summary', 'chub-desc'].forEach(function (id) {
       var el = document.getElementById(id); if (el) el.value = '';
     });
     var typeEl = document.getElementById('chub-type'); if (typeEl) typeEl.value = 'website';
+    /* 모달 제목 복원 */
+    var modalTitle = document.querySelector('#chubAddModal div[style*="font-size:16px"]');
+    if (modalTitle) modalTitle.textContent = '콘텐츠 추가';
     var m = document.getElementById('chubAddModal');
     if (m) { m.style.display = 'flex'; }
     setTimeout(function () {
@@ -3726,6 +3826,7 @@ function _hpMcCancel() {
   window.chubCloseModal = function () {
     var m = document.getElementById('chubAddModal');
     if (m) m.style.display = 'none';
+    window._chubEditId = null;
     if (typeof window._tagReset === 'function') window._tagReset('chub');
   };
 
