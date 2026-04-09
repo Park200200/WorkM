@@ -778,7 +778,7 @@
       '<div class="form-group" style="margin:0"><label class="form-label">금액 (원) *</label>' +
       '<input class="form-input" id="am_amount" type="number" placeholder="0"></div></div>' +
       '<div class="form-group"><label class="form-label">신청자</label>' +
-      '<input class="form-input" id="am_requester" value="' + _esc(userName) + '"></div>' +
+      '<input class="form-input" id="am_requester" value="' + _esc(userName) + '" readonly style="background:var(--bg-tertiary);cursor:default;color:var(--text-secondary)"></div>' +
       '<div class="form-group"><label class="form-label">사유/메모</label>' +
       '<textarea class="form-input" id="am_memo" rows="2" placeholder="품의 사유를 입력하세요"></textarea></div>' +
       '</div>' +
