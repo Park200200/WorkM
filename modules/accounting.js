@@ -655,24 +655,154 @@
   function _budgetModalHTML() {
     var accounts = _accounts().filter(function (a) { return a.type === 'expense'; });
     return '<div class="modal-overlay" id="budgetModal" style="display:none" onclick="if(event.target===this)ACCT.closeBudgetModal()">' +
-      '<div class="modal-box" style="max-width:460px">' +
-      '<div class="modal-head"><div class="modal-title" id="budgetModalTitle">예산 추가</div><button class="modal-close" onclick="ACCT.closeBudgetModal()">✕</button></div>' +
-      '<div class="modal-body" style="display:flex;flex-direction:column;gap:14px">' +
-      '<div class="form-group"><label class="form-label">예산목 *</label>' +
-      '<input class="form-input" id="bm_itemName" placeholder="예) 인건비, 소모품비, 외주용역비"></div>' +
-      '<div class="form-group"><label class="form-label">계정과목 *</label>' +
+      '<div class="modal-box" style="max-width:460px;overflow:visible">' +
+      '<div class="modal-head"><div class="modal-title" id="budgetModalTitle">\uC608\uC0B0 \uCD94\uAC00</div><button class="modal-close" onclick="ACCT.closeBudgetModal()">\u2715</button></div>' +
+      '<div class="modal-body" style="display:flex;flex-direction:column;gap:14px;overflow:visible">' +
+      '<div class="form-group" style="position:relative">' +
+      '<label class="form-label">\uC608\uC0B0\uBAA9 *</label>' +
+      '<input class="form-input" id="bm_itemName" placeholder="\uC608) \uC778\uAC74\uBE44, \uC18C\uBAA8\uD488\uBE44, \uC678\uC8FC\uC6A9\uC5ED\uBE44" autocomplete="off"' +
+      ' oninput="ACCT._acItemName(this.value)"' +
+      ' onkeydown="ACCT._acItemKeydown(event)"' +
+      ' onfocus="ACCT._acItemName(this.value)"' +
+      ' onblur="setTimeout(function(){ACCT._acHide()},180)">' +
+      '<div id="bm_itemName_ac" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:999;' +
+      'background:var(--bg-primary);border:1.5px solid var(--accent-blue);border-radius:10px;' +
+      'box-shadow:0 8px 28px rgba(0,0,0,.18);max-height:220px;overflow-y:auto;margin-top:2px"></div>' +
+      '</div>' +
+      '<div class="form-group"><label class="form-label">\uACC4\uC815\uACFC\uBAA9 *</label>' +
       '<select class="form-input" id="bm_account">' +
-      '<option value="">-- 선택 --</option>' +
+      '<option value="">-- \uC120\uD0DD --</option>' +
       accounts.map(function (a) { return '<option value="' + a.code + '">' + a.code + ' ' + a.name + '</option>'; }).join('') +
       '</select></div>' +
-      '<div class="form-group"><label class="form-label">연간 예산액 (원) *</label>' +
-      '<input class="form-input" id="bm_amount" type="number" placeholder="예) 50000000" onkeydown="if(event.key===\'Enter\')ACCT.saveBudget()"></div>' +
-      '<div class="form-group"><label class="form-label">메모</label>' +
-      '<input class="form-input" id="bm_memo" placeholder="예산 설명"></div>' +
+      '<div class="form-group"><label class="form-label">\uC5F0\uAC04 \uC608\uC0B0\uC561 (\uC6D0) *</label>' +
+      '<input class="form-input" id="bm_amount" type="number" placeholder="\uC608) 50000000" onkeydown="if(event.key===\'Enter\')ACCT.saveBudget()"></div>' +
+      '<div class="form-group"><label class="form-label">\uBA54\uBAA8</label>' +
+      '<input class="form-input" id="bm_memo" placeholder="\uC608\uC0B0 \uC124\uBA85"></div>' +
       '</div>' +
-      '<div class="modal-foot"><button class="btn" onclick="ACCT.closeBudgetModal()">취소</button>' +
-      '<button class="btn btn-blue" onclick="ACCT.saveBudget()">저장</button></div>' +
+      '<div class="modal-foot"><button class="btn" onclick="ACCT.closeBudgetModal()">\uCDE8\uC18C</button>' +
+      '<button class="btn btn-blue" onclick="ACCT.saveBudget()">\uC800\uC7A5</button></div>' +
       '</div></div>';
+  }
+
+  /* ── 예산목 자동완성 로직 ── */
+  var _acHighlight = -1;
+
+  function _acGetHistory() {
+    /* 기존 예산 데이터에서 중복 제거된 예산목 목록 + 사용자정의 히스토리 */
+    var budgets = _budgets();
+    var hist = _ls('acct_itemName_history') || [];
+    var nameSet = {};
+    budgets.forEach(function (b) { if (b.itemName) nameSet[b.itemName] = true; });
+    hist.forEach(function (n) { nameSet[n] = true; });
+    return Object.keys(nameSet).sort();
+  }
+
+  function _acSaveToHistory(name) {
+    if (!name) return;
+    var hist = _ls('acct_itemName_history') || [];
+    if (hist.indexOf(name) < 0) {
+      hist.push(name);
+      _ls('acct_itemName_history', hist);
+    }
+  }
+
+  function _acItemName(query) {
+    var dd = document.getElementById('bm_itemName_ac');
+    if (!dd) return;
+    var all = _acGetHistory();
+    var q = (query || '').trim().toLowerCase();
+    _acHighlight = -1;
+
+    if (!q) { dd.style.display = 'none'; return; }
+
+    var matches = all.filter(function (n) { return n.toLowerCase().indexOf(q) >= 0; });
+
+    /* 정확 일치가 아닌 경우 "새로 추가" 옵션 표시 */
+    var exactMatch = all.some(function (n) { return n.toLowerCase() === q; });
+
+    if (matches.length === 0 && !query.trim()) { dd.style.display = 'none'; return; }
+
+    var html = '';
+    matches.forEach(function (name, i) {
+      /* 하이라이트 처리 */
+      var hl = name.replace(new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'),
+        '<span style="color:var(--accent-blue);font-weight:800">$1</span>');
+      html += '<div data-ac-idx="' + i + '" onmousedown="ACCT._acSelect(\'' + _esc(name).replace(/'/g, '\\\'') + '\')"' +
+        ' style="padding:10px 14px;cursor:pointer;font-size:13px;color:var(--text-primary);' +
+        'border-bottom:1px solid var(--border-color);transition:background .1s;display:flex;align-items:center;gap:8px"' +
+        ' onmouseover="this.style.background=\'rgba(79,110,247,.06)\'"' +
+        ' onmouseout="this.style.background=\'transparent\'">' +
+        '<span style="font-size:14px">\uD83D\uDCCB</span> ' + hl + '</div>';
+    });
+
+    if (!exactMatch && query.trim()) {
+      html += '<div onmousedown="ACCT._acSelect(\'' + _esc(query.trim()).replace(/'/g, '\\\'') + '\')"' +
+        ' style="padding:10px 14px;cursor:pointer;font-size:13px;color:#22c55e;font-weight:700;' +
+        'transition:background .1s;display:flex;align-items:center;gap:8px"' +
+        ' onmouseover="this.style.background=\'rgba(34,197,94,.06)\'"' +
+        ' onmouseout="this.style.background=\'transparent\'">' +
+        '<span style="font-size:14px">\u2795</span> "' + _esc(query.trim()) + '" \uC0C8\uB85C \uCD94\uAC00</div>';
+    }
+
+    dd.innerHTML = html;
+    dd.style.display = html ? 'block' : 'none';
+  }
+
+  function _acItemKeydown(e) {
+    var dd = document.getElementById('bm_itemName_ac');
+    if (!dd || dd.style.display === 'none') {
+      if (e.key === 'Enter') { e.preventDefault(); return; }
+      return;
+    }
+    var items = dd.querySelectorAll('[data-ac-idx], [onmousedown]');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      _acHighlight = Math.min(_acHighlight + 1, items.length - 1);
+      _acHighlightUpdate(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      _acHighlight = Math.max(_acHighlight - 1, 0);
+      _acHighlightUpdate(items);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (_acHighlight >= 0 && _acHighlight < items.length) {
+        items[_acHighlight].dispatchEvent(new Event('mousedown'));
+      } else {
+        /* 현재 입력값으로 선택 */
+        var inp = document.getElementById('bm_itemName');
+        if (inp && inp.value.trim()) {
+          _acSelect(inp.value.trim());
+        }
+      }
+    } else if (e.key === 'Escape') {
+      dd.style.display = 'none';
+      _acHighlight = -1;
+    }
+  }
+
+  function _acHighlightUpdate(items) {
+    for (var i = 0; i < items.length; i++) {
+      items[i].style.background = i === _acHighlight ? 'rgba(79,110,247,.1)' : 'transparent';
+    }
+    if (_acHighlight >= 0 && items[_acHighlight]) {
+      items[_acHighlight].scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  function _acSelect(value) {
+    var inp = document.getElementById('bm_itemName');
+    if (inp) inp.value = value;
+    _acSaveToHistory(value);
+    _acHide();
+    /* 다음 필드로 포커스 이동 */
+    var acctEl = document.getElementById('bm_account');
+    if (acctEl) setTimeout(function () { acctEl.focus(); }, 50);
+  }
+
+  function _acHide() {
+    var dd = document.getElementById('bm_itemName_ac');
+    if (dd) dd.style.display = 'none';
+    _acHighlight = -1;
   }
 
   var _budgetEditId = null;
@@ -730,6 +860,7 @@
       _toast('success', itemName + ' 예산이 추가되었습니다');
     }
     _ls('acct_budgets', budgets);
+    _acSaveToHistory(itemName.trim());
     closeBudgetModal();
     renderAcctBudget();
   }
@@ -1464,6 +1595,10 @@
     closeBudgetModal: closeBudgetModal,
     saveBudget: saveBudget,
     deleteBudget: deleteBudget,
+    _acItemName: _acItemName,
+    _acItemKeydown: _acItemKeydown,
+    _acSelect: _acSelect,
+    _acHide: _acHide,
     // 품의
     openApprovalModal: openApprovalModal,
     closeApprovalModal: closeApprovalModal,
