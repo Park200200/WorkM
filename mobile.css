@@ -1574,3 +1574,41 @@ button#mobileFAB {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   모바일 출퇴근 UI — 2행 그리드 (레이블/시간, 아이콘 없음)
+───────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .dash-mob-attend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .dma-grid {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    grid-template-rows: auto auto;
+    column-gap: 8px;
+    row-gap: 1px;
+    text-align: center;
+  }
+  .dma-lbl {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    grid-row: 1;
+    white-space: nowrap;
+  }
+  .dma-time {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-primary);
+    grid-row: 2;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  /* 구버전 dma-col/dma-item 혹시 남아있으면 숨김 */
+  .dma-col { display: none !important; }
+}

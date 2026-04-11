@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>WorkM - 전체현황</title>
 <link rel="stylesheet" href="style.css?v=20260327e">
-<link rel="stylesheet" href="mobile.css?v=20260412a">
+<link rel="stylesheet" href="mobile.css?v=20260412b">
 
 
 
@@ -383,19 +383,14 @@
             </div>
             <!-- 모바일 전용: 출퇴근 (우측 끝) -->
             <div id="dashMobAttend" class="dash-mob-attend">
-              <div class="dma-col">
-                <div class="dma-item">
-                  <svg class="dma-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                  <span id="dmaCheckIn">--:--</span>
-                </div>
-                <div class="dma-item">
-                  <svg class="dma-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  <span id="dmaNow">--:--:--</span>
-                </div>
-                <div class="dma-item">
-                  <svg class="dma-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="15" r="2"/></svg>
-                  <span id="dmaWork">--:--</span>
-                </div>
+              <!-- 3열 그리드: 1행=한글레이블, 2행=시간 -->
+              <div class="dma-grid">
+                <span class="dma-lbl">출근</span>
+                <span class="dma-lbl">현재</span>
+                <span class="dma-lbl">근무</span>
+                <span class="dma-time" id="dmaCheckIn">--:--</span>
+                <span class="dma-time" id="dmaNow">--:--</span>
+                <span class="dma-time" id="dmaWork">--:--</span>
               </div>
               <button class="dma-checkout-btn" onclick="doCheckOut()" title="퇴근하기">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
