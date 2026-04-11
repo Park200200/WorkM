@@ -237,6 +237,20 @@ function sendMessage() {
   
   // 利됱떆 ?뚮뜑留?(?€?쒕낫??전체瑜?洹몃━湲곕낫??梨꾪똿 ?곸뿭留?업데이트되면 醫뗭?留??⑥닚???꾪빐 전체 由щ젋??
   renderDashboard();
+
+  // 모바일 팝업이 열려있으면 채팅 위젯 재주입
+  (function() {
+    var popup = document.getElementById('mobileChatPopup');
+    var inner = document.getElementById('mobileChatInner');
+    if (popup && popup.classList.contains('open') && inner && typeof buildChatWidget === 'function') {
+      inner.innerHTML = buildChatWidget();
+      if (typeof refreshIcons === 'function') refreshIcons();
+      setTimeout(function() {
+        var cb = popup.querySelector('.chat-body, #chatBody');
+        if (cb) cb.scrollTop = cb.scrollHeight;
+      }, 50);
+    }
+  })();
 }
 
 
@@ -276,6 +290,12 @@ function openTaskChatChannel(taskTitle, taskId, assignerIdOverride) {
   if (chatBody) chatBody.scrollTop = chatBody.scrollHeight;
 
   showToast('info', '"' + taskTitle + '" 메시지 채널이 활성화되었습니다.', 2500);
+
+  // 모바일: 채팅 팝업(바텀시트) 오픈
+  if (window.innerWidth <= 767 && typeof openMobileChatPopup === 'function') {
+    setTimeout(function() { openMobileChatPopup(taskTitle, taskId, assignerIdOverride); }, 50);
+  }
+
 }
 
 /* 채팅 헤더 우측 담당자 목록 동적 업데이트 */
@@ -309,25 +329,28 @@ function _updateChatMemberList() {
     users = WS.users || [];
   }
 
+  // ── 로그인 사용자(나)는 목록에서 제외
+  users = users.filter(function(u) {
+    return !WS.currentUser || String(u.id) !== String(WS.currentUser.id);
+  });
+
   var isMulti = users.length > 1;
   container.innerHTML = users.map(function(u, i) {
-    var isMe = WS.currentUser && String(u.id) === String(WS.currentUser.id);
     var bg = 'linear-gradient(135deg,' + (u.color||'#4f6ef7') + ',#9747ff)';
-    var ring = isMe ? '0 0 0 2.5px #22c55e' : '0 0 0 1.5px var(--border-color)';
-    var marginLeft = (isMulti && i > 0) ? '-8px' : '0';
+    var marginLeft = i > 0 ? '-10px' : '0';
     var zIndex = users.length - i;
 
     return '<div title="' + u.name + '" style="'
       + 'display:inline-flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;'
       + 'margin-left:' + marginLeft + ';z-index:' + zIndex + ';position:relative'
       + '">'
-      + '<div style="width:26px;height:26px;border-radius:50%;background:' + bg + ';box-shadow:' + ring + ';'
-      + 'display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;position:relative;border:2px solid var(--bg-secondary)">'
+      + '<div style="width:26px;height:26px;border-radius:50%;background:' + bg + ';'
+      + 'box-shadow:0 0 0 2px var(--bg-secondary);'
+      + 'display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff">'
       + (u.avatar || u.name.charAt(0))
-      + (isMe ? '<span style="position:absolute;bottom:-1px;right:-1px;width:7px;height:7px;border-radius:50%;background:#22c55e;border:1.5px solid var(--bg-primary)"></span>' : '')
       + '</div>'
-      + ((!isMulti) ? ('<span style="font-size:8.5px;font-weight:' + (isMe?'800':'600') + ';'
-        + 'color:' + (isMe?'var(--currentAccent,#4f6ef7)':'var(--text-muted)') + ';'
+      + ((!isMulti) ? ('<span style="font-size:8.5px;font-weight:600;'
+        + 'color:var(--text-muted);'
         + 'white-space:nowrap;max-width:36px;overflow:hidden;text-overflow:ellipsis;line-height:1">' + u.name + '</span>') : '')
       + '</div>';
   }).join('');
@@ -335,65 +358,93 @@ function _updateChatMemberList() {
 
 /* ?€?€ ?뱀뀡5: 媛꾪듃李⑦듃 (留덇컧??기준) ?€?€ */
 function buildGantt() {
-  const tasks = WS.getSortedByDue().slice(0,6);
-  const today = new Date();
-  const startDate = new Date(today); startDate.setDate(startDate.getDate()-3);
-  const days = 14;
+  var tasks = WS.getSortedByDue().slice(0,6);
+  var today = new Date(); today.setHours(0,0,0,0);
 
-  const dayHeaders = Array.from({length:days}, (_,i) => {
-    const d = new Date(startDate); d.setDate(d.getDate()+i);
-    const isToday = d.toDateString()===today.toDateString();
-    return `<div class="gantt-day ${isToday?'today':''}">${d.getMonth()+1}/${d.getDate()}</div>`;
+  // ── 화면 너비에 따라 표시 일수 계산 (최대 14일, 최소 7일)
+  // 구성: daysBack일(오늘 이전) + 오늘 + 1일(오늘 이후) = totalDays
+  var w = window.innerWidth;
+  var totalDays;
+  if      (w >= 1400) totalDays = 14;
+  else if (w >= 1250) totalDays = 12;
+  else if (w >= 1100) totalDays = 11;
+  else if (w >= 950)  totalDays = 10;
+  else if (w >= 800)  totalDays = 9;
+  else if (w >= 650)  totalDays = 8;
+  else                totalDays = 7;
+
+  // 오늘 이후: 1일 고정 / 오늘 이전: 나머지(totalDays - 2)일
+  var daysForward = 1;   // 오늘 다음 1일
+  var daysBack    = totalDays - 1 - daysForward; // 오늘 이전 N일
+
+  var startDate = new Date(today);
+  startDate.setDate(startDate.getDate() - daysBack);
+  var days = totalDays;
+
+  var dayHeaders = Array.from({length:days}, function(_,i) {
+    var d = new Date(startDate); d.setDate(d.getDate()+i);
+    var isToday = d.toDateString()===today.toDateString();
+    return '<div class="gantt-day '+(isToday?'today':'')+'">'+(d.getMonth()+1)+'/'+(d.getDate())+'</div>';
   }).join('');
 
-  const todayOffset = ((today - startDate)/(1000*60*60*24)) / days * 100;
+  var todayOffset = ((today - startDate)/(1000*60*60*24)) / days * 100;
 
-  const rows = tasks.map(t => {
-    const _gIds = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
-    const assignee = WS.getUser(_gIds[0]);
-
-    const due = new Date(t.dueDate);
-    const started = t.startedAt ? new Date(t.startedAt) : new Date(t.createdAt);
-
-    const barStart = Math.max(0, ((started - startDate)/(1000*60*60*24)) / days * 100);
-    const barEnd = Math.min(100, ((due - startDate)/(1000*60*60*24+1)) / days * 100);
-    const barWidth = Math.max(3, barEnd - barStart);
-    const barCls = t.status==='delay'?'red':t.status==='done'?'green':WS.getDday(t.dueDate)<=2?'orange':'blue';
-    const dd = WS.getDdayBadge(t.dueDate);
-    return `<div class="gantt-row" onclick="openReceivedTaskDetail(${t.id})" style="cursor:pointer">
-      <div class="gantt-task-info">
-        <div class="gantt-task-name" title="${t.title}">${t.isImportant?'<span class="star-icon"><i data-lucide="star"></i></span>':''} ${t.title}</div>
-        <div class="gantt-task-assignee">${assignee?.name} · <span class="dday-badge ${dd.cls}" style="font-size:9.5px;padding:1px 5px">${dd.label}</span></div>
-      </div>
-      <div class="gantt-bar-area">
-        <div class="gantt-today-line" style="left:${todayOffset}%"></div>
-        <div class="gantt-bar ${barCls}" style="left:${barStart}%;width:${barWidth}%" title="${t.title} (${WS.formatDate(t.startedAt||t.createdAt)} ~ ${WS.formatDate(t.dueDate)})">
-          ${barWidth>8?t.progress+'%':''}
-        </div>
-      </div>
-    </div>`;
+  var rows = tasks.map(function(t) {
+    var _gIds = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+    var assignee = WS.getUser(_gIds[0]);
+    var due = new Date(t.dueDate); due.setHours(0,0,0,0);
+    var started = t.startedAt ? new Date(t.startedAt) : new Date(t.createdAt);
+    started.setHours(0,0,0,0);
+    var barStart = Math.max(0, ((started - startDate)/(1000*60*60*24)) / days * 100);
+    var barEnd   = Math.min(100, ((due - startDate)/(1000*60*60*24)) / days * 100 + (1/days*100));
+    var barWidth = Math.max(3, barEnd - barStart);
+    var barCls   = t.status==='delay'?'red':t.status==='done'?'green':WS.getDday(t.dueDate)<=2?'orange':'blue';
+    var dd = WS.getDdayBadge(t.dueDate);
+    return '<div class="gantt-row" onclick="openReceivedTaskDetail('+t.id+')" style="cursor:pointer">'
+      +'<div class="gantt-task-info">'
+      +  '<div class="gantt-task-name" title="'+t.title+'">'+(t.isImportant?'<span class="star-icon"><i data-lucide="star"></i></span>':'')+' '+t.title+'</div>'
+      +  '<div class="gantt-task-assignee">'+(assignee?.name||'-')+' · <span class="dday-badge '+dd.cls+'" style="font-size:9.5px;padding:1px 5px">'+dd.label+'</span></div>'
+      +'</div>'
+      +'<div class="gantt-bar-area">'
+      +  '<div class="gantt-today-line" style="left:'+todayOffset+'%"></div>'
+      +  '<div class="gantt-bar '+barCls+'" style="left:'+barStart+'%;width:'+barWidth+'%" title="'+t.title+'">'
+      +    (barWidth>8?t.progress+'%':'')
+      +  '</div>'
+      +'</div>'
+      +'</div>';
   }).join('');
 
-  return `<div class="section-card full-width">
-    <div class="section-head">
-      <div class="section-title-group">
-        <div class="section-dot" style="background:#f59e0b"><i data-lucide="calendar"></i></div>
-        <div class="section-title">마감일 기준 미완료 나의 업무 차트</div>
-        <span class="section-count">${tasks.length}건</span>>
-      </div>
-      <div class="section-actions">
-        <span style="font-size:11px;color:var(--text-muted)">마감일 기준 정렬</span>
-      </div>
-    </div>
-    <div class="gantt-wrap">
-      <div class="gantt-header">
-        <div class="gantt-task-col">업무</div>
-        <div class="gantt-timeline-head">${dayHeaders}</div>
-      </div>
-      ${tasks.length===0?'<div class="empty-state"><div class="es-icon">?뱥</div><div class="es-text">吏꾪뻾 以묒씤 ?낅Т媛 ?놁뒿?덈떎</div></div>':rows}
-    </div>
-  </div>`;
+  return '<div class="section-card full-width">'
+    +'<div class="section-head">'
+    +  '<div class="section-title-group">'
+    +    '<div class="section-dot" style="background:#f59e0b"><i data-lucide="calendar"></i></div>'
+    +    '<div class="section-title">마감일 기준 미완료 나의 업무 차트</div>'
+    +    '<span class="section-count">'+tasks.length+'건</span>>'
+    +  '</div>'
+    +  '<div class="section-actions"><span style="font-size:11px;color:var(--text-muted)">마감일 기준 정렬</span></div>'
+    +'</div>'
+    +'<div class="gantt-wrap">'
+    +  '<div class="gantt-header">'
+    +    '<div class="gantt-task-col">업무</div>'
+    +    '<div class="gantt-timeline-head">'+dayHeaders+'</div>'
+    +  '</div>'
+    +  (tasks.length===0?'<div class="empty-state"><div class="es-icon">📭</div><div class="es-text">진행 중인 업무가 없습니다</div></div>':rows)
+    +'</div>'
+    +'</div>';
 }
+
+// 창 크기 변경 시 Gantt 재렌더 (디바운스 200ms)
+if (!window._ganttResizeInited) {
+  window._ganttResizeInited = true;
+  window.addEventListener('resize', function() {
+    clearTimeout(window._ganttResizeTimer);
+    window._ganttResizeTimer = setTimeout(function() {
+      if (typeof renderDashGrid === 'function') renderDashGrid();
+    }, 200);
+  });
+}
+
+
 
 /* ?낅Т ?곹깭 蹂寃?*/
 function changeStatus(taskId, newStatus) {
@@ -3987,3 +4038,67 @@ function _downloadTaskAttachment(taskId, idx) {
   });
   document.addEventListener('scroll', removeDrTip, true);
 })();
+
+/* ═══════════════════════════════════════════
+   모바일 채팅 팝업 (바텀시트) — open / close
+════════════════════════════════════════════ */
+function openMobileChatPopup(taskTitle, taskId, assignerIdOverride) {
+  var popup = document.getElementById('mobileChatPopup');
+  var inner = document.getElementById('mobileChatInner');
+  if (!popup || !inner) return;
+
+
+  // buildChatWidget HTML 주입
+  if (typeof buildChatWidget === 'function') {
+    inner.innerHTML = buildChatWidget();
+  }
+
+  // ── 팝업 헤더: 업무명 + 지시자 아바타 업데이트
+  var nameEl = inner.querySelector('#chatChannelTaskName');
+  var suffixEl = inner.querySelector('#chatChannelSuffix');
+  if (nameEl && taskTitle) {
+    nameEl.textContent = taskTitle + ' :';
+    nameEl.style.display = 'inline';
+  }
+  if (suffixEl) suffixEl.textContent = '실시간 메시지 채널';
+
+  // 팝업 멤버 리스트 직접 업데이트
+  var mList = inner.querySelector('#chatMemberList');
+  if (mList) {
+    var users = [];
+    if (_activeChatAssignerOverride) {
+      var au = (WS.users||[]).find(function(u){ return String(u.id)===String(_activeChatAssignerOverride); });
+      users = au ? [au] : [];
+    } else if (_activeChatTask) {
+      var ids = Array.isArray(_activeChatTask.assigneeIds) ? _activeChatTask.assigneeIds.slice() : (_activeChatTask.assigneeId ? [_activeChatTask.assigneeId] : []);
+      if (_activeChatTask.assignerId && !ids.some(function(id){ return String(id)===String(_activeChatTask.assignerId); })) ids.unshift(_activeChatTask.assignerId);
+      users = (WS.users||[]).filter(function(u){ return ids.some(function(id){ return String(id)===String(u.id); }); });
+    } else {
+      users = WS.users || [];
+    }
+    users = users.filter(function(u){ return !WS.currentUser || String(u.id)!==String(WS.currentUser.id); });
+    mList.style.gap = '0';
+    mList.innerHTML = users.map(function(u,i){
+      var bg = 'linear-gradient(135deg,'+(u.color||'#4f6ef7')+',#9747ff)';
+      var ml = i>0 ? '-10px' : '0';
+      return '<div title="'+u.name+'" style="display:inline-flex;align-items:center;flex-shrink:0;margin-left:'+ml+';z-index:'+(users.length-i)+';position:relative">'+
+        '<div style="width:26px;height:26px;border-radius:50%;background:'+bg+';box-shadow:0 0 0 2px var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff">'+
+        (u.avatar||u.name.charAt(0))+'</div></div>';
+    }).join('');
+  }
+
+  popup.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // 아이콘 re-render & 스크롤 맨 아래
+  if (typeof refreshIcons === 'function') refreshIcons();
+  setTimeout(function() {
+    var cb = popup.querySelector('.chat-body, #chatBody');
+    if (cb) cb.scrollTop = cb.scrollHeight;
+  }, 80);
+}
+function closeMobileChatPopup() {
+  var popup = document.getElementById('mobileChatPopup');
+  if (popup) popup.classList.remove('open');
+  document.body.style.overflow = '';
+}

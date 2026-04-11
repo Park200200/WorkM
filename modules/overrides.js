@@ -68,9 +68,99 @@ function initHeader() {
   }
   if (typeof renderNotifBadge === 'function') renderNotifBadge();
   if (typeof renderNotifList === 'function') renderNotifList();
+  // 대시보드 좌측 사용자 카드 갱신
+  setTimeout(function() { _updateDashUserCard(); }, 0);
 }
 
 
+
+/* ══════════════════════════════════════════════
+   _updateDashUserCard – 대시보드 좌측 사용자 카드 업데이트
+══════════════════════════════════════════════ */
+function _updateDashUserCard() {
+  const u = WS && WS.currentUser;
+  if (!u) return;
+  const av = u.avatar || (u.name ? u.name.slice(0, 2) : '?');
+  const col = u.color || '#4f6ef7';
+  const grad = 'linear-gradient(135deg,' + col + ',#9747ff)';
+
+  // 아이콘 박스 — 책상 SVG
+  const iconBox = document.getElementById('dashUserIconBox');
+  if (iconBox) {
+    var accentCol = getComputedStyle(document.documentElement).getPropertyValue('--currentAccent').trim() || col;
+    iconBox.style.background = accentCol;
+    iconBox.style.boxShadow = '0 4px 16px ' + accentCol + '66';
+    iconBox.innerHTML = [
+      '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" fill="none">',
+        // 모니터 본체
+        '<rect x="4" y="3" width="18" height="12" rx="2" fill="rgba(255,255,255,0.92)" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>',
+        // 화면 내 컨텐츠 줄
+        '<rect x="6" y="5.5" width="11" height="1.2" rx="0.6" fill="rgba(79,110,247,0.6)"/>',
+        '<rect x="6" y="8"   width="7"  height="1.2" rx="0.6" fill="rgba(255,255,255,0.5)"/>',
+        '<rect x="6" y="10.5" width="9" height="1.2" rx="0.6" fill="rgba(255,255,255,0.4)"/>',
+        // 모니터 받침 기둥
+        '<rect x="12" y="15" width="2.5" height="2.5" rx="0.5" fill="rgba(255,255,255,0.8)"/>',
+        // 받침 밑판
+        '<rect x="9.5" y="17.5" width="7" height="1.2" rx="0.6" fill="rgba(255,255,255,0.8)"/>',
+        // 책상 상판
+        '<rect x="1" y="19.5" width="28" height="2.5" rx="1.2" fill="rgba(255,255,255,0.95)"/>',
+        // 책상 다리 왼쪽
+        '<rect x="3"  y="22" width="2.2" height="5.5" rx="1.1" fill="rgba(255,255,255,0.65)"/>',
+        // 책상 다리 오른쪽
+        '<rect x="24.8" y="22" width="2.2" height="5.5" rx="1.1" fill="rgba(255,255,255,0.65)"/>',
+        // 마우스 본체
+        '<rect x="24" y="14" width="4.5" height="4" rx="2.2" fill="rgba(255,255,255,0.7)"/>',
+        // 마우스 가운데 선
+        '<line x1="26.2" y1="14" x2="26.2" y2="15.5" stroke="rgba(255,255,255,0.35)" stroke-width="0.6"/>',
+        // 스크롤 버튼
+        '<rect x="25.6" y="14.8" width="1.2" height="1.8" rx="0.6" fill="rgba(255,255,255,0.45)"/>',
+        // 마우스 케이블
+        '<path d="M 26.2 18 Q 26.2 19.5 24 19.5" stroke="rgba(255,255,255,0.4)" stroke-width="0.7" fill="none" stroke-linecap="round"/>',
+      '</svg>'
+    ].join('');
+
+    // ── 모바일 퇴근버튼 + 직급뱃지 색상 동기화
+    var checkoutBtn = document.getElementById('dashMobAttend') &&
+      document.querySelector('.dma-checkout-btn');
+    if (checkoutBtn) {
+      checkoutBtn.style.background = accentCol;
+      checkoutBtn.style.boxShadow = '0 3px 10px ' + accentCol + '66';
+    }
+    // 출퇴근 아이콘 색상 동기화
+    document.querySelectorAll('.dma-ico').forEach(function(ico) {
+      ico.style.stroke = accentCol;
+    });
+  }
+
+
+  // 이름
+  const nameEl = document.getElementById('dashUserName');
+  if (nameEl) nameEl.textContent = u.name || '-';
+
+
+  // 직급 뱃지
+  const titleEl = document.getElementById('dashUserTitle');
+  if (titleEl) {
+    const parts = [u.role, u.pos].filter(Boolean);
+    if (parts.length) {
+      titleEl.textContent = parts.join(' · ') + '님';
+      titleEl.style.display = '';
+    } else if (u.dept) {
+      titleEl.textContent = u.dept;
+      titleEl.style.display = '';
+    } else {
+      titleEl.style.display = 'none';
+    }
+  }
+
+
+  const greet = '오늘도 좋은 하루 되세요!';
+
+  const subEl = document.getElementById('dashSubtitle');
+  if (subEl && subEl.textContent.indexOf('업무 현황') >= 0) {
+    subEl.textContent = greet;
+  }
+}
 
 /* ══════════════════════════════════════════════
    색상 유틸 – HEX ↔ HSL 변환
@@ -1049,30 +1139,7 @@ function renderAttendancePill() {
     }
   }
 
-  // ── 강조색 기반 색상 적용 ──
-  const accent = WS.currentAccent || localStorage.getItem('ws_current_accent') || '#4f6ef7';
-  const [aH, aS] = _hexToHSL(accent);
-  const bgCol = _hslToHex(aH, Math.min(aS, 55), 14);  // 어두운 배경
-  const btnCol = _hslToHex(aH, Math.min(aS, 65), 24);  // 버튼 (약간 밝음)
-  const txtCol = _hslToHex(aH, 60, 88);                // 흰계열 텍스트
-  const lblCol = _hslToHex(aH, 45, 58);                // 라벨 중간 밝기
-
-  const pill = document.getElementById('attendancePill');
-  if (pill) {
-    pill.style.background = bgCol;
-    // 퇴근 버튼 색
-    const btn = pill.querySelector('[onclick="doCheckOut()"]');
-    if (btn) { btn.style.background = btnCol; btn._accentApplied = true; }
-    // 시간 텍스트 색
-    ['attCheckInTime', 'attNowTime', 'attWorkTime'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.color = txtCol;
-    });
-    // 라벨 색 (pill 안의 소형 label div들 - 첫 번째 div 자식)
-    pill.querySelectorAll('[style*="font-size:10px"]').forEach(el => {
-      el.style.color = lblCol;
-    });
-  }
+  // ── CSS에서 스타일 관리 (인라인 스타일 제거됨) ──
 }
 
 // 1초마다 출퇴근 위젯 업데이트
@@ -2745,7 +2812,7 @@ function openStaffModal(id) {
   if (roleSel) roleSel.innerHTML = (WS.ranks || []).map(function (r) { return '<option value="' + r.name + '">' + r.name + '</option>'; }).join('');
   if (posSel) posSel.innerHTML = (WS.positions || []).map(function (p) { return '<option value="' + p.name + '">' + p.name + '</option>'; }).join('');
 
-  var fields = ['name', 'dept', 'role', 'pos', 'phone', 'address', 'email', 'status', 'birthday', 'hiredAt', 'resignedAt', 'loginId', 'password', 'avatar', 'color', 'note'];
+  var fields = ['name', 'dept', 'role', 'pos', 'phone', 'address', 'email', 'status', 'birthday', 'hiredAt', 'resignedAt', 'loginId', 'password', 'avatar', 'color', 'note', 'approverType'];
 
   if (id) {
     var u = WS.getUser(id);
@@ -2786,6 +2853,20 @@ function openStaffModal(id) {
       }).join('') || '<div style="font-size:11px;color:var(--text-muted)">배정된 업무가 없습니다.</div>';
     }
     if (addBtn) addBtn.onclick = function () { closeModalDirect('staffModal'); openNewTaskModal(null, id); };
+
+    // 품의서 결재 설정 로드
+    selectStaffApproverType(u.approverType || 'requester');
+    var sealPrev = document.getElementById('st_seal_preview');
+    if (sealPrev) {
+      if (u.sealImage) {
+        sealPrev.style.backgroundImage = 'url(' + u.sealImage + ')';
+        sealPrev.innerHTML = '';
+      } else {
+        sealPrev.style.backgroundImage = '';
+        sealPrev.innerHTML = '<i data-lucide="pen-tool" style="width:16px;height:16px;color:var(--text-muted)"></i><span style="font-size:11px;color:var(--text-muted);font-weight:600">이미지 등록</span>';
+      }
+    }
+    window._staffSealBase64 = u.sealImage || null;
   } else {
     fields.forEach(function (f) {
       var el = document.getElementById('st_' + f);
@@ -2804,6 +2885,17 @@ function openStaffModal(id) {
     }
     var fileInput = document.getElementById('st_photo_file');
     if (fileInput) fileInput.value = '';
+
+    // 신규 등록 시 초기화
+    selectStaffApproverType('requester');
+    var sealPrev2 = document.getElementById('st_seal_preview');
+    if (sealPrev2) {
+      sealPrev2.style.backgroundImage = '';
+      sealPrev2.innerHTML = '<i data-lucide="pen-tool" style="width:16px;height:16px;color:var(--text-muted)"></i><span style="font-size:11px;color:var(--text-muted);font-weight:600">이미지 등록</span>';
+    }
+    window._staffSealBase64 = null;
+    var sealInput = document.getElementById('st_seal_file');
+    if (sealInput) sealInput.value = '';
   }
 
   if (typeof openModal === 'function') openModal('staffModal');
@@ -2826,13 +2918,14 @@ function saveStaff() {
   var name = nameEl ? nameEl.value.trim() : '';
   if (!name) { showToast('error', '이름을 입력하세요'); return; }
 
-  var fields = ['name', 'role', 'dept', 'pos', 'phone', 'address', 'email', 'status', 'birthday', 'hiredAt', 'resignedAt', 'loginId', 'password', 'avatar', 'color', 'note'];
+  var fields = ['name', 'role', 'dept', 'pos', 'phone', 'address', 'email', 'status', 'birthday', 'hiredAt', 'resignedAt', 'loginId', 'password', 'avatar', 'color', 'note', 'approverType'];
   var data = {};
   fields.forEach(function (f) {
     var el = document.getElementById('st_' + f);
     if (el) data[f] = el.value;
   });
   data.photo = window._staffPhotoBase64 || (window._editingStaffId ? ((WS.getUser(window._editingStaffId) || {}).photo || '') : '');
+  data.sealImage = window._staffSealBase64 || (window._editingStaffId ? ((WS.getUser(window._editingStaffId) || {}).sealImage || '') : '');
   if (!data.avatar) data.avatar = name.substring(0, 2);
 
   if (window._editingStaffId) {
@@ -2844,9 +2937,60 @@ function saveStaff() {
   }
   if (typeof closeModalDirect === 'function') closeModalDirect('staffModal');
   window._staffPhotoBase64 = null;
+  window._staffSealBase64 = null;
   if (typeof renderPage_StaffMgmt === 'function') renderPage_StaffMgmt();
   if (typeof renderPage_Tasks === 'function') renderPage_Tasks();
   if (typeof initHeader === 'function') initHeader();
+}
+
+/* ══════════════════════════════════════════════
+   품의서 결재 설정 관련 함수
+══════════════════════════════════════════════ */
+function selectStaffApproverType(type) {
+  var hidden = document.getElementById('st_approverType');
+  if (hidden) hidden.value = type;
+
+  var btnReq = document.getElementById('st_approver_type_requester');
+  var btnApp = document.getElementById('st_approver_type_approver');
+
+  if (!btnReq || !btnApp) return;
+
+  if (type === 'approver') {
+    btnApp.style.background = 'var(--accent-blue)';
+    btnApp.style.color = '#fff';
+    btnApp.style.borderColor = 'var(--accent-blue)';
+    btnReq.style.background = 'var(--bg-secondary)';
+    btnReq.style.color = 'var(--text-secondary)';
+    btnReq.style.borderColor = 'var(--border-color)';
+  } else {
+    btnReq.style.background = 'var(--accent-blue)';
+    btnReq.style.color = '#fff';
+    btnReq.style.borderColor = 'var(--accent-blue)';
+    btnApp.style.background = 'var(--bg-secondary)';
+    btnApp.style.color = 'var(--text-secondary)';
+    btnApp.style.borderColor = 'var(--border-color)';
+  }
+}
+
+function handleStaffSealUpload(input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (file.size > 1 * 1024 * 1024) {
+    showToast('warn', '도장 이미지는 1MB 이하만 등록 가능합니다.');
+    input.value = '';
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function (e) {
+    var base64 = e.target.result;
+    window._staffSealBase64 = base64;
+    var prev = document.getElementById('st_seal_preview');
+    if (prev) {
+      prev.style.backgroundImage = 'url(' + base64 + ')';
+      prev.innerHTML = '';
+    }
+  };
+  reader.readAsDataURL(file);
 }
 
 /* ══════════════════════════════════════════════
@@ -4641,3 +4785,230 @@ function _copySyncCmds() {
   });
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+   WorkM Mobile UI — 하단 탭 바 / 드로어 / FAB / 키보드 패딩
+   ══════════════════════════════════════════════════════════════ */
+
+(function() {
+  'use strict';
+
+  var TAB_MENUS = [
+    { id: 'dashboard',  icon: 'home',       label: '내책상',  page: 'dashboard',   badge: 'sideTaskBadge' },
+    { id: 'tasks',      icon: 'briefcase',  label: '업무',    page: 'tasks',       badge: null },
+    { id: 'schedule',   icon: 'calendar',   label: '일정',    page: 'schedule',    badge: null },
+    { id: 'accounting', icon: 'calculator', label: '회계',    page: 'accounting',  badge: null },
+    { id: '_more',      icon: 'grid-3x3',   label: '더보기',  page: null,          badge: null }
+  ];
+
+  var DRAWER_MENUS = [
+    { icon: 'settings',   label: '진행현황', color: '#6b7280', bg: 'rgba(107,114,128,.12)', page: 'settings' },
+    { icon: 'bar-chart-3',label: '실적보기', color: '#f59e0b', bg: 'rgba(245,158,11,.12)',  page: 'performance' },
+    { icon: 'building-2', label: '본사정보', color: '#4f6ef7', bg: 'rgba(79,110,247,.12)',  page: 'hq-info' },
+    { icon: 'contact',    label: '직원관리', color: '#9747ff', bg: 'rgba(151,71,255,.12)',  page: 'staff-mgmt' },
+    { icon: 'sliders',    label: '기타설정', color: '#06b6d4', bg: 'rgba(6,182,212,.12)',   page: 'rank-mgmt' },
+    { icon: 'globe',      label: '홈페이지', color: '#22c55e', bg: 'rgba(34,197,94,.12)',   page: 'homepage' },
+    { icon: 'user',       label: '내설정',   color: '#ef4444', bg: 'rgba(239,68,68,.12)',   page: 'profile' },
+    { icon: 'users',      label: '업무분장', color: '#8b5cf6', bg: 'rgba(139,92,246,.12)',  page: 'tasks' }
+  ];
+
+  var PAGE_NAMES = {
+    dashboard:'내의책상', tasks:'업무분장', schedule:'일정보기', accounting:'회계관리',
+    settings:'진행현황', performance:'실적보기', 'hq-info':'본사정보',
+    'staff-mgmt':'직원관리', 'rank-mgmt':'기타설정', homepage:'홈페이지', profile:'개인설정'
+  };
+
+  var FAB_ACTIONS = {
+    tasks:      function(){ if(typeof openNewTaskModal==='function') openNewTaskModal(); },
+    schedule:   function(){ if(typeof openScheduleModal==='function') openScheduleModal(); },
+    dashboard:  function(){ if(typeof openScheduleModal==='function') openScheduleModal(); }
+  };
+
+  var _curPage = 'dashboard';
+
+  function isMobile(){ return window.innerWidth < 768; }
+
+  /* 아이콘 SVG 경로 맵 */
+  var ICON_D = {
+    home:        'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10',
+    briefcase:   'M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16 M2 11h20',
+    calendar:    'M8 2v4 M16 2v4 M3 10h18 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
+    calculator:  'M4 4h16v16H4z M8 4v4 M16 4v4 M4 12h16 M8 16h.01 M12 16h.01 M16 16h.01',
+    'grid-3x3':  'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',
+    settings:    'M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+    'bar-chart-3':'M3 3v18h18 M18 17V9 M13 17V5 M8 17v-3',
+    'building-2':'M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2 M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2',
+    contact:     'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75',
+    sliders:     'M4 21v-7 M4 10V3 M12 21v-9 M12 8V3 M20 21v-5 M20 12V3 M1 14h6 M9 8h6 M17 16h6',
+    globe:       'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M2 12h20 M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z',
+    user:        'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+    users:       'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75'
+  };
+
+  function iconSVG(name, size, color) {
+    size = size || 22; color = color || 'currentColor';
+    var d = ICON_D[name] || '';
+    var paths = d.split(' M').map(function(seg, i) {
+      return '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="' + (i===0?'':'M') + seg + '"/>';
+    }).join('');
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' + color + '">' + paths + '</svg>';
+  }
+
+  /* 탭 바 생성 */
+  function buildTabBar() {
+    var sidebar = document.getElementById('mainSidebar');
+    if (!sidebar || document.getElementById('mobileTabBar')) return;
+    var bar = document.createElement('div');
+    bar.id = 'mobileTabBar';
+    TAB_MENUS.forEach(function(m) {
+      var btn = document.createElement('button');
+      btn.className = 'mob-tab';
+      btn.setAttribute('data-tab', m.id);
+      btn.innerHTML = iconSVG(m.icon) +
+        '<span class="mob-tab-label">' + m.label + '</span>';
+      btn.addEventListener('click', function() {
+        if (m.page) mobileNav(m.page);
+        else openMobileDrawer();
+      });
+      bar.appendChild(btn);
+    });
+    sidebar.appendChild(bar);
+  }
+
+  /* 드로어 채우기 */
+  function buildDrawer() {
+    var grid = document.getElementById('mobileDrawerGrid');
+    if (!grid || grid.dataset.built) return;
+    grid.dataset.built = '1';
+    DRAWER_MENUS.forEach(function(m) {
+      var item = document.createElement('div');
+      item.className = 'mob-drawer-item';
+      item.innerHTML =
+        '<div class="mob-drawer-icon" style="background:' + m.bg + '">' +
+        iconSVG(m.icon, 22, m.color) + '</div>' +
+        '<span class="mob-drawer-label">' + m.label + '</span>';
+      item.addEventListener('click', function() {
+        closeMobileDrawer();
+        mobileNav(m.page);
+      });
+      grid.appendChild(item);
+    });
+  }
+
+  function syncTabActive(pid) {
+    document.querySelectorAll('.mob-tab').forEach(function(t) {
+      t.classList.toggle('active', t.getAttribute('data-tab') === pid);
+    });
+  }
+
+  function mobileNav(pageId) {
+    _curPage = pageId;
+    if (pageId === 'homepage') {
+      var el = document.querySelector('[data-page="homepage"]');
+      if (el && typeof showPage === 'function') showPage('homepage', el);
+      if (typeof enterHomepageMode === 'function') setTimeout(enterHomepageMode, 30);
+    } else {
+      var el2 = document.querySelector('[data-page="' + pageId + '"]');
+      if (el2 && typeof showPage === 'function') showPage(pageId, el2);
+    }
+    syncTabActive(pageId);
+    updateMobileHeader(pageId);
+    updateFAB(pageId);
+  }
+
+  function updateMobileHeader(pageId) {
+    var el = document.getElementById('mobPageName');
+    if (el) el.textContent = PAGE_NAMES[pageId] || pageId;
+  }
+
+  function updateFAB(pageId) {
+    var fab = document.getElementById('mobileFAB');
+    if (!fab) return;
+    fab.style.display = 'none'; // FAB 비활성화
+  }
+
+  window.openMobileDrawer = function() {
+    buildDrawer();
+    var dr = document.getElementById('mobileDrawer');
+    var ov = document.getElementById('mobileDrawerOverlay');
+    if (dr) dr.classList.add('open');
+    if (ov) ov.classList.add('show');
+  };
+  window.closeMobileDrawer = function() {
+    var dr = document.getElementById('mobileDrawer');
+    var ov = document.getElementById('mobileDrawerOverlay');
+    if (dr) dr.classList.remove('open');
+    if (ov) ov.classList.remove('show');
+  };
+  window.onMobileFABClick = function() {
+    var act = FAB_ACTIONS[_curPage];
+    if (act) act();
+  };
+
+  /* showPage 래핑 */
+  var _orig = window.showPage;
+  window.showPage = function(pageId, el, extra) {
+    var r = _orig ? _orig.call(this, pageId, el, extra) : undefined;
+    if (isMobile()) {
+      _curPage = pageId;
+      syncTabActive(pageId);
+      updateMobileHeader(pageId);
+      updateFAB(pageId);
+    }
+    return r;
+  };
+
+  /* 키보드 처리 */
+  function setupKeyboard() {
+    if (!window.visualViewport) return;
+    window.visualViewport.addEventListener('resize', function() {
+      var diff = window.innerHeight - window.visualViewport.height;
+      var cnt = document.querySelector('.main-content');
+      if (cnt) cnt.style.paddingBottom = diff > 100 ? (diff + 20) + 'px' : '';
+    });
+  }
+
+  /* 초기화 */
+  function init() {
+    if (!isMobile()) return;
+    buildTabBar();
+    setupKeyboard();
+    syncTabActive('dashboard');
+    updateMobileHeader('dashboard');
+    // 뱃지 동기화
+    setInterval(function() {
+      var s = document.getElementById('sideTaskBadge');
+      var m = document.querySelector('.mob-tab[data-tab="tasks"] .mob-badge');
+      if (s && m) { m.textContent = s.textContent; m.style.display = parseInt(s.textContent) > 0 ? 'flex' : 'none'; }
+    }, 2000);
+
+    // ── 모바일 출퇴근 시간 동기화 (1초마다)
+    setInterval(function() {
+      if (!isMobile()) return;
+      var map = [
+        ['attCheckInTime', 'dmaCheckIn'],
+        ['attNowTime',     'dmaNow'],
+        ['attWorkTime',    'dmaWork']
+      ];
+      map.forEach(function(pair) {
+        var src = document.getElementById(pair[0]);
+        var dst = document.getElementById(pair[1]);
+        if (src && dst) dst.textContent = src.textContent;
+      });
+    }, 1000);
+  }
+
+  window.addEventListener('resize', function() {
+    var bar = document.getElementById('mobileTabBar');
+    if (!bar) { if (isMobile()) { buildTabBar(); } return; }
+    bar.style.display = isMobile() ? 'flex' : 'none';
+    if (!isMobile()) closeMobileDrawer();
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(init, 400); });
+  } else {
+    setTimeout(init, 400);
+  }
+
+})();

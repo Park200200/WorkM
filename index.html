@@ -2,9 +2,22 @@
 <html lang="ko" data-theme="light">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#4f6ef7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="mobile-web-app-capable" content="yes">
 <title>WorkM - 전체현황</title>
 <link rel="stylesheet" href="style.css?v=20260327e">
+<link rel="stylesheet" href="mobile.css?v=20260412a">
+
+
+
+
+
+
+
+
 <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
@@ -57,6 +70,19 @@
         </div>
       </div>
 
+
+      <div class="nav-item" onclick="showPage('settings',this)" data-page="settings" data-tooltip="진행현황">
+        <span class="nav-icon"><i data-lucide="settings"></i></span> <span class="nav-text">진행현황</span>
+      </div>
+
+      <div class="sidebar-section-label">Analytics</div>
+      <div class="nav-item" onclick="showPage('schedule',this)" data-page="schedule" data-tooltip="일정보기">
+        <span class="nav-icon"><i data-lucide="calendar"></i></span> <span class="nav-text">일정보기</span>
+      </div>
+      <div class="nav-item" onclick="showPage('performance',this)" data-page="performance" data-tooltip="실적보기">
+        <span class="nav-icon"><i data-lucide="bar-chart-3"></i></span> <span class="nav-text">실적보기</span>
+      </div>
+
       <!-- 업무관리 서브메뉴 그룹 -->
       <div class="nav-item has-sub" onclick="toggleSubMenu(this)" data-tooltip="업무관리">
         <span class="nav-icon"><i data-lucide="briefcase"></i></span>
@@ -74,22 +100,6 @@
         </div>
       </div>
 
-      <div class="nav-item" onclick="showPage('settings',this)" data-page="settings" data-tooltip="진행현황">
-        <span class="nav-icon"><i data-lucide="settings"></i></span> <span class="nav-text">진행현황</span>
-      </div>
-
-      <div class="sidebar-section-label">Analytics</div>
-      <div class="nav-item" onclick="showPage('schedule',this)" data-page="schedule" data-tooltip="일정보기">
-        <span class="nav-icon"><i data-lucide="calendar"></i></span> <span class="nav-text">일정보기</span>
-      </div>
-      <div class="nav-item" onclick="showPage('performance',this)" data-page="performance" data-tooltip="실적보기">
-        <span class="nav-icon"><i data-lucide="bar-chart-3"></i></span> <span class="nav-text">실적보기</span>
-      </div>
-
-      <div class="sidebar-section-label">Account</div>
-      <div class="nav-item" onclick="showPage('profile',this)" data-page="profile" data-tooltip="개인설정">
-        <span class="nav-icon"><i data-lucide="user"></i></span> <span class="nav-text">개인설정</span>
-      </div>
     </nav>
 
     <!-- 회계관리 전용 사이드 메뉴 (기본 숨김) -->
@@ -103,6 +113,10 @@
         <span class="nav-icon"><i data-lucide="wallet"></i></span>
         <span class="nav-text">예산설정</span>
       </div>
+      <div class="nav-item" onclick="showAcctPage('acct-balance',this)" data-acct-page="acct-balance" data-tooltip="기초잔액">
+        <span class="nav-icon"><i data-lucide="landmark"></i></span>
+        <span class="nav-text">기초잔액</span>
+      </div>
       <div class="nav-item" onclick="showAcctPage('acct-approval',this)" data-acct-page="acct-approval" data-tooltip="품의하기">
         <span class="nav-icon"><i data-lucide="file-check"></i></span>
         <span class="nav-text">품의하기</span>
@@ -115,15 +129,19 @@
         <span class="nav-icon"><i data-lucide="arrow-down-circle"></i></span>
         <span class="nav-text">입금전표</span>
       </div>
+      <div class="nav-item" onclick="showAcctPage('acct-withdrawal',this)" data-acct-page="acct-withdrawal" data-tooltip="출금전표">
+        <span class="nav-icon"><i data-lucide="arrow-up-circle"></i></span>
+        <span class="nav-text">출금전표</span>
+      </div>
       <div class="nav-item" onclick="showAcctPage('acct-payment',this)" data-acct-page="acct-payment" data-tooltip="전표장부">
         <span class="nav-icon"><i data-lucide="scroll-text"></i></span>
         <span class="nav-text">전표장부</span>
       </div>
-      <div style="border-top:1px solid var(--border-color);margin:10px 0"></div>
-      <div class="nav-item" onclick="exitAccountingMode()" data-tooltip="내 책상으로">
-        <span class="nav-icon"><i data-lucide="home"></i></span>
-        <span class="nav-text">내 책상으로</span>
+      <div class="nav-item" onclick="showAcctPage('acct-reports',this)" data-acct-page="acct-reports" data-tooltip="회계현황">
+        <span class="nav-icon"><i data-lucide="bar-chart-3"></i></span>
+        <span class="nav-text">회계현황</span>
       </div>
+
     </nav>
 
     <!-- 홈페이지 전용 사이드 메뉴 (기본 숨김) -->
@@ -167,6 +185,19 @@
 
 
     <div class="sidebar-bottom">
+      <!-- 내 책상으로 버튼 (업무관리 서브 모드 전환 시만 표시) -->
+      <div id="backToDeskBtn" style="display:none;padding:8px 12px">
+        <button onclick="exitAccountingMode(); if(typeof exitHomepageMode==='function') exitHomepageMode();"
+          style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px 0;border-radius:10px;
+                 border:1.5px solid var(--accent-blue);background:rgba(79,110,247,.08);
+                 color:var(--accent-blue);font-size:13px;font-weight:700;cursor:pointer;
+                 transition:all .2s"
+          onmouseover="this.style.background='rgba(79,110,247,.18)'"
+          onmouseout="this.style.background='rgba(79,110,247,.08)'">
+          <i data-lucide="home" style="width:15px;height:15px"></i>
+          <span>내 책상으로</span>
+        </button>
+      </div>
       <div class="sidebar-user" id="sidebarUser" onclick="showPage('profile', document.querySelector('[data-page=profile]'))">
         <div class="user-avatar" id="sidebarAvatar"></div>
         <div class="user-info">
@@ -177,11 +208,52 @@
     </div>
   </aside>
 
+  <!-- ════════ 모바일 하단 탭 바 (사이드바 내부에 JS로 삽입됨) ════════ -->
+  <!-- ════════ 모바일 더보기 드로어 ════════ -->
+  <!-- ════════ 모바일 채팅 팝업 (바텀시트) ════════ -->
+  <div id="mobileChatPopup" onclick="if(event.target===this)closeMobileChatPopup()">
+    <div class="mcp-sheet">
+      <div class="mcp-handle" onclick="closeMobileChatPopup()"></div>
+      <!-- 닫기 버튼 행 -->
+      <div style="display:flex;align-items:center;justify-content:flex-end;padding:0 14px 4px;flex-shrink:0">
+        <button onclick="closeMobileChatPopup()"
+          style="display:inline-flex;align-items:center;justify-content:center;
+                 width:30px;height:30px;border-radius:50%;border:none;cursor:pointer;
+                 background:var(--bg-tertiary);color:var(--text-secondary);
+                 font-size:16px;font-weight:700;line-height:1;
+                 box-shadow:0 1px 4px rgba(0,0,0,.12);transition:background .15s"
+          onmouseover="this.style.background='var(--border-color)'"
+          onmouseout="this.style.background='var(--bg-tertiary)'"
+          title="닫기">✕</button>
+      </div>
+      <div class="mcp-inner" id="mobileChatInner">
+        <!-- buildChatWidget() 결과가 여기에 주입됨 -->
+      </div>
+    </div>
+  </div>
+
+  <div id="mobileDrawerOverlay" onclick="closeMobileDrawer()"></div>
+  <div id="mobileDrawer">
+    <div class="mob-drawer-handle"></div>
+    <div class="mob-drawer-section">빠른 메뉴</div>
+    <div class="mob-drawer-grid" id="mobileDrawerGrid"></div>
+  </div>
+
+  <!-- FAB -->
+  <button id="mobileFAB" onclick="onMobileFABClick()" style="display:none" title="새로 등록">
+    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+  </button>
+
   <!-- ════════ 메인 영역 ════════ -->
   <div class="main-area">
 
     <!-- ─── 헤더 ─── -->
     <header class="main-header" style="position:relative">
+      <!-- 모바일 전용 로고+페이지명 (데스크탑에서 숨김) -->
+      <div id="mobileHeaderTitle" style="display:none">
+        <div class="mob-logo">W</div>
+        <span class="mob-page-name" id="mobPageName">내의책상</span>
+      </div>
       <div class="header-search" id="headerSearch">
         <span class="search-icon"><i data-lucide="search" class="icon-sm"></i></span>
         <input type="text" placeholder="업무, 담당자, 키워드 검색..." id="globalSearch" oninput="handleSearch(this.value)">
@@ -189,16 +261,6 @@
 
       <!-- 홈페이지 모드 breadcrumb 바 (기본 숨김) -->
       <div id="homepageModeBar" style="display:none;align-items:center;gap:8px;flex:1;max-width:560px">
-        <button onclick="showPage('dashboard', document.querySelector('[data-page=dashboard]'))"
-          style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;
-                 border:1.5px solid var(--border-color);background:var(--bg-tertiary);
-                 color:var(--text-secondary);font-size:12.5px;font-weight:600;cursor:pointer;
-                 transition:all .2s;flex-shrink:0"
-          onmouseover="this.style.borderColor='var(--accent-blue)';this.style.color='var(--accent-blue)'"
-          onmouseout="this.style.borderColor='var(--border-color)';this.style.color='var(--text-secondary)'">
-          <i data-lucide="home" style="width:14px;height:14px"></i>
-          <span>내 책상으로</span>
-        </button>
         <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--text-muted);flex-shrink:0"></i>
         <div style="display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:8px;
                     background:var(--accent-blue);color:#fff;font-size:13px;font-weight:700;flex-shrink:0">
@@ -222,23 +284,13 @@
 
       <!-- 회계관리 모드 breadcrumb 바 (기본 숨김) -->
       <div id="acctModeBar" style="display:none;align-items:center;gap:8px;flex:1;max-width:560px">
-        <button onclick="exitAccountingMode()"
-          style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;
-                 border:1.5px solid var(--border-color);background:var(--bg-tertiary);
-                 color:var(--text-secondary);font-size:12.5px;font-weight:600;cursor:pointer;
-                 transition:all .2s;flex-shrink:0"
-          onmouseover="this.style.borderColor='var(--accent-blue)';this.style.color='var(--accent-blue)'"
-          onmouseout="this.style.borderColor='var(--border-color)';this.style.color='var(--text-secondary)'">
-          <i data-lucide="home" style="width:14px;height:14px"></i>
-          <span>내 책상으로</span>
-        </button>
         <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--text-muted);flex-shrink:0"></i>
         <div style="display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:8px;
                     background:var(--accent-blue);color:#fff;font-size:13px;font-weight:700;flex-shrink:0">
           <i data-lucide="calculator" style="width:14px;height:14px;color:#fff"></i>
           <span>회계관리</span>
         </div>
-        <span style="font-size:11.5px;color:var(--text-muted);margin-left:4px">시작 <span id="acctStartTime" style="font-weight:700">--:--</span></span>
+        <div id="acctYearBar" style="display:inline-flex;align-items:center;gap:6px;margin-left:6px"></div>
       </div>
 
       <div class="header-actions">
@@ -284,21 +336,23 @@
       <div id="attendancePill" style="position:absolute;left:50%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:0;border-radius:50px;overflow:hidden;cursor:default;font-family:inherit;user-select:none">
         <!-- 출근 시간 -->
         <div class="att-section">
-          <div class="att-label">출근</div>
+          <i data-lucide="log-in" class="att-icon"></i>
           <div class="att-time" id="attCheckInTime">--:--</div>
         </div>
         <!-- 현재 시간 (실시간) -->
         <div class="att-section">
-          <div class="att-label">현재</div>
+          <i data-lucide="clock" class="att-icon"></i>
           <div class="att-time" id="attNowTime">--:--:--</div>
         </div>
         <!-- 근무 시간 (누적) -->
         <div class="att-section">
-          <div class="att-label">근무</div>
+          <i data-lucide="calendar-clock" class="att-icon"></i>
           <div class="att-time" id="attWorkTime">--:--</div>
         </div>
         <!-- 퇴근 버튼 -->
-        <div class="att-checkout" onclick="doCheckOut()">퇴근 →</div>
+        <div class="att-checkout" onclick="doCheckOut()">
+          <i data-lucide="arrow-right" style="width:18px;height:18px"></i>
+        </div>
       </div>
     </header>
 
@@ -312,22 +366,59 @@
       ══════════════════════════════ -->
       <div class="page active" id="page-dashboard">
 
-        <div class="page-header">
-          <div>
-            <div class="page-title">나의 업무현황</div>
-            <div class="page-subtitle" id="dashSubtitle">오늘의 업무 현황을 확인하세요</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <span style="font-size:12px;color:var(--text-muted)" id="currentDateTime"></span>
-            <button class="btn" style="border:1.5px solid var(--accent-blue);color:var(--accent-blue);background:transparent" onclick="openInstructionModal()">
-              <i data-lucide="megaphone" style="width:14px;height:14px;margin-right:4px;vertical-align:middle"></i>지시사항
+        <!-- ══ 대시보드 페이지 헤더 (모바일/데스크탑 반응형) ══ -->
+        <div id="dashPageHeader" class="dash-ph">
+
+          <!-- ▶ ROW 1: 유저카드 + 출퇴근 한 줄 -->
+          <div class="dash-ph-top">
+            <!-- 책상 아이콘 박스 -->
+            <div id="dashUserIconBox" class="dash-icon-box"></div>
+            <!-- 이름 + 직급뱃지 + 인사말 -->
+            <div class="dash-ph-text">
+              <div class="dash-ph-name-row">
+                <span id="dashUserName" class="dash-uname">-</span>
+                <span id="dashUserTitle" class="dash-utitle"></span>
+              </div>
+              <div id="dashSubtitle" class="dash-usub">오늘도 좋은 하루 되세요!</div>
+            </div>
+            <!-- 모바일 전용: 출퇴근 (우측 끝) -->
+            <div id="dashMobAttend" class="dash-mob-attend">
+              <div class="dma-col">
+                <div class="dma-item">
+                  <svg class="dma-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  <span id="dmaCheckIn">--:--</span>
+                </div>
+                <div class="dma-item">
+                  <svg class="dma-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span id="dmaNow">--:--:--</span>
+                </div>
+                <div class="dma-item">
+                  <svg class="dma-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="15" r="2"/></svg>
+                  <span id="dmaWork">--:--</span>
+                </div>
+              </div>
+              <button class="dma-checkout-btn" onclick="doCheckOut()" title="퇴근하기">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </button>
+            </div>
+          </div><!-- /dash-ph-top -->
+
+          <!-- ▶ ROW 2: 날짜 + 액션 버튼들 -->
+          <div class="dash-ph-actions">
+            <span class="dash-datetime" id="currentDateTime"></span>
+            <button class="btn dash-act-btn" onclick="openInstructionModal()">
+              <i data-lucide="megaphone" style="width:14px;height:14px"></i>지시사항
             </button>
-            <button class="btn" style="border:1.5px solid var(--accent-blue);color:var(--accent-blue);background:transparent" onclick="openDailyReportModal()">
-              <i data-lucide="clipboard-pen" style="width:14px;height:14px;margin-right:4px;vertical-align:middle"></i>일보작성
+            <button class="btn dash-act-btn" onclick="openDailyReportModal()">
+              <i data-lucide="clipboard-pen" style="width:14px;height:14px"></i>일보작성
             </button>
-            <button class="btn btn-blue" onclick="openScheduleModal()" style="display:inline-flex;align-items:center;gap:5px"><i data-lucide="layout-list" style="width:14px;height:14px"></i> 내가기획</button>
-          </div>
-        </div>
+            <button class="btn btn-blue dash-act-btn dash-act-primary" onclick="openScheduleModal()">
+              <i data-lucide="layout-list" style="width:14px;height:14px"></i>내가기획
+            </button>
+          </div><!-- /dash-ph-actions -->
+
+        </div><!-- /dashPageHeader -->
+
 
         <!-- 통계 카드 -->
         <div class="stats-row" id="statsRow"></div>
@@ -2346,7 +2437,10 @@
         <div id="acct-approval" class="acct-sub-page" style="display:none"></div>
         <div id="acct-expense" class="acct-sub-page" style="display:none"></div>
         <div id="acct-income" class="acct-sub-page" style="display:none"></div>
+                <div id="acct-withdrawal" class="acct-sub-page" style="display:none"></div>
         <div id="acct-payment" class="acct-sub-page" style="display:none"></div>
+        <div id="acct-balance" class="acct-sub-page" style="display:none"></div>
+        <div id="acct-reports" class="acct-sub-page" style="display:none"></div>
       </div>
 
 
@@ -3537,6 +3631,35 @@
         </div>
       </div>
 
+      <!-- ── 섹션: 품의서 결재 설정 ── -->
+      <div class="sm-section-label" style="margin-top:16px">품의서 결재 설정</div>
+      <div class="sm-grid">
+        <!-- 승인자 구분 -->
+        <div class="form-group">
+          <label class="form-label">승인자 구분</label>
+          <div id="st_approver_type_picks" style="display:flex;gap:6px;padding:2px 0">
+            <button type="button" id="st_approver_type_requester" onclick="selectStaffApproverType('requester')" 
+              style="flex:1;height:38px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s">품의자</button>
+            <button type="button" id="st_approver_type_approver" onclick="selectStaffApproverType('approver')" 
+              style="flex:1;height:38px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-secondary);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s">승인자</button>
+          </div>
+          <input type="hidden" id="st_approverType" value="requester">
+        </div>
+        <!-- 도장/사인 등록 -->
+        <div class="form-group">
+          <label class="form-label">도장/사인 등록</label>
+          <div id="st_seal_preview" 
+               onclick="document.getElementById('st_seal_file').click()"
+               style="width:100%;height:38px;background:var(--bg-tertiary);border:1.5px dashed var(--border-color);border-radius:10px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;overflow:hidden;transition:border-color .15s;background-size:contain;background-position:center;background-repeat:no-repeat"
+               onmouseover="this.style.borderColor='var(--accent-blue)'"
+               onmouseout="this.style.borderColor='var(--border-color)'">
+            <i data-lucide="pen-tool" style="width:16px;height:16px;color:var(--text-muted)"></i>
+            <span style="font-size:11px;color:var(--text-muted);font-weight:600">이미지 등록</span>
+          </div>
+          <input type="file" id="st_seal_file" accept="image/*" style="display:none" onchange="handleStaffSealUpload(this)">
+        </div>
+      </div>
+
       <!-- 배정된 업무 섹션 -->
       <div id="staffTasksSection" style="margin-top:16px;border-top:1px dashed var(--border-color);padding-top:14px;display:none">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -3750,12 +3873,19 @@
 <script src="modules/strings.js?v=20260331"></script>
 <script src="modules/ui.js?v=20260401"></script>
 <script src="data.js?v=20260401c"></script>
-<script src="app.js?v=20260403a"></script>
-<script src="modules/dashboard.js?v=20260401"></script>
+<script src="app.js?v=20260412b"></script>
+<script src="modules/dashboard.js?v=20260411m23"></script>
+
+
+
+
+
 <script src="modules/schedule.js?v=20260401"></script>
-<script src="modules/overrides.js?v=20260408a"></script>
+<script src="modules/overrides.js?v=20260412a"></script>
+
+
 <script src="modules/homepage.js?v=20260408a"></script>
-<script src="modules/accounting.js?v=20260409a"></script>
+<script src="modules/accounting.js?v=20260411za"></script>
 <script>
 /* hp_menu_items 오염(object 배열) 자동 정리 */
 (function(){

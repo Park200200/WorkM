@@ -38,7 +38,8 @@ function handleSearch(val) {
 function renderDashboard() {
   const u = WS.currentUser;
   const sub = document.getElementById('dashSubtitle');
-  if(sub) sub.textContent = `반갑습니다! ${u.name} ${u.role}님 오늘도 좋은 하루 되세요!`;
+  if(sub) sub.textContent = '오늘도 좋은 하루 되세요!';
+
   renderStats();
   renderDashGrid();
 }
@@ -196,62 +197,52 @@ function buildReceivedBody() {
     const po={high:0,medium:1,low:2};
     return (po[a.priority]||1)-(po[b.priority]||1);
   });
-  // 실제 데이터 없으면 샘플
-  var allTasks = tasks.length > 0 ? tasks : [
-    {id:'s1',title:'판매 보고서 작성',team:'영업팀',status:'progress',progress:40,dueDate:new Date(Date.now()+3*86400000).toISOString(),assignerId:null,_sample:true},
-    {id:'s2',title:'신규 고객 덕 인터뷰',team:'직영팅',status:'waiting',progress:0,dueDate:new Date(Date.now()+7*86400000).toISOString(),assignerId:null,_sample:true},
-    {id:'s3',title:'월간 성과 데이터 불러오기',team:'마케팅팀',status:'progress',progress:75,dueDate:new Date(Date.now()+1*86400000).toISOString(),assignerId:null,_sample:true},
-    {id:'s4',title:'가격표 검토 및 검토',team:'구매팀',status:'waiting',progress:10,dueDate:new Date(Date.now()+5*86400000).toISOString(),assignerId:null,_sample:true},
-  ];
   if(tasks.length===0 && arguments[0]==='noSample') return '<div class="empty-state"><div class="es-icon"><i data-lucide="sparkles"></i></div><div class="es-text">지시받은 업무가 없습니다</div></div>';
-
-  // 지시중요도 설정 & ws_instructions 로드
-  const allImportances = JSON.parse(localStorage.getItem('ws_instr_importances') || '[]');
-  const instrList = JSON.parse(localStorage.getItem('ws_instructions') || '[]');
-
-  const rows = allTasks.map(function(t) {
-    const assigner = t._sample ? null : WS.getUser(t.assignerId);
-    const dd = WS.getDdayBadge(t.dueDate);
-    const fillCls = t.status==='delay'?'delay':t.status==='done'?'done':'';
-    const sampleTag = t._sample ? '<span style="font-size:9px;background:#9747ff22;color:#9747ff;border-radius:4px;padding:0 4px;margin-left:4px">샘플</span>' : '';
-
-    // ws_instructions에서 중요도 매칭
-    var instrRecord = instrList.find(function(i){ return i.id===t.id || i.id===Number(t.id); });
-    var importanceStr = (instrRecord && instrRecord.importance) ? instrRecord.importance : (t.importance || '');
-    var taskImpNames = importanceStr ? importanceStr.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
-    var importanceBadges = taskImpNames.length > 0
-      ? taskImpNames.map(function(name) {
-          var imp = allImportances.find(function(i){ return i.name===name; });
+  var allTasks = tasks.length > 0 ? tasks : [
+    {id:'s1',title:'판매 보고서 작성',department:'영업팀',status:'progress',progress:40,dueDate:new Date(Date.now()+3*86400000).toISOString(),assignerId:null,priority:'medium',_sample:true},
+    {id:'s2',title:'신규 고객 인터뷰',department:'직영팀',status:'waiting',progress:0,dueDate:new Date(Date.now()+7*86400000).toISOString(),assignerId:null,priority:'low',_sample:true},
+  ];
+  // 업무중요도 정의 — ws_instr_importances 우선, WS.importances 폴백
+  var allImportances = [];
+  try { allImportances = JSON.parse(localStorage.getItem('ws_instr_importances') || '[]'); } catch(e) {}
+  if (!allImportances.length && WS.importances && WS.importances.length) { allImportances = WS.importances; }
+  // ws_instructions에서 업무중요도 조회 (buildMyAssigned와 동일 패턴)
+  var instrList = [];
+  try { instrList = JSON.parse(localStorage.getItem('ws_instructions') || '[]'); } catch(e) {}
+  var rows = allTasks.map(function(t) {
+    var assigner = t._sample ? null : WS.getUser(t.assignerId);
+    var dd = WS.getDdayBadge(t.dueDate);
+    var onclick = t._sample ? '' : '_openTaskOrEdit(\'' + t.id + '\',\'' + (t.assignerId||'') + '\')'
+    // 지시자 아바타
+    var assignerAvatar = assigner ? _makeCircleAvatar(assigner.avatar||assigner.name.slice(0,2), assigner.color||'#4f6ef7', assigner.name) : '<span style="font-size:11px;color:var(--text-muted)">-</span>';
+    // 중요도 배지 — ws_instructions 우선, t.importance 폴백
+    var instrRecord = instrList.find(function(i){ return String(i.id)===String(t.id) || (i.taskId && String(i.taskId)===String(t.id)); });
+    var impStr = (instrRecord && instrRecord.importance) ? instrRecord.importance : (t.importance || '');
+    var impNames = impStr ? impStr.split(',').map(function(s){return s.trim();}).filter(Boolean) : [];
+    var importanceBadges = impNames.length > 0
+      ? impNames.map(function(name) {
+          var imp = allImportances.find(function(i){return i.name===name;});
           var c = imp ? (imp.color||'#ef4444') : '#9ca3af';
-          var icon = imp ? imp.icon : '';
-          var hasIcon = icon && icon.length > 2;
-          var inner = hasIcon ? '<i data-lucide="' + icon + '" style="width:12px;height:12px;color:' + c + '"></i>' : '<span style="width:7px;height:7px;border-radius:50%;background:' + c + ';display:inline-block"></span>';
-          return '<span title="' + name + '" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:' + c + '18;border:1.5px solid ' + c + ';cursor:default;flex-shrink:0">' + inner + '</span>';
+          var icon = imp && imp.icon && imp.icon.length > 2 ? imp.icon : '';
+          var inner = icon ? '<i data-lucide="'+icon+'" style="width:12px;height:12px;color:'+c+'"></i>' : '<span style="width:7px;height:7px;border-radius:50%;background:'+c+';display:inline-block"></span>';
+          return '<span title="'+name+'" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:'+c+'18;border:1.5px solid '+c+';cursor:default;flex-shrink:0">'+inner+'</span>';
         }).join('')
       : '<span style="font-size:11px;color:var(--text-muted)">-</span>';
+    // 진행률 셀
     var barColor = t.status==='done'?'#22c55e':t.status==='delay'?'#ef4444':'var(--accent-blue)';
-    var progressCell = '<div style="display:flex;align-items:center;gap:5px"><div style="position:relative;width:60px;height:6px;background:var(--border-color);border-radius:100px;overflow:hidden;flex-shrink:0"><div style="position:absolute;left:0;top:0;width:' + t.progress + '%;height:100%;border-radius:100px;background:' + barColor + ';transition:width .4s"></div></div><span style="font-size:10.5px;font-weight:700;color:var(--text-primary);min-width:28px;text-align:right">' + t.progress + '%</span></div>';
-    var assignerCell = assigner
-      ? '<td onclick="event.stopPropagation();openTaskChatChannel(\'' + t.title + '\',' + t.id + ',' + (t.assignerId||'') + ')" title="클릭하여 메시지 채널 열기" style="cursor:pointer"><div class="avatar-group"><div class="avatar" style="background:linear-gradient(135deg,' + (assigner.color||'#9747ff') + ',#4f6ef7)">' + (assigner.avatar||'?') + '</div></div><div style="font-size:11px;color:var(--currentAccent,#9747ff);margin-top:2px;font-weight:600;text-decoration:underline dotted;text-underline-offset:2px">' + assigner.name + '</div></td>'
-      : '<td><div style="font-size:11px;color:var(--text-muted)">지시자</div></td>';
-    // 샘플 업무도 WS.tasks에 등록하여 openReceivedTaskDetail로 팝업 열기
-    if (t._sample && !WS.getTask(t.id)) {
-      t.isSchedule = true;
-      WS.tasks.push(t);
-    }
-    return '<tr style="cursor:pointer" onclick="_openTaskOrEdit(\'' + t.id + '\',\'' + (t.assignerId||'') + '\')">'
-      + '<td style="width:25%"><div style="display:flex;align-items:center;gap:6px">'
-      + (t.isImportant ? '<span class="star-icon"><i data-lucide="star"></i></span>' : '')
-      + '<span style="font-weight:600;font-size:12.5px">' + t.title + '</span>' + sampleTag + '</div>'
-      + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + (t.team||'') + '</div></td>'
-      + assignerCell
-      + '<td style="pointer-events:none;cursor:default">' + _renderStatusBadge(t.status) + '</td>'
-      + '<td onclick="event.stopPropagation();' + (t._sample ? '' : "openReceivedTaskDetail('" + t.id + "')") + '" style="cursor:' + (t._sample ? 'default' : 'pointer') + '" title="吏꾪뻾???대┃?섏뿬 ?낅Т吏꾪뻾 UI ?닿린">' + progressCell + '</td>'
-      + '<td style="pointer-events:none"><span class="dday-badge ' + dd.cls + '">' + dd.label + '</span></td>'
-      + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">' + importanceBadges + '</div></td>'
+    var progressCell = '<div style="display:flex;align-items:center;gap:5px"><div style="position:relative;width:60px;height:6px;background:var(--border-color);border-radius:100px;overflow:hidden;flex-shrink:0"><div style="position:absolute;left:0;top:0;width:'+t.progress+'%;height:100%;border-radius:100px;background:'+barColor+';transition:width .4s"></div></div><span style="font-size:10.5px;font-weight:700;color:var(--text-primary);min-width:28px;text-align:right">'+t.progress+'%</span></div>';
+    var sampleTag = t._sample ? '<span style="font-size:9.5px;background:#e0e7ff;color:#4f6ef7;border-radius:4px;padding:1px 5px;margin-left:4px">샘플</span>' : '';
+    return '<tr style="cursor:'+(t._sample?'default':'pointer')+'" '+(onclick?'onclick="'+onclick+'"':'')+'>'
+      + '<td style="width:25%"><div style="display:flex;align-items:center;gap:6px">'+(t.isImportant?'<i data-lucide="star" style="width:13px;height:13px;color:#f59e0b;flex-shrink:0"></i>':'')+'<span style="font-weight:600;font-size:12.5px">'+t.title+'</span>'+sampleTag+'</div>'
+      + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">'+(assigner&&assigner.department?assigner.department:'')+'</div></td>'
+      + '<td onclick="event.stopPropagation();'+(t._sample||!t.assignerId?'':'openTaskChatChannel(\''+t.title.replace(/'/g,"\\'\'")+'\',' + t.id + ',' + (t.assignerId||'null') + ')') + '" title="클릭하여 지시자와 메시지 채널 열기" style="cursor:'+(t._sample||!t.assignerId?'default':'pointer')+'">'+assignerAvatar+'</td>'
+      + '<td style="pointer-events:none">'+_renderStatusBadge(t.status)+'</td>'
+      + '<td onclick="'+(t._sample?'':'event.stopPropagation();openReceivedTaskDetail('+t.id+')')+'" style="cursor:'+(t._sample?'default':'pointer')+'" title="클릭하여 진행보고서 작성">'+progressCell+'</td>'
+      + '<td style="pointer-events:none"><span class="dday-badge '+dd.cls+'">'+dd.label+'</span></td>'
+      + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">'+importanceBadges+'</div></td>'
       + '</tr>';
   }).join('');
-  return '<div style="padding:8px"><table class="task-table"><thead><tr><th style="width:25%">업무명</th><th>지시자</th><th>상태</th><th>진행률</th><th>마감일</th><th>지시중요도</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  return '<div style="padding:8px"><table class="task-table received-task-table"><thead><tr><th style="width:25%">업무명</th><th>지시(기획)자</th><th>상태</th><th>진행률</th><th>마감일</th><th>업무중요도</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 
 /* ── 협업자 아바타 겹침 렌더 헬퍼 */
@@ -359,7 +350,7 @@ function buildScheduleBody() {
       + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">' + importanceBadges + '</div></td>'
       + '</tr>';
   }).join('');
-  return '<div style="padding:8px"><table class="task-table"><thead><tr><th style="width:25%">업무명</th><th>수신(협조)자</th><th>상태</th><th>진행률</th><th>마감일</th><th>업무중요도</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  return '<div style="padding:8px"><table class="task-table myplan-task-table"><thead><tr><th style="width:25%">업무명</th><th>지시(기획)자</th><th>상태</th><th>진행률</th><th>마감일</th><th>업무중요도</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 /* ── 오늘이 시한인 업무 Body (테이블 스타일) */
@@ -455,7 +446,7 @@ function buildDueTodayBody() {
       + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">' + importanceBadges + '</div></td>'
       + '</tr>';
   }).join('');
-  return '<div style="padding:8px"><table class="task-table"><thead><tr><th style="width:25%">업무명</th><th>수신(협조)자</th><th>상태</th><th>진행율</th><th>마감일</th><th>업무중요도</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  return '<div style="padding:8px"><table class="task-table duetoday-task-table"><thead><tr><th style="width:25%">업무명</th><th>지시(기획)자</th><th>상태</th><th>진행율</th><th>마감일</th><th>업무중요도</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 /* ── 상태 배지 with 아이콘 (설정된 ws_task_statuses 기반) */
@@ -621,7 +612,7 @@ function buildAssignedByMeBody() {
       return `<i data-lucide="${imp.icon}" style="width:13px;height:13px;color:${c};flex-shrink:0;margin-right:2px"></i>`;
     })() : '';
 
-    // ── 수신(협조)자 아바타 스택 (assigneeIds 전체 표시)
+    // ── 지시(기획)자 아바타 스택 (assigneeIds 전체 표시)
     const receiverAvatarArr = _ids2.map(uid => {
       const u = WS.getUser(uid);
       if (!u) return '';
@@ -663,7 +654,7 @@ function buildAssignedByMeBody() {
       <td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">${importanceBadges}</div></td>
     </tr>`;
   }).join('');
-  return `<div style="padding:8px"><table class="task-table"><thead><tr><th style="width:25%">업무명</th><th>수신(협조)자</th><th>상태</th><th>진행률</th><th>마감일</th><th>지시중요도</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<div style="padding:8px"><table class="task-table byme-task-table"><thead><tr><th style="width:25%">업무명</th><th>담당(수신)자</th><th>상태</th><th>진행률</th><th>마감일</th><th>지시중요도</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 /* ?€?€ ?뱀뀡2: 내가 吏€?쒕컺?€ 업무 ?€?€ */
@@ -672,36 +663,36 @@ function buildAssignedToMe() {
     const po={high:0,medium:1,low:2};
     return po[a.priority]-po[b.priority];
   });
-  const cards = tasks.map(t => {
+  const rows = tasks.map(t => {
     const assigner = WS.getUser(t.assignerId);
     const dd = WS.getDdayBadge(t.dueDate);
-    const isToday = WS.getDday(t.dueDate) <= 0;
-    const fillCls = t.status==='delay'?'delay':t.status==='done'?'done':'';
-    return `<div class="task-card ${isToday&&t.status!=='done'?'urgent':t.isImportant?'important':''}" onclick="openTaskDetail(${t.id})">
-      <div class="task-card-top">
-        <div class="task-card-title">
-          ${t.isImportant?'<span class="star-icon"><i data-lucide="star"></i></span>':''}${t.title}
-        </div>
-        <span class="dday-badge ${dd.cls}">${dd.label}</span>
-      </div>
-      <div class="task-card-meta">
-        <span class="priority-badge priority-${t.priority}">${WS.getPriorityLabel(t.priority)}</span>
-        <span class="status-badge status-${t.status}">${WS.getStatusLabel(t.status)}</span>
-        <span style="font-size:11px;color:var(--text-muted)">from ${assigner?.name}</span>
-      </div>
-      <div style="margin-top:8px">
-        <div class="progress-wrap">
-          <div class="progress-bar"><div class="progress-fill ${fillCls}" style="width:${t.progress}%"></div></div>
-          <span class="progress-label">${t.progress}%</span>
-        </div>
-      </div>
-      <div class="quick-actions" style="margin-top:7px" onclick="event.stopPropagation()">
-        <button class="qa-btn" onclick="changeStatus(${t.id},'progress')">진행중</button>
-        <button class="qa-btn done" onclick="changeStatus(${t.id},'done')">완료</button>
-        <button class="qa-btn delay" onclick="changeStatus(${t.id},'delay')">지연</button>
-        <button class="qa-btn" onclick="openTaskDetail(${t.id})">상세</button>
-      </div>
-    </div>`;
+    const allImportances = (WS.importances && WS.importances.length) ? WS.importances : [];
+    // 지시자 아바타
+    const assignerAvatar = assigner ? _makeCircleAvatar(assigner.avatar||assigner.name.slice(0,2), assigner.color||'#4f6ef7', assigner.name) : '<span style="font-size:11px;color:var(--text-muted)">-</span>';
+    // 중요도 배지
+    const impStr = t.importance || '';
+    const impNames = impStr ? impStr.split(',').map(s=>s.trim()).filter(Boolean) : [];
+    const importanceBadges = impNames.length > 0
+      ? impNames.map(name => {
+          const imp = allImportances.find(i=>i.name===name);
+          const c = imp ? (imp.color||'#ef4444') : '#9ca3af';
+          const icon = imp && imp.icon && imp.icon.length > 2 ? imp.icon : '';
+          const inner = icon ? `<i data-lucide="${icon}" style="width:12px;height:12px;color:${c}"></i>` : `<span style="width:7px;height:7px;border-radius:50%;background:${c};display:inline-block"></span>`;
+          return `<span title="${name}" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${c}18;border:1.5px solid ${c};cursor:default;flex-shrink:0">${inner}</span>`;
+        }).join('')
+      : '<span style="font-size:11px;color:var(--text-muted)">-</span>';
+    // 진행률 셀
+    const barColor = t.status==='done'?'#22c55e':t.status==='delay'?'#ef4444':'var(--accent-blue)';
+    const progressCell = `<div style="display:flex;align-items:center;gap:5px"><div style="position:relative;width:60px;height:6px;background:var(--border-color);border-radius:100px;overflow:hidden;flex-shrink:0"><div style="position:absolute;left:0;top:0;width:${t.progress}%;height:100%;border-radius:100px;background:${barColor};transition:width .4s"></div></div><span style="font-size:10.5px;font-weight:700;color:var(--text-primary);min-width:28px;text-align:right">${t.progress}%</span></div>`;
+    return `<tr style="cursor:pointer" onclick="openTaskDetail(${t.id})">
+      <td style="width:25%"><div style="display:flex;align-items:center;gap:6px">${t.isImportant?'<i data-lucide="star" style="width:13px;height:13px;color:#f59e0b;flex-shrink:0"></i>':''}<span style="font-weight:600;font-size:12.5px">${t.title}</span></div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${assigner?.department||''}</div></td>
+      <td onclick="event.stopPropagation()">${assignerAvatar}</td>
+      <td style="pointer-events:none">${_renderStatusBadge(t.status)}</td>
+      <td>${progressCell}</td>
+      <td style="pointer-events:none"><span class="dday-badge ${dd.cls}">${dd.label}</span></td>
+      <td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">${importanceBadges}</div></td>
+    </tr>`;
   }).join('');
 
   return `<div class="section-card">
@@ -716,7 +707,7 @@ function buildAssignedToMe() {
       </div>
     </div>
     ${tasks.length===0?'<div class="empty-state"><div class="es-icon"><i data-lucide="sparkles"></i></div><div class="es-text">吏€?쒕컺?€ 업무媛€ 없습니다</div></div>':
-    `<div class="section-body">${cards}</div>`}
+    `<div style="padding:8px"><table class="task-table"><thead><tr><th style="width:25%">업무명</th><th>지시(기획)자</th><th>상태</th><th>진행률</th><th>마감일</th><th>업무중요도</th></tr></thead><tbody>${rows}</tbody></table></div>`}
   </div>`;
 }
 
@@ -777,25 +768,39 @@ function buildTodayTasks() {
 
 /* ?꾩퐫?붿뼵??Body ?꾩슜 - 吏€?쒕컺?€ 업무 */
 function buildAssignedToMeBody() {
-  const tasks = WS.getAssignedToMe().sort((a,b)=>{const po={high:0,medium:1,low:2};return po[a.priority]-po[b.priority];});
-  if(tasks.length===0) return '<div class="empty-state"><div class="es-icon"><i data-lucide="sparkles"></i></div><div class="es-text">吏€?쒕컺?€ 업무媛€ 없습니다</div></div>';
-  const cards = tasks.map(t => {
-    const assigner = WS.getUser(t.assignerId);
-    const dd = WS.getDdayBadge(t.dueDate);
-    const fillCls = t.status==='delay'?'delay':t.status==='done'?'done':'';
-    return `<div class="task-card ${WS.getDday(t.dueDate)<=0&&t.status!=='done'?'urgent':t.isImportant?'important':''}" onclick="openTaskDetail(${t.id})">
-      <div class="task-card-top"><div class="task-card-title">${t.isImportant?'<span class="star-icon"><i data-lucide="star"></i></span>':''}${t.title}</div><span class="dday-badge ${dd.cls}">${dd.label}</span></div>
-      <div class="task-card-meta"><span class="priority-badge priority-${t.priority}">${WS.getPriorityLabel(t.priority)}</span><span class="status-badge status-${t.status}">${WS.getStatusLabel(t.status)}</span><span style="font-size:11px;color:var(--text-muted)">from ${assigner?.name}</span></div>
-      <div style="margin-top:8px"><div class="progress-wrap"><div class="progress-bar"><div class="progress-fill ${fillCls}" style="width:${t.progress}%"></div></div><span class="progress-label">${t.progress}%</span></div></div>
-      <div class="quick-actions" style="margin-top:7px" onclick="event.stopPropagation()">
-        <button class="qa-btn" onclick="changeStatus(${t.id},'progress')">진행중</button>
-        <button class="qa-btn done" onclick="changeStatus(${t.id},'done')">완료</button>
-        <button class="qa-btn delay" onclick="changeStatus(${t.id},'delay')">지연</button>
-        <button class="qa-btn" onclick="openTaskDetail(${t.id})">상세</button>
-      </div>
-    </div>`;
+  var tasks = WS.getAssignedToMe().sort(function(a,b){var po={high:0,medium:1,low:2};return po[a.priority]-po[b.priority];});
+  if(tasks.length===0) return '<div class="empty-state"><div class="es-icon"><i data-lucide="sparkles"></i></div><div class="es-text">배정된 업무가 없습니다</div></div>';
+  var allImportances = (WS.importances && WS.importances.length) ? WS.importances : [];
+  var rows = tasks.map(function(t) {
+    var assigner = WS.getUser(t.assignerId);
+    var dd = WS.getDdayBadge(t.dueDate);
+    var assignerAvatar = assigner ? _makeCircleAvatar(assigner.avatar||assigner.name.slice(0,2), assigner.color||'#4f6ef7', assigner.name) : '<span style="font-size:11px;color:var(--text-muted)">-</span>';
+    // 중요도 배지
+    var impStr = t.importance || '';
+    var impNames = impStr ? impStr.split(',').map(function(s){return s.trim();}).filter(Boolean) : [];
+    var importanceBadges = impNames.length > 0
+      ? impNames.map(function(name) {
+          var imp = allImportances.find(function(i){return i.name===name;});
+          var c = imp ? (imp.color||'#ef4444') : '#9ca3af';
+          var icon = imp && imp.icon && imp.icon.length > 2 ? imp.icon : '';
+          var inner = icon ? '<i data-lucide="'+icon+'" style="width:12px;height:12px;color:'+c+'"></i>' : '<span style="width:7px;height:7px;border-radius:50%;background:'+c+';display:inline-block"></span>';
+          return '<span title="'+name+'" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:'+c+'18;border:1.5px solid '+c+';cursor:default;flex-shrink:0">'+inner+'</span>';
+        }).join('')
+      : '<span style="font-size:11px;color:var(--text-muted)">-</span>';
+    // 진행률 셀
+    var barColor = t.status==='done'?'#22c55e':t.status==='delay'?'#ef4444':'var(--accent-blue)';
+    var progressCell = '<div style="display:flex;align-items:center;gap:5px"><div style="position:relative;width:60px;height:6px;background:var(--border-color);border-radius:100px;overflow:hidden;flex-shrink:0"><div style="position:absolute;left:0;top:0;width:'+t.progress+'%;height:100%;border-radius:100px;background:'+barColor+';transition:width .4s"></div></div><span style="font-size:10.5px;font-weight:700;color:var(--text-primary);min-width:28px;text-align:right">'+t.progress+'%</span></div>';
+    return '<tr style="cursor:pointer" onclick="openTaskDetail('+t.id+')">'
+      + '<td style="width:25%"><div style="display:flex;align-items:center;gap:6px">'+(t.isImportant?'<i data-lucide="star" style="width:13px;height:13px;color:#f59e0b;flex-shrink:0"></i>':'')+'<span style="font-weight:600;font-size:12.5px">'+t.title+'</span></div>'
+      + '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">'+(assigner&&assigner.department?assigner.department:'')+'</div></td>'
+      + '<td onclick="event.stopPropagation()">'+assignerAvatar+'</td>'
+      + '<td style="pointer-events:none">'+_renderStatusBadge(t.status)+'</td>'
+      + '<td>'+progressCell+'</td>'
+      + '<td style="pointer-events:none"><span class="dday-badge '+dd.cls+'">'+dd.label+'</span></td>'
+      + '<td onclick="event.stopPropagation()"><div style="display:flex;gap:3px;align-items:center;flex-wrap:nowrap">'+importanceBadges+'</div></td>'
+      + '</tr>';
   }).join('');
-  return `<div class="section-body" style="padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:12px">${cards}</div>`;
+  return '<div style="padding:8px"><table class="task-table"><thead><tr><th style="width:25%">업무명</th><th>지시(기획)자</th><th>상태</th><th>진행률</th><th>마감일</th><th>업무중요도</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 
 /* ?꾩퐫?붿뼵??Body ?꾩슜 - 오늘 완료 업무 */
@@ -881,20 +886,20 @@ function buildChatWidget() {
             } else {
               users = WS.users || [];
             }
-            return users.map(function(u) {
-              var isMe = WS.currentUser && String(u.id) === String(WS.currentUser.id);
+            // 로그인 사용자 제외
+            users = users.filter(function(u) {
+              return !WS.currentUser || String(u.id) !== String(WS.currentUser.id);
+            });
+            return users.map(function(u, i) {
               var bg = 'linear-gradient(135deg,' + (u.color||'#4f6ef7') + ',#9747ff)';
-              var ring = isMe ? '0 0 0 2px #22c55e' : '0 0 0 1.5px var(--border-color)';
-              return '<div title="' + u.name + '" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;cursor:default">' +
-                '<div style="width:26px;height:26px;border-radius:50%;background:' + bg + ';box-shadow:' + ring + ';' +
+              var marginLeft = i > 0 ? '-10px' : '0';
+              var zIndex = users.length - i;
+              return '<div title="' + u.name + '" style="display:inline-flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;cursor:default;margin-left:' + marginLeft + ';z-index:' + zIndex + ';position:relative">' +
+                '<div style="width:26px;height:26px;border-radius:50%;background:' + bg + ';box-shadow:0 0 0 2px var(--bg-secondary);' +
                 'display:flex;align-items:center;justify-content:center;' +
-                'font-size:10px;font-weight:800;color:#fff;position:relative">' +
+                'font-size:10px;font-weight:800;color:#fff">' +
                 (u.avatar || u.name.charAt(0)) +
-                (isMe ? '<span style="position:absolute;bottom:-1px;right:-1px;width:7px;height:7px;border-radius:50%;background:#22c55e;border:1.5px solid var(--bg-primary)"></span>' : '') +
                 '</div>' +
-                '<span style="font-size:8.5px;font-weight:' + (isMe?'800':'600') + ';' +
-                'color:' + (isMe?'var(--currentAccent,#4f6ef7)':'var(--text-muted)') + ';' +
-                'white-space:nowrap;max-width:36px;overflow:hidden;text-overflow:ellipsis;line-height:1">' + u.name + '</span>' +
                 '</div>';
             }).join('');
           })()}
@@ -909,4 +914,17 @@ function buildChatWidget() {
       </div>
     </div>
   `;
+}
+
+/* ── 모바일/데스크탑 채팅 라우터 ── */
+function _openChatChannel(title, taskId, assignerIdOverride) {
+  if (window.innerWidth <= 767) {
+    if (typeof openMobileChatPopup === 'function') {
+      openMobileChatPopup(title, taskId, assignerIdOverride);
+    }
+  } else {
+    if (typeof openTaskChatChannel === 'function') {
+      openTaskChatChannel(title, taskId, assignerIdOverride);
+    }
+  }
 }
