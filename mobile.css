@@ -529,11 +529,34 @@ button, .btn, .btn-sm, .btn-icon, .nav-item, .tab-item,
     display: none !important;
   }
   .header-profile {
-    padding: 5px !important;
+    padding: 0 !important;              /* padding 제거 → 아바타 정원 유지 */
     border-radius: 50% !important;
     width: 36px !important;
     height: 36px !important;
+    min-width: 36px !important;
     justify-content: center !important;
+    overflow: hidden !important;
+  }
+  /* 내부 아바타 — 완전한 원 */
+  .header-profile .h-avatar {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    border-radius: 50% !important;
+    font-size: 13px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  /* profileMenu — 데스크탑처럼 우측 상단에서 열기 */
+  #profileMenu {
+    position: fixed !important;
+    top: 52px !important;           /* 헤더 높이 아래 */
+    right: 8px !important;
+    left: auto !important;
+    bottom: auto !important;
+    min-width: 160px !important;
+    z-index: 500 !important;
   }
 
   /* 검색바 모바일 스타일 */
