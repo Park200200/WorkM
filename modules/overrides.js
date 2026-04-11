@@ -133,9 +133,14 @@ function _updateDashUserCard() {
   }
 
 
-  // 이름
+  // 이름 (모바일: 성 제거 → "지훈 팀장님", 데스크탑: 전체 → "김지훈 팀장님")
   const nameEl = document.getElementById('dashUserName');
-  if (nameEl) nameEl.textContent = u.name || '-';
+  if (nameEl) {
+    var fullName = u.name || '-';
+    nameEl.textContent = (window.innerWidth <= 767 && fullName.length >= 3)
+      ? fullName.slice(1)   // 성(첫 글자) 제거
+      : fullName;
+  }
 
 
   // 직급 뱃지

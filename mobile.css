@@ -1185,6 +1185,7 @@ button, .btn, .btn-sm, .btn-icon, .nav-item, .tab-item,
   .dash-datetime {
     font-size: 11px;
     flex-shrink: 0;
+    margin-right: auto;   /* 날짜/시간 좌측 고정, 버튼 우측으로 밀기 */
   }
   .dash-act-btn {
     flex: 0 0 auto !important;       /* 크기 고정 — 늘거나 줄지 않음 */
