@@ -154,7 +154,7 @@ function _updateDashUserCard() {
   }
 
 
-  const greet = '오늘도 좋은 하루 되세요!';
+  const greet = window.innerWidth <= 767 ? '좋은 하루 되세요!' : '오늘도 좋은 하루 되세요!';
 
   const subEl = document.getElementById('dashSubtitle');
   if (subEl && subEl.textContent.indexOf('업무 현황') >= 0) {

@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   closeAllDropdowns();
   refreshIcons();
   renderAttendancePill();      // ??異쒗눜洹?위젯 초기화  
-  // ?ъ씠?쒕컮 ??대㉧ 초기화  resetSidebarTimer();
+  // ?ъ씠?쒕컮 ?€?대㉧ 초기화  resetSidebarTimer();
 });
 
 function refreshIcons() {
@@ -30,18 +30,26 @@ function refreshIcons() {
   }
 }
 
-/* ?? ?ㅻ뜑 초기화?? */
-/* ?? ?좎쭨?쒓컙 ?? */
+/* ?€?€ ?ㅻ뜑 초기화?€?€ */
+/* ?€?€ ?좎쭨?쒓컙 ?€?€ */
 function updateDateTime() {
   const el = document.getElementById('currentDateTime');
   if (!el) return;
   const now = new Date();
   const days = ['일','월','화','수','목','금','토'];
-  el.textContent = `${now.getFullYear()}.${pad(now.getMonth()+1)}.${pad(now.getDate())} (${days[now.getDay()]}) ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const dateStr = `${now.getFullYear()}.${pad(now.getMonth()+1)}.${pad(now.getDate())} (${days[now.getDay()]})`;
+  const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  if (window.innerWidth <= 767) {
+    // 모바일: 날짜+요일 / 시간 2행
+    el.innerHTML = `<span class="cdt-date">${dateStr}</span><span class="cdt-time">${timeStr}</span>`;
+  } else {
+    el.textContent = `${dateStr} ${timeStr}`;
+  }
 }
 function pad(n){ return String(n).padStart(2,'0'); }
 
-/* ?? ?섏씠吏 ?꾪솚 ?? */
+/* ?€?€ ?섏씠吏€ ?꾪솚 ?€?€ */
 function showPage(name, navEl) {
   document.querySelectorAll('.page').forEach(p => {
     p.classList.remove('active');

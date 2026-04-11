@@ -38,7 +38,7 @@ function handleSearch(val) {
 function renderDashboard() {
   const u = WS.currentUser;
   const sub = document.getElementById('dashSubtitle');
-  if(sub) sub.textContent = '오늘도 좋은 하루 되세요!';
+  if(sub) sub.textContent = window.innerWidth <= 767 ? '좋은 하루 되세요!' : '오늘도 좋은 하루 되세요!';
 
   renderStats();
   renderDashGrid();
