@@ -1180,6 +1180,7 @@ button, .btn, .btn-sm, .btn-icon, .nav-item, .tab-item,
   .dash-ph-actions {
     flex-wrap: nowrap;
     gap: 6px;
+    justify-content: flex-end;  /* 버튼 우측 정렬 */
   }
   .dash-datetime {
     font-size: 11px;
