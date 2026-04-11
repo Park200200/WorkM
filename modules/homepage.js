@@ -13,6 +13,12 @@ function enterHomepageMode() {
   if (mainNav) mainNav.style.display = 'none';
   if (acctNav) acctNav.style.display = 'none';
   if (homepageNav) homepageNav.style.display = 'block';
+  // 하단 내책상으로 버튼 표시
+  var backBtn = document.getElementById('backToDeskBtn');
+  if (backBtn) backBtn.style.display = 'block';
+  // 하단 사용자 프로필 숨기기
+  var sideUser = document.getElementById('sidebarUser');
+  if (sideUser) sideUser.style.display = 'none';
   // 첫 서브페이지(기본설정) 자동 표시
   var firstItem = document.querySelector('#homepageNav [data-hp-page="hp-basic"]');
   showHomepagePage('hp-basic', firstItem);
@@ -30,6 +36,12 @@ function exitHomepageMode() {
   var homepageBar = document.getElementById('homepageModeBar');
   if (headerSearch) headerSearch.style.display = '';
   if (homepageBar) homepageBar.style.display = 'none';
+  // 하단 내책상으로 버튼 숨기기
+  var backBtn = document.getElementById('backToDeskBtn');
+  if (backBtn) backBtn.style.display = 'none';
+  // 하단 사용자 프로필 복원
+  var sideUser = document.getElementById('sidebarUser');
+  if (sideUser) sideUser.style.display = '';
   // 대시보드로 이동
   var dashEl = document.querySelector('[data-page="dashboard"]');
   if (typeof showPage === 'function') showPage('dashboard', dashEl);
