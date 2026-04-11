@@ -426,7 +426,7 @@ function buildGantt() {
     +'<div class="section-head">'
     +  '<div class="section-title-group">'
     +    '<div class="section-dot" style="background:#f59e0b"><i data-lucide="calendar"></i></div>'
-    +    '<div class="section-title">마감일 기준 미완료 나의 업무 차트</div>'
+    +    '<div class="section-title">'+(window.innerWidth<=767?'미완료 내업무 리스트':'마감일 기준 미완료 나의 업무 차트')+'</div>'
     +    '<span class="section-count">'+tasks.length+'건</span>>'
     +  '</div>'
     +  '<div class="section-actions"><span style="font-size:11px;color:var(--text-muted)">마감일 기준 정렬</span></div>'
