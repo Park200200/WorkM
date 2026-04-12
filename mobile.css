@@ -2141,3 +2141,181 @@ button#mobileFAB {
     margin-bottom: 0 !important;
   }
 }
+
+/* ══════════════════════════════════════════
+   smc (Staff Mobile Card) — 직원 카드 UI
+   모바일 전용 (JS if isMob 분기로 생성)
+   ══════════════════════════════════════════ */
+@media (max-width: 767px) {
+
+  .smc-card {
+    background: var(--bg-card);
+    border: 1.5px solid var(--border-color);
+    border-radius: 18px;
+    padding: 16px 16px 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    transition: box-shadow 0.2s, transform 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .smc-card:active {
+    box-shadow: 0 1px 6px rgba(0,0,0,0.10);
+    transform: scale(0.99);
+  }
+
+  /* 헤더 */
+  .smc-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .smc-avatar {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.18);
+  }
+  .smc-identity {
+    flex: 1;
+    min-width: 0;
+  }
+  .smc-name {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
+  .smc-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .smc-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1.5px solid;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .smc-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  /* 직책 */
+  .smc-pos {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    margin-bottom: 10px;
+    padding-left: 2px;
+  }
+
+  /* 정보 행 */
+  .smc-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+  }
+  .smc-info-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .smc-info-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    opacity: 0.5;
+  }
+  .smc-info-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    flex: 1;
+    min-width: 0;
+  }
+  .smc-addr {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .smc-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    border: 1.5px solid var(--border-color);
+    color: var(--accent-blue);
+    flex-shrink: 0;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.15s;
+  }
+  .smc-action-btn:active {
+    background: var(--border-color);
+    transform: scale(0.92);
+  }
+
+  /* 하단 액션 버튼 */
+  .smc-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .smc-btn-edit,
+  .smc-btn-delete {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 42px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1.5px solid;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .smc-btn-edit {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+  }
+  .smc-btn-edit:active {
+    background: var(--bg-tertiary);
+  }
+  .smc-btn-delete {
+    background: rgba(239,68,68,.08);
+    border-color: rgba(239,68,68,.35);
+    color: #ef4444;
+  }
+  .smc-btn-delete:active {
+    background: rgba(239,68,68,.18);
+  }
+}

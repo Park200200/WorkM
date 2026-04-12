@@ -1157,47 +1157,114 @@ function renderPage_Settings() {
 function renderPage_StaffMgmt() {
   const el = document.getElementById('staffListArea');
   if(!el) return;
-  
+
   const users = WS.users;
-  const rows = users.map(u => {
-    return `<tr>
-      <td style="width:180px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <div class="avatar" style="width:36px;height:36px;background:linear-gradient(135deg,${u.color},#9747ff);color:#fff;font-size:13px;font-weight:800;border-radius:50%;display:flex;align-items:center;justify-content:center">${u.avatar}</div>
-          <div>
-            <div style="font-weight:700;font-size:13.5px">${u.name}</div>
-            <div style="font-size:11px;color:var(--text-muted)">${u.dept}</div>
+  const isMob = window.innerWidth < 768;
+
+  if (isMob) {
+    /* ── 모바일: 네이티브 앱 스타일 카드 ── */
+    if (!users.length) {
+      el.innerHTML = '<div class="empty-state" style="padding:40px 0;text-align:center;color:var(--text-muted)">등록된 직원이 없습니다.</div>';
+      return;
+    }
+    el.innerHTML = users.map(u => {
+      /* 상태 색/라벨 */
+      var sc = '#22c55e', sb = 'rgba(34,197,94,.12)';
+      if ((u.status||'').includes('퇴근')) { sc='#4f6ef7'; sb='rgba(79,110,247,.12)'; }
+      else if ((u.status||'').includes('휴직')) { sc='#f59e0b'; sb='rgba(245,158,11,.12)'; }
+      else if (u.status==='퇴사') { sc='#6b7280'; sb='rgba(107,114,128,.12)'; }
+
+      /* 전화/지도 링크 */
+      var phoneHref = u.phone ? 'tel:' + u.phone.replace(/[^0-9+]/g,'') : '#';
+      var mapHref   = u.address ? 'https://maps.google.com/?q=' + encodeURIComponent(u.address) : '#';
+
+      return `<div class="smc-card">
+        <!-- 헤더: 아바타 + 이름/직급 + 상태 -->
+        <div class="smc-header">
+          <div class="smc-avatar" style="background:linear-gradient(135deg,${u.color||'#4f6ef7'},#9747ff)">${u.avatar||'?'}</div>
+          <div class="smc-identity">
+            <div class="smc-name">${u.name}</div>
+            <div class="smc-meta">${u.role||''}${u.dept ? ' · '+u.dept : ''}</div>
+          </div>
+          <span class="smc-status-badge" style="color:${sc};background:${sb};border-color:${sc}40">
+            <span class="smc-status-dot" style="background:${sc}"></span>
+            ${u.status||'미정'}
+          </span>
+        </div>
+
+        <!-- 직책 -->
+        ${u.pos ? `<div class="smc-pos"><i data-lucide="briefcase" style="width:13px;height:13px;opacity:.5"></i><span>${u.pos}</span></div>` : ''}
+
+        <!-- 정보 행 -->
+        <div class="smc-info-list">
+          <div class="smc-info-row">
+            <i data-lucide="phone" class="smc-info-icon"></i>
+            <span class="smc-info-text">${u.phone||'-'}</span>
+            ${u.phone ? `<a href="${phoneHref}" class="smc-action-btn" title="전화걸기">
+              <i data-lucide="phone-call" style="width:14px;height:14px"></i>
+            </a>` : ''}
+          </div>
+          <div class="smc-info-row">
+            <i data-lucide="map-pin" class="smc-info-icon"></i>
+            <span class="smc-info-text smc-addr">${u.address||'-'}</span>
+            ${u.address ? `<a href="${mapHref}" class="smc-action-btn" target="_blank" title="지도열기">
+              <i data-lucide="map" style="width:14px;height:14px"></i>
+            </a>` : ''}
           </div>
         </div>
-      </td>
-      <td><div style="font-size:13px;font-weight:600">${u.role}</div></td>
-      <td><div style="font-size:13px;font-weight:500;color:var(--accent-blue)">${u.pos || '-'}</div></td>
-      <td><div style="font-size:12.5px">${u.phone || '-'}</div></td>
-      <td><div style="font-size:12px;color:var(--text-secondary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${u.address||''}">${u.address || '-'}</div></td>
-      <td>${renderStaffStatusBadge(u.status)}</td>
-      <td style="width:100px">
-        <div class="manage-actions">
-          <button class="btn-icon-sm edit" onclick="openStaffModal(${u.id})" title="상세/수정"><i data-lucide="edit-3" class="icon-sm"></i></button>
-          <button class="btn-icon-sm delete" onclick="deleteStaff(${u.id})" title="삭제"><i data-lucide="trash-2" class="icon-sm"></i></button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
 
-  el.innerHTML = `<table class="task-table">
-    <thead>
-      <tr>
-        <th>이름</th>
-        <th>직급</th>
-        <th>직책</th>
-        <th>전화번호</th>
-        <th>주소</th>
-        <th>상태</th>
-        <th>관리</th>
-      </tr>
-    </thead>
-    <tbody>${rows || '<tr><td colspan="7" class="empty-state">등록된 직원이 없습니다.</td></tr>'}</tbody>
-  </table>`;
+        <!-- 하단 액션 버튼 -->
+        <div class="smc-actions">
+          <button class="smc-btn-edit" onclick="openStaffModal(${u.id})">
+            <i data-lucide="edit-3" style="width:14px;height:14px"></i>
+            정보 수정
+          </button>
+          <button class="smc-btn-delete" onclick="deleteStaff(${u.id})">
+            <i data-lucide="trash-2" style="width:14px;height:14px"></i>
+            삭제
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+
+  } else {
+    /* ── 데스크탑: 기존 테이블 그대로 ── */
+    const rows = users.map(u => {
+      return `<tr>
+        <td style="width:180px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="avatar" style="width:36px;height:36px;background:linear-gradient(135deg,${u.color},#9747ff);color:#fff;font-size:13px;font-weight:800;border-radius:50%;display:flex;align-items:center;justify-content:center">${u.avatar}</div>
+            <div>
+              <div style="font-weight:700;font-size:13.5px">${u.name}</div>
+              <div style="font-size:11px;color:var(--text-muted)">${u.dept}</div>
+            </div>
+          </div>
+        </td>
+        <td><div style="font-size:13px;font-weight:600">${u.role}</div></td>
+        <td><div style="font-size:13px;font-weight:500;color:var(--accent-blue)">${u.pos || '-'}</div></td>
+        <td><div style="font-size:12.5px">${u.phone || '-'}</div></td>
+        <td><div style="font-size:12px;color:var(--text-secondary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${u.address||''}">${u.address || '-'}</div></td>
+        <td>${renderStaffStatusBadge(u.status)}</td>
+        <td style="width:100px">
+          <div class="manage-actions">
+            <button class="btn-icon-sm edit" onclick="openStaffModal(${u.id})" title="상세/수정"><i data-lucide="edit-3" class="icon-sm"></i></button>
+            <button class="btn-icon-sm delete" onclick="deleteStaff(${u.id})" title="삭제"><i data-lucide="trash-2" class="icon-sm"></i></button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    el.innerHTML = `<table class="task-table">
+      <thead>
+        <tr>
+          <th>이름</th><th>직급</th><th>직책</th>
+          <th>전화번호</th><th>주소</th><th>상태</th><th>관리</th>
+        </tr>
+      </thead>
+      <tbody>${rows || '<tr><td colspan="7" class="empty-state">등록된 직원이 없습니다.</td></tr>'}</tbody>
+    </table>`;
+  }
+
   refreshIcons();
 }
 
@@ -1207,7 +1274,6 @@ function renderStaffStatusBadge(status) {
   if(status.includes('근무')) type = 'progress';
   if(status.includes('휴직')) type = 'delay';
   if(status === '퇴사') type = 'done';
-  
   return `<span class="status-badge status-${type}">${status}</span>`;
 }
 
