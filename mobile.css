@@ -1757,3 +1757,10 @@ button#mobileFAB {
     font-size: 11px !important;
   }
 }
+
+/* ── 일보작성 금일 스케줄 테이블: 모바일 min-width 해제 ── */
+@media (max-width: 767px) {
+  #drSchedListSection .task-table,
+  #drSchedListSection > div { min-width: 0 !important; overflow-x: hidden !important; }
+  #drSchedListSection .task-table { width: 100% !important; }
+}
