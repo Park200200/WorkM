@@ -506,11 +506,28 @@ button, .btn, .btn-sm, .btn-icon, .nav-item, .tab-item,
   /* 데스크탑 헤더 요소 — 모바일에서도 표시 */
   /* #headerSearch는 표시 유지 */
   #homepageModeBar,
-  #acctModeBar,
   #attendancePill,
   .btn-checkin, .btn-checkout {
     display: none !important;
   }
+
+  /* 회계관리 모드바 — 모바일에서 표시 (JS로 flex 설정되면 보임) */
+  /* #acctModeBar는 숨김 제외 — 회계관리 진입 시 표시 */
+
+  /* 회계관리 모드바 활성 시 검색바 숨김 */
+  .acct-mode #headerSearch { display: none !important; }
+  .acct-mode #acctModeBar  { display: flex !important; flex: 1; min-width: 0; }
+
+  /* 회계관리 모드바 모바일 compact 스타일 */
+  #acctModeBar > i[data-lucide="chevron-right"] { display: none !important; }
+  #acctModeBar > div:first-of-type {
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+    gap: 5px !important;
+    flex-shrink: 0;
+  }
+  #acctYearBar { margin-left: 4px !important; gap: 4px !important; flex-wrap: nowrap; overflow-x: auto; }
+  #acctYearBar button { min-height: unset !important; padding: 4px 8px !important; font-size: 11px !important; }
 
   /* 모바일 전용 헤더 제목 — 검색바 사용하므로 숨김 */
   #mobileHeaderTitle {

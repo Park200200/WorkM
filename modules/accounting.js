@@ -283,6 +283,7 @@
     if (headerSearch) headerSearch.style.display = 'none';
     if (hpBar) hpBar.style.display = 'none';
     if (acctBar) acctBar.style.display = 'flex';
+    document.body.classList.add('acct-mode');
     // 하단 내책상으로 버튼 표시
     var backBtn = document.getElementById('backToDeskBtn');
     if (backBtn) backBtn.style.display = 'block';
@@ -368,6 +369,7 @@
     if (mainNav) mainNav.style.display = 'block';
     if (acctBar) acctBar.style.display = 'none';
     if (headerSearch) headerSearch.style.display = '';
+    document.body.classList.remove('acct-mode');
     // 하단 내책상으로 버튼 숨기기
     var backBtn = document.getElementById('backToDeskBtn');
     if (backBtn) backBtn.style.display = 'none';
