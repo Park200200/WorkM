@@ -5388,7 +5388,35 @@ function _copySyncCmds() {
   ICON_D['book-open']    = 'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z';
   ICON_D['database']     = 'M12 2C6.477 2 2 4.477 2 7c0 2.522 4.477 5 10 5s10-2.478 10-5c0-2.523-4.477-5-10-5zM2 12c0 2.522 4.477 5 10 5s10-2.478 10-5 M2 17c0 2.522 4.477 5 10 5s10-2.478 10-5';
 
-  var _tabBarMode = 'default';  // 'default' | 'accounting'
+  /* ── 홈페이지 전용 탭바 데이터 ── */
+  var HP_TAB_MENUS = [
+    { id: '_hp_main', icon: 'settings',   label: '메인페이지', page: null, drawer: 'hp_main' },
+    { id: '_hp_sub',  icon: 'menu-sq',    label: '서브페이지', page: null, drawer: 'hp_sub' },
+    { id: '_hp_more', icon: 'grid-3x3',   label: '추가페이지', page: null, drawer: 'hp_more' },
+    { id: 'dashboard',icon: 'home',       label: '내책상',    page: 'dashboard', drawer: null }
+  ];
+  ICON_D['menu-sq']  = 'M3 12h18 M3 6h18 M3 18h18';
+  ICON_D['settings'] = 'M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z';
+  var HP_DRAWER_MENUS = {
+    hp_main: [
+      { icon: 'settings', label: '기본설정', color: '#4f6ef7', bg: 'rgba(79,110,247,.12)', hpPage: 'hp-basic' }
+    ],
+    hp_sub: [
+      { icon: 'menu-sq',  label: '메뉴등록', color: '#22c55e', bg: 'rgba(34,197,94,.12)',  hpPage: 'hp-menu'  }
+    ],
+    hp_more: [
+      { icon: 'layout',   label: '컨텐츠관리', color: '#6366f1', bg: 'rgba(99,102,241,.12)',  hpPage: 'hp-content' },
+      { icon: 'film',     label: '미디어관리', color: '#f59e0b', bg: 'rgba(245,158,11,.12)',  hpPage: 'hp-media'   },
+      { icon: 'list',     label: '게시판관리', color: '#06b6d4', bg: 'rgba(6,182,212,.12)',   hpPage: 'hp-board'   },
+      { icon: 'scroll',   label: '약관페이지', color: '#8b5cf6', bg: 'rgba(139,92,246,.12)',  hpPage: 'hp-terms'   }
+    ]
+  };
+  ICON_D['layout'] = 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z';
+  ICON_D['film']   = 'M15 10l4.553-2.069A1 1 0 0 1 21 8.867v6.266a1 1 0 0 1-1.447.902L15 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h10v4z';
+  ICON_D['list']   = 'M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01';
+  ICON_D['scroll'] = 'M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 0 1-2 2zm14-7V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h2';
+
+  var _tabBarMode = 'default';  // 'default' | 'accounting' | 'homepage'
 
   /* ── 탭바 모드 전환 ── */
   function switchMobileTabBar(mode) {
@@ -5400,7 +5428,9 @@ function _copySyncCmds() {
     if (!bar) return;
     bar.innerHTML = '';
 
-    var tabs = mode === 'accounting' ? ACCT_TAB_MENUS : TAB_MENUS;
+    var tabs = mode === 'accounting' ? ACCT_TAB_MENUS
+             : mode === 'homepage'  ? HP_TAB_MENUS
+             : TAB_MENUS;
     tabs.forEach(function(m) {
       var btn = document.createElement('button');
       btn.className = 'mob-tab';
@@ -5408,11 +5438,19 @@ function _copySyncCmds() {
       btn.innerHTML = iconSVG(m.icon) + '<span class="mob-tab-label">' + m.label + '</span>';
       btn.addEventListener('click', function() {
         if (m.page) {
-          mobileNav(m.page);
+          if (mode === 'homepage' && m.page === 'dashboard') {
+            // 홈페이지 모드에서 내책상 탭 클릭 → 일반 모드로
+            _tabBarMode = '';  // 강제 리셋
+            mobileNav('dashboard');
+          } else {
+            mobileNav(m.page);
+          }
           closeMobileDrawer();
         } else if (m.drawer) {
           if (mode === 'accounting') {
             buildAcctDrawer(m.drawer, m.id);
+          } else if (mode === 'homepage') {
+            buildHpDrawer(m.drawer, m.id);
           } else {
             openMobileDrawer(m.drawer, m.id);
           }
@@ -5456,14 +5494,59 @@ function _copySyncCmds() {
     if (ov) ov.classList.add('show');
   }
 
+  /* ── 홈페이지 드로어 빌드 ── */
+  function buildHpDrawer(category, tabId) {
+    /* hp_main / hp_sub 는 항목 1개뿐이므로 바로 이동 */
+    var menus = HP_DRAWER_MENUS[category] || [];
+    if (menus.length === 1) {
+      /* 드로어 없이 바로 페이지 전환 */
+      if (typeof showHomepagePage === 'function') showHomepagePage(menus[0].hpPage, null);
+      if (tabId) {
+        document.querySelectorAll('.mob-tab').forEach(function(t) {
+          t.classList.toggle('active', t.getAttribute('data-tab') === tabId);
+        });
+      }
+      return;
+    }
+    /* hp_more: 드로어 표시 */
+    var grid = document.getElementById('mobileDrawerGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    menus.forEach(function(m) {
+      var item = document.createElement('div');
+      item.className = 'mob-drawer-item';
+      item.innerHTML =
+        '<div class="mob-drawer-icon" style="background:' + m.bg + '">' +
+        iconSVG(m.icon, 22, m.color) + '</div>' +
+        '<span class="mob-drawer-label">' + m.label + '</span>';
+      item.addEventListener('click', function() {
+        closeMobileDrawer();
+        if (typeof showHomepagePage === 'function') showHomepagePage(m.hpPage, null);
+      });
+      grid.appendChild(item);
+    });
+    if (tabId) {
+      document.querySelectorAll('.mob-tab').forEach(function(t) {
+        t.classList.toggle('active', t.getAttribute('data-tab') === tabId);
+      });
+    }
+    var dr = document.getElementById('mobileDrawer');
+    var ov = document.getElementById('mobileDrawerOverlay');
+    if (dr) dr.classList.add('open');
+    if (ov) ov.classList.add('show');
+  }
+
   /* showPage 래핑 */
   var _orig = window.showPage;
   window.showPage = function(pageId, el, extra) {
     var r = _orig ? _orig.call(this, pageId, el, extra) : undefined;
     if (isMobile()) {
       _curPage = pageId;
-      /* 회계관리 ↔ 일반 탭바 전환 */
-      switchMobileTabBar(pageId === 'accounting' ? 'accounting' : 'default');
+      /* 모드 결정 */
+      var newMode = pageId === 'accounting' ? 'accounting'
+                  : pageId === 'homepage'  ? 'homepage'
+                  : 'default';
+      switchMobileTabBar(newMode);
       syncTabActive(pageId);
       updateMobileHeader(pageId);
       updateFAB(pageId);
