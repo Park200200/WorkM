@@ -597,29 +597,53 @@
       '</div>' +
 
       // 최근 전표
-      '<div class="acct-card" style="margin-top:16px">' +
-      '<div class="acct-card-head"><i data-lucide="scroll-text" style="width:16px;height:16px"></i> \uCD5C\uADFC \uC804\uD45C</div>' +
-      (recent.length === 0
-        ? '<div class="acct-empty">\uB4F1\uB85D\uB41C \uC804\uD45C\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4</div>'
-        : '<table class="acct-table"><thead><tr>' +
-        '<th>\uB0A0\uC9DC</th><th>\uC720\uD615</th><th>\uC801\uC694</th><th>\uCC28\uBCC0</th><th>\uB300\uBCC0</th>' +
-        '</tr></thead><tbody>' +
-        recent.map(function (v) {
-          var debitSum = 0, creditSum = 0;
-          (v.entries || []).forEach(function (e) {
-            if (e.side === 'debit') debitSum += e.amount;
-            else creditSum += e.amount;
-          });
-          var typeBadge = v.type === 'income' ? '<span class="acct-badge income">\uC785\uAE08</span>'
-            : v.type === 'expense' ? '<span class="acct-badge expense">\uCD9C\uAE08</span>'
-              : '<span class="acct-badge etc">\uB300\uCCB4</span>';
-          return '<tr><td>' + (v.date || '') + '</td><td>' + typeBadge + '</td>' +
-            '<td>' + _esc(v.description || '') + '</td>' +
-            '<td class="num">' + _fmtW(debitSum) + '</td>' +
-            '<td class="num">' + _fmtW(creditSum) + '</td></tr>';
-        }).join('') +
-        '</tbody></table>') +
-      '</div>';
+      (function(){
+        if(recent.length===0) return '<div class="acct-card" style="margin-top:16px"><div class="acct-card-head"><i data-lucide="scroll-text" style="width:16px;height:16px"></i> \ucd5c\uadfc \uc804\ud45c</div><div class="acct-empty">\ub4f1\ub85d\ub41c \uc804\ud45c\uac00 \uc5c6\uc2b5\ub2c8\ub2e4</div></div>';
+        var isMobV=window.innerWidth<768;
+        var vtype={income:{c:'#22c55e',bg:'rgba(34,197,94,.1)',label:'\uc785\uae08'},expense:{c:'#ef4444',bg:'rgba(239,68,68,.1)',label:'\ucd9c\uae08'}};
+        if(!isMobV){
+          return '<div class="acct-card" style="margin-top:16px">'+
+            '<div class="acct-card-head"><i data-lucide="scroll-text" style="width:16px;height:16px"></i> \ucd5c\uadfc \uc804\ud45c</div>'+
+            '<table class="acct-table"><thead><tr>'+
+            '<th>\ub0a0\uc9dc</th><th>\uc720\ud615</th><th>\uc801\uc694</th><th>\ucc28\ubcc0</th><th>\ub300\ubcc0</th>'+
+            '</tr></thead><tbody>'+
+            recent.map(function(v){
+              var ds=0,cs=0;(v.entries||[]).forEach(function(e){if(e.side==='debit')ds+=e.amount;else cs+=e.amount;});
+              var t=vtype[v.type]||{c:'#8b5cf6',bg:'rgba(139,92,246,.1)',label:'\ub300\uccb4'};
+              return '<tr><td>'+(v.date||'')+'</td><td><span class="acct-badge '+(v.type||'etc')+'">'+(t.label||v.type)+'</span></td>'+
+                '<td>'+_esc(v.description||'')+'</td><td class="num">'+_fmtW(ds)+'</td><td class="num">'+_fmtW(cs)+'</td></tr>';
+            }).join('')+
+            '</tbody></table></div>';
+        }
+        /* 모바일 카드 */
+        return '<div style="margin-top:16px"><div style="display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;color:var(--text-primary);margin-bottom:12px"><svg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\'><path d=\'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\'/><polyline points=\'14 2 14 8 20 8\'/><line x1=\'16\' y1=\'13\' x2=\'8\' y2=\'13\'/><line x1=\'16\' y1=\'17\' x2=\'8\' y2=\'17\'/><polyline points=\'10 9 9 9 8 9\'/></svg>\ucd5c\uadfc \uc804\ud45c</div>'+
+          '<div style="display:flex;flex-direction:column;gap:10px">'+
+          recent.map(function(v){
+            var ds=0,cs=0;(v.entries||[]).forEach(function(e){if(e.side==='debit')ds+=e.amount;else cs+=e.amount;});
+            var t=vtype[v.type]||{c:'#8b5cf6',bg:'rgba(139,92,246,.1)',label:'\ub300\uccb4'};
+            return '<div style="position:relative;border-radius:16px;overflow:hidden;background:var(--bg-card);border:1.5px solid var(--border-color);box-shadow:0 2px 8px rgba(0,0,0,.05);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">'+
+              '<div style="position:absolute;top:0;left:0;bottom:0;width:4px;background:'+t.c+';border-radius:16px 0 0 16px"></div>'+
+              '<div style="padding:12px 14px 12px 18px">'+
+                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">'+
+                  '<div style="font-size:11.5px;color:var(--text-muted);font-weight:600">'+(v.date||'')+'</div>'+
+                  '<span style="font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:20px;background:'+t.bg+';color:'+t.c+'">'+t.label+'</span>'+
+                '</div>'+
+                '<div style="font-size:14.5px;font-weight:800;color:var(--text-primary);margin-bottom:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_esc(v.description||'\uc801\uc694 \uc5c6\uc74c')+'</div>'+
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+                  '<div style="text-align:center;padding:7px 0;background:rgba(239,68,68,.05);border-radius:10px">'+
+                    '<div style="font-size:9.5px;font-weight:600;color:var(--text-muted);margin-bottom:2px">\ucc28\ubcc0</div>'+
+                    '<div style="font-size:13.5px;font-weight:900;color:#ef4444">'+_fmtW(ds)+'</div>'+
+                  '</div>'+
+                  '<div style="text-align:center;padding:7px 0;background:rgba(34,197,94,.05);border-radius:10px">'+
+                    '<div style="font-size:9.5px;font-weight:600;color:var(--text-muted);margin-bottom:2px">\ub300\ubcc0</div>'+
+                    '<div style="font-size:13.5px;font-weight:900;color:#22c55e">'+_fmtW(cs)+'</div>'+
+                  '</div>'+
+                '</div>'+
+              '</div>'+
+            '</div>';
+          }).join('')+
+          '</div></div>';
+      })() +
 
     el.innerHTML = '<div style="padding-bottom:80px">' + html + '</div>';
     _ri();
