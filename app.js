@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 
 let sidebarTimer = null;
 
@@ -1276,6 +1276,20 @@ function renderStaffStatusBadge(status) {
   if(status === '퇴사') type = 'done';
   return `<span class="status-badge status-${type}">${status}</span>`;
 }
+/* ── 직원관리: 창 크기 변경 시 모바일/데스크탑 레이아웃 자동 전환 ── */
+(function() {
+  var _smPrevMob = window.innerWidth < 768;
+  window.addEventListener('resize', function() {
+    var isMobNow = window.innerWidth < 768;
+    if (isMobNow !== _smPrevMob) {
+      _smPrevMob = isMobNow;
+      var page = document.getElementById('page-staff-mgmt');
+      if (page && page.style.display !== 'none' && page.classList.contains('active')) {
+        if (typeof renderPage_StaffMgmt === 'function') renderPage_StaffMgmt();
+      }
+    }
+  });
+})();
 
 /* ?? ?ㅼ쟻蹂닿린 ?섏씠吏 ?? */
 window._perfPeriod = window._perfPeriod || 'weekly';
