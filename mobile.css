@@ -855,7 +855,7 @@ button, .btn, .btn-sm, .btn-icon, .nav-item, .tab-item,
   .modal-box {
     max-width: 100% !important;
     width: 100% !important;
-    max-height: 90vh !important;
+    max-height: calc(90vh - 62px) !important;
     border-radius: 20px 20px 0 0 !important;
     animation: slideUpMobile 0.3s cubic-bezier(0.4,0,0.2,1) !important;
     margin: 0 !important;
@@ -884,7 +884,7 @@ button, .btn, .btn-sm, .btn-icon, .nav-item, .tab-item,
   }
   .modal-foot {
     padding: 12px 18px !important;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 74px) !important;
     gap: 10px !important;
   }
   .modal-foot .btn { flex: 1; justify-content: center; }
