@@ -3267,3 +3267,9 @@ button#mobileFAB {
     width: 100% !important;
   }
 }
+/* ── hp-basic 페이지 자체 스크롤 영역 하단 여백 (탭바가 가리지 않게) ── */
+@media (max-width: 767px) {
+  #page-hp-basic {
+    padding-bottom: 96px !important;
+  }
+}
