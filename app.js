@@ -211,8 +211,44 @@ function checkOut() {
   showToast('info','<i data-lucide="log-out"></i> 퇴근 泥섎━ 완료! 수고하셨습니다.');
 }
 
-/* ?? ?좎뒪???? */
-/* ?? 초기화 ?? */
+/* ── iOS 배경 스크롤 방지 ── */
+var _iosScrollY = 0;
+function _lockBodyScroll() {
+  _iosScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+  document.body.style.position = 'fixed';
+  document.body.style.top      = '-' + _iosScrollY + 'px';
+  document.body.style.left     = '0';
+  document.body.style.right    = '0';
+  document.body.style.overflow = 'hidden';
+}
+function _unlockBodyScroll() {
+  document.body.style.position = '';
+  document.body.style.top      = '';
+  document.body.style.left     = '';
+  document.body.style.right    = '';
+  document.body.style.overflow = '';
+  window.scrollTo(0, _iosScrollY);
+}
+
+/* 모달 유틸 */
+function closeModal(id, e) { if (e && e.target && e.target.classList.contains('modal-overlay')) closeModalDirect(id); }
+function closeModalDirect(id) {
+  var el = document.getElementById(id);
+  if (el) el.style.display = 'none';
+  // 열린 모달이 없으면 스크롤 잠금 해제
+  var hasOpen = Array.from(document.querySelectorAll('.modal-overlay')).some(function(m){
+    return m.style.display && m.style.display !== 'none';
+  });
+  if (!hasOpen) _unlockBodyScroll();
+}
+function openModal(id) {
+  var el = document.getElementById(id);
+  if (el) el.style.display = 'flex';
+  _lockBodyScroll();
+}
+
+/* ?€?€ ?좎뒪???€?€ */
+/* ?€?€ 초기화 ?€?€ */
 function toggleDropdown(id) {
   const el = document.getElementById(id);
   const isOpen = el.classList.contains('show');

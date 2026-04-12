@@ -2084,3 +2084,18 @@ button#mobileFAB {
     text-align: center !important;
   }
 }
+
+/* ── iOS 배경 드래그 방지 ── */
+.modal-overlay {
+  overscroll-behavior: none !important;
+  -webkit-overflow-scrolling: auto !important;
+  touch-action: pan-y !important;
+}
+.modal-box {
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+}
+.modal-body {
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+}
