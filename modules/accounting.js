@@ -1,4 +1,4 @@
-﻿/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    📒 WorkM 회계관리 모듈 (modules/accounting.js)
    예산 → 품의 → 전표 → 입출금 → 보고서 자동 연결 경리 시스템
    ═══════════════════════════════════════════════════════════ */
@@ -3098,21 +3098,12 @@
       '<span style="font-size:12px;color:var(--text-muted)">' + year + '\uB144\uB3C4</span></div>' +
       '<button class="btn" onclick="window.print()" style="font-size:11px;padding:4px 10px"><i data-lucide="printer" style="width:12px;height:12px"></i> \uC778\uC1C4</button></div>';
 
-    h += '<table style="width:100%;border-collapse:collapse;table-layout:fixed">' +
-      '<colgroup><col style="width:80px"><col><col style="width:130px"><col style="width:130px"><col style="width:130px"><col style="width:130px"></colgroup>' +
-      '<thead><tr style="background:var(--bg-tertiary);border-bottom:2px solid var(--border-color)">' +
-      '<th style="padding:10px;text-align:left;font-size:12px" rowspan="2">\uCF54\uB4DC</th>' +
-      '<th style="padding:10px;text-align:left;font-size:12px" rowspan="2">\uACC4\uC815\uACFC\uBAA9</th>' +
-      '<th colspan="2" style="padding:6px 10px;text-align:center;font-size:12px;border-bottom:1px solid var(--border-color)">\uD569\uACC4</th>' +
-      '<th colspan="2" style="padding:6px 10px;text-align:center;font-size:12px;border-bottom:1px solid var(--border-color)">\uC794\uC561</th></tr>' +
-      '<tr style="background:var(--bg-tertiary)">' +
-      '<th style="padding:6px 10px;text-align:right;font-size:11px">\uCC28\uBCC0</th><th style="padding:6px 10px;text-align:right;font-size:11px">\uB300\uBCC0</th>' +
-      '<th style="padding:6px 10px;text-align:right;font-size:11px">\uCC28\uBCC0</th><th style="padding:6px 10px;text-align:right;font-size:11px">\uB300\uBCC0</th></tr></thead><tbody>';
-
+    var isMobTB = window.innerWidth < 768;
+    /* ── 계정 데이터 계산 (공통) ── */
+    var tbRows = [];
     var totalDr = 0, totalCr = 0, balDr = 0, balCr = 0;
     accounts.forEach(function (a) {
       var dr = 0, cr = 0;
-      // 기초잔액
       var ob = balances.find(function (b) { return b.accountCode === a.code; });
       if (ob) {
         if (a.type === 'asset' || a.type === 'expense') dr += ob.amount || 0;
@@ -3132,26 +3123,98 @@
       var bDr = diff > 0 ? diff : 0;
       var bCr = diff < 0 ? -diff : 0;
       balDr += bDr; balCr += bCr;
-      h += '<tr style="border-bottom:1px solid var(--border-color)">' +
-        '<td style="padding:8px 10px;font-size:12px;color:var(--text-muted)">' + a.code + '</td>' +
-        '<td style="padding:8px 10px;font-size:12.5px;font-weight:600">' + a.name + '</td>' +
-        '<td style="padding:8px 10px;text-align:right;font-size:12.5px;white-space:nowrap">' + (dr ? _fmtW(dr) : '') + '</td>' +
-        '<td style="padding:8px 10px;text-align:right;font-size:12.5px;white-space:nowrap">' + (cr ? _fmtW(cr) : '') + '</td>' +
-        '<td style="padding:8px 10px;text-align:right;font-size:12.5px;color:#4f6ef7;font-weight:600;white-space:nowrap">' + (bDr ? _fmtW(bDr) : '') + '</td>' +
-        '<td style="padding:8px 10px;text-align:right;font-size:12.5px;color:#ef4444;font-weight:600;white-space:nowrap">' + (bCr ? _fmtW(bCr) : '') + '</td></tr>';
+      tbRows.push({ code: a.code, name: a.name, type: a.type, dr: dr, cr: cr, bDr: bDr, bCr: bCr });
     });
-    h += '<tr style="border-top:2px solid var(--text-primary);background:var(--bg-tertiary)">' +
-      '<td colspan="2" style="padding:10px;font-size:13px;font-weight:800;text-align:center">\uD569 \uACC4</td>' +
-      '<td style="padding:10px;text-align:right;font-size:13px;font-weight:800;white-space:nowrap">' + _fmtW(totalDr) + '</td>' +
-      '<td style="padding:10px;text-align:right;font-size:13px;font-weight:800;white-space:nowrap">' + _fmtW(totalCr) + '</td>' +
-      '<td style="padding:10px;text-align:right;font-size:13px;font-weight:800;color:#4f6ef7;white-space:nowrap">' + _fmtW(balDr) + '</td>' +
-      '<td style="padding:10px;text-align:right;font-size:13px;font-weight:800;color:#ef4444;white-space:nowrap">' + _fmtW(balCr) + '</td></tr>' +
-      '</tbody></table>';
-
     var ok = totalDr === totalCr;
-    h += '<div style="margin-top:12px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;text-align:center;' +
-      (ok ? 'background:rgba(34,197,94,.06);color:#22c55e;border:1px solid rgba(34,197,94,.2)">\u2705 \uCC28\uBCC0\uD569\uACC4 = \uB300\uBCC0\uD569\uACC4 (\uADE0\uD615)' :
-      'background:rgba(239,68,68,.06);color:#ef4444;border:1px solid rgba(239,68,68,.2)">\u274C \uBD88\uADE0\uD615 (\uCC28\uC561: ' + _fmtW(totalDr - totalCr) + ')') + '</div>';
+
+    var TYPE_COLORS = { asset: '#4f6ef7', liability: '#ef4444', equity: '#8b5cf6', expense: '#f59e0b', revenue: '#22c55e' };
+    function _typeColor(t) { return TYPE_COLORS[t] || '#64748b'; }
+
+    if (isMobTB) {
+      /* ── 모바일: 카드 UI ── */
+      h += '<div style="display:flex;flex-direction:column;gap:10px">';
+      tbRows.forEach(function (r) {
+        var cc = _typeColor(r.type);
+        var netDr = r.bDr > 0;
+        h +=
+          '<div style="position:relative;border-radius:16px;overflow:hidden;background:var(--bg-card);border:1.5px solid var(--border-color);box-shadow:0 2px 8px rgba(0,0,0,.05);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">' +
+          '<div style="position:absolute;top:0;left:0;bottom:0;width:4px;background:' + cc + ';border-radius:16px 0 0 16px"></div>' +
+          '<div style="padding:12px 14px 12px 18px">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+              '<div>' +
+                '<span style="font-size:11px;color:var(--text-muted);font-weight:600;margin-right:6px">' + r.code + '</span>' +
+                '<span style="font-size:15px;font-weight:900;color:var(--text-primary)">' + r.name + '</span>' +
+              '</div>' +
+              '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:' + cc + '18;color:' + cc + '">' + (netDr ? '\ucc28\ubcc0\uc794\uc561' : '\ub300\ubcc0\uc794\uc561') + '</span>' +
+            '</div>' +
+            '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">' +
+              '<div style="text-align:center;padding:7px 4px;background:var(--bg-tertiary);border-radius:10px">' +
+                '<div style="font-size:9px;font-weight:600;color:var(--text-muted);margin-bottom:2px">\ud569\uacc4\ucc28\ubcc0</div>' +
+                '<div style="font-size:11.5px;font-weight:800;color:var(--text-primary)">' + (r.dr ? _fmtW(r.dr) : '-') + '</div>' +
+              '</div>' +
+              '<div style="text-align:center;padding:7px 4px;background:var(--bg-tertiary);border-radius:10px">' +
+                '<div style="font-size:9px;font-weight:600;color:var(--text-muted);margin-bottom:2px">\ud569\uacc4\ub300\ubcc0</div>' +
+                '<div style="font-size:11.5px;font-weight:800;color:var(--text-primary)">' + (r.cr ? _fmtW(r.cr) : '-') + '</div>' +
+              '</div>' +
+              '<div style="text-align:center;padding:7px 4px;border-radius:10px;background:' + (netDr ? 'rgba(79,110,247,.06)' : 'var(--bg-tertiary)') + '">' +
+                '<div style="font-size:9px;font-weight:600;color:var(--text-muted);margin-bottom:2px">\uc794\uc561\ucc28\ubcc0</div>' +
+                '<div style="font-size:11.5px;font-weight:800;color:#4f6ef7">' + (r.bDr ? _fmtW(r.bDr) : '-') + '</div>' +
+              '</div>' +
+              '<div style="text-align:center;padding:7px 4px;border-radius:10px;background:' + (!netDr && r.bCr ? 'rgba(239,68,68,.06)' : 'var(--bg-tertiary)') + '">' +
+                '<div style="font-size:9px;font-weight:600;color:var(--text-muted);margin-bottom:2px">\uc794\uc561\ub300\ubcc0</div>' +
+                '<div style="font-size:11.5px;font-weight:800;color:#ef4444">' + (r.bCr ? _fmtW(r.bCr) : '-') + '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      });
+      h += '</div>';
+      /* 합계 카드 */
+      h += '<div style="background:var(--bg-tertiary);border-radius:14px;padding:14px 16px;margin-top:6px">' +
+        '<div style="font-size:12px;font-weight:800;color:var(--text-secondary);margin-bottom:10px;text-align:center">\ud569 \uacc4</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">' +
+          '<div style="text-align:center"><div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">\ud569\uacc4\ucc28\ubcc0</div><div style="font-size:12px;font-weight:900;color:var(--text-primary)">' + _fmtW(totalDr) + '</div></div>' +
+          '<div style="text-align:center"><div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">\ud569\uacc4\ub300\ubcc0</div><div style="font-size:12px;font-weight:900;color:var(--text-primary)">' + _fmtW(totalCr) + '</div></div>' +
+          '<div style="text-align:center"><div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">\uc794\uc561\ucc28\ubcc0</div><div style="font-size:12px;font-weight:900;color:#4f6ef7">' + _fmtW(balDr) + '</div></div>' +
+          '<div style="text-align:center"><div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">\uc794\uc561\ub300\ubcc0</div><div style="font-size:12px;font-weight:900;color:#ef4444">' + _fmtW(balCr) + '</div></div>' +
+        '</div>' +
+        '<div style="margin-top:10px;padding:7px 12px;border-radius:8px;font-size:11px;font-weight:700;text-align:center;' +
+        (ok ? 'background:rgba(34,197,94,.08);color:#22c55e;border:1px solid rgba(34,197,94,.2)">\u2705 \ucc28\ubcc0\ud569\uacc4 = \ub300\ubcc0\ud569\uacc4 (\uade0\ud615)' :
+        'background:rgba(239,68,68,.08);color:#ef4444;border:1px solid rgba(239,68,68,.2)">\u274c \ubd88\uade0\ud615 (\ucc28\uc561: ' + _fmtW(totalDr - totalCr) + ')') +
+        '</div>' +
+      '</div>';
+    } else {
+      /* ── 데스크탑: 기존 테이블 ── */
+      h += '<table style="width:100%;border-collapse:collapse;table-layout:fixed">' +
+        '<colgroup><col style="width:80px"><col><col style="width:130px"><col style="width:130px"><col style="width:130px"><col style="width:130px"></colgroup>' +
+        '<thead><tr style="background:var(--bg-tertiary);border-bottom:2px solid var(--border-color)">' +
+        '<th style="padding:10px;text-align:left;font-size:12px" rowspan="2">\ucf54\ub4dc</th>' +
+        '<th style="padding:10px;text-align:left;font-size:12px" rowspan="2">\uacc4\uc815\uacfc\ubaa9</th>' +
+        '<th colspan="2" style="padding:6px 10px;text-align:center;font-size:12px;border-bottom:1px solid var(--border-color)">\ud569\uacc4</th>' +
+        '<th colspan="2" style="padding:6px 10px;text-align:center;font-size:12px;border-bottom:1px solid var(--border-color)">\uc794\uc561</th></tr>' +
+        '<tr style="background:var(--bg-tertiary)">' +
+        '<th style="padding:6px 10px;text-align:right;font-size:11px">\ucc28\ubcc0</th><th style="padding:6px 10px;text-align:right;font-size:11px">\ub300\ubcc0</th>' +
+        '<th style="padding:6px 10px;text-align:right;font-size:11px">\ucc28\ubcc0</th><th style="padding:6px 10px;text-align:right;font-size:11px">\ub300\ubcc0</th></tr></thead><tbody>';
+      tbRows.forEach(function (r) {
+        h += '<tr style="border-bottom:1px solid var(--border-color)">' +
+          '<td style="padding:8px 10px;font-size:12px;color:var(--text-muted)">' + r.code + '</td>' +
+          '<td style="padding:8px 10px;font-size:12.5px;font-weight:600">' + r.name + '</td>' +
+          '<td style="padding:8px 10px;text-align:right;font-size:12.5px;white-space:nowrap">' + (r.dr ? _fmtW(r.dr) : '') + '</td>' +
+          '<td style="padding:8px 10px;text-align:right;font-size:12.5px;white-space:nowrap">' + (r.cr ? _fmtW(r.cr) : '') + '</td>' +
+          '<td style="padding:8px 10px;text-align:right;font-size:12.5px;color:#4f6ef7;font-weight:600;white-space:nowrap">' + (r.bDr ? _fmtW(r.bDr) : '') + '</td>' +
+          '<td style="padding:8px 10px;text-align:right;font-size:12.5px;color:#ef4444;font-weight:600;white-space:nowrap">' + (r.bCr ? _fmtW(r.bCr) : '') + '</td></tr>';
+      });
+      h += '<tr style="border-top:2px solid var(--text-primary);background:var(--bg-tertiary)">' +
+        '<td colspan="2" style="padding:10px;font-size:13px;font-weight:800;text-align:center">\ud569 \uacc4</td>' +
+        '<td style="padding:10px;text-align:right;font-size:13px;font-weight:800;white-space:nowrap">' + _fmtW(totalDr) + '</td>' +
+        '<td style="padding:10px;text-align:right;font-size:13px;font-weight:800;white-space:nowrap">' + _fmtW(totalCr) + '</td>' +
+        '<td style="padding:10px;text-align:right;font-size:13px;font-weight:800;color:#4f6ef7;white-space:nowrap">' + _fmtW(balDr) + '</td>' +
+        '<td style="padding:10px;text-align:right;font-size:13px;font-weight:800;color:#ef4444;white-space:nowrap">' + _fmtW(balCr) + '</td></tr>' +
+        '</tbody></table>';
+      h += '<div style="margin-top:12px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;text-align:center;' +
+        (ok ? 'background:rgba(34,197,94,.06);color:#22c55e;border:1px solid rgba(34,197,94,.2)">\u2705 \ucc28\ubcc0\ud569\uacc4 = \ub300\ubcc0\ud569\uacc4 (\uade0\ud615)' :
+        'background:rgba(239,68,68,.06);color:#ef4444;border:1px solid rgba(239,68,68,.2)">\u274c \ubd88\uade0\ud615 (\ucc28\uc561: ' + _fmtW(totalDr - totalCr) + ')') + '</div>';
+    }
     return h + '</div>';
   }
 
