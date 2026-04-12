@@ -3928,26 +3928,27 @@
     var debitLbl  = isDebit ? 'color:#fff;font-weight:700' : 'color:rgba(255,255,255,.55);font-weight:500';
     var creditLbl = !isDebit ? 'color:#fff;font-weight:700' : 'color:rgba(255,255,255,.55);font-weight:500';
     var removeBtn = isRemovable
-      ? '<button onclick="this.closest(\'.acct-entry-row\').remove()" style="position:absolute;top:6px;right:6px;background:rgba(239,68,68,.15);border:none;border-radius:7px;width:24px;height:24px;cursor:pointer;color:#ef4444;display:flex;align-items:center;justify-content:center;z-index:1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg></button>'
+      ? '<button onclick="this.closest(\'.acct-entry-row\').remove()" style="position:absolute;top:8px;right:8px;background:rgba(239,68,68,.15);border:none;border-radius:7px;width:24px;height:24px;cursor:pointer;color:#ef4444;display:flex;align-items:center;justify-content:center;z-index:1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg></button>'
       : '';
-    /* 왼쪽 컬럼 총 높이: 스위치(40) + gap(8) + 금액(44) = 92px */
-    return '<div class="acct-entry-row" style="position:relative;background:var(--bg-tertiary);border-radius:14px;padding:10px">' +
+    return '<div class="acct-entry-row" style="position:relative;background:var(--bg-tertiary);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px">' +
       removeBtn +
-      '<div style="display:flex;gap:8px;min-height:92px">' +
-      '<div style="display:flex;flex-direction:column;gap:8px;width:100px;flex-shrink:0">' +
-      '<div style="position:relative;height:40px;flex-shrink:0;border-radius:20px;background:'+trackBg+';cursor:pointer" onclick="ACCT._toggleEntrySide(this)">' +
-      '<div class="vm-knob" style="position:absolute;top:3px;left:'+knobLeft+';width:calc(50% - 3px);height:34px;border-radius:17px;background:rgba(255,255,255,.25);transition:left .18s;pointer-events:none"></div>' +
+      /* 행 1: 차변/대변 스위치 + 계정과목 (동일 높이 44px) */
+      '<div style="display:flex;gap:8px;align-items:stretch;height:44px">' +
+      /* pill switch */
+      '<div style="position:relative;flex-shrink:0;width:88px;border-radius:22px;background:'+trackBg+';cursor:pointer" onclick="ACCT._toggleEntrySide(this)">' +
+      '<div class="vm-knob" style="position:absolute;top:3px;left:'+knobLeft+';width:calc(50% - 3px);height:calc(100% - 6px);border-radius:19px;background:rgba(255,255,255,.25);transition:left .18s;pointer-events:none"></div>' +
       '<span style="position:absolute;left:0;top:0;width:50%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;pointer-events:none;'+debitLbl+'">차변</span>' +
       '<span style="position:absolute;right:0;top:0;width:50%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;pointer-events:none;'+creditLbl+'">대변</span>' +
       '<input type="hidden" class="vm-side" value="'+sideVal+'">' +
       '</div>' +
-      '<input class="vm-amt" type="text" placeholder="금액" value="'+(amtVal?_fmtInput(amtVal):'')+'" oninput="this.value=ACCT.fmtInput(this.value)" style="width:100%;height:44px;flex-shrink:0;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);padding:0 8px;font-size:14px;font-weight:700;text-align:right;box-sizing:border-box;color:var(--text-primary);outline:none">' +
+      /* 계정과목 select - 나머지 가로 꽉 채웬 */
+      '<div style="flex:1;position:relative;min-width:0">' +
+      '<select class="vm-acct" style="width:100%;height:100%;border-radius:11px;border:1.5px solid var(--border-color);background:var(--bg-secondary);padding:0 28px 0 12px;font-size:13px;font-weight:500;box-sizing:border-box;-webkit-appearance:none;appearance:none;color:var(--text-primary);cursor:pointer">' + opts + '</select>' +
+      '<div style="position:absolute;right:9px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-muted)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div>' +
       '</div>' +
-      '<div style="flex:1;position:relative;min-width:0;min-height:92px">' +
-      '<select class="vm-acct" style="width:100%;height:100%;min-height:92px;border-radius:12px;border:1.5px solid var(--border-color);background:var(--bg-secondary);padding:10px 28px 10px 12px;font-size:13px;font-weight:600;box-sizing:border-box;-webkit-appearance:none;appearance:none;color:var(--text-primary);cursor:pointer">' + opts + '</select>' +
-      '<div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-muted)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div>' +
       '</div>' +
-      '</div>' +
+      /* 행 2: 금액 - 전폭 */
+      '<input class="vm-amt" type="text" placeholder="금액" value="'+(amtVal?_fmtInput(amtVal):'')+'" oninput="this.value=ACCT.fmtInput(this.value)" style="width:100%;height:46px;border-radius:12px;border:1.5px solid var(--border-color);background:var(--bg-secondary);padding:0 14px;font-size:18px;font-weight:700;text-align:right;box-sizing:border-box;color:var(--text-primary);outline:none">' +
       '</div>';
   }
 
