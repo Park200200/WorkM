@@ -1298,7 +1298,11 @@
         : a.status === 'vouchered' ? '<span class="acct-badge" style="background:rgba(139,92,246,.1);color:#8b5cf6;border-color:rgba(139,92,246,.3)">전표</span>'
           : '<span class="acct-badge rejected">반려</span>';
       var _cu = (typeof WS !== 'undefined') ? WS.currentUser : null;
-      var _isCuApprover = _cu && _cu.approverType === 'approver';
+      // 전역 승인자 권한 또는 이 품의의 지정된 승인자인 경우 승인/반려 버튼 표시
+      var _isCuApprover = _cu && (
+        _cu.approverType === 'approver' ||
+        (a.approverId && String(a.approverId) === String(_cu.id))
+      );
       var actions = '';
       var printBtn = '<button class="btn-icon-sm" onclick="ACCT.printApproval(' + JSON.stringify(a.id) + ')" title="출력" style="color:var(--text-muted)"><i data-lucide="printer" class="icon-sm"></i></button>';
       if (a.status === 'pending') {
