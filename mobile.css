@@ -2319,3 +2319,22 @@ button#mobileFAB {
     background: rgba(239,68,68,.18);
   }
 }
+
+/* ── 직원관리: 모바일에서 등록+ 버튼을 타이틀 우측 상단으로 ── */
+@media (max-width: 767px) {
+  #page-staff-mgmt .page-header {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+  }
+  #page-staff-mgmt .page-header .btn {
+    flex: none !important;
+    min-width: auto !important;
+    padding: 0 14px !important;
+    height: 36px !important;
+    font-size: 13px !important;
+    white-space: nowrap;
+  }
+}
