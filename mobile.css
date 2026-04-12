@@ -2693,3 +2693,176 @@ button#mobileFAB {
     transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
   }
 }
+
+/* ══════════════════════════════════════════
+   ttc (Team Task Card) — 팀별 카드 UI
+   모바일 전용
+   ══════════════════════════════════════════ */
+@media (max-width: 767px) {
+
+  .ttc-card {
+    position: relative;
+    background: var(--bg-card);
+    border: 1.5px solid var(--border-color);
+    border-radius: 18px;
+    padding: 14px 16px 0;
+    margin-bottom: 11px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.18s;
+    -webkit-tap-highlight-color: transparent;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .ttc-card:active {
+    transform: scale(0.985);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  }
+  .ttc-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 4px;
+    background: var(--tc, #4f6ef7);
+    border-radius: 18px 0 0 18px;
+  }
+
+  /* 헤더 */
+  .ttc-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .ttc-title {
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--text-primary);
+  }
+  .ttc-status-tag {
+    flex-shrink: 0;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  /* 멤버 아바타 행 */
+  .ttc-members {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .ttc-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--bg-card);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    flex-shrink: 0;
+  }
+  .ttc-avatar-more {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    font-size: 9px; font-weight: 700;
+    color: var(--text-muted);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ttc-member-cnt {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-left: 2px;
+  }
+  .ttc-no-member {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* 업무 배지 */
+  .ttc-tasks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 12px;
+    min-height: 22px;
+    align-items: center;
+  }
+  .ttc-task-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 9px;
+    border-radius: 20px;
+    background: var(--bg-tertiary);
+    border: 1.5px solid var(--border-color);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ttc-task-more {
+    font-size: 11px; font-weight: 700;
+    color: var(--text-muted); padding: 4px 6px;
+  }
+  .ttc-no-task { font-size: 11.5px; color: var(--text-muted); }
+
+  /* 하단: 배정수 + 관리 버튼 */
+  .ttc-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 11px;
+  }
+  .ttc-task-count { display: flex; align-items: baseline; gap: 3px; }
+  .ttc-cnt-num { font-size: 20px; font-weight: 900; line-height: 1; }
+  .ttc-cnt-label { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+
+  .ttc-manage-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--tc, #4f6ef7);
+    background: transparent;
+    color: var(--tc, #4f6ef7);
+    font-size: 12px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    transition: all 0.18s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ttc-manage-btn:active {
+    background: var(--tc, #4f6ef7);
+    color: #fff;
+    transform: scale(0.97);
+  }
+
+  /* 프로그레스 바 */
+  .ttc-progress-wrap {
+    height: 4px;
+    background: var(--border-color);
+    border-radius: 0 0 16px 16px;
+    overflow: hidden;
+    margin: 0 -16px;
+  }
+  .ttc-progress-fill {
+    height: 100%;
+    border-radius: 0 2px 2px 0;
+    transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+  }
+}
