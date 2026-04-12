@@ -1736,3 +1736,17 @@ button#mobileFAB {
     color: var(--text-muted) !important;
   }
 }
+
+/* 업무성격 버튼 — 모바일 2줄 텍스트 */
+@media (max-width: 767px) {
+  .instrNature-wrap button {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 2px !important;
+  }
+  .instrNature-wrap button .nature-txt {
+    text-align: center !important;
+    line-height: 1.25 !important;
+    font-size: 11px !important;
+  }
+}

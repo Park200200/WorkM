@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>WorkM - 전체현황</title>
 <link rel="stylesheet" href="style.css?v=20260327e">
-<link rel="stylesheet" href="mobile.css?v=20260412i">
+<link rel="stylesheet" href="mobile.css?v=20260412j">
 
 
 
@@ -2553,7 +2553,8 @@
                            background:var(--accent-blue);color:#fff;font-size:12.5px;font-weight:700;
                            cursor:pointer;transition:all .2s">
                     <i data-lucide="clock" style="width:13px;height:13px"></i>
-                    일일업무
+                    <span class="desktop-only">일일업무</span>
+                    <span class="mobile-only nature-txt">일일<br>업무</span>
                   </button>
                   <button type="button" id="instrNatureBtn_period"
                     onclick="_selectInstrNature('기간업무')"
@@ -2562,7 +2563,8 @@
                            background:transparent;color:var(--text-secondary);font-size:12.5px;font-weight:600;
                            cursor:pointer;transition:all .2s">
                     <i data-lucide="bar-chart-2" style="width:13px;height:13px"></i>
-                    기간업무
+                    <span class="desktop-only">기간업무</span>
+                    <span class="mobile-only nature-txt">기간<br>업무</span>
                   </button>
                 </div>
               </div>
