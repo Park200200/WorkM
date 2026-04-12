@@ -1,4 +1,4 @@
-﻿/**
+/**
  * modules/homepage.js
  */
 /* ══════════════════════════════════════════════════════
@@ -1589,28 +1589,17 @@ function _hpSubMenuRenderSets(menuIdx) {
     tblTop.appendChild(addRowBtn);
     tblWrap.appendChild(tblTop);
 
-    // 컬럼 헤더 (데스크탑만 표시)
-    if (!isMob) {
-      var colHdr = document.createElement('div');
-      colHdr.style.cssText =
-        'display:grid;grid-template-columns:1fr 1fr 1fr 70px 34px;gap:6px;align-items:center;' +
-        'padding:6px 10px;background:var(--bg-tertiary);border-radius:8px 8px 0 0;' +
-        'border:1px solid var(--border-color);border-bottom:none;' +
-        'font-size:10px;font-weight:700;color:var(--text-muted)';
-      colHdr.innerHTML = '<span>가로 이미지</span><span>세로 이미지</span><span>링크 URL</span><span>새탭</span><span></span>';
-      tblWrap.appendChild(colHdr);
-    }
-
+    // 컬럼 헤더 제거 (카드 레이아웃이므로 불필요)
     // 행 영역
     var rowCont = document.createElement('div');
-    rowCont.style.cssText =
-      'border:1px solid var(--border-color);border-radius:' + (isMob ? '8px' : '0 0 8px 8px') + ';min-height:44px;overflow:hidden';
+    rowCont.style.cssText = 'border:1px solid var(--border-color);border-radius:8px;min-height:44px;overflow:hidden';
 
     if (!set.rows || set.rows.length === 0) {
       rowCont.innerHTML = '<div style="padding:14px;text-align:center;font-size:11px;color:var(--text-muted)">+ 항목 추가 버튼으로 행을 추가하세요</div>';
     } else {
       set.rows.forEach(function (row, ri) {
         var rowEl = document.createElement('div');
+        rowEl.style.cssText = 'padding:12px;border-bottom:1px solid var(--border-color);background:var(--bg-primary)';
 
         function makeImgCell(field) {
           var w = document.createElement('div');
@@ -1618,7 +1607,7 @@ function _hpSubMenuRenderSets(menuIdx) {
           var row2 = document.createElement('div');
           row2.style.cssText = 'position:relative;display:flex';
           var inp = document.createElement('input');
-          inp.style.cssText = 'flex:1;border:1px solid var(--border-color);border-radius:6px;padding:4px 46px 4px 7px;font-size:11px;background:var(--bg-secondary);color:var(--text-primary);outline:none;min-width:0';
+          inp.style.cssText = 'flex:1;border:1px solid var(--border-color);border-radius:6px;padding:4px 46px 4px 7px;font-size:12px;background:var(--bg-secondary);color:var(--text-primary);outline:none;min-width:0';
           inp.placeholder = 'URL 또는 파일';
           inp.value = row[field] || '';
           inp.oninput = (function (mi, si, ri, f) { return function () { _hpSubSets[mi][si].rows[ri][f] = this.value; }; })(menuIdx, si, ri, field);
@@ -1650,92 +1639,58 @@ function _hpSubMenuRenderSets(menuIdx) {
           return w;
         }
 
-        if (isMob) {
-          /* ── 모바일: 카드 레이아웃 ── */
-          rowEl.style.cssText = 'padding:12px;border-bottom:1px solid var(--border-color);background:var(--bg-primary)';
-
-          // 이미지 2열 그리드
-          var imgGrid = document.createElement('div');
-          imgGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px';
-
-          function wrapLbl(cell, txt) {
-            var w = document.createElement('div');
-            var lbl = document.createElement('div');
-            lbl.style.cssText = 'font-size:10px;font-weight:600;color:var(--text-muted);margin-bottom:3px';
-            lbl.textContent = txt;
-            w.appendChild(lbl); w.appendChild(cell); return w;
-          }
-          imgGrid.appendChild(wrapLbl(makeImgCell('imgH'), '가로 이미지'));
-          imgGrid.appendChild(wrapLbl(makeImgCell('imgV'), '세로 이미지'));
-          rowEl.appendChild(imgGrid);
-
-          // 링크 URL (전폭)
-          var urlSection = document.createElement('div');
-          urlSection.style.cssText = 'margin-bottom:10px';
-          var urlLbl = document.createElement('div');
-          urlLbl.style.cssText = 'font-size:10px;font-weight:600;color:var(--text-muted);margin-bottom:4px';
-          urlLbl.textContent = '링크 URL';
-          var urlInp = document.createElement('input');
-          urlInp.style.cssText = 'border:1px solid var(--border-color);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;box-sizing:border-box;background:var(--bg-secondary);color:var(--text-primary);outline:none';
-          urlInp.placeholder = '/page 또는 https://';
-          urlInp.value = row.url || '';
-          urlInp.onfocus = function () { this.style.borderColor = 'var(--accent-blue)'; };
-          urlInp.onblur = function () { this.style.borderColor = 'var(--border-color)'; };
-          urlInp.oninput = (function (mi, si, ri) { return function () { _hpSubSets[mi][si].rows[ri].url = this.value; }; })(menuIdx, si, ri);
-          urlSection.appendChild(urlLbl); urlSection.appendChild(urlInp);
-          rowEl.appendChild(urlSection);
-
-          // 하단: 새탭 + 삭제
-          var btmRow = document.createElement('div');
-          btmRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between';
-
-          var blankLbl = document.createElement('label');
-          blankLbl.style.cssText = 'display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;color:var(--text-secondary);font-weight:600';
-          var chk = document.createElement('input');
-          chk.type = 'checkbox';
-          chk.style.cssText = 'width:17px;height:17px;accent-color:#6366f1;cursor:pointer';
-          chk.checked = row.blank || false;
-          chk.onchange = (function (mi, si, ri) { return function () { _hpSubSets[mi][si].rows[ri].blank = this.checked; }; })(menuIdx, si, ri);
-          blankLbl.appendChild(chk);
-          blankLbl.appendChild(document.createTextNode('새 탭으로 열기'));
-          btmRow.appendChild(blankLbl);
-
-          var dBtn = document.createElement('button');
-          dBtn.style.cssText = 'display:flex;align-items:center;gap:5px;padding:7px 14px;border:none;border-radius:8px;background:rgba(239,68,68,.1);color:#ef4444;cursor:pointer;font-size:12px;font-weight:700';
-          dBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg> 삭제';
-          dBtn.onclick = (function (mi, si, ri) { return function () { _hpSubMenuRemoveRow(mi, si, ri); }; })(menuIdx, si, ri);
-          btmRow.appendChild(dBtn);
-          rowEl.appendChild(btmRow);
-
-        } else {
-          /* ── 데스크탑: 기존 5열 그리드 ── */
-          rowEl.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr 70px 34px;gap:6px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--border-color);transition:background .15s';
-          rowEl.onmouseover = function () { this.style.background = 'var(--bg-secondary)'; };
-          rowEl.onmouseout = function () { this.style.background = ''; };
-
-          rowEl.appendChild(makeImgCell('imgH'));
-          rowEl.appendChild(makeImgCell('imgV'));
-
-          var urlW = document.createElement('div');
-          var urlInp = document.createElement('input');
-          urlInp.style.cssText = 'border:1px solid var(--border-color);border-radius:6px;padding:4px 7px;font-size:11px;width:100%;box-sizing:border-box;background:var(--bg-secondary);color:var(--text-primary);outline:none';
-          urlInp.placeholder = '/page 또는 https://';
-          urlInp.value = row.url || '';
-          urlInp.oninput = (function (mi, si, ri) { return function () { _hpSubSets[mi][si].rows[ri].url = this.value; }; })(menuIdx, si, ri);
-          urlW.appendChild(urlInp); rowEl.appendChild(urlW);
-
-          var blankW = document.createElement('div'); blankW.style.cssText = 'display:flex;justify-content:center';
-          var chk = document.createElement('input'); chk.type = 'checkbox'; chk.style.cssText = 'width:15px;height:15px;accent-color:#6366f1;cursor:pointer'; chk.checked = row.blank || false;
-          chk.onchange = (function (mi, si, ri) { return function () { _hpSubSets[mi][si].rows[ri].blank = this.checked; }; })(menuIdx, si, ri);
-          blankW.appendChild(chk); rowEl.appendChild(blankW);
-
-          var delW = document.createElement('div'); delW.style.cssText = 'display:flex;justify-content:center';
-          var dBtn = document.createElement('button');
-          dBtn.style.cssText = 'width:26px;height:26px;border:none;border-radius:6px;background:rgba(239,68,68,.1);color:#ef4444;cursor:pointer;display:flex;align-items:center;justify-content:center';
-          dBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>';
-          dBtn.onclick = (function (mi, si, ri) { return function () { _hpSubMenuRemoveRow(mi, si, ri); }; })(menuIdx, si, ri);
-          delW.appendChild(dBtn); rowEl.appendChild(delW);
+        function wrapLbl(cell, txt) {
+          var w = document.createElement('div');
+          var lbl = document.createElement('div');
+          lbl.style.cssText = 'font-size:10px;font-weight:600;color:var(--text-muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px';
+          lbl.textContent = txt;
+          w.appendChild(lbl); w.appendChild(cell); return w;
         }
+
+        // ── 이미지 2열 그리드 ──
+        var imgGrid = document.createElement('div');
+        imgGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px';
+        imgGrid.appendChild(wrapLbl(makeImgCell('imgH'), '가로 이미지'));
+        imgGrid.appendChild(wrapLbl(makeImgCell('imgV'), '세로 이미지'));
+        rowEl.appendChild(imgGrid);
+
+        // ── 링크 URL (전폭) ──
+        var urlSection = document.createElement('div');
+        urlSection.style.cssText = 'margin-bottom:10px';
+        var urlLbl = document.createElement('div');
+        urlLbl.style.cssText = 'font-size:10px;font-weight:600;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px';
+        urlLbl.textContent = '링크 URL';
+        var urlInp = document.createElement('input');
+        urlInp.style.cssText = 'border:1.5px solid var(--border-color);border-radius:8px;padding:9px 12px;font-size:13px;width:100%;box-sizing:border-box;background:var(--bg-secondary);color:var(--text-primary);outline:none;transition:border-color .2s';
+        urlInp.placeholder = '/page 또는 https://...';
+        urlInp.value = row.url || '';
+        urlInp.onfocus = function () { this.style.borderColor = 'var(--accent-blue)'; };
+        urlInp.onblur = function () { this.style.borderColor = 'var(--border-color)'; };
+        urlInp.oninput = (function (mi, si, ri) { return function () { _hpSubSets[mi][si].rows[ri].url = this.value; }; })(menuIdx, si, ri);
+        urlSection.appendChild(urlLbl); urlSection.appendChild(urlInp);
+        rowEl.appendChild(urlSection);
+
+        // ── 하단: 새탭 토글 + 삭제 버튼 ──
+        var btmRow = document.createElement('div');
+        btmRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between';
+
+        var blankLbl = document.createElement('label');
+        blankLbl.style.cssText = 'display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;color:var(--text-secondary);font-weight:600;user-select:none';
+        var chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.style.cssText = 'width:17px;height:17px;accent-color:#6366f1;cursor:pointer';
+        chk.checked = row.blank || false;
+        chk.onchange = (function (mi, si, ri) { return function () { _hpSubSets[mi][si].rows[ri].blank = this.checked; }; })(menuIdx, si, ri);
+        blankLbl.appendChild(chk);
+        blankLbl.appendChild(document.createTextNode('새 탭으로 열기'));
+        btmRow.appendChild(blankLbl);
+
+        var dBtn = document.createElement('button');
+        dBtn.style.cssText = 'display:flex;align-items:center;gap:5px;padding:7px 14px;border:none;border-radius:8px;background:rgba(239,68,68,.1);color:#ef4444;cursor:pointer;font-size:12px;font-weight:700';
+        dBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg> 삭제';
+        dBtn.onclick = (function (mi, si, ri) { return function () { _hpSubMenuRemoveRow(mi, si, ri); }; })(menuIdx, si, ri);
+        btmRow.appendChild(dBtn);
+        rowEl.appendChild(btmRow);
 
         rowCont.appendChild(rowEl);
       });
