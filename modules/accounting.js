@@ -3923,34 +3923,30 @@
   function _makeEntryCard(sideVal, acctCode, amtVal, isRemovable) {
     var opts = _makeAcctOptions().replace('value="'+acctCode+'"','value="'+acctCode+'" selected');
     var isDebit = sideVal !== 'credit';
-    /* pill switch 스타일 */
-    var trackBg    = isDebit ? '#4f6ef7' : '#ef4444';
-    var knobLeft   = isDebit ? '2px' : 'calc(50% + 1px)';
-    var knobW      = 'calc(50% - 3px)';
-    var debitLbl   = isDebit ? 'color:#fff;font-weight:700' : 'color:rgba(255,255,255,.55);font-weight:500';
-    var creditLbl  = !isDebit ? 'color:#fff;font-weight:700' : 'color:rgba(255,255,255,.55);font-weight:500';
-    var removeBtn  = isRemovable ? '<button onclick="this.closest(\'.acct-entry-row\').remove()" style="flex-shrink:0;background:rgba(239,68,68,.1);border:none;border-radius:8px;width:32px;height:40px;cursor:pointer;color:#ef4444;display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' : '';
-    return '<div class="acct-entry-row" style="background:var(--bg-tertiary);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px">' +
-      /* 1행: pill 스위치 + 계정과목 + 삭제 */
-      '<div style="display:flex;align-items:center;gap:8px">' +
-      /* pill switch wrapper */
-      '<div style="position:relative;flex-shrink:0;width:90px;height:40px;border-radius:20px;background:'+trackBg+';cursor:pointer" onclick="ACCT._toggleEntrySide(this)">' +
-      /* 슬라이딩 놉 */
-      '<div class="vm-knob" style="position:absolute;top:3px;left:'+knobLeft+';width:'+knobW+';height:34px;border-radius:17px;background:rgba(255,255,255,.25);transition:left .18s,width .18s;pointer-events:none"></div>' +
-      /* 차변 레이블 */
-      '<span style="position:absolute;left:0;top:0;width:50%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12.5px;pointer-events:none;'+debitLbl+'">차변</span>' +
-      /* 대변 레이블 */
-      '<span style="position:absolute;right:0;top:0;width:50%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12.5px;pointer-events:none;'+creditLbl+'">대변</span>' +
+    var trackBg   = isDebit ? '#4f6ef7' : '#ef4444';
+    var knobLeft  = isDebit ? '2px' : 'calc(50% + 1px)';
+    var debitLbl  = isDebit ? 'color:#fff;font-weight:700' : 'color:rgba(255,255,255,.55);font-weight:500';
+    var creditLbl = !isDebit ? 'color:#fff;font-weight:700' : 'color:rgba(255,255,255,.55);font-weight:500';
+    var removeBtn = isRemovable
+      ? '<button onclick="this.closest(\'.acct-entry-row\').remove()" style="position:absolute;top:6px;right:6px;background:rgba(239,68,68,.15);border:none;border-radius:7px;width:24px;height:24px;cursor:pointer;color:#ef4444;display:flex;align-items:center;justify-content:center;z-index:1"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg></button>'
+      : '';
+    return '<div class="acct-entry-row" style="position:relative;background:var(--bg-tertiary);border-radius:14px;padding:10px">' +
+      removeBtn +
+      '<div style="display:flex;gap:8px;align-items:stretch">' +
+      '<div style="display:flex;flex-direction:column;gap:8px;width:100px;flex-shrink:0">' +
+      '<div style="position:relative;height:40px;border-radius:20px;background:'+trackBg+';cursor:pointer" onclick="ACCT._toggleEntrySide(this)">' +
+      '<div class="vm-knob" style="position:absolute;top:3px;left:'+knobLeft+';width:calc(50% - 3px);height:34px;border-radius:17px;background:rgba(255,255,255,.25);transition:left .18s;pointer-events:none"></div>' +
+      '<span style="position:absolute;left:0;top:0;width:50%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;pointer-events:none;'+debitLbl+'">차변</span>' +
+      '<span style="position:absolute;right:0;top:0;width:50%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;pointer-events:none;'+creditLbl+'">대변</span>' +
       '<input type="hidden" class="vm-side" value="'+sideVal+'">' +
       '</div>' +
-      /* 계정과목 select */
-      '<div style="flex:1;position:relative;min-width:0">' +
-      '<select class="vm-acct" style="width:100%;height:40px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);padding:0 28px 0 10px;font-size:12.5px;box-sizing:border-box;-webkit-appearance:none;appearance:none;color:var(--text-primary)">' + opts + '</select>' +
-      '<div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-muted)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div></div>' +
-      removeBtn +
+      '<input class="vm-amt" type="text" placeholder="금액" value="'+(amtVal?_fmtInput(amtVal):'')+'" oninput="this.value=ACCT.fmtInput(this.value)" style="width:100%;flex:1;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);padding:6px 8px;font-size:14px;font-weight:700;text-align:right;box-sizing:border-box;color:var(--text-primary);outline:none">' +
       '</div>' +
-      /* 2행: 금액 */
-      '<input class="vm-amt" type="text" placeholder="금액" value="'+(amtVal?_fmtInput(amtVal):'')+'" oninput="this.value=ACCT.fmtInput(this.value)" style="width:100%;height:44px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);padding:0 12px;font-size:18px;font-weight:700;text-align:right;box-sizing:border-box;color:var(--text-primary);outline:none">' +
+      '<div style="flex:1;position:relative;min-width:0">' +
+      '<select class="vm-acct" style="width:100%;height:100%;border-radius:12px;border:1.5px solid var(--border-color);background:var(--bg-secondary);padding:10px 28px 10px 12px;font-size:13px;font-weight:600;box-sizing:border-box;-webkit-appearance:none;appearance:none;color:var(--text-primary);cursor:pointer">' + opts + '</select>' +
+      '<div style="position:absolute;right:10px;bottom:14px;pointer-events:none;color:var(--text-muted)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div>' +
+      '</div>' +
+      '</div>' +
       '</div>';
   }
 
