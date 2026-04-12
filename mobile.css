@@ -2114,3 +2114,12 @@ button#mobileFAB {
     gap: 4px !important;
   }
 }
+
+/* ── 내가 기획한: 업무성격 텍스트 2글자 유지 (flex:0 → flex:none) ── */
+@media (max-width: 767px) {
+  .nt-nature-text {
+    flex: none !important;          /* 0 0 auto: 콘텐츠 너비 유지, 글자 분리 없음 */
+    min-width: 2em !important;      /* 최소 2글자 너비 보장 */
+    text-align: center !important;
+  }
+}
