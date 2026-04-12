@@ -389,51 +389,141 @@ function renderTaskListView(targetEl) {
   const uid = WS.currentUser?.id;
   const f = window._taskFilter || 'all';
   let tasks = WS.tasks;
-  if (f === 'mine') tasks = tasks.filter(t => (t.assigneeIds || []).includes(uid) || t.assignerId === uid);
-  if (f === 'waiting') tasks = tasks.filter(t => t.status === 'waiting');
+  if (f === 'mine')     tasks = tasks.filter(t => (t.assigneeIds || []).includes(uid) || t.assignerId === uid);
+  if (f === 'waiting')  tasks = tasks.filter(t => t.status === 'waiting');
   if (f === 'progress') tasks = tasks.filter(t => t.status === 'progress');
-  if (f === 'done') tasks = tasks.filter(t => t.status === 'done');
-  if (f === 'delay') tasks = tasks.filter(t => t.status === 'delay');
+  if (f === 'done')     tasks = tasks.filter(t => t.status === 'done');
+  if (f === 'delay')    tasks = tasks.filter(t => t.status === 'delay');
 
-  const rows = tasks.map(t => {
-    const ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
-    const assignee = WS.getUser(ids[0]);
-    const dd = WS.getDdayBadge(t.dueDate);
-    return `<tr onclick="openTaskDetail(${t.id})" style="cursor:pointer">
-      <td>
-        <div style="display:flex;align-items:center;gap:6px">
-          ${t.isImportant ? '<span class="star-icon"><i data-lucide="star"></i></span>' : ''}
-          <span style="font-weight:600;font-size:12.5px">${t.title}</span>
-        </div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${t.team || ''}</div>
-      </td>
-      <td>
-        <div class="avatar-group">
-          <div class="avatar" style="background:linear-gradient(135deg,${assignee?.color || '#4f6ef7'},#9747ff)">${assignee?.avatar || '?'}</div>
-        </div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${assignee?.name || '-'}</div>
-      </td>
-      <td><span class="status-badge status-${t.status}">${WS.getStatusLabel(t.status)}</span></td>
-      <td><span class="dday-badge ${dd.cls}">${dd.label}</span></td>
-      <td>
-        <div class="quick-actions">
-          <button class="qa-btn" onclick="event.stopPropagation();openEditTaskModal(${t.id})">✏️</button>
-          <button class="qa-btn done" onclick="event.stopPropagation();changeStatus(${t.id},'done')">완료</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
+  const isMob = window.innerWidth < 768;
 
-  el.innerHTML = `<table class="task-table">
-    <thead><tr>
-      <th>업무제목</th>
-      <th>담당자</th>
-      <th>상태</th>
-      <th>마감일</th>
-      <th>액션</th>
-    </tr></thead>
-    <tbody>${rows || '<tr><td colspan="5" class="empty-state">데이터가 없습니다.</td></tr>'}</tbody>
-  </table>`;
+  if (isMob) {
+    /* ── 모바일: 업무목록 다이나믹 카드 ── */
+    if (!tasks.length) {
+      el.innerHTML = '<div class="empty-state" style="padding:40px 0;text-align:center;color:var(--text-muted)">데이터가 없습니다.</div>';
+      refreshIcons();
+      return;
+    }
+
+    /* 팀컬러 팔레트 */
+    const TEAM_COLORS = ['#4f6ef7','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#f97316','#14b8a6'];
+    function teamColor(name) {
+      if (!name) return TEAM_COLORS[0];
+      let h = 0;
+      for (let i = 0; i < name.length; i++) h = ((h * 31) + name.charCodeAt(i)) & 0x7fffffff;
+      return TEAM_COLORS[h % TEAM_COLORS.length];
+    }
+
+    /* 상태 태그 */
+    function statusTag(t) {
+      if (t.dueDate) {
+        const diff = Math.floor((new Date(t.dueDate) - new Date()) / 86400000);
+        if (diff <= 0) return { label:'마감 초과', c:'#ef4444', bg:'rgba(239,68,68,.14)' };
+        if (diff <= 3) return { label:`D-${diff}`, c:'#f59e0b', bg:'rgba(245,158,11,.14)' };
+      }
+      const map = {
+        progress: { label:'진행 중',  c:'#4f6ef7', bg:'rgba(79,110,247,.13)' },
+        done:     { label:'완료',     c:'#22c55e', bg:'rgba(34,197,94,.13)' },
+        delay:    { label:'지연',     c:'#ef4444', bg:'rgba(239,68,68,.13)' },
+        waiting:  { label:'대기 중',  c:'#6b7280', bg:'rgba(107,114,128,.11)' }
+      };
+      return map[t.status] || { label:'대기 중', c:'#6b7280', bg:'rgba(107,114,128,.11)' };
+    }
+
+    el.innerHTML = tasks.map(t => {
+      const ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+      const assignees = ids.map(id => WS.getUser(id)).filter(Boolean);
+      const tc = teamColor(t.team);
+      const st = statusTag(t);
+      const prog = Math.min(100, Math.max(0, t.progress || 0));
+      const progColor = prog >= 80 ? '#22c55e' : prog >= 40 ? '#4f6ef7' : '#f59e0b';
+      const dd = WS.getDdayBadge(t.dueDate);
+
+      /* 담당자 아바타 */
+      const avatarsHtml = assignees.length > 0
+        ? assignees.slice(0,3).map(u =>
+            `<div class="tlc-avatar" style="background:linear-gradient(135deg,${u.color||'#4f6ef7'},#9747ff)" title="${u.name}">${u.avatar}</div>`
+          ).join('') + (assignees.length > 3 ? `<div class="tlc-avatar-more">+${assignees.length-3}</div>` : '') +
+          `<span class="tlc-assignee-name">${assignees[0]?.name || ''}</span>`
+        : '<span class="tlc-no-assignee">미배정</span>';
+
+      /* 세부 업무 텍스트 */
+      const detailText = t.desc ? t.desc.slice(0,40) + (t.desc.length > 40 ? '…' : '') : '';
+
+      return `<div class="tlc-card" style="--tc:${tc}" onclick="openTaskDetail(${t.id})">
+        <!-- 헤더: 제목 + 상태태그 -->
+        <div class="tlc-card-header">
+          <div class="tlc-title-wrap">
+            ${t.isImportant ? '<span class="tlc-star">⭐</span>' : ''}
+            <div class="tlc-title">${t.title}</div>
+            <div class="tlc-team">${t.team || ''}</div>
+          </div>
+          <span class="tlc-status-tag" style="color:${st.c};background:${st.bg}">${st.label}</span>
+        </div>
+        <!-- 세부 내용 -->
+        ${detailText ? `<div class="tlc-desc">${detailText}</div>` : ''}
+        <!-- 담당자 + D-Day -->
+        <div class="tlc-meta-row">
+          <div class="tlc-assignees">${avatarsHtml}</div>
+          <span class="tlc-dday ${dd.cls}">${dd.label}</span>
+        </div>
+        <!-- 액션 버튼 -->
+        <div class="tlc-actions">
+          <button class="tlc-btn-edit" onclick="event.stopPropagation();openEditTaskModal(${t.id})">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            수정
+          </button>
+          <button class="tlc-btn-done" onclick="event.stopPropagation();changeStatus(${t.id},'done')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            완료
+          </button>
+        </div>
+        <!-- 프로그레스 바 -->
+        ${prog > 0
+          ? `<div class="tlc-progress-wrap"><div class="tlc-progress-fill" style="width:${prog}%;background:${progColor}"></div></div>`
+          : '<div class="tlc-progress-wrap"></div>'}
+      </div>`;
+    }).join('');
+
+  } else {
+    /* ── 데스크탑: 기존 테이블 ── */
+    const rows = tasks.map(t => {
+      const ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+      const assignee = WS.getUser(ids[0]);
+      const dd = WS.getDdayBadge(t.dueDate);
+      return `<tr onclick="openTaskDetail(${t.id})" style="cursor:pointer">
+        <td>
+          <div style="display:flex;align-items:center;gap:6px">
+            ${t.isImportant ? '<span class="star-icon"><i data-lucide="star"></i></span>' : ''}
+            <span style="font-weight:600;font-size:12.5px">${t.title}</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${t.team || ''}</div>
+        </td>
+        <td>
+          <div class="avatar-group">
+            <div class="avatar" style="background:linear-gradient(135deg,${assignee?.color || '#4f6ef7'},#9747ff)">${assignee?.avatar || '?'}</div>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${assignee?.name || '-'}</div>
+        </td>
+        <td><span class="status-badge status-${t.status}">${WS.getStatusLabel(t.status)}</span></td>
+        <td><span class="dday-badge ${dd.cls}">${dd.label}</span></td>
+        <td>
+          <div class="quick-actions">
+            <button class="qa-btn" onclick="event.stopPropagation();openEditTaskModal(${t.id})">✏️</button>
+            <button class="qa-btn done" onclick="event.stopPropagation();changeStatus(${t.id},'done')">완료</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    el.innerHTML = `<table class="task-table">
+      <thead><tr>
+        <th>업무제목</th><th>담당자</th><th>상태</th><th>마감일</th><th>액션</th>
+      </tr></thead>
+      <tbody>${rows || '<tr><td colspan="5" class="empty-state">데이터가 없습니다.</td></tr>'}</tbody>
+    </table>`;
+  }
+
   refreshIcons();
 }
 
