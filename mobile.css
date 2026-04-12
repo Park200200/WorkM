@@ -2099,3 +2099,18 @@ button#mobileFAB {
   overscroll-behavior: contain !important;
   -webkit-overflow-scrolling: touch !important;
 }
+
+/* ── 내가 기획한: 업무성격 스위치 - 아이콘+텍스트 밀착 가운데 정렬 ── */
+@media (max-width: 767px) {
+  .nt-nature-text {
+    flex: 0 !important;       /* flex:1 제거 → 텍스트가 넓게 퍼지지 않음 */
+    text-align: center !important;
+    line-height: 1.2 !important;
+    white-space: normal !important;
+  }
+  #nt_nature_btn_daily,
+  #nt_nature_btn_period {
+    justify-content: center !important;
+    gap: 4px !important;
+  }
+}
