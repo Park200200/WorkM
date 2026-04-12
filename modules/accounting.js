@@ -1,4 +1,4 @@
-﻿/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    📒 WorkM 회계관리 모듈 (modules/accounting.js)
    예산 → 품의 → 전표 → 입출금 → 보고서 자동 연결 경리 시스템
    ═══════════════════════════════════════════════════════════ */
@@ -594,10 +594,10 @@
         }).join('')) +
       '</div>' +
 
-      '</div>' +
+      '</div>';
 
       // 최근 전표
-      (function(){
+      html += (function(){
         if(recent.length===0) return '<div class="acct-card" style="margin-top:16px"><div class="acct-card-head"><i data-lucide="scroll-text" style="width:16px;height:16px"></i> \ucd5c\uadfc \uc804\ud45c</div><div class="acct-empty">\ub4f1\ub85d\ub41c \uc804\ud45c\uac00 \uc5c6\uc2b5\ub2c8\ub2e4</div></div>';
         var isMobV=window.innerWidth<768;
         var vtype={income:{c:'#22c55e',bg:'rgba(34,197,94,.1)',label:'\uc785\uae08'},expense:{c:'#ef4444',bg:'rgba(239,68,68,.1)',label:'\ucd9c\uae08'}};
@@ -643,7 +643,7 @@
             '</div>';
           }).join('')+
           '</div></div>';
-      })() +
+      })();
 
     el.innerHTML = '<div style="padding-bottom:80px">' + html + '</div>';
     _ri();
