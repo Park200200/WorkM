@@ -3206,3 +3206,47 @@ button#mobileFAB {
     transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
   }
 }
+
+/* ══════════════════════════════════════════════════
+   📱 홈페이지 기본설정(hp-basic) 모바일 최적화
+   ══════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+
+  /* ── 사이트 정보: 4열 → 1열 ── */
+  .hp-site-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* ── 로고 등록: 4열 → 2열 ── */
+  .hp-logo-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* ── 저장 버튼: full-width ── */
+  .hp-save-row {
+    justify-content: stretch !important;
+    margin-top: 12px !important;
+  }
+  .hp-save-row .btn {
+    flex: 1 !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  /* ── 홈페이지 미리보기 버튼 ── */
+  #page-hp-basic .page-header > div:last-child .btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* ── 로고 업로드 박스 높이 ── */
+  #logo_top_h_preview,
+  #logo_top_v_preview,
+  #logo_bot_h_preview,
+  #logo_bot_v_preview {
+    height: 76px !important;
+  }
+}

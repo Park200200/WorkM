@@ -1129,13 +1129,13 @@
               </div>
               <span style="font-size:14px;font-weight:700;color:var(--text-primary)">사이트 정보</span>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;align-items:end">
+            <div class="hp-site-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;align-items:end">
               <div class="form-group" style="margin:0"><label class="form-label">사이트명</label><input class="form-input" id="hp_site_name" placeholder="예: (주)워크엠" /></div>
               <div class="form-group" style="margin:0"><label class="form-label">도메인</label><input class="form-input" id="hp_site_domain" placeholder="예: www.workm.kr" /></div>
               <div class="form-group" style="margin:0"><label class="form-label">대표 이메일</label><input class="form-input" id="hp_site_email" placeholder="예: info@workm.kr" /></div>
               <div class="form-group" style="margin:0"><label class="form-label">대표 전화</label><input class="form-input" id="hp_site_phone" placeholder="예: 02-1234-5678" /></div>
             </div>
-            <div style="display:flex;justify-content:flex-end;margin-top:14px">
+            <div class="hp-save-row" style="display:flex;justify-content:flex-end;margin-top:14px">
               <button class="btn btn-blue" style="min-width:100px" onclick="_hpSiteInfoSave()">
                 <i data-lucide="save" style="width:13px;height:13px"></i> 저장
               </button>
@@ -1151,7 +1151,7 @@
               <span style="font-size:14px;font-weight:700;color:var(--text-primary)">로고 등록</span>
               <span style="font-size:11px;color:var(--text-muted);font-weight:400;margin-left:4px">PNG, JPG, SVG 권장 (투명 배경 PNG 최적)</span>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px">
+            <div class="hp-logo-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px">
 
               <!-- 상단로고 가로 -->
               <div>
@@ -1242,7 +1242,7 @@
               </div>
 
             </div>
-            <div style="display:flex;justify-content:flex-end;margin-top:14px">
+            <div class="hp-save-row" style="display:flex;justify-content:flex-end;margin-top:14px">
               <button class="btn btn-blue" style="min-width:100px" onclick="_hpLogoSave()">
                 <i data-lucide="save" style="width:13px;height:13px"></i> 저장
               </button>
