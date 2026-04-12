@@ -505,7 +505,6 @@ button, .btn, .btn-sm, .btn-icon, .nav-item, .tab-item,
 
   /* 데스크탑 헤더 요소 — 모바일에서도 표시 */
   /* #headerSearch는 표시 유지 */
-  #homepageModeBar,
   #attendancePill,
   .btn-checkin, .btn-checkout {
     display: none !important;
@@ -515,8 +514,12 @@ button, .btn, .btn-sm, .btn-icon, .nav-item, .tab-item,
   /* #acctModeBar는 숨김 제외 — 회계관리 진입 시 표시 */
 
   /* 회계관리 모드바 활성 시 검색바 숨김 */
-  .acct-mode #headerSearch { display: none !important; }
-  .acct-mode #acctModeBar  { display: flex !important; flex: 1; min-width: 0; }
+  .acct-mode #headerSearch     { display: none !important; }
+  .acct-mode #acctModeBar      { display: flex !important; flex: 1; min-width: 0; }
+
+  /* 홈페이지 모드바 활성 시 검색바 숨기고 모드바 표시 */
+  .homepage-mode #headerSearch  { display: none !important; }
+  .homepage-mode #homepageModeBar { display: flex !important; flex: 1; min-width: 0; }
 
   /* 회계관리 모드바 모바일 compact 스타일 */
   #acctModeBar > i[data-lucide="chevron-right"] { display: none !important; }

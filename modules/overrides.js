@@ -5431,6 +5431,9 @@ function _copySyncCmds() {
     if (acctBar) acctBar.style.display = (mode === 'accounting') ? 'flex' : 'none';
     if (hpBar)   hpBar.style.display   = (mode === 'homepage')   ? 'flex' : 'none';
     if (mobTtl)  mobTtl.style.display  = (mode === 'default')    ? 'flex' : 'none';
+    /* body 클래스로 CSS 모드바 제어 */
+    document.body.classList.toggle('acct-mode',     mode === 'accounting');
+    document.body.classList.toggle('homepage-mode', mode === 'homepage');
 
     var bar = document.getElementById('mobileTabBar');
     if (!bar) return;
