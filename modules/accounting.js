@@ -710,7 +710,52 @@
     if (cats.length === 0) {
       html += '<div class="acct-empty" style="padding:20px">' + currentYear + '년 등록된 예산구분이 없습니다. "구분 추가" 버튼으로 먼저 등록하세요.</div>';
     } else {
-      html += '<div style="display:flex;gap:12px;flex-wrap:wrap">';
+      /* 카테고리별 컬러 팔레트 */
+      var BC_COLORS = ['#4f6ef7','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#f97316','#14b8a6'];
+      function _catColor(idx) { return BC_COLORS[idx % BC_COLORS.length]; }
+      var isMobBudget = window.innerWidth < 768;
+
+      if (isMobBudget) {
+        /* ── 모바일: 글래스모피즘 + 컬러바 카드 ── */
+        html += '<div style="display:flex;flex-direction:column;gap:11px">';
+        cats.forEach(function (c, idx) {
+          var isActive = String(c.id) === String(_selectedBudgetCatId);
+          var catBudgets = budgets.filter(function (b) { return b.catId === c.id; });
+          var totalAmt = 0; catBudgets.forEach(function (b) { totalAmt += (b.amount || 0); });
+          var totalSpent = 0; catBudgets.forEach(function (b) { totalSpent += (b.spent || 0); });
+          var pct = totalAmt > 0 ? Math.round(totalSpent / totalAmt * 100) : 0;
+          var cc = _catColor(idx);
+          var barColor = pct > 100 ? '#ef4444' : pct > 80 ? '#f59e0b' : cc;
+          html +=
+            '<div onclick="ACCT.selectBudgetCat(\'' + c.id + '\')" style="' +
+              'position:relative;border-radius:18px;overflow:hidden;cursor:pointer;' +
+              'background:' + (isActive ? 'rgba(79,110,247,.07)' : 'var(--bg-card)') + ';' +
+              'border:1.5px solid ' + (isActive ? cc : 'var(--border-color)') + ';' +
+              'box-shadow:' + (isActive ? '0 6px 24px ' + cc + '28' : '0 2px 10px rgba(0,0,0,0.06)') + ';' +
+              'backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:all 0.2s">' +
+            '<div style="position:absolute;top:0;left:0;bottom:0;width:4px;background:' + cc + ';border-radius:18px 0 0 18px"></div>' +
+            '<div style="padding:14px 14px 10px 18px">' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">' +
+                '<div style="font-size:16px;font-weight:900;color:' + (isActive ? cc : 'var(--text-primary)') + '">' + _esc(c.name) + '</div>' +
+                (isActive ? '<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:' + cc + '22;color:' + cc + '">\uc120\ud0dd</span>' : '') +
+              '</div>' +
+              '<div style="font-size:12px;color:var(--text-muted);margin-bottom:2px">' + _esc(c.bank || '-') + '</div>' +
+              '<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:9px">' + (c.periodFrom || '') + ' ~ ' + (c.periodTo || '') + '</div>' +
+              '<div style="font-size:13px;font-weight:800;color:var(--text-secondary)">\uc608\uc0b0\ud56d\ubaa9 <span style="color:' + cc + '">' + catBudgets.length + '</span>\uac74 &middot; \ucd1d <span style="color:var(--text-primary)">' + _fmtW(totalAmt) + '</span></div>' +
+            '</div>' +
+            '<div style="display:flex;border-top:1px solid var(--border-color)">' +
+              '<button onclick="event.stopPropagation();ACCT.openBudgetCatModal(\'' + c.id + '\')" style="flex:1;height:40px;background:transparent;border:none;border-right:1px solid var(--border-color);font-size:12.5px;font-weight:700;color:var(--text-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-family:inherit;transition:background 0.15s">\uc218\uc815</button>' +
+              '<button onclick="event.stopPropagation();ACCT.deleteBudgetCat(\'' + c.id + '\')" style="flex:1;height:40px;background:transparent;border:none;font-size:12.5px;font-weight:700;color:#ef4444;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-family:inherit;transition:background 0.15s">\uc0ad\uc81c</button>' +
+            '</div>' +
+            '<div style="height:4px;background:var(--border-color);border-radius:0 0 16px 16px;overflow:hidden">' +
+              '<div style="height:100%;width:' + Math.min(100, pct) + '%;background:' + barColor + ';transition:width 0.6s"></div>' +
+            '</div>' +
+            '</div>';
+        });
+        html += '</div>';
+      } else {
+        /* ── 데스크탑: 기존 ── */
+        html += '<div style="display:flex;gap:12px;flex-wrap:wrap">';
       cats.forEach(function (c) {
         var isActive = String(c.id) === String(_selectedBudgetCatId);
         var catBudgets = budgets.filter(function (b) { return b.catId === c.id; });
@@ -730,8 +775,9 @@
           '<i data-lucide="calendar" style="width:12px;height:12px"></i> ' + (c.periodFrom || '') + ' ~ ' + (c.periodTo || '') + '</div>' +
           '<div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-top:6px">예산항목 ' + catBudgets.length + '건 · 총 ' + _fmtW(totalAmt) + '</div>' +
           '</div>';
-      });
-      html += '</div>';
+        });
+        html += '</div>';
+      }
     }
     html += '</div>';
 
