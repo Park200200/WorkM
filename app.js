@@ -1295,9 +1295,18 @@ function renderStaffStatusBadge(status) {
       if (typeof renderPage_StaffMgmt === 'function') renderPage_StaffMgmt();
     }
 
-    /* 업무분장 / 업무목록 (taskListArea를 공유하는 모든 뷰) */
+    /* 업무분장 / 업무목록 */
     if (_isActivePage('page-tasks')) {
       if (typeof renderPage_Tasks === 'function') renderPage_Tasks();
+    }
+
+    /* 회계관리: 현재 활성 서브페이지 재렌더링 */
+    if (_isActivePage('page-accounting')) {
+      var acctSub = document.querySelector('.acct-sub-page[style*="display: block"], .acct-sub-page[style*="display:block"]');
+      var acctSubId = acctSub ? acctSub.id : '';
+      if (acctSubId === 'acct-budget' && typeof ACCT !== 'undefined' && typeof ACCT.renderBudget === 'function') {
+        ACCT.renderBudget();
+      }
     }
   });
 })();
