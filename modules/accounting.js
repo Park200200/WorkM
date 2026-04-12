@@ -1,4 +1,4 @@
-﻿/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    📒 WorkM 회계관리 모듈 (modules/accounting.js)
    예산 → 품의 → 전표 → 입출금 → 보고서 자동 연결 경리 시스템
    ═══════════════════════════════════════════════════════════ */
@@ -2459,7 +2459,7 @@
       '<tr><th>\uC9C0\uCD9C\uC77C\uC790</th><td>' + (v.date || '') + '</td>' +
       '<th>\uC99D\uBE59\uAD6C\uBD84</th><td>' + evidType + '</td></tr>' +
       '<tr><th>\uACB0\uC81C\uC77C\uC790</th><td>' + payDate + '</td>' +
-      '<th>\uAC70 \uB798 \uCC98</th><td>' + counterpart + '</td></tr>' +
+      '<th>거래처</th><td>' + counterpart + '</td></tr>' +
       '<tr><th>\uBB3C \uD488 \uBA85</th><td>' + itemName + '</td>' +
       '<th>\uC6A9 \u00A0 \u00A0 \uB3C4</th><td>' + purpose + '</td></tr>' +
       '<tr><th class="amt-th">\uC9C0\uCD9C\uAE08\uC561</th>' +
@@ -2930,7 +2930,7 @@
       { key: 'is', label: '\uC190\uC775\uACC4\uC0B0\uC11C', icon: 'trending-up' },
       { key: 'tb', label: '\uD569\uACC4\uC794\uC561\uC2DC\uC0B0\uD45C', icon: 'table' },
       { key: 'cb', label: '\uD604\uAE08\uCD9C\uB0A9\uC7A5', icon: 'banknote' },
-      { key: 'al', label: '\uAC70 \uB798 \uCC98\uC6D0\uC7A5', icon: 'building-2' }
+      { key: 'al', label: '거래처원장', icon: 'building-2' }
     ];
 
     var html = '<div class="page-header" style="position:sticky;top:0;z-index:10;background:var(--bg-primary)"><div>' +
@@ -3364,7 +3364,7 @@
   function _renderAL(vouchers, year) {
     var h = '<div class="acct-card"><div class="acct-card-head" style="display:flex;align-items:center;justify-content:space-between">' +
       '<div style="display:flex;align-items:center;gap:8px"><i data-lucide="building-2" style="width:16px;height:16px"></i>' +
-      '<span style="font-weight:800">\uac70 \ub798 \ucc98\uc6d0\uc7a5</span>' +
+      '<span style="font-weight:800">거래처원장</span>' +
       '<span style="font-size:12px;color:var(--text-muted)">' + year + '\ub144\ub3c4</span></div>' +
       '<button class="btn" onclick="window.print()" style="font-size:11px;padding:4px 10px"><i data-lucide="printer" style="width:12px;height:12px"></i> \uc778\uc1c4</button></div>';
 
@@ -3377,7 +3377,7 @@
 
     var cpNames = Object.keys(byCounterpart).sort();
     if (cpNames.length === 0) {
-      return h + '<div class="acct-empty">\uac70 \ub798 \ucc98 \ub370\uc774\ud130\uac00 \uc5c6\uc2b5\ub2c8\ub2e4</div></div>';
+      return h + '<div class="acct-empty">거래처 데이터가 없습니다</div></div>';
     }
 
     var isMobAL = window.innerWidth < 768;
