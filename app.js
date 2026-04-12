@@ -1866,13 +1866,13 @@ function renderDailyReportTasks() {
         '<div style="display:grid;grid-template-columns:1fr auto auto;gap:5px 6px;align-items:center">' +
           // Row 1
           '<span style="font-weight:700;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary)">' + (t.isImportant ? '⭐ ' : '') + t.title + '</span>' +
-          '<div style="display:flex;align-items:center;justify-content:center">' + assignerHtml + '</div>' +
+          '<div style="display:flex;align-items:center;justify-content:flex-start">' + assignerHtml + '</div>' +
           '<span class="dday-badge ' + dd.cls + '" style="font-size:10px;justify-self:end">' + dd.label + '</span>' +
           // Row 2
           '<div onclick="event.stopPropagation();openScheduleProgressModal(' + t.id + ')" style="height:5px;background:var(--border-color);border-radius:3px;overflow:hidden;cursor:pointer">' +
             '<div style="height:100%;border-radius:3px;background:var(--accent-blue);width:' + (t.progress||0) + '%"></div>' +
           '</div>' +
-          '<span style="font-size:10px;font-weight:700;color:var(--text-muted);text-align:center;white-space:nowrap">' + (t.progress||0) + '%</span>' +
+          '<span style="font-size:10px;font-weight:700;color:var(--text-muted);text-align:left;white-space:nowrap">' + (t.progress||0) + '%</span>' +
           '<div style="display:flex;align-items:center;gap:4px;justify-content:flex-end">' +
             '<span class="status-badge status-' + t.status + '" style="font-size:10px">' + WS.getStatusLabel(t.status) + '</span>' +
             '<span>' + reportBadge + '</span>' +
