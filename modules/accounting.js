@@ -1,4 +1,4 @@
-﻿/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    📒 WorkM 회계관리 모듈 (modules/accounting.js)
    예산 → 품의 → 전표 → 입출금 → 보고서 자동 연결 경리 시스템
    ═══════════════════════════════════════════════════════════ */
@@ -2113,7 +2113,7 @@
     var vouchers = _vouchers();
     vouchers.push({
       id: vId, date: date, type: 'expense',
-      description: desc,
+      description: desc, counterpart: counter,
       entries: [
         { side: 'debit', accountCode: code, amount: amt },
         { side: 'credit', accountCode: '1010', amount: amt }
@@ -2687,7 +2687,7 @@
     var vouchers = _vouchers();
     vouchers.push({
       id: vId, date: date, type: 'income',
-      description: desc,
+      description: desc, counterpart: counter,
       entries: [
         { side: 'debit', accountCode: '1020', amount: amt },
         { side: 'credit', accountCode: code, amount: amt }
