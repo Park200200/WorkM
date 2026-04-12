@@ -565,7 +565,7 @@ function openReceivedTaskDetail(taskId) {
           <span class="dday-badge ${dd.cls}">${dd.label}</span>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:${window.innerWidth<=767?'repeat(2,1fr)':'repeat(4,1fr)'};gap:8px;margin-bottom:14px">
         <div style="background:var(--bg-secondary);border-radius:10px;padding:10px 12px">
           <div style="font-size:10px;color:var(--text-muted);font-weight:600;margin-bottom:4px">지시일</div>
           <div style="font-size:13px;font-weight:700;color:var(--text-primary)">${instrDate}</div>
