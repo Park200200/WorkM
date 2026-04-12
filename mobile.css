@@ -1770,3 +1770,8 @@ button#mobileFAB {
   #drExecTableWrap { overflow-x: hidden !important; }
   #drExecTableWrap .task-table { min-width: 0 !important; width: 100% !important; }
 }
+
+/* ── 업무보고 등록/수정 폼: 모바일 단일 열 ── */
+@media (max-width: 767px) {
+  #drExecFormGrid { grid-template-columns: 1fr !important; }
+}
