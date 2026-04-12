@@ -546,7 +546,7 @@ function openReceivedTaskDetail(taskId) {
   document.getElementById('tdModalTitle').innerHTML =
     `<i data-lucide="file-text" style="width:17px;height:17px;color:var(--accent-blue);vertical-align:middle;margin-right:5px;flex-shrink:0"></i>`
     + `<span style="color:var(--text-primary)">${t.title}</span>`
-    + `<span style="color:var(--text-muted);font-weight:500;margin:${window.innerWidth<=767?'0 3px':'0 6px'}">:</span>`
+    + `<span style="color:var(--text-muted);font-weight:500;margin:${window.innerWidth<=767?'0':'0 6px'}">:</span>`
     + `<span style="color:var(--accent-blue)">${window.innerWidth<=767?'보고서 작성':'진행보고서 작성'}</span>`
     + `<span style="font-size:12px;font-weight:700;background:var(--accent-blue);color:#fff;border-radius:20px;padding:2px 9px;vertical-align:middle;margin-left:8px;opacity:.85">${progress}%</span>`;
   refreshIcons && refreshIcons();
