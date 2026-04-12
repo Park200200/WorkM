@@ -657,9 +657,9 @@ function openReceivedTaskDetail(taskId) {
       </div>
       <!-- 하단: 단계 선택 + 추가 버튼 -->
       <input type="hidden" id="td_reportIconVal" value="message-square|진행보고|#4f6ef7">
-      <div style="display:flex;gap:8px;align-items:center">
+      <div style="display:flex;gap:8px;align-items:stretch">
         ${(t.processTags && t.processTags.length > 0) ? `
-        <div style="position:relative;flex-shrink:0">
+        <div style="position:relative;flex:1">
           <select id="td_stepSelect"
             onchange="_updateStepChip('${t.id}')"
             style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;z-index:2">
@@ -672,19 +672,18 @@ function openReceivedTaskDetail(taskId) {
             }).join('')}
           </select>
           <span id="td_stepChip_${t.id}"
-            style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;
+            style="display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 12px;
                    border-radius:20px;background:rgba(79,110,247,.12);
                    border:1.5px solid rgba(79,110,247,.35);
                    font-size:12px;font-weight:700;color:var(--accent-blue);
-                   white-space:nowrap;cursor:pointer;user-select:none">
+                   white-space:nowrap;cursor:pointer;user-select:none;height:100%;box-sizing:border-box">
             <i id="td_stepIcon_${t.id}" data-lucide="list-ordered" style="width:12px;height:12px"></i>
             <span id="td_stepLabel_${t.id}">단계 선택</span>
             <i data-lucide="chevron-down" style="width:11px;height:11px;opacity:.6"></i>
           </span>
         </div>` : `<input type="hidden" id="td_stepSelect" value="">`}
-        <div style="flex:1"></div>
         <button onclick="addProgressReport('${t.id}')" class="btn btn-blue"
-          style="padding:5px 11px;white-space:nowrap;border-radius:20px;font-size:11.5px;font-weight:700;flex-shrink:0">
+          style="flex:1;justify-content:center;padding:7px 12px;white-space:nowrap;border-radius:20px;font-size:12px;font-weight:700">
           <i data-lucide="plus" style="width:12px;height:12px"></i> 추가
         </button>
       </div>
