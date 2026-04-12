@@ -4801,29 +4801,53 @@ function _copySyncCmds() {
 (function() {
   'use strict';
 
+  /* ── 4-탭 메뉴 ── */
   var TAB_MENUS = [
-    { id: 'dashboard',  icon: 'home',       label: '내책상',  page: 'dashboard',   badge: 'sideTaskBadge' },
-    { id: 'tasks',      icon: 'briefcase',  label: '업무',    page: 'tasks',       badge: null },
-    { id: 'schedule',   icon: 'calendar',   label: '일정',    page: 'schedule',    badge: null },
-    { id: 'accounting', icon: 'calculator', label: '회계',    page: 'accounting',  badge: null },
-    { id: '_more',      icon: 'grid-3x3',   label: '더보기',  page: null,          badge: null }
+    { id: 'dashboard', icon: 'home',     label: '내책상', page: 'dashboard', badge: 'sideTaskBadge' },
+    { id: '_jinhaeng', icon: 'bar-chart-3', label: '진행', page: null, drawer: 'jinhaeng', badge: null },
+    { id: '_damdang',  icon: 'user',     label: '담당',   page: null, drawer: 'damdang',  badge: null },
+    { id: '_settings', icon: 'sliders',  label: '설정',   page: null, drawer: 'settings', badge: null }
   ];
 
-  var DRAWER_MENUS = [
-    { icon: 'settings',   label: '진행현황', color: '#6b7280', bg: 'rgba(107,114,128,.12)', page: 'settings' },
-    { icon: 'bar-chart-3',label: '실적보기', color: '#f59e0b', bg: 'rgba(245,158,11,.12)',  page: 'performance' },
-    { icon: 'building-2', label: '본사정보', color: '#4f6ef7', bg: 'rgba(79,110,247,.12)',  page: 'hq-info' },
-    { icon: 'contact',    label: '직원관리', color: '#9747ff', bg: 'rgba(151,71,255,.12)',  page: 'staff-mgmt' },
-    { icon: 'sliders',    label: '기타설정', color: '#06b6d4', bg: 'rgba(6,182,212,.12)',   page: 'rank-mgmt' },
-    { icon: 'globe',      label: '홈페이지', color: '#22c55e', bg: 'rgba(34,197,94,.12)',   page: 'homepage' },
-    { icon: 'user',       label: '내설정',   color: '#ef4444', bg: 'rgba(239,68,68,.12)',   page: 'profile' },
-    { icon: 'users',      label: '업무분장', color: '#8b5cf6', bg: 'rgba(139,92,246,.12)',  page: 'tasks' }
-  ];
+  /* ── 드로어 카테고리별 메뉴 ── */
+  var DRAWER_MENUS = {
+    jinhaeng: [
+      { icon: 'bar-chart-3', label: '진행현황', color: '#4f6ef7', bg: 'rgba(79,110,247,.12)',  page: 'settings' },
+      { icon: 'calendar',    label: '일정보기', color: '#22c55e', bg: 'rgba(34,197,94,.12)',   page: 'schedule' },
+      { icon: 'bar-chart-2', label: '실적보기', color: '#f59e0b', bg: 'rgba(245,158,11,.12)',  page: 'performance' }
+    ],
+    damdang: [
+      { icon: 'user',       label: '내의정보', color: '#4f6ef7', bg: 'rgba(79,110,247,.12)',  page: 'profile' },
+      { icon: 'calculator', label: '회계관리', color: '#f59e0b', bg: 'rgba(245,158,11,.12)',  page: 'accounting' },
+      { icon: 'globe',      label: '홈페이지', color: '#22c55e', bg: 'rgba(34,197,94,.12)',   page: 'homepage' }
+    ],
+    settings: [
+      { icon: 'building-2', label: '본사정보', color: '#4f6ef7', bg: 'rgba(79,110,247,.12)',  page: 'hq-info' },
+      { icon: 'contact',    label: '직원관리', color: '#9747ff', bg: 'rgba(151,71,255,.12)',  page: 'staff-mgmt' },
+      { icon: 'sliders',    label: '기타설정', color: '#06b6d4', bg: 'rgba(6,182,212,.12)',   page: 'rank-mgmt' },
+      { icon: 'users',      label: '업무분장', color: '#8b5cf6', bg: 'rgba(139,92,246,.12)',  page: 'tasks' }
+    ]
+  };
+
+  /* ── 페이지 → 부모 탭 매핑 ── */
+  var PAGE_TO_TAB = {
+    'dashboard':  'dashboard',
+    'settings':   '_jinhaeng',
+    'schedule':   '_jinhaeng',
+    'performance':'_jinhaeng',
+    'profile':    '_damdang',
+    'accounting': '_damdang',
+    'homepage':   '_damdang',
+    'hq-info':    '_settings',
+    'staff-mgmt': '_settings',
+    'rank-mgmt':  '_settings',
+    'tasks':      '_settings'
+  };
 
   var PAGE_NAMES = {
     dashboard:'내의책상', tasks:'업무분장', schedule:'일정보기', accounting:'회계관리',
     settings:'진행현황', performance:'실적보기', 'hq-info':'본사정보',
-    'staff-mgmt':'직원관리', 'rank-mgmt':'기타설정', homepage:'홈페이지', profile:'개인설정'
+    'staff-mgmt':'직원관리', 'rank-mgmt':'기타설정', homepage:'홈페이지', profile:'내의정보'
   };
 
   var FAB_ACTIONS = {
@@ -4845,6 +4869,7 @@ function _copySyncCmds() {
     'grid-3x3':  'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',
     settings:    'M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
     'bar-chart-3':'M3 3v18h18 M18 17V9 M13 17V5 M8 17v-3',
+    'bar-chart-2':'M18 20V10 M12 20V4 M6 20v-6',
     'building-2':'M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2 M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2',
     contact:     'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75',
     sliders:     'M4 21v-7 M4 10V3 M12 21v-9 M12 8V3 M20 21v-5 M20 12V3 M1 14h6 M9 8h6 M17 16h6',
@@ -4875,20 +4900,26 @@ function _copySyncCmds() {
       btn.innerHTML = iconSVG(m.icon) +
         '<span class="mob-tab-label">' + m.label + '</span>';
       btn.addEventListener('click', function() {
-        if (m.page) mobileNav(m.page);
-        else openMobileDrawer();
+        if (m.page) {
+          mobileNav(m.page);
+          closeMobileDrawer();
+        } else if (m.drawer) {
+          openMobileDrawer(m.drawer, m.id);
+        }
       });
       bar.appendChild(btn);
     });
     sidebar.appendChild(bar);
   }
 
-  /* 드로어 채우기 */
-  function buildDrawer() {
+  /* 드로어 채우기 - 카테고리별 */
+  function buildDrawer(category) {
     var grid = document.getElementById('mobileDrawerGrid');
-    if (!grid || grid.dataset.built) return;
-    grid.dataset.built = '1';
-    DRAWER_MENUS.forEach(function(m) {
+    if (!grid) return;
+    grid.innerHTML = '';  // 카테고리마다 새로 빌드
+
+    var menus = DRAWER_MENUS[category] || [];
+    menus.forEach(function(m) {
       var item = document.createElement('div');
       item.className = 'mob-drawer-item';
       item.innerHTML =
@@ -4904,8 +4935,9 @@ function _copySyncCmds() {
   }
 
   function syncTabActive(pid) {
+    var tabId = PAGE_TO_TAB[pid] || pid;
     document.querySelectorAll('.mob-tab').forEach(function(t) {
-      t.classList.toggle('active', t.getAttribute('data-tab') === pid);
+      t.classList.toggle('active', t.getAttribute('data-tab') === tabId);
     });
   }
 
@@ -4935,8 +4967,14 @@ function _copySyncCmds() {
     fab.style.display = 'none'; // FAB 비활성화
   }
 
-  window.openMobileDrawer = function() {
-    buildDrawer();
+  window.openMobileDrawer = function(category, tabId) {
+    buildDrawer(category || 'settings');
+    // 드로어를 연 탭을 active로 표시
+    if (tabId) {
+      document.querySelectorAll('.mob-tab').forEach(function(t) {
+        t.classList.toggle('active', t.getAttribute('data-tab') === tabId);
+      });
+    }
     var dr = document.getElementById('mobileDrawer');
     var ov = document.getElementById('mobileDrawerOverlay');
     if (dr) dr.classList.add('open');
@@ -4986,7 +5024,7 @@ function _copySyncCmds() {
     // 뱃지 동기화
     setInterval(function() {
       var s = document.getElementById('sideTaskBadge');
-      var m = document.querySelector('.mob-tab[data-tab="tasks"] .mob-badge');
+      var m = document.querySelector('.mob-tab[data-tab="dashboard"] .mob-badge');
       if (s && m) { m.textContent = s.textContent; m.style.display = parseInt(s.textContent) > 0 ? 'flex' : 'none'; }
     }, 2000);
 
