@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════
    📒 WorkM 회계관리 모듈 (modules/accounting.js)
    예산 → 품의 → 전표 → 입출금 → 보고서 자동 연결 경리 시스템
    ═══════════════════════════════════════════════════════════ */
@@ -901,7 +901,7 @@
     html += _budgetModalHTML();
     html += _budgetCatModalHTML();
 
-    el.innerHTML = html;
+    el.innerHTML = '<div style="padding-bottom:80px">' + html + '</div>';
     _ri();
   }
 
@@ -1273,7 +1273,7 @@
     html += _approvalModalHTML();
     html += _approveConfirmModalHTML();
 
-    el.innerHTML = html;
+    el.innerHTML = '<div style="padding-bottom:80px">' + html + '</div>';
     _ri();
   }
 
@@ -2059,7 +2059,7 @@
       html += '</tbody></table>';
     }
     html += '</div>';
-    el.innerHTML = html;
+    el.innerHTML = '<div style="padding-bottom:80px">' + html + '</div>';
     _ri();
   }
 
@@ -2220,7 +2220,7 @@
     // 출금전표 상세 모달
     html += _withdrawalDetailModalHTML();
 
-    el.innerHTML = html;
+    el.innerHTML = '<div style="padding-bottom:80px">' + html + '</div>';
     _ri();
   }
 
@@ -2664,7 +2664,7 @@
       html += '</tbody></table>';
     }
     html += '</div>';
-    el.innerHTML = html;
+    el.innerHTML = '<div style="padding-bottom:80px">' + html + '</div>';
     _ri();
   }
 
@@ -2936,7 +2936,7 @@
     else if (_reportTab === 'cb') html += _renderCB(vouchers, balances, year);
     else if (_reportTab === 'al') html += _renderAL(vouchers, year);
 
-    el.innerHTML = html;
+    el.innerHTML = '<div style="padding-bottom:80px">' + html + '</div>';
     _ri();
   }
 
@@ -3347,7 +3347,7 @@
     // 전표 등록 모달
     html += _voucherModalHTML();
 
-    el.innerHTML = html;
+    el.innerHTML = '<div style="padding-bottom:80px">' + html + '</div>';
     _ri();
   }
 
