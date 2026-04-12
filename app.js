@@ -1862,21 +1862,23 @@ function renderDailyReportTasks() {
     var isMob = window.matchMedia && window.matchMedia('(max-width: 767px)').matches;
     if (isMob) {
       return '<tr onclick="openTaskDetail(' + t.id + ')" style="cursor:pointer"><td colspan="9" data-label="" style="display:block !important;padding:8px 4px !important;border:none">' +
-        // ─ CSS Grid: 1fr(업무명/진행바) | auto(아바타 or 스케줄배지 / %) | auto(D-Day/상태+보고) ─
-        '<div style="display:grid;grid-template-columns:1fr auto auto;gap:5px 6px;align-items:center">' +
-          // Row 1
+        // ─ 3열 CSS Grid: 1fr | auto | auto ─
+        // Row1: 업무명           | 지시자(아바타) | D-Day
+        // Row2: 진행바+%         | 상태           | 보고
+        '<div style="display:grid;grid-template-columns:1fr auto auto;gap:5px 8px;align-items:center">' +
+          // ── Row 1 ──
           '<span style="font-weight:700;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary)">' + (t.isImportant ? '⭐ ' : '') + t.title + '</span>' +
-          '<div style="display:flex;align-items:center;justify-content:flex-start">' + assignerHtml + '</div>' +
-          '<span class="dday-badge ' + dd.cls + '" style="font-size:10px;justify-self:end">' + dd.label + '</span>' +
-          // Row 2
-          '<div onclick="event.stopPropagation();openScheduleProgressModal(' + t.id + ')" style="height:5px;background:var(--border-color);border-radius:3px;overflow:hidden;cursor:pointer">' +
-            '<div style="height:100%;border-radius:3px;background:var(--accent-blue);width:' + (t.progress||0) + '%"></div>' +
+          '<div style="display:flex;align-items:center;justify-content:flex-start;white-space:nowrap">' + assignerHtml + '</div>' +
+          '<span class="dday-badge ' + dd.cls + '" style="font-size:10px;white-space:nowrap;justify-self:end">' + dd.label + '</span>' +
+          // ── Row 2 ──
+          '<div onclick="event.stopPropagation();openScheduleProgressModal(' + t.id + ')" style="display:flex;align-items:center;gap:5px;cursor:pointer;min-width:0">' +
+            '<div style="flex:1;height:5px;background:var(--border-color);border-radius:3px;overflow:hidden">' +
+              '<div style="height:100%;border-radius:3px;background:var(--accent-blue);width:' + (t.progress||0) + '%"></div>' +
+            '</div>' +
+            '<span style="font-size:10px;font-weight:700;color:var(--text-muted);white-space:nowrap;flex-shrink:0">' + (t.progress||0) + '%</span>' +
           '</div>' +
-          '<span style="font-size:10px;font-weight:700;color:var(--text-muted);text-align:left;white-space:nowrap">' + (t.progress||0) + '%</span>' +
-          '<div style="display:flex;align-items:center;gap:4px;justify-content:flex-end">' +
-            '<span class="status-badge status-' + t.status + '" style="font-size:10px">' + WS.getStatusLabel(t.status) + '</span>' +
-            '<span>' + reportBadge + '</span>' +
-          '</div>' +
+          '<span class="status-badge status-' + t.status + '" style="font-size:10px;white-space:nowrap;justify-self:start">' + WS.getStatusLabel(t.status) + '</span>' +
+          '<span style="justify-self:end">' + reportBadge + '</span>' +
         '</div>' +
         '</td></tr>';
     }
