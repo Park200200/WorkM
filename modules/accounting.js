@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════
    📒 WorkM 회계관리 모듈 (modules/accounting.js)
    예산 → 품의 → 전표 → 입출금 → 보고서 자동 연결 경리 시스템
    ═══════════════════════════════════════════════════════════ */
@@ -3364,62 +3364,137 @@
   function _renderAL(vouchers, year) {
     var h = '<div class="acct-card"><div class="acct-card-head" style="display:flex;align-items:center;justify-content:space-between">' +
       '<div style="display:flex;align-items:center;gap:8px"><i data-lucide="building-2" style="width:16px;height:16px"></i>' +
-      '<span style="font-weight:800">\uAC70 \uB798 \uCC98\uC6D0\uC7A5</span>' +
-      '<span style="font-size:12px;color:var(--text-muted)">' + year + '\uB144\uB3C4</span></div>' +
-      '<button class="btn" onclick="window.print()" style="font-size:11px;padding:4px 10px"><i data-lucide="printer" style="width:12px;height:12px"></i> \uC778\uC1C4</button></div>';
+      '<span style="font-weight:800">\uac70 \ub798 \ucc98\uc6d0\uc7a5</span>' +
+      '<span style="font-size:12px;color:var(--text-muted)">' + year + '\ub144\ub3c4</span></div>' +
+      '<button class="btn" onclick="window.print()" style="font-size:11px;padding:4px 10px"><i data-lucide="printer" style="width:12px;height:12px"></i> \uc778\uc1c4</button></div>';
 
-    // 거래처별 그룹
     var byCounterpart = {};
     vouchers.forEach(function (v) {
-      var cp = v.counterpart || '(\uBBF8\uC9C0\uC815)';
+      var cp = v.counterpart || '(\ubbf8\uc9c0\uc815)';
       if (!byCounterpart[cp]) byCounterpart[cp] = [];
       byCounterpart[cp].push(v);
     });
 
     var cpNames = Object.keys(byCounterpart).sort();
     if (cpNames.length === 0) {
-      return h + '<div class="acct-empty">\uAC70 \uB798 \uCC98 \uB370\uC774\uD130\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4</div></div>';
+      return h + '<div class="acct-empty">\uac70 \ub798 \ucc98 \ub370\uc774\ud130\uac00 \uc5c6\uc2b5\ub2c8\ub2e4</div></div>';
+    }
+
+    var isMobAL = window.innerWidth < 768;
+    var TYPE = {
+      ar:     { label: '\ubbf8\uc218\uae08(\uc678\uc0c1)', c: '#f59e0b', bg: 'rgba(245,158,11,.1)' },
+      arCol:  { label: '\ud68c\uc218(\uc218\uae08)', c: '#22c55e', bg: 'rgba(34,197,94,.1)' },
+      cash:   { label: '\ud604\uae08', c: '#4f6ef7', bg: 'rgba(79,110,247,.1)' },
+      bank:   { label: '\uacc4\uc88c', c: '#4f6ef7', bg: 'rgba(79,110,247,.1)' },
+      other:  { label: '\uae30\ud0c0', c: '#64748b', bg: 'rgba(100,116,139,.1)' }
+    };
+
+    function _txType(v) {
+      var has1030D = false, has1030C = false;
+      (v.entries || []).forEach(function(e) {
+        if (e.accountCode === '1030' && e.side === 'debit')  has1030D = true;
+        if (e.accountCode === '1030' && e.side === 'credit') has1030C = true;
+      });
+      if (has1030D) return 'ar';
+      if (has1030C) return 'arCol';
+      var pm = (v.paymentMethod || '');
+      if (pm === '\ud604\uae08') return 'cash';
+      if (pm === '\uacc4\uc88c\uc774\uccb4' || pm === '\uce74\ub4dc') return 'bank';
+      return 'other';
     }
 
     cpNames.forEach(function (cp) {
       var txns = byCounterpart[cp].sort(function (a, b) { return (a.date || '').localeCompare(b.date || ''); });
-      var cpDr = 0, cpCr = 0;
+      var cpDr = 0, cpCr = 0, arBal = 0, totalAR = 0, totalCol = 0;
 
-      h += '<div style="margin:14px 0 6px;padding:0 14px;display:flex;align-items:center;gap:8px">' +
-        '<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;background:var(--accent-blue);color:#fff;font-size:11px;font-weight:800">' +
-        cp.charAt(0) + '</span>' +
-        '<span style="font-size:13.5px;font-weight:800">' + _esc(cp) + '</span>' +
-        '<span style="font-size:11px;color:var(--text-muted)">' + txns.length + '\uAC74</span></div>';
-
-      h += '<table style="width:100%;border-collapse:collapse;table-layout:fixed">' +
-        '<colgroup><col style="width:90px"><col><col style="width:100px"><col style="width:100px"></colgroup>' +
-        '<thead><tr style="background:var(--bg-tertiary);border-bottom:1px solid var(--border-color)">' +
-        '<th style="padding:6px 10px;text-align:left;font-size:11px">\uB0A0\uC9DC</th>' +
-        '<th style="padding:6px 10px;text-align:left;font-size:11px">\uC801\uC694</th>' +
-        '<th style="padding:6px 10px;text-align:right;font-size:11px">\uCC28\uBCC0</th>' +
-        '<th style="padding:6px 10px;text-align:right;font-size:11px">\uB300\uBCC0</th></tr></thead><tbody>';
-
-      txns.forEach(function (v) {
+      var rows = txns.map(function (v) {
         var dr = 0, cr = 0;
         (v.entries || []).forEach(function (e) {
           if (e.side === 'debit') dr += e.amount; else cr += e.amount;
         });
+        var tt = _txType(v);
+        if (tt === 'ar')    { arBal += dr; totalAR  += dr; }
+        if (tt === 'arCol') { arBal -= cr; totalCol += cr; }
         cpDr += dr; cpCr += cr;
-        h += '<tr style="border-bottom:1px solid var(--border-color)">' +
-          '<td style="padding:6px 10px;font-size:12px;color:var(--text-muted)">' + (v.date || '') + '</td>' +
-          '<td style="padding:6px 10px;font-size:12px">' + _esc(v.description || '') + '</td>' +
-          '<td style="padding:6px 10px;text-align:right;font-size:12px;font-weight:600;color:#4f6ef7">' + (dr ? _fmtW(dr) : '') + '</td>' +
-          '<td style="padding:6px 10px;text-align:right;font-size:12px;font-weight:600;color:#ef4444">' + (cr ? _fmtW(cr) : '') + '</td></tr>';
+        return { v: v, dr: dr, cr: cr, tt: tt, arBal: arBal };
       });
 
-      h += '<tr style="border-top:1.5px solid var(--text-primary);background:var(--bg-tertiary)">' +
-        '<td colspan="2" style="padding:6px 10px;font-weight:700;text-align:right;font-size:12px">\uC18C\uACC4</td>' +
-        '<td style="padding:6px 10px;text-align:right;font-weight:700;font-size:12px;color:#4f6ef7">' + _fmtW(cpDr) + '</td>' +
-        '<td style="padding:6px 10px;text-align:right;font-weight:700;font-size:12px;color:#ef4444">' + _fmtW(cpCr) + '</td></tr>' +
-        '</tbody></table>';
+      var arColor = arBal > 0 ? '#f59e0b' : arBal < 0 ? '#ef4444' : '#22c55e';
+
+      /* ── 거래처 헤더 ── */
+      h += '<div style="margin:16px 0 0;border-radius:16px;overflow:hidden;border:1.5px solid var(--border-color)">';
+      h += '<div style="background:linear-gradient(135deg,rgba(79,110,247,.08),rgba(79,110,247,.02));padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">';
+      h += '<div style="display:flex;align-items:center;gap:10px">';
+      h += '<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;background:#4f6ef7;color:#fff;font-size:14px;font-weight:800">' + _esc(cp.charAt(0)) + '</span>';
+      h += '<div><div style="font-size:15px;font-weight:900;color:var(--text-primary)">' + _esc(cp) + '</div>';
+      h += '<div style="font-size:11px;color:var(--text-muted)">' + rows.length + '\uac74 \uac70\ub798</div></div></div>';
+      /* AR 요약 */
+      h += '<div style="display:flex;gap:12px;flex-wrap:wrap">';
+      if (totalAR > 0) {
+        h += '<div style="text-align:center"><div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">\uc678\uc0c1\uc561</div><div style="font-size:13px;font-weight:900;color:#f59e0b">' + _fmtW(totalAR) + '</div></div>';
+        h += '<div style="text-align:center"><div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">\ud68c\uc218\uc561</div><div style="font-size:13px;font-weight:900;color:#22c55e">' + _fmtW(totalCol) + '</div></div>';
+        h += '<div style="text-align:center"><div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">\ubbf8\uc218\uc794\uc561">\ubbf8\uc218\uc794\uc561</div><div style="font-size:13px;font-weight:900;color:' + arColor + '">' + _fmtW(arBal) + '</div></div>';
+      }
+      h += '</div></div>';
+
+      if (isMobAL) {
+        /* ── 모바일: 카드 리스트 ── */
+        h += '<div style="display:flex;flex-direction:column;gap:8px;padding:10px 12px">';
+        rows.forEach(function (r) {
+          var t = TYPE[r.tt] || TYPE.other;
+          h += '<div style="position:relative;border-radius:12px;background:var(--bg-card);border:1px solid var(--border-color);overflow:hidden">' +
+            '<div style="position:absolute;top:0;left:0;bottom:0;width:3px;background:' + t.c + '"></div>' +
+            '<div style="padding:10px 12px 10px 15px">' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">' +
+                '<div style="font-size:11px;color:var(--text-muted);font-weight:600">' + (r.v.date || '') + '</div>' +
+                '<span style="font-size:9.5px;font-weight:800;padding:2px 8px;border-radius:20px;background:' + t.bg + ';color:' + t.c + '">' + t.label + '</span>' +
+              '</div>' +
+              '<div style="font-size:13.5px;font-weight:800;color:var(--text-primary);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + _esc(r.v.description || '') + '</div>' +
+              '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">' +
+                '<div style="text-align:center;padding:5px 0;background:rgba(79,110,247,.05);border-radius:8px"><div style="font-size:8.5px;color:var(--text-muted);margin-bottom:1px">\ucc28\ubcc0</div><div style="font-size:11.5px;font-weight:800;color:#4f6ef7">' + (r.dr ? _fmtW(r.dr) : '-') + '</div></div>' +
+                '<div style="text-align:center;padding:5px 0;background:rgba(239,68,68,.05);border-radius:8px"><div style="font-size:8.5px;color:var(--text-muted);margin-bottom:1px">\ub300\ubcc0</div><div style="font-size:11.5px;font-weight:800;color:#ef4444">' + (r.cr ? _fmtW(r.cr) : '-') + '</div></div>' +
+                '<div style="text-align:center;padding:5px 0;background:rgba(245,158,11,.05);border-radius:8px"><div style="font-size:8.5px;color:var(--text-muted);margin-bottom:1px">\ubbf8\uc218\uc794\uc561">\ubbf8\uc218\uc794\uc561</div><div style="font-size:11.5px;font-weight:800;color:' + (r.arBal > 0 ? '#f59e0b' : '#22c55e') + '">' + _fmtW(r.arBal) + '</div></div>' +
+              '</div>' +
+            '</div></div>';
+        });
+        h += '</div>';
+      } else {
+        /* ── 데스크탑: 테이블 ── */
+        h += '<table style="width:100%;border-collapse:collapse;table-layout:fixed">' +
+          '<colgroup><col style="width:90px"><col><col style="width:110px"><col style="width:100px"><col style="width:100px"><col style="width:100px"></colgroup>' +
+          '<thead><tr style="background:var(--bg-tertiary);border-bottom:1px solid var(--border-color)">' +
+          '<th style="padding:7px 10px;text-align:left;font-size:11px">\ub0a0\uc9dc</th>' +
+          '<th style="padding:7px 10px;text-align:left;font-size:11px">\uc801\uc694</th>' +
+          '<th style="padding:7px 10px;text-align:left;font-size:11px">\uac70\ub798\uc720\ud615</th>' +
+          '<th style="padding:7px 10px;text-align:right;font-size:11px">\ucc28\ubcc0</th>' +
+          '<th style="padding:7px 10px;text-align:right;font-size:11px">\ub300\ubcc0</th>' +
+          '<th style="padding:7px 10px;text-align:right;font-size:11px">\ubbf8\uc218\uc794\uc561">\ubbf8\uc218\uc794\uc561</th>' +
+          '</tr></thead><tbody>';
+
+        rows.forEach(function (r) {
+          var t = TYPE[r.tt] || TYPE.other;
+          h += '<tr style="border-bottom:1px solid var(--border-color)">' +
+            '<td style="padding:7px 10px;font-size:12px;color:var(--text-muted)">' + (r.v.date || '') + '</td>' +
+            '<td style="padding:7px 10px;font-size:12px">' + _esc(r.v.description || '') + '</td>' +
+            '<td style="padding:7px 10px"><span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;background:' + t.bg + ';color:' + t.c + '">' + t.label + '</span></td>' +
+            '<td style="padding:7px 10px;text-align:right;font-size:12px;font-weight:600;color:#4f6ef7">' + (r.dr ? _fmtW(r.dr) : '') + '</td>' +
+            '<td style="padding:7px 10px;text-align:right;font-size:12px;font-weight:600;color:#ef4444">' + (r.cr ? _fmtW(r.cr) : '') + '</td>' +
+            '<td style="padding:7px 10px;text-align:right;font-size:12px;font-weight:700;color:' + (r.arBal > 0 ? '#f59e0b' : '#22c55e') + '">' + _fmtW(r.arBal) + '</td></tr>';
+        });
+
+        h += '<tr style="border-top:1.5px solid var(--text-primary);background:var(--bg-tertiary)">' +
+          '<td colspan="3" style="padding:7px 10px;font-weight:700;text-align:right;font-size:12px">\uc18c\uacc4</td>' +
+          '<td style="padding:7px 10px;text-align:right;font-weight:700;font-size:12px;color:#4f6ef7">' + _fmtW(cpDr) + '</td>' +
+          '<td style="padding:7px 10px;text-align:right;font-weight:700;font-size:12px;color:#ef4444">' + _fmtW(cpCr) + '</td>' +
+          '<td style="padding:7px 10px;text-align:right;font-weight:800;font-size:12px;color:' + arColor + '">' + _fmtW(arBal) + '</td>' +
+          '</tr></tbody></table>';
+      }
+
+      h += '</div>'; /* counterpart block */
     });
 
     return h + '</div>';
+  }
   }
 
     function renderAcctPayment() {
