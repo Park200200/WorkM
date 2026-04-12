@@ -1862,20 +1862,18 @@ function renderDailyReportTasks() {
     var isMob = window.innerWidth <= 767;
     if (isMob) {
       return '<tr onclick="openTaskDetail(' + t.id + ')" style="cursor:pointer"><td colspan="9" data-label="" style="display:block !important;padding:8px 4px !important;border:none">' +
-        // ─ 1행: 업무명 + 지시자(아바타) + D-Day ─
+        // ─ 1행: 업무명(flex:1) + 아바타(30px) + D-Day ─
         '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">' +
-          '<span style="font-weight:700;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary)">' + (t.isImportant ? '⭐ ' : '') + t.title + '</span>' +
-          '<div style="flex-shrink:0">' + assignerHtml + '</div>' +
+          '<span style="font-weight:700;font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary)">' + (t.isImportant ? '⭐ ' : '') + t.title + '</span>' +
+          '<div style="width:30px;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + assignerHtml + '</div>' +
           '<span class="dday-badge ' + dd.cls + '" style="font-size:10px;flex-shrink:0">' + dd.label + '</span>' +
         '</div>' +
-        // ─ 2행: 진행바+% + 상태 + 보고 ─
+        // ─ 2행: 진행바(flex:1) + %(30px, 아바타와 동일폭) + 상태 + 보고 ─
         '<div style="display:flex;align-items:center;gap:6px">' +
-          '<div onclick="event.stopPropagation();openScheduleProgressModal(' + t.id + ')" style="display:flex;align-items:center;gap:5px;flex:1;min-width:0;cursor:pointer">' +
-            '<div style="flex:1;height:5px;background:var(--border-color);border-radius:3px;overflow:hidden">' +
-              '<div style="height:100%;border-radius:3px;background:var(--accent-blue);width:' + (t.progress||0) + '%"></div>' +
-            '</div>' +
-            '<span style="font-size:10px;font-weight:700;color:var(--text-muted);white-space:nowrap">' + (t.progress||0) + '%</span>' +
+          '<div onclick="event.stopPropagation();openScheduleProgressModal(' + t.id + ')" style="flex:1;min-width:0;height:5px;background:var(--border-color);border-radius:3px;overflow:hidden;cursor:pointer">' +
+            '<div style="height:100%;border-radius:3px;background:var(--accent-blue);width:' + (t.progress||0) + '%"></div>' +
           '</div>' +
+          '<span style="width:30px;font-size:10px;font-weight:700;color:var(--text-muted);text-align:right;flex-shrink:0;white-space:nowrap">' + (t.progress||0) + '%</span>' +
           '<span class="status-badge status-' + t.status + '" style="font-size:10px;flex-shrink:0">' + WS.getStatusLabel(t.status) + '</span>' +
           '<span style="flex-shrink:0">' + reportBadge + '</span>' +
         '</div>' +
