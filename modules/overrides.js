@@ -2099,40 +2099,114 @@ function deleteOrgItem(type, id) {
 function renderAssignmentByTask(targetEl) {
   var el = targetEl || document.getElementById('taskListArea');
   if (!el) return;
-  var rows = WS.tasks.map(function (t) {
-    var ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
-    var assigneeHtml = ids.length > 0
-      ? ids.map(function (uid) {
-        var u = WS.getUser(uid);
-        return u ? '<div class="staff-badge"><div class="avatar-sm" style="background:linear-gradient(135deg,' + (u.color || '#4f6ef7') + ',#9747ff)">' + u.avatar + '</div>' + u.name + '</div>' : '';
-      }).join('')
-      : '<span style="color:var(--text-muted);font-size:11.5px">미배정</span>';
-    return '<tr>' +
-      '<td style="width:40%"><div style="font-weight:700;font-size:13.5px">' + t.title + '</div><div style="font-size:11px;color:var(--text-muted)">' + (t.team || '') + '</div></td>' +
-      '<td><div class="badge-list">' + assigneeHtml + '</div></td>' +
-      '<td><div class="score-tag">' + (t.score || 0) + '<span>pt</span></div></td>' +
-      '<td style="width:80px"><div class="manage-actions">' +
-      '<button class="btn-icon-sm edit" onclick="openTaskAssignModal(' + t.id + ')" title="담당 직원 지정"><i data-lucide="user-plus" class="icon-sm"></i></button>' +
-      '</div></td>' +
-      '</tr>';
-  }).join('');
 
-  el.innerHTML =
-    '<table class="task-table" style="width:100%;table-layout:fixed">' +
-    '<colgroup>' +
-    '<col style="width:260px">' +
-    '<col>' +
-    '<col style="width:90px">' +
-    '<col style="width:80px">' +
-    '</colgroup>' +
-    '<thead><tr>' +
-    '<th style="width:260px">업무명</th>' +
-    '<th>담당 직원</th>' +
-    '<th style="width:90px">점수</th>' +
-    '<th style="width:80px">관리</th>' +
-    '</tr></thead>' +
-    '<tbody>' + (rows || '<tr><td colspan="4" class="empty-state">데이터가 없습니다.</td></tr>') + '</tbody>' +
-    '</table>';
+  var isMob = window.innerWidth < 768;
+
+  if (isMob) {
+    /* ── 모바일: 다이나믹 카드 UI ── */
+    if (!WS.tasks.length) {
+      el.innerHTML = '<div class="empty-state" style="padding:40px 0;text-align:center;color:var(--text-muted)">데이터가 없습니다.</div>';
+      refreshIcons();
+      return;
+    }
+
+    /* 팀컬러 팔레트 */
+    var TEAM_COLORS = ['#4f6ef7','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#f97316','#14b8a6'];
+    function teamColor(name) {
+      if (!name) return TEAM_COLORS[0];
+      var h = 0;
+      for (var i = 0; i < name.length; i++) h = ((h * 31) + name.charCodeAt(i)) & 0x7fffffff;
+      return TEAM_COLORS[h % TEAM_COLORS.length];
+    }
+
+    /* 상태 태그 */
+    function statusTag(t) {
+      if (t.dueDate) {
+        var diff = Math.floor((new Date(t.dueDate) - new Date()) / 86400000);
+        if (diff <= 0) return { label:'마감 초과', c:'#ef4444', bg:'rgba(239,68,68,.14)' };
+        if (diff <= 3) return { label:'마감 직전', c:'#f59e0b', bg:'rgba(245,158,11,.14)' };
+      }
+      var map = {
+        progress: { label:'진행 중',  c:'#4f6ef7', bg:'rgba(79,110,247,.13)' },
+        done:     { label:'완료',     c:'#22c55e', bg:'rgba(34,197,94,.13)' },
+        delay:    { label:'지연',     c:'#ef4444', bg:'rgba(239,68,68,.13)' },
+        waiting:  { label:'대기 중',  c:'#6b7280', bg:'rgba(107,114,128,.11)' }
+      };
+      return map[t.status] || { label:'대기 중', c:'#6b7280', bg:'rgba(107,114,128,.11)' };
+    }
+
+    el.innerHTML = WS.tasks.map(function(t) {
+      var ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+      var tc = teamColor(t.team);
+      var st = statusTag(t);
+      var prog = Math.min(100, Math.max(0, t.progress || 0));
+      var progColor = prog >= 80 ? '#22c55e' : prog >= 40 ? '#4f6ef7' : '#f59e0b';
+
+      /* 배정 아바타 HTML */
+      var avatarsHtml = ids.length > 0
+        ? ids.slice(0,4).map(function(uid) {
+            var u = WS.getUser(uid);
+            if (!u) return '';
+            return '<div class="tac-avatar" style="background:linear-gradient(135deg,' + (u.color||'#4f6ef7') + ',#9747ff)" title="' + u.name + '">' + u.avatar + '</div>';
+          }).join('') + (ids.length > 4 ? '<div class="tac-avatar-more">+' + (ids.length-4) + '</div>' : '')
+        : '<span class="tac-no-assign">미배정</span>';
+
+      return '<div class="tac-card" style="--tc:' + tc + '">' +
+        /* 상태 태그 + 제목 */
+        '<div class="tac-card-header">' +
+          '<div class="tac-title-wrap">' +
+            '<div class="tac-title">' + t.title + '</div>' +
+            '<div class="tac-team">' + (t.team || '') + '</div>' +
+          '</div>' +
+          '<span class="tac-status-tag" style="color:' + st.c + ';background:' + st.bg + '">' + st.label + '</span>' +
+        '</div>' +
+        /* 배정자 아바타 */
+        '<div class="tac-assignees">' + avatarsHtml + '</div>' +
+        /* 점수 + 배정 버튼 */
+        '<div class="tac-card-footer">' +
+          '<div class="tac-score-wrap">' +
+            '<span class="tac-score">' + (t.score||0) + '<em>pt</em></span>' +
+          '</div>' +
+          '<button class="tac-assign-btn" onclick="openTaskAssignModal(' + t.id + ')">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>' +
+            '담당 배정' +
+          '</button>' +
+        '</div>' +
+        /* 프로그레스 바 */
+        (prog > 0 ? '<div class="tac-progress-wrap"><div class="tac-progress-fill" style="width:' + prog + '%;background:' + progColor + '"></div></div>' : '<div class="tac-progress-wrap"></div>') +
+      '</div>';
+    }).join('');
+
+  } else {
+    /* ── 데스크탑: 기존 테이블 ── */
+    var rows = WS.tasks.map(function (t) {
+      var ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+      var assigneeHtml = ids.length > 0
+        ? ids.map(function (uid) {
+          var u = WS.getUser(uid);
+          return u ? '<div class="staff-badge"><div class="avatar-sm" style="background:linear-gradient(135deg,' + (u.color || '#4f6ef7') + ',#9747ff)">' + u.avatar + '</div>' + u.name + '</div>' : '';
+        }).join('')
+        : '<span style="color:var(--text-muted);font-size:11.5px">미배정</span>';
+      return '<tr>' +
+        '<td style="width:40%"><div style="font-weight:700;font-size:13.5px">' + t.title + '</div><div style="font-size:11px;color:var(--text-muted)">' + (t.team || '') + '</div></td>' +
+        '<td><div class="badge-list">' + assigneeHtml + '</div></td>' +
+        '<td><div class="score-tag">' + (t.score || 0) + '<span>pt</span></div></td>' +
+        '<td style="width:80px"><div class="manage-actions">' +
+        '<button class="btn-icon-sm edit" onclick="openTaskAssignModal(' + t.id + ')" title="담당 직원 지정"><i data-lucide="user-plus" class="icon-sm"></i></button>' +
+        '</div></td>' +
+        '</tr>';
+    }).join('');
+
+    el.innerHTML =
+      '<table class="task-table" style="width:100%;table-layout:fixed">' +
+      '<colgroup><col style="width:260px"><col><col style="width:90px"><col style="width:80px"></colgroup>' +
+      '<thead><tr>' +
+      '<th style="width:260px">업무명</th><th>담당 직원</th><th style="width:90px">점수</th><th style="width:80px">관리</th>' +
+      '</tr></thead>' +
+      '<tbody>' + (rows || '<tr><td colspan="4" class="empty-state">데이터가 없습니다.</td></tr>') + '</tbody>' +
+      '</table>';
+  }
+
   refreshIcons();
 }
 
