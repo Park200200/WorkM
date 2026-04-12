@@ -574,8 +574,8 @@ button, .btn, .btn-sm, .btn-icon, .nav-item, .tab-item,
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 12px 14px 20px !important;
-    padding-bottom: 20px !important;
+    padding: 12px 14px 80px !important;
+    padding-bottom: 80px !important;
   }
 
   /* ── 페이지 헤더 ── */
