@@ -1841,7 +1841,7 @@ function renderDailyReportTasks() {
       return '<span data-dr-tip="' + name + '" data-dr-tipc="' + c + '" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:' + c + ';border:2px solid var(--bg-secondary);' + ml + 'flex-shrink:0;position:relative;z-index:' + (10+idx) + ';font-size:10px;font-weight:700;color:#fff;cursor:default">' + name.slice(0,2) + '</span>';
     }
     var assignerHtml = isMySchedule
-      ? '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:10px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);font-size:10px;font-weight:700;color:#6366f1"><i data-lucide="calendar" style="width:9px;height:9px"></i>스케줄</span>'
+      ? '<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:10px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);font-size:10px;font-weight:700;color:#6366f1;white-space:nowrap"><i data-lucide="calendar" style="width:9px;height:9px"></i>스케줄</span>'
       : (assigner ? '<div style="display:flex;align-items:center">' + _drAv(assigner.name, 0) + '</div>' : '-');
     delete assigner; // no longer needed
     var collabIds = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
@@ -1862,8 +1862,8 @@ function renderDailyReportTasks() {
     var isMob = window.innerWidth <= 767;
     if (isMob) {
       return '<tr onclick="openTaskDetail(' + t.id + ')" style="cursor:pointer"><td colspan="9" data-label="" style="display:block !important;padding:8px 4px !important;border:none">' +
-        // ─ CSS Grid: 1fr(업무명/진행바) | 30px(아바타/%) | auto(D-Day/상태+보고) ─
-        '<div style="display:grid;grid-template-columns:1fr 30px auto;gap:5px 6px;align-items:center">' +
+        // ─ CSS Grid: 1fr(업무명/진행바) | auto(아바타 or 스케줄배지 / %) | auto(D-Day/상태+보고) ─
+        '<div style="display:grid;grid-template-columns:1fr auto auto;gap:5px 6px;align-items:center">' +
           // Row 1
           '<span style="font-weight:700;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary)">' + (t.isImportant ? '⭐ ' : '') + t.title + '</span>' +
           '<div style="display:flex;align-items:center;justify-content:center">' + assignerHtml + '</div>' +
