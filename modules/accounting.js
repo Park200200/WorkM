@@ -2060,10 +2060,11 @@
         '<i data-lucide="building-2" style="width:11px;height:11px"></i>거래처</div>' +
         '<input class="form-input" id="exp_counter" placeholder="거래처명" style="border-radius:12px"></div>' +
         /* 결제수단 + 날짜 (2열) */
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end">' +
-        '<div><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:4px">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+        '<div style="display:flex;flex-direction:column">' +
+        '<div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:4px">' +
         '<i data-lucide="credit-card" style="width:11px;height:11px"></i>결제수단</div>' +
-        '<div style="position:relative">' +
+        '<div style="position:relative;flex:1">' +
         '<select class="form-input" id="exp_method" style="border-radius:12px;height:50px;-webkit-appearance:none;appearance:none;padding:0 36px 0 12px;width:100%">' +
         '<option value="현금">현금</option><option value="계좌이체">계좌이체</option>' +
         '<option value="카드">카드</option><option value="기타">기타</option>' +
@@ -2071,9 +2072,10 @@
         '<div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-muted)">' +
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>' +
         '</div></div></div>' +
-        '<div><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:4px">' +
+        '<div style="display:flex;flex-direction:column">' +
+        '<div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:4px">' +
         '<i data-lucide="calendar" style="width:11px;height:11px"></i>날짜</div>' +
-        '<input class="form-input" id="exp_date" type="date" value="' + _today() + '" style="border-radius:12px;height:50px"></div>' +
+        '<input class="form-input" id="exp_date" type="date" value="' + _today() + '" style="border-radius:12px;height:50px;flex:1"></div>' +
         '</div>' +
         /* 자동매핑 계정 */
         '<div><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:4px">' +
