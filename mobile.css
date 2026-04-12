@@ -1949,3 +1949,14 @@ button#mobileFAB {
   #drExecTableWrap .task-table td::before { display: none !important; }
   #drExecTableWrap { overflow-x: auto !important; }
 }
+
+/* ── 금일 실행 보고 리스트: 실행내용 한줄 말줄임 (모바일만) ── */
+@media (max-width: 767px) {
+  #drExecTableWrap .task-table td:nth-child(2) {
+    display: block !important;          /* flex → block 필수 (text-overflow 동작) */
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    word-break: normal !important;
+  }
+}
