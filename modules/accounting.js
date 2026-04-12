@@ -1642,20 +1642,35 @@
     if (!_approvingId) return;
     var pw = (document.getElementById('apc_password') || {}).value || '';
     var code = (document.getElementById('apc_account') || {}).value || '';
-    if (!pw) { _toast('error', '패스워드를 입력하세요'); return; }
-    if (!code) { _toast('error', '계정과목을 선택하세요'); return; }
+    if (!pw) { _toast('error', "\ud328\uc2a4\uc6cc\ub4dc\ub97c \uc785\ub825\ud558\uc138\uc694"); return; }
+    if (!code) { _toast('error', "\uacc4\uc815\uacfc\ubaa9\uc744 \uc120\ud0dd\ud558\uc138\uc694"); return; }
     var cu = (typeof WS !== 'undefined') ? WS.currentUser : null;
-    if (!cu || cu.password !== pw) { _toast('error', '패스워드가 일치하지 않습니다'); return; }
+    if (!cu || cu.password !== pw) { _toast('error', "\ud328\uc2a4\uc6cc\ub4dc\uac00 \uc77c\uce58\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4"); return; }
     var approvals = _approvals();
     var item = approvals.find(function (a) { return a.id === _approvingId; });
     if (!item) return;
-    item.accountCode = code;
-    item.status = 'approved';
-    item.approvedAt = _now();
-    item.approvedBy = cu.name;
+    var approveDate = (item.date || _today()).substring(0, 10);
+    var vId = _uid(); var cfId = _uid();
+    // \uc790\ub3d9 \ucd9c\uae08\uc804\ud45c \uc0dd\uc131
+    var vs = _vouchers();
+    vs.push({ id: vId, date: approveDate, type: 'expense',
+      description: '[\ud488\uc758] ' + (item.title || ''), counterpart: item.counterpart || '', paymentMethod: '\ud604\uae08',
+      entries: [{ side: 'debit', accountCode: code, amount: item.amount || 0 }, { side: 'credit', accountCode: '1010', amount: item.amount || 0 }],
+      sourceType: 'approval', sourceId: item.id, createdAt: _now(), createdBy: cu.name });
+    _ls('acct_vouchers', vs);
+    // \uc790\ub3d9 \uc9c0\ucd9c(cashflow) \uc0dd\uc131
+    var cfs = _cashflows();
+    cfs.push({ id: cfId, date: approveDate, type: 'expense', category: _acctName(code), accountCode: code,
+      counterpart: item.counterpart || '', amount: item.amount || 0, paymentMethod: '\ud604\uae08',
+      memo: '[\ud488\uc758] ' + (item.title || ''), voucherId: vId, createdAt: _now() });
+    _ls('acct_cashflows', cfs);
+    // \ud488\uc758 \uc0c1\ud0dc \uc5c5\ub370\uc774\ud2b8
+    item.accountCode = code; item.status = 'expensed';
+    item.approvedAt = _now(); item.approvedBy = cu.name;
+    item.cashflowId = cfId; item.voucherId = vId;
     _ls('acct_approvals', approvals);
     closeApproveConfirm();
-    _toast('success', '"' + item.title + '" 승인 완료. 지출하기에서 지출 등록해주세요');
+    _toast('success', '"' + item.title + '" \uc2b9\uc778 \uc644\ub8cc (\ucd9c\uae08\uc804\ud45c \uc790\ub3d9 \uc0dd\uc131\ub428)');
     renderAcctApproval();
   }
 
