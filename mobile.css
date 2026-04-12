@@ -1737,15 +1737,20 @@ button#mobileFAB {
   }
 }
 
-/* 업무성격 버튼 — 모바일 2줄 텍스트 */
+/* 업무성격 버튼 — 모바일 아이콘 좌측 + 텍스트 2줄 */
 @media (max-width: 767px) {
   .instrNature-wrap button {
-    flex-direction: column !important;
+    flex-direction: row !important;
     align-items: center !important;
-    gap: 2px !important;
+    justify-content: center !important;
+    gap: 5px !important;
+  }
+  .instrNature-wrap button i[data-lucide] {
+    flex-shrink: 0 !important;
+    align-self: center !important;
   }
   .instrNature-wrap button .nature-txt {
-    text-align: center !important;
+    text-align: left !important;
     line-height: 1.25 !important;
     font-size: 11px !important;
   }
