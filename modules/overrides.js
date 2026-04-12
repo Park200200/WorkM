@@ -2213,40 +2213,109 @@ function renderAssignmentByTask(targetEl) {
 function renderAssignmentByStaff(targetEl) {
   var el = targetEl || document.getElementById('taskListArea');
   if (!el) return;
-  var rows = WS.users.map(function (u) {
-    var myTasks = WS.tasks.filter(function (t) {
-      var ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
-      return ids.includes(u.id);
-    });
-    var badges = myTasks.map(function (t) { return '<span class="task-badge">' + t.title + '</span>'; }).join('');
-    return '<tr>' +
-      '<td style="width:200px">' +
-      '<div style="display:flex;align-items:center;gap:10px">' +
-      '<div class="avatar" style="width:32px;height:32px;background:linear-gradient(135deg,' + u.color + ',#9747ff);color:#fff;font-size:12px;font-weight:800;border-radius:50%;display:flex;align-items:center;justify-content:center">' + u.avatar + '</div>' +
-      '<div><div style="font-weight:700;font-size:13px">' + u.name + '</div><div style="font-size:10.5px;color:var(--text-muted)">' + u.role + ' · ' + u.dept + '</div></div>' +
-      '</div>' +
-      '</td>' +
-      '<td><div class="badge-list">' + (badges || '<span style="color:var(--text-muted);font-size:11px">배정된 업무 없음</span>') + '</div></td>' +
-      '<td style="width:100px"><div class="manage-actions">' +
-      '<button class="btn-icon-sm edit" onclick="openAssignmentManageModal(' + u.id + ')" title="업무 배정 관리"><i data-lucide="settings-2" class="icon-sm"></i></button>' +
-      '</div></td>' +
-      '</tr>';
-  }).join('');
 
-  el.innerHTML =
-    '<table class="task-table" style="width:100%;table-layout:fixed">' +
-    '<colgroup>' +
-    '<col style="width:260px">' +
-    '<col>' +
-    '<col style="width:80px">' +
-    '</colgroup>' +
-    '<thead><tr>' +
-    '<th style="width:260px">직원 정보</th>' +
-    '<th>배정 업무</th>' +
-    '<th style="width:80px">관리</th>' +
-    '</tr></thead>' +
-    '<tbody>' + rows + '</tbody>' +
-    '</table>';
+  var isMob = window.innerWidth < 768;
+
+  if (isMob) {
+    /* ── 모바일: 직원별 다이나믹 카드 ── */
+    if (!WS.users.length) {
+      el.innerHTML = '<div class="empty-state" style="padding:40px 0;text-align:center;color:var(--text-muted)">등록된 직원이 없습니다.</div>';
+      refreshIcons();
+      return;
+    }
+
+    /* 근무상태 태그 */
+    function staffStatusTag(status) {
+      if (!status) return { label:'미정', c:'#6b7280', bg:'rgba(107,114,128,.11)' };
+      if (status.includes('퇴근'))  return { label:'퇴근', c:'#4f6ef7', bg:'rgba(79,110,247,.13)' };
+      if (status.includes('근무'))  return { label:'근무 중', c:'#22c55e', bg:'rgba(34,197,94,.13)' };
+      if (status.includes('휴직'))  return { label:'휴직', c:'#f59e0b', bg:'rgba(245,158,11,.13)' };
+      if (status === '퇴사')        return { label:'퇴사', c:'#6b7280', bg:'rgba(107,114,128,.11)' };
+      return { label: status, c:'#6b7280', bg:'rgba(107,114,128,.11)' };
+    }
+
+    el.innerHTML = WS.users.map(function(u) {
+      var myTasks = WS.tasks.filter(function(t) {
+        var ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+        return ids.includes(u.id);
+      });
+      var doneCnt  = myTasks.filter(function(t) { return t.status === 'done'; }).length;
+      var prog     = myTasks.length > 0 ? Math.round(doneCnt / myTasks.length * 100) : 0;
+      var progColor = prog >= 80 ? '#22c55e' : prog >= 40 ? '#4f6ef7' : '#f59e0b';
+      var uc = u.color || '#4f6ef7';
+      var st = staffStatusTag(u.status);
+
+      /* 업무 배지 */
+      var badgesHtml = myTasks.length > 0
+        ? myTasks.slice(0,5).map(function(t) {
+            return '<span class="sac-task-badge">' + t.title + '</span>';
+          }).join('') + (myTasks.length > 5 ? '<span class="sac-task-more">+' + (myTasks.length-5) + '</span>' : '')
+        : '<span class="sac-no-task">배정된 업무 없음</span>';
+
+      return '<div class="sac-card" style="--uc:' + uc + '">' +
+        /* 헤더: 아바타 + 이름 + 상태태그 */
+        '<div class="sac-card-header">' +
+          '<div class="sac-avatar-wrap">' +
+            '<div class="sac-avatar" style="background:linear-gradient(135deg,' + uc + ',#9747ff)">' + u.avatar + '</div>' +
+            '<div class="sac-identity">' +
+              '<div class="sac-name">' + u.name + '</div>' +
+              '<div class="sac-meta">' + (u.role||'') + (u.dept ? ' · '+u.dept : '') + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<span class="sac-status-tag" style="color:' + st.c + ';background:' + st.bg + '">' + st.label + '</span>' +
+        '</div>' +
+        /* 업무 배지 */
+        '<div class="sac-tasks">' + badgesHtml + '</div>' +
+        /* 업무 수 + 배정 관리 버튼 */
+        '<div class="sac-card-footer">' +
+          '<div class="sac-task-count">' +
+            '<span class="sac-cnt-num" style="color:' + uc + '">' + myTasks.length + '</span>' +
+            '<span class="sac-cnt-label">건 배정</span>' +
+          '</div>' +
+          '<button class="sac-manage-btn" onclick="openAssignmentManageModal(' + u.id + ')">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>' +
+            '배정 관리' +
+          '</button>' +
+        '</div>' +
+        /* 프로그레스 바 */
+        (myTasks.length > 0
+          ? '<div class="sac-progress-wrap"><div class="sac-progress-fill" style="width:' + prog + '%;background:' + progColor + '"></div></div>'
+          : '<div class="sac-progress-wrap"></div>') +
+      '</div>';
+    }).join('');
+
+  } else {
+    /* ── 데스크탑: 기존 테이블 ── */
+    var rows = WS.users.map(function (u) {
+      var myTasks = WS.tasks.filter(function (t) {
+        var ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []);
+        return ids.includes(u.id);
+      });
+      var badges = myTasks.map(function (t) { return '<span class="task-badge">' + t.title + '</span>'; }).join('');
+      return '<tr>' +
+        '<td style="width:200px">' +
+        '<div style="display:flex;align-items:center;gap:10px">' +
+        '<div class="avatar" style="width:32px;height:32px;background:linear-gradient(135deg,' + u.color + ',#9747ff);color:#fff;font-size:12px;font-weight:800;border-radius:50%;display:flex;align-items:center;justify-content:center">' + u.avatar + '</div>' +
+        '<div><div style="font-weight:700;font-size:13px">' + u.name + '</div><div style="font-size:10.5px;color:var(--text-muted)">' + u.role + ' · ' + u.dept + '</div></div>' +
+        '</div>' +
+        '</td>' +
+        '<td><div class="badge-list">' + (badges || '<span style="color:var(--text-muted);font-size:11px">배정된 업무 없음</span>') + '</div></td>' +
+        '<td style="width:100px"><div class="manage-actions">' +
+        '<button class="btn-icon-sm edit" onclick="openAssignmentManageModal(' + u.id + ')" title="업무 배정 관리"><i data-lucide="settings-2" class="icon-sm"></i></button>' +
+        '</div></td>' +
+        '</tr>';
+    }).join('');
+
+    el.innerHTML =
+      '<table class="task-table" style="width:100%;table-layout:fixed">' +
+      '<colgroup><col style="width:260px"><col><col style="width:80px"></colgroup>' +
+      '<thead><tr>' +
+      '<th style="width:260px">직원 정보</th><th>배정 업무</th><th style="width:80px">관리</th>' +
+      '</tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+      '</table>';
+  }
+
   refreshIcons();
 }
 
