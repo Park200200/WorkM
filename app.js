@@ -1859,7 +1859,7 @@ function renderDailyReportTasks() {
     var reportBadge = hasReport
       ? '<span onclick="openScheduleProgressModal(' + t.id + ')" title="' + (lastH ? lastH.event + ' · ' + (lastH.detail||'').slice(0,20) : '') + '" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:12px;background:#22c55e22;border:1.5px solid #22c55e;color:#22c55e;font-size:10.5px;font-weight:800;cursor:pointer" onmouseover="this.style.opacity=\'.75\'" onmouseout="this.style.opacity=\'1\'"><i data-lucide="check-circle" style="width:10px;height:10px;color:#22c55e"></i>보고완료</span>'
       : '<span onclick="openScheduleProgressModal(' + t.id + ')" title="클릭하여 진행보고서 작성" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:12px;background:var(--bg-tertiary);border:1.5px solid var(--border-color);color:var(--text-muted);font-size:10.5px;font-weight:700;cursor:pointer" onmouseover="this.style.borderColor=\'#f59e0b\';this.style.color=\'#f59e0b\'" onmouseout="this.style.borderColor=\'var(--border-color)\';this.style.color=\'var(--text-muted)\'"><i data-lucide="clock" style="width:10px;height:10px"></i>보고준비</span>';
-    var isMob = window.innerWidth <= 767;
+    var isMob = window.matchMedia && window.matchMedia('(max-width: 767px)').matches;
     if (isMob) {
       return '<tr onclick="openTaskDetail(' + t.id + ')" style="cursor:pointer"><td colspan="9" data-label="" style="display:block !important;padding:8px 4px !important;border:none">' +
         // ─ CSS Grid: 1fr(업무명/진행바) | auto(아바타 or 스케줄배지 / %) | auto(D-Day/상태+보고) ─
@@ -2082,7 +2082,7 @@ function renderDrExecList() {
       }
     }
     var savedTime = r.id ? (function(){ var d = new Date(r.id); return (d.getHours()<10?'0':'')+d.getHours()+':'+(d.getMinutes()<10?'0':'')+d.getMinutes(); })() : '-';
-    var isMob = window.innerWidth <= 767;
+    var isMob = window.matchMedia && window.matchMedia('(max-width: 767px)').matches;
     if (isMob) {
       return '<tr><td colspan="7" data-label="" style="display:block !important;padding:8px 4px !important;border:none">' +
         // ─ Row 1: 업무명 | 실행내용 | 저장시간 ─
