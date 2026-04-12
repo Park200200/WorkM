@@ -3273,3 +3273,10 @@ button#mobileFAB {
     padding-bottom: 96px !important;
   }
 }
+
+/* ── hp-menu 페이지 하단여백 ── */
+@media (max-width: 767px) {
+  #page-hp-menu {
+    padding-bottom: 96px !important;
+  }
+}
