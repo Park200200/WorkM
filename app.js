@@ -684,8 +684,8 @@ function openReceivedTaskDetail(taskId) {
         </div>` : `<input type="hidden" id="td_stepSelect" value="">`}
         <div style="flex:1"></div>
         <button onclick="addProgressReport('${t.id}')" class="btn btn-blue"
-          style="height:38px;padding:0 20px;white-space:nowrap;border-radius:20px;font-size:13px;font-weight:700;flex-shrink:0">
-          <i data-lucide="plus" style="width:14px;height:14px"></i> 추가
+          style="padding:5px 11px;white-space:nowrap;border-radius:20px;font-size:11.5px;font-weight:700;flex-shrink:0">
+          <i data-lucide="plus" style="width:12px;height:12px"></i> 추가
         </button>
       </div>
     </div>
