@@ -4945,11 +4945,11 @@ function _copySyncCmds() {
     _curPage = pageId;
     if (pageId === 'homepage') {
       var el = document.querySelector('[data-page="homepage"]');
-      if (el && typeof showPage === 'function') showPage('homepage', el);
+      if (typeof showPage === 'function') showPage('homepage', el || null);
       if (typeof enterHomepageMode === 'function') setTimeout(enterHomepageMode, 30);
     } else {
       var el2 = document.querySelector('[data-page="' + pageId + '"]');
-      if (el2 && typeof showPage === 'function') showPage(pageId, el2);
+      if (typeof showPage === 'function') showPage(pageId, el2 || null);  /* el2 없어도 showPage 호출 */
     }
     syncTabActive(pageId);
     updateMobileHeader(pageId);
