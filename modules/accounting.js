@@ -1,4 +1,4 @@
-﻿/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    📒 WorkM 회계관리 모듈 (modules/accounting.js)
    예산 → 품의 → 전표 → 입출금 → 보고서 자동 연결 경리 시스템
    ═══════════════════════════════════════════════════════════ */
@@ -830,7 +830,7 @@
           });
           html+='</div>';
           var tp2=totalBudget>0?Math.round(totalSpent/totalBudget*100):0,tc2=tp2>100?'#ef4444':tp2>80?'#f59e0b':'#22c55e';
-          html+='<div style="background:var(--bg-tertiary);border-radius:14px;padding:14px 16px;margin-top:4px">'+
+          html+='<div style="background:var(--bg-tertiary);border-radius:14px;padding:14px 16px;margin-top:4px;margin-bottom:80px">'+
             '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;text-align:center">'+
               '<div><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">\ud569\uacc4 \uc608\uc0b0</div><div style="font-size:13px;font-weight:900;color:var(--text-primary)">'+_fmtW(totalBudget)+'</div></div>'+
               '<div style="border-left:1px solid var(--border-color);border-right:1px solid var(--border-color)"><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">\ud569\uacc4 \uc9d1\ud589</div><div style="font-size:13px;font-weight:900;color:#ef4444">'+_fmtW(totalSpent)+'</div></div>'+
