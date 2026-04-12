@@ -5356,12 +5356,114 @@ function _copySyncCmds() {
     if (act) act();
   };
 
+  /* ── 회계관리 전용 탭바 데이터 ── */
+  var ACCT_TAB_MENUS = [
+    { id: '_acct_basic',   icon: 'bar-chart-3', label: '기본',   page: null, drawer: 'acct_basic' },
+    { id: '_acct_config',  icon: 'sliders',     label: '설정',   page: null, drawer: 'acct_config' },
+    { id: '_acct_ledger',  icon: 'calculator',  label: '경리',   page: null, drawer: 'acct_ledger' },
+    { id: 'dashboard',     icon: 'home',        label: '내책상', page: 'dashboard', drawer: null }
+  ];
+  var ACCT_DRAWER_MENUS = {
+    acct_basic: [
+      { icon: 'bar-chart-3', label: '기본현황', color: '#4f6ef7', bg: 'rgba(79,110,247,.12)',  acctPage: 'acct-overview' },
+      { icon: 'bar-chart-2', label: '회계현황', color: '#22c55e', bg: 'rgba(34,197,94,.12)',   acctPage: 'acct-reports'  }
+    ],
+    acct_config: [
+      { icon: 'sliders',     label: '예산설정', color: '#f59e0b', bg: 'rgba(245,158,11,.12)', acctPage: 'acct-budget'  },
+      { icon: 'database',    label: '기초잔액', color: '#8b5cf6', bg: 'rgba(139,92,246,.12)', acctPage: 'acct-balance' }
+    ],
+    acct_ledger: [
+      { icon: 'clipboard',   label: '품의하기', color: '#06b6d4', bg: 'rgba(6,182,212,.12)',  acctPage: 'acct-approval'    },
+      { icon: 'minus-circle',label: '지출하기', color: '#ef4444', bg: 'rgba(239,68,68,.12)',  acctPage: 'acct-expense'     },
+      { icon: 'plus-circle', label: '입금전표', color: '#22c55e', bg: 'rgba(34,197,94,.12)',  acctPage: 'acct-income'      },
+      { icon: 'file-minus',  label: '출금전표', color: '#f97316', bg: 'rgba(249,115,22,.12)', acctPage: 'acct-withdrawal'  },
+      { icon: 'book-open',   label: '전표장부', color: '#4f6ef7', bg: 'rgba(79,110,247,.12)', acctPage: 'acct-payment'     }
+    ]
+  };
+  /* 아이콘 D 추가 */
+  ICON_D['clipboard']    = 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2 M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2 M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2 M12 12h.01 M12 16h.01 M8 12h.01 M8 16h.01 M16 12h.01 M16 16h.01';
+  ICON_D['minus-circle'] = 'M12 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10-4.48 10-10 10z M8 12h8';
+  ICON_D['plus-circle']  = 'M12 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10-4.48 10-10 10z M12 8v8 M8 12h8';
+  ICON_D['file-minus']   = 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M9 15h6';
+  ICON_D['book-open']    = 'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z';
+  ICON_D['database']     = 'M12 2C6.477 2 2 4.477 2 7c0 2.522 4.477 5 10 5s10-2.478 10-5c0-2.523-4.477-5-10-5zM2 12c0 2.522 4.477 5 10 5s10-2.478 10-5 M2 17c0 2.522 4.477 5 10 5s10-2.478 10-5';
+
+  var _tabBarMode = 'default';  // 'default' | 'accounting'
+
+  /* ── 탭바 모드 전환 ── */
+  function switchMobileTabBar(mode) {
+    if (!isMobile()) return;
+    if (_tabBarMode === mode) return;
+    _tabBarMode = mode;
+
+    var bar = document.getElementById('mobileTabBar');
+    if (!bar) return;
+    bar.innerHTML = '';
+
+    var tabs = mode === 'accounting' ? ACCT_TAB_MENUS : TAB_MENUS;
+    tabs.forEach(function(m) {
+      var btn = document.createElement('button');
+      btn.className = 'mob-tab';
+      btn.setAttribute('data-tab', m.id);
+      btn.innerHTML = iconSVG(m.icon) + '<span class="mob-tab-label">' + m.label + '</span>';
+      btn.addEventListener('click', function() {
+        if (m.page) {
+          mobileNav(m.page);
+          closeMobileDrawer();
+        } else if (m.drawer) {
+          if (mode === 'accounting') {
+            buildAcctDrawer(m.drawer, m.id);
+          } else {
+            openMobileDrawer(m.drawer, m.id);
+          }
+        }
+      });
+      bar.appendChild(btn);
+    });
+    /* 첫번째 탭 active */
+    var first = bar.querySelector('.mob-tab');
+    if (first) first.classList.add('active');
+  }
+
+  /* ── 회계 드로어 빌드 ── */
+  function buildAcctDrawer(category, tabId) {
+    var grid = document.getElementById('mobileDrawerGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    var menus = ACCT_DRAWER_MENUS[category] || [];
+    menus.forEach(function(m) {
+      var item = document.createElement('div');
+      item.className = 'mob-drawer-item';
+      item.innerHTML =
+        '<div class="mob-drawer-icon" style="background:' + m.bg + '">' +
+        iconSVG(m.icon, 22, m.color) + '</div>' +
+        '<span class="mob-drawer-label">' + m.label + '</span>';
+      item.addEventListener('click', function() {
+        closeMobileDrawer();
+        if (typeof showAcctPage === 'function') showAcctPage(m.acctPage, null);
+      });
+      grid.appendChild(item);
+    });
+    /* 탭 active 표시 */
+    if (tabId) {
+      document.querySelectorAll('.mob-tab').forEach(function(t) {
+        t.classList.toggle('active', t.getAttribute('data-tab') === tabId);
+      });
+    }
+    var dr = document.getElementById('mobileDrawer');
+    var ov = document.getElementById('mobileDrawerOverlay');
+    if (dr) dr.classList.add('open');
+    if (ov) ov.classList.add('show');
+  }
+
   /* showPage 래핑 */
   var _orig = window.showPage;
   window.showPage = function(pageId, el, extra) {
     var r = _orig ? _orig.call(this, pageId, el, extra) : undefined;
     if (isMobile()) {
       _curPage = pageId;
+      /* 회계관리 ↔ 일반 탭바 전환 */
+      switchMobileTabBar(pageId === 'accounting' ? 'accounting' : 'default');
       syncTabActive(pageId);
       updateMobileHeader(pageId);
       updateFAB(pageId);
