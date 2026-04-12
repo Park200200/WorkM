@@ -1,4 +1,4 @@
-﻿/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    📒 WorkM 회계관리 모듈 (modules/accounting.js)
    예산 → 품의 → 전표 → 입출금 → 보고서 자동 연결 경리 시스템
    ═══════════════════════════════════════════════════════════ */
@@ -456,9 +456,9 @@
       approvals = allApprovals;
       catInfo = null;
     } else {
-      var catIdNum = parseInt(tabId);
-      catInfo = cats.find(function (c) { return c.id === catIdNum; });
-      budgets = allBudgets.filter(function (b) { return b.catId === catIdNum; });
+      var catIdStr = String(tabId);
+      catInfo = cats.find(function (c) { return String(c.id) === catIdStr; });
+      budgets = allBudgets.filter(function (b) { return String(b.catId) === catIdStr; });
       var budgetAcctCodes = budgets.map(function (b) { return b.accountCode; });
       vouchers = allVouchers.filter(function (v) {
         return (v.entries || []).some(function (e) { return budgetAcctCodes.indexOf(e.accountCode) >= 0 || budgetAcctCodes.indexOf(e.account) >= 0; });
