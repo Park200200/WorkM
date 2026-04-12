@@ -1764,3 +1764,9 @@ button#mobileFAB {
   #drSchedListSection > div { min-width: 0 !important; overflow-x: hidden !important; }
   #drSchedListSection .task-table { width: 100% !important; }
 }
+
+/* ── 일반업무 실행 보고 테이블: 모바일 min-width 해제 ── */
+@media (max-width: 767px) {
+  #drExecTableWrap { overflow-x: hidden !important; }
+  #drExecTableWrap .task-table { min-width: 0 !important; width: 100% !important; }
+}

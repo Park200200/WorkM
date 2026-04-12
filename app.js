@@ -2081,6 +2081,27 @@ function renderDrExecList() {
       }
     }
     var savedTime = r.id ? (function(){ var d = new Date(r.id); return (d.getHours()<10?'0':'')+d.getHours()+':'+(d.getMinutes()<10?'0':'')+d.getMinutes(); })() : '-';
+    var isMob = window.innerWidth <= 767;
+    if (isMob) {
+      return '<tr><td colspan="7" data-label="" style="display:block !important;padding:8px 4px !important;border:none">' +
+        // ─ Row 1: 업무명 | 실행내용 | 저장시간 ─
+        '<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:5px">' +
+          '<span style="font-weight:700;font-size:13px;color:var(--text-primary);flex-shrink:0;max-width:32%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + r.taskName + '</span>' +
+          '<span style="font-size:11px;color:var(--text-secondary);flex:1;min-width:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-all">' + (r.content || '') + '</span>' +
+          '<span style="font-size:11px;font-weight:600;color:var(--text-secondary);flex-shrink:0;white-space:nowrap">' + savedTime + '</span>' +
+        '</div>' +
+        // ─ Row 2: 진행상태 | 관리(수정/삭제) ─
+        '<div style="display:flex;align-items:center;justify-content:space-between;' + (filesHtml ? 'margin-bottom:5px' : '') + '">' +
+          '<span>' + statusBadge + '</span>' +
+          '<div style="display:flex;gap:2px">' +
+            '<button onclick="event.stopPropagation();drOpenExecForm(\'' + r.id + '\')" title="수정" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 5px">✏️</button>' +
+            '<button onclick="event.stopPropagation();drDeleteExecReport(\'' + r.id + '\')" title="삭제" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 5px">🗑️</button>' +
+          '</div>' +
+        '</div>' +
+        // ─ Row 3: 첨부파일 (있을 때만) ─
+        (filesHtml ? '<div style="display:flex;flex-wrap:wrap;gap:4px">' + filesHtml + '</div>' : '') +
+        '</td></tr>';
+    }
     return '<tr>' +
       '<td style="font-weight:600">' + r.taskName + '</td>' +
       '<td style="font-size:11px;color:var(--text-secondary);max-width:180px">' + r.content + '</td>' +
