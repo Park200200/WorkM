@@ -3908,48 +3908,78 @@
     _ri();
   }
 
-  function _voucherModalHTML() {
+  function _makeAcctOptions() {
     var allAccts = _accounts();
-    var optGroup = function (type, label) {
-      var items = allAccts.filter(function (a) { return a.type === type; });
-      if (!items.length) return '';
-      return '<optgroup label="' + label + '">' +
-        items.map(function (a) { return '<option value="' + a.code + '">' + a.code + ' ' + a.name + '</option>'; }).join('') +
-        '</optgroup>';
-    };
-    var acctOptions = '<option value="">-- 선택 --</option>' +
-      optGroup('asset', '자산') + optGroup('liability', '부채') + optGroup('equity', '자본') +
-      optGroup('revenue', '수익') + optGroup('expense', '비용');
+    var opts = '<option value="">-- 계정과목 선택 --</option>';
+    ['asset','liability','equity','revenue','expense'].forEach(function(type) {
+      var label = {asset:'자산',liability:'부채',equity:'자본',revenue:'수익',expense:'비용'}[type];
+      var items = allAccts.filter(function(a){return a.type===type;});
+      if (items.length) opts += '<optgroup label="'+label+'">' +
+        items.map(function(a){return '<option value="'+a.code+'">'+ a.code+' '+a.name+'</option>';}).join('') + '</optgroup>';
+    });
+    return opts;
+  }
 
-    return '<div class="modal-overlay" id="voucherModal" style="display:none" onclick="if(event.target===this)ACCT.closeVoucherModal()">' +
-      '<div class="modal-box" style="max-width:600px">' +
-      '<div class="modal-head"><div class="modal-title" id="voucherModalTitle">전표 등록</div><button class="modal-close" onclick="ACCT.closeVoucherModal()">✕</button></div>' +
-      '<div class="modal-body" style="display:flex;flex-direction:column;gap:14px">' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-      '<div class="form-group" style="margin:0"><label class="form-label">날짜 *</label><input class="form-input" id="vm_date" type="date" value="' + _today() + '"></div>' +
-      '<div class="form-group" style="margin:0"><label class="form-label">유형</label>' +
-      '<select class="form-input" id="vm_type"><option value="expense">출금</option><option value="income">입금</option><option value="transfer">대체</option></select></div>' +
-      '</div>' +
-      '<div class="form-group"><label class="form-label">적요 *</label><input class="form-input" id="vm_desc" placeholder="거래 내용"></div>' +
+  function _makeEntryCard(sideVal, acctCode, amtVal, isRemovable) {
+    var opts = _makeAcctOptions().replace('value="'+acctCode+'"','value="'+acctCode+'" selected');
+    var debitActive  = sideVal==='debit'  ? 'background:rgba(79,110,247,.15);color:#4f6ef7;font-weight:700;border:1.5px solid rgba(79,110,247,.3)' : 'background:var(--bg-tertiary);color:var(--text-muted);border:1.5px solid transparent';
+    var creditActive = sideVal==='credit' ? 'background:rgba(239,68,68,.15);color:#ef4444;font-weight:700;border:1.5px solid rgba(239,68,68,.3)' : 'background:var(--bg-tertiary);color:var(--text-muted);border:1.5px solid transparent';
+    var removeBtn = isRemovable ? '<button onclick="this.closest(\'.acct-entry-row\').remove()" style="background:rgba(239,68,68,.1);border:none;border-radius:8px;padding:4px 8px;cursor:pointer;color:#ef4444"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' : '';
+    return '<div class="acct-entry-row" style="background:var(--bg-tertiary);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between">' +
+      '<div style="display:flex;gap:6px">' +
+      '<button type="button" onclick="ACCT._toggleEntrySide(this,\'debit\')" style="'+debitActive+';border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer">차변</button>' +
+      '<button type="button" onclick="ACCT._toggleEntrySide(this,\'credit\')" style="'+creditActive+';border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer">대변</button>' +
+      '<input type="hidden" class="vm-side" value="'+sideVal+'">' +
+      '</div>' + removeBtn + '</div>' +
+      '<div style="position:relative"><select class="vm-acct" style="width:100%;height:46px;border-radius:12px;border:1.5px solid var(--border-color);background:var(--bg-secondary);padding:0 34px 0 12px;font-size:13px;box-sizing:border-box;-webkit-appearance:none;appearance:none;color:var(--text-primary)">' + opts + '</select>' +
+      '<div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-muted)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div></div>' +
+      '<input class="vm-amt" type="text" placeholder="금액" value="'+(amtVal?_fmtInput(amtVal):'')+'" oninput="this.value=ACCT.fmtInput(this.value)" style="width:100%;height:46px;border-radius:12px;border:1.5px solid var(--border-color);background:var(--bg-secondary);padding:0 12px;font-size:18px;font-weight:700;text-align:right;box-sizing:border-box;color:var(--text-primary);outline:none">' +
+      '</div>';
+  }
 
-      '<div style="font-size:12px;font-weight:800;color:var(--text-secondary);margin-bottom:4px">차변 / 대변 항목</div>' +
-      '<div id="vm_entries">' +
-      '<div class="acct-entry-row">' +
-      '<select class="form-input" style="flex:.8"><option value="debit">차변</option><option value="credit">대변</option></select>' +
-      '<select class="form-input" style="flex:2">' + acctOptions + '</select>' +
-      '<input class="form-input" type="number" placeholder="금액" style="flex:1">' +
+  function _voucherModalHTML() {
+    return '<div class="modal-overlay" id="voucherModal" style="display:none;align-items:flex-end" onclick="if(event.target===this)ACCT.closeVoucherModal()">' +
+      '<div id="voucherModalBox" style="width:100%;max-width:600px;margin:0 auto;background:var(--bg-primary);border-radius:24px 24px 0 0;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 32px rgba(0,0,0,.18)">' +
+      /* 드래그 핸들 */
+      '<div style="display:flex;justify-content:center;padding:12px 0 4px"><div style="width:40px;height:4px;border-radius:2px;background:var(--border-color)"></div></div>' +
+      /* 헤더 */
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 18px 14px">' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+      '<div style="width:34px;height:34px;background:linear-gradient(135deg,#6366f1,#4f6ef7);border-radius:10px;display:flex;align-items:center;justify-content:center">' +
+      '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>' +
+      '<div class="modal-title" id="voucherModalTitle" style="font-size:17px;font-weight:800">전표 등록</div></div>' +
+      '<button onclick="ACCT.closeVoucherModal()" style="background:var(--bg-tertiary);border:none;border-radius:10px;width:32px;height:32px;cursor:pointer;font-size:15px;color:var(--text-muted)">✕</button></div>' +
+      /* 바디 */
+      '<div style="padding:0 16px 24px;display:flex;flex-direction:column;gap:14px">' +
+      /* 날짜 */
+      '<div><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>날짜 <span style="color:#ef4444">*</span></div>' +
+      '<div style="height:46px;overflow:hidden;border-radius:12px;border:1.5px solid var(--border-color);background:var(--bg-secondary)">' +
+      '<input id="vm_date" type="date" value="' + _today() + '" style="width:100%;height:60px;border:none;background:transparent;font-size:15px;font-weight:600;padding:0 12px;outline:none;-webkit-appearance:none;appearance:none;color:var(--text-primary)"></div></div>' +
+      /* 유형 */
+      '<div><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px">유형</div>' +
+      '<div id="vm_type_group" style="display:flex;gap:8px">' +
+      '<button type="button" data-type="expense" onclick="ACCT._selectVType(this)" style="flex:1;height:44px;border-radius:12px;border:1.5px solid rgba(239,68,68,.3);background:rgba(239,68,68,.12);color:#ef4444;font-weight:700;font-size:13px;cursor:pointer">출금</button>' +
+      '<button type="button" data-type="income" onclick="ACCT._selectVType(this)" style="flex:1;height:44px;border-radius:12px;border:1.5px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-muted);font-size:13px;cursor:pointer">입금</button>' +
+      '<button type="button" data-type="transfer" onclick="ACCT._selectVType(this)" style="flex:1;height:44px;border-radius:12px;border:1.5px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-muted);font-size:13px;cursor:pointer">대체</button>' +
+      '<input type="hidden" id="vm_type" value="expense">' +
+      '</div></div>' +
+      /* 적요 */
+      '<div><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px">적요 <span style="color:#ef4444">*</span></div>' +
+      '<input id="vm_desc" placeholder="거래 내용" style="width:100%;height:46px;border-radius:12px;border:1.5px solid var(--border-color);background:var(--bg-secondary);padding:0 12px;font-size:14px;box-sizing:border-box;color:var(--text-primary);outline:none"></div>' +
+      /* 차변/대변 */
+      '<div><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:8px;display:flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>차변 / 대변 항목</div>' +
+      '<div id="vm_entries" style="display:flex;flex-direction:column;gap:8px">' +
+      _makeEntryCard('debit','',0,false) +
+      _makeEntryCard('credit','',0,false) +
       '</div>' +
-      '<div class="acct-entry-row">' +
-      '<select class="form-input" style="flex:.8"><option value="debit">차변</option><option value="credit" selected>대변</option></select>' +
-      '<select class="form-input" style="flex:2">' + acctOptions + '</select>' +
-      '<input class="form-input" type="number" placeholder="금액" style="flex:1">' +
-      '</div>' +
-      '</div>' +
-      '<button class="btn" onclick="ACCT.addVoucherEntry()" style="align-self:flex-start"><i data-lucide="plus" style="width:12px;height:12px"></i> 항목 추가</button>' +
-      '</div>' +
-      '<div class="modal-foot"><button class="btn" onclick="ACCT.closeVoucherModal()">취소</button>' +
-      '<button class="btn btn-blue" onclick="ACCT.saveVoucher()">저장</button></div>' +
-      '</div></div>';
+      '<button type="button" onclick="ACCT.addVoucherEntry()" style="width:100%;height:44px;border-radius:12px;border:1.5px dashed var(--border-color);background:transparent;color:var(--text-muted);font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px">' +
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>항목 추가</button></div>' +
+      /* 액션 버튼 */
+      '<div style="display:flex;gap:10px;margin-top:4px">' +
+      '<button onclick="ACCT.closeVoucherModal()" style="flex:1;height:52px;border-radius:14px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:15px;font-weight:600;cursor:pointer">취소</button>' +
+      '<button onclick="ACCT.saveVoucher()" style="flex:2;height:52px;border-radius:14px;border:none;background:linear-gradient(135deg,#6366f1,#4f6ef7);color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(99,102,241,.4)">저장</button>' +
+      '</div></div></div></div>';
   }
 
   var _voucherEditId = null;
@@ -3979,23 +4009,8 @@
   function _rebuildVoucherEntries(entries) {
     var container = document.getElementById('vm_entries');
     if (!container) return;
-    var allAccts = _accounts();
-    var acctOptions = '<option value="">-- 선택 --</option>';
-    ['asset', 'liability', 'equity', 'revenue', 'expense'].forEach(function (type) {
-      var label = { asset: '자산', liability: '부채', equity: '자본', revenue: '수익', expense: '비용' }[type];
-      var items = allAccts.filter(function (a) { return a.type === type; });
-      if (items.length) {
-        acctOptions += '<optgroup label="' + label + '">' +
-          items.map(function (a) { return '<option value="' + a.code + '">' + a.code + ' ' + a.name + '</option>'; }).join('') + '</optgroup>';
-      }
-    });
-    container.innerHTML = entries.map(function (e) {
-      return '<div class="acct-entry-row">' +
-        '<select class="form-input" style="flex:.8"><option value="debit"' + (e.side === 'debit' ? ' selected' : '') + '>\uCC28\uBCC0</option><option value="credit"' + (e.side === 'credit' ? ' selected' : '') + '>\uB300\uBCC0</option></select>' +
-        '<select class="form-input" style="flex:2">' + acctOptions.replace('value="' + e.accountCode + '"', 'value="' + e.accountCode + '" selected') + '</select>' +
-        '<input class="form-input" type="text" placeholder="\uAE08\uC561" style="flex:1" value="' + _fmtInput(e.amount || '') + '" oninput="this.value = ACCT.fmtInput(this.value)">' +
-        '<button class="btn-icon-sm delete" onclick="this.parentElement.remove()" title="\uC0AD\uC81C"><i data-lucide="x" class="icon-sm"></i></button>' +
-        '</div>';
+    container.innerHTML = entries.map(function(e, idx) {
+      return _makeEntryCard(e.side || 'debit', e.accountCode || '', e.amount || 0, idx >= 2);
     }).join('');
     _ri();
   }
@@ -4003,24 +4018,48 @@
   function addVoucherEntry() {
     var container = document.getElementById('vm_entries');
     if (!container) return;
-    var allAccts = _accounts();
-    var acctOptions = '<option value="">-- 선택 --</option>';
-    ['asset', 'liability', 'equity', 'revenue', 'expense'].forEach(function (type) {
-      var label = { asset: '자산', liability: '부채', equity: '자본', revenue: '수익', expense: '비용' }[type];
-      var items = allAccts.filter(function (a) { return a.type === type; });
-      if (items.length) {
-        acctOptions += '<optgroup label="' + label + '">' +
-          items.map(function (a) { return '<option value="' + a.code + '">' + a.code + ' ' + a.name + '</option>'; }).join('') + '</optgroup>';
+    var div = document.createElement('div');
+    div.innerHTML = _makeEntryCard('debit','',0,true);
+    container.appendChild(div.firstChild);
+    _ri();
+  }
+
+  function _toggleEntrySide(btn, side) {
+    var row = btn.closest('.acct-entry-row');
+    if (!row) return;
+    var btns = row.querySelectorAll('button[type="button"]');
+    var hidden = row.querySelector('.vm-side');
+    if (hidden) hidden.value = side;
+    btns.forEach(function(b) {
+      var bSide = b.getAttribute('onclick') && b.getAttribute('onclick').indexOf("'debit'") > -1 ? 'debit' : 'credit';
+      if (bSide === 'debit') {
+        b.style.cssText = (side==='debit') ?
+          'background:rgba(79,110,247,.15);color:#4f6ef7;font-weight:700;border:1.5px solid rgba(79,110,247,.3);border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer' :
+          'background:var(--bg-tertiary);color:var(--text-muted);border:1.5px solid transparent;border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer';
+      } else {
+        b.style.cssText = (side==='credit') ?
+          'background:rgba(239,68,68,.15);color:#ef4444;font-weight:700;border:1.5px solid rgba(239,68,68,.3);border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer' :
+          'background:var(--bg-tertiary);color:var(--text-muted);border:1.5px solid transparent;border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer';
       }
     });
-    var div = document.createElement('div');
-    div.className = 'acct-entry-row';
-    div.innerHTML = '<select class="form-input" style="flex:.8"><option value="debit">차변</option><option value="credit">대변</option></select>' +
-      '<select class="form-input" style="flex:2">' + acctOptions + '</select>' +
-      '<input class="form-input" type="number" placeholder="금액" style="flex:1">' +
-      '<button class="btn-icon-sm delete" onclick="this.parentElement.remove()" title="삭제"><i data-lucide="x" class="icon-sm"></i></button>';
-    container.appendChild(div);
-    _ri();
+  }
+
+  function _selectVType(btn) {
+    var group = document.getElementById('vm_type_group');
+    var hidden = document.getElementById('vm_type');
+    var type = btn.getAttribute('data-type');
+    if (hidden) hidden.value = type;
+    if (!group) return;
+    var colors = {expense:['rgba(239,68,68,.15)','#ef4444','rgba(239,68,68,.3)'],income:['rgba(34,197,94,.15)','#22c55e','rgba(34,197,94,.3)'],transfer:['rgba(245,158,11,.15)','#f59e0b','rgba(245,158,11,.3)']};
+    group.querySelectorAll('button[data-type]').forEach(function(b) {
+      var t = b.getAttribute('data-type');
+      if (t === type) {
+        var c = colors[t] || ['rgba(79,110,247,.15)','#4f6ef7','rgba(79,110,247,.3)'];
+        b.style.cssText = 'flex:1;height:44px;border-radius:12px;border:1.5px solid '+c[2]+';background:'+c[0]+';color:'+c[1]+';font-weight:700;font-size:13px;cursor:pointer';
+      } else {
+        b.style.cssText = 'flex:1;height:44px;border-radius:12px;border:1.5px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-muted);font-size:13px;cursor:pointer';
+      }
+    });
   }
 
   function closeVoucherModal() {
@@ -4038,12 +4077,13 @@
     var rows = container ? container.querySelectorAll('.acct-entry-row') : [];
     var entries = [];
     rows.forEach(function (row) {
-      var selects = row.querySelectorAll('select');
-      var input = row.querySelector('input[type="number"]');
-      if (selects.length >= 2 && input) {
-        var side = selects[0].value;
-        var code = selects[1].value;
-        var rawV = input.value || '';
+      var sideHidden = row.querySelector('.vm-side');
+      var acctSel    = row.querySelector('.vm-acct');
+      var amtInput   = row.querySelector('.vm-amt');
+      if (sideHidden && acctSel && amtInput) {
+        var side = sideHidden.value || 'debit';
+        var code = acctSel.value;
+        var rawV = amtInput.value || '';
         var amt = parseInt(rawV.replace(/,/g, '')) || 0;
         if (code && amt > 0) entries.push({ side: side, accountCode: code, amount: amt });
       }
@@ -4146,7 +4186,9 @@
     closeVoucherModal: closeVoucherModal,
     addVoucherEntry: addVoucherEntry,
     saveVoucher: saveVoucher,
-    deleteVoucher: deleteVoucher
+    deleteVoucher: deleteVoucher,
+    _toggleEntrySide: _toggleEntrySide,
+    _selectVType: _selectVType
   };
 
   window.AcctModule = window.ACCT;
