@@ -3924,17 +3924,19 @@
     var opts = _makeAcctOptions().replace('value="'+acctCode+'"','value="'+acctCode+'" selected');
     var debitActive  = sideVal==='debit'  ? 'background:rgba(79,110,247,.15);color:#4f6ef7;font-weight:700;border:1.5px solid rgba(79,110,247,.3)' : 'background:var(--bg-tertiary);color:var(--text-muted);border:1.5px solid transparent';
     var creditActive = sideVal==='credit' ? 'background:rgba(239,68,68,.15);color:#ef4444;font-weight:700;border:1.5px solid rgba(239,68,68,.3)' : 'background:var(--bg-tertiary);color:var(--text-muted);border:1.5px solid transparent';
-    var removeBtn = isRemovable ? '<button onclick="this.closest(\'.acct-entry-row\').remove()" style="background:rgba(239,68,68,.1);border:none;border-radius:8px;padding:4px 8px;cursor:pointer;color:#ef4444"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' : '';
-    return '<div class="acct-entry-row" style="background:var(--bg-tertiary);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between">' +
-      '<div style="display:flex;gap:6px">' +
-      '<button type="button" onclick="ACCT._toggleEntrySide(this,\'debit\')" style="'+debitActive+';border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer">차변</button>' +
-      '<button type="button" onclick="ACCT._toggleEntrySide(this,\'credit\')" style="'+creditActive+';border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer">대변</button>' +
+    var removeBtn = isRemovable ? '<button onclick="this.closest(\'.acct-entry-row\').remove()" style="flex-shrink:0;background:rgba(239,68,68,.1);border:none;border-radius:8px;padding:4px 8px;cursor:pointer;color:#ef4444"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' : '';
+    return '<div class="acct-entry-row" style="background:var(--bg-tertiary);border-radius:14px;padding:10px 10px 10px;display:flex;flex-direction:column;gap:8px">' +
+      /* 1행: 차변/대변 토글 + 계정과목 + 삭제 */
+      '<div style="display:flex;align-items:center;gap:6px">' +
+      '<button type="button" onclick="ACCT._toggleEntrySide(this,\'debit\')" style="flex-shrink:0;'+debitActive+';border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;white-space:nowrap">차변</button>' +
+      '<button type="button" onclick="ACCT._toggleEntrySide(this,\'credit\')" style="flex-shrink:0;'+creditActive+';border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;white-space:nowrap">대변</button>' +
       '<input type="hidden" class="vm-side" value="'+sideVal+'">' +
-      '</div>' + removeBtn + '</div>' +
-      '<div style="position:relative"><select class="vm-acct" style="width:100%;height:46px;border-radius:12px;border:1.5px solid var(--border-color);background:var(--bg-secondary);padding:0 34px 0 12px;font-size:13px;box-sizing:border-box;-webkit-appearance:none;appearance:none;color:var(--text-primary)">' + opts + '</select>' +
-      '<div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-muted)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div></div>' +
-      '<input class="vm-amt" type="text" placeholder="금액" value="'+(amtVal?_fmtInput(amtVal):'')+'" oninput="this.value=ACCT.fmtInput(this.value)" style="width:100%;height:46px;border-radius:12px;border:1.5px solid var(--border-color);background:var(--bg-secondary);padding:0 12px;font-size:18px;font-weight:700;text-align:right;box-sizing:border-box;color:var(--text-primary);outline:none">' +
+      '<div style="flex:1;position:relative;min-width:0"><select class="vm-acct" style="width:100%;height:40px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);padding:0 30px 0 10px;font-size:12.5px;box-sizing:border-box;-webkit-appearance:none;appearance:none;color:var(--text-primary)">' + opts + '</select>' +
+      '<div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-muted)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div></div>' +
+      removeBtn +
+      '</div>' +
+      /* 2행: 금액 */
+      '<input class="vm-amt" type="text" placeholder="금액" value="'+(amtVal?_fmtInput(amtVal):'')+'" oninput="this.value=ACCT.fmtInput(this.value)" style="width:100%;height:44px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);padding:0 12px;font-size:18px;font-weight:700;text-align:right;box-sizing:border-box;color:var(--text-primary);outline:none">' +
       '</div>';
   }
 
@@ -3951,7 +3953,7 @@
       '<div class="modal-title" id="voucherModalTitle" style="font-size:17px;font-weight:800">전표 등록</div></div>' +
       '<button onclick="ACCT.closeVoucherModal()" style="background:var(--bg-tertiary);border:none;border-radius:10px;width:32px;height:32px;cursor:pointer;font-size:15px;color:var(--text-muted)">✕</button></div>' +
       /* 바디 */
-      '<div style="padding:0 16px 24px;display:flex;flex-direction:column;gap:14px">' +
+      '<div style="padding:0 16px;padding-bottom:calc(24px + env(safe-area-inset-bottom, 70px) + 70px);display:flex;flex-direction:column;gap:14px">' +
       /* 날짜 */
       '<div><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>날짜 <span style="color:#ef4444">*</span></div>' +
       '<div style="height:46px;overflow:hidden;border-radius:12px;border:1.5px solid var(--border-color);background:var(--bg-secondary)">' +
