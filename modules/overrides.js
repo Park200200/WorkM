@@ -4636,7 +4636,8 @@ function openScheduleProgressModal(taskId) {
         var isMobile = window.innerWidth <= 767;
         tdTitle.innerHTML = '<i data-lucide="clipboard-list" style="width:18px;height:18px;color:var(--accent-blue)"></i> '
           + (isMobile ? '보고서작성' : '진행보고서 작성')
-          + (name ? ' <span style="font-size:13px;font-weight:500;color:var(--text-muted);margin-left:6px">— ' + name + '</span>' : '');
+          + (name ? ' <span style="font-size:13px;font-weight:500;color:var(--text-muted);margin-left:6px">'
+              + (isMobile ? '' : '— ') + name + '</span>' : '');
         if (typeof refreshIcons === 'function') refreshIcons();
       }
     }, 100);
