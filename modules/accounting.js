@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════
    📒 WorkM 회계관리 모듈 (modules/accounting.js)
    예산 → 품의 → 전표 → 입출금 → 보고서 자동 연결 경리 시스템
    ═══════════════════════════════════════════════════════════ */
@@ -3242,43 +3242,100 @@
     });
     cashTxns.sort(function (a, b) { return (a.date || '').localeCompare(b.date || ''); });
 
-    h += '<table style="width:100%;border-collapse:collapse;table-layout:fixed">' +
-      '<colgroup><col style="width:100px"><col><col style="width:110px"><col style="width:110px"><col style="width:120px"></colgroup>' +
-      '<thead><tr style="background:var(--bg-tertiary);border-bottom:2px solid var(--border-color)">' +
-      '<th style="padding:10px;text-align:left;font-size:12px">\uB0A0\uC9DC</th>' +
-      '<th style="padding:10px;text-align:left;font-size:12px">\uC801\uC694</th>' +
-      '<th style="padding:10px;text-align:right;font-size:12px">\uC785\uAE08</th>' +
-      '<th style="padding:10px;text-align:right;font-size:12px">\uCD9C\uAE08</th>' +
-      '<th style="padding:10px;text-align:right;font-size:12px">\uC794\uC561</th></tr></thead><tbody>';
+    var isMobCB = window.innerWidth < 768;
 
-    // 기초 행
-    h += '<tr style="border-bottom:1px solid var(--border-color);background:var(--bg-tertiary)">' +
-      '<td style="padding:8px 10px;font-size:12.5px;font-weight:700">' + year + '-01-01</td>' +
-      '<td style="padding:8px 10px;font-size:12.5px;font-weight:700;color:var(--text-muted)">\uAE30\uCD08\uC794\uC561</td>' +
-      '<td></td><td></td>' +
-      '<td style="padding:8px 10px;text-align:right;font-size:12.5px;font-weight:700">' + _fmtW(openBal) + '</td></tr>';
+    if (isMobCB) {
+      /* ── 모바일 카드 ── */
+      /* 기초 카드 */
+      h += '<div style="display:flex;flex-direction:column;gap:10px">';
+      h += '<div style="border-radius:16px;overflow:hidden;background:var(--bg-card);border:1.5px solid var(--border-color);box-shadow:0 2px 8px rgba(0,0,0,.05)">' +
+        '<div style="background:linear-gradient(135deg,rgba(79,110,247,.08),rgba(79,110,247,.02));padding:12px 16px;display:flex;align-items:center;justify-content:space-between">' +
+          '<div>' +
+            '<div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-bottom:2px">' + year + '-01-01 &nbsp; \uae30\ucd08\uc794\uc561</div>' +
+            '<div style="font-size:18px;font-weight:900;color:#4f6ef7">' + _fmtW(openBal) + '</div>' +
+          '</div>' +
+          '<div style="width:40px;height:40px;border-radius:12px;background:#4f6ef714;display:flex;align-items:center;justify-content:center;font-size:18px">\ud83c\udfe6</div>' +
+        '</div></div>';
 
-    var totalIn = 0, totalOut = 0;
-    cashTxns.forEach(function (tx) {
-      var inAmt = tx.side === 'debit' ? tx.amount : 0;
-      var outAmt = tx.side === 'credit' ? tx.amount : 0;
-      totalIn += inAmt; totalOut += outAmt;
-      runBal += inAmt - outAmt;
-      h += '<tr style="border-bottom:1px solid var(--border-color)">' +
-        '<td style="padding:8px 10px;font-size:12px;color:var(--text-muted)">' + (tx.date || '') + '</td>' +
-        '<td style="padding:8px 10px;font-size:12.5px">' + _esc(tx.desc || '') + '</td>' +
-        '<td style="padding:8px 10px;text-align:right;font-size:12.5px;color:#22c55e;font-weight:600">' + (inAmt ? _fmtW(inAmt) : '') + '</td>' +
-        '<td style="padding:8px 10px;text-align:right;font-size:12.5px;color:#ef4444;font-weight:600;white-space:nowrap">' + (outAmt ? _fmtW(outAmt) : '') + '</td>' +
-        '<td style="padding:8px 10px;text-align:right;font-size:12.5px;font-weight:700">' + _fmtW(runBal) + '</td></tr>';
-    });
+      var totalIn = 0, totalOut = 0;
+      cashTxns.forEach(function (tx) {
+        var inAmt = tx.side === 'debit' ? tx.amount : 0;
+        var outAmt = tx.side === 'credit' ? tx.amount : 0;
+        totalIn += inAmt; totalOut += outAmt;
+        runBal += inAmt - outAmt;
+        var isIn = inAmt > 0;
+        var cc = isIn ? '#22c55e' : '#ef4444';
+        var cbg = isIn ? 'rgba(34,197,94,.06)' : 'rgba(239,68,68,.06)';
+        h += '<div style="position:relative;border-radius:16px;overflow:hidden;background:var(--bg-card);border:1.5px solid var(--border-color);box-shadow:0 2px 8px rgba(0,0,0,.05);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">' +
+          '<div style="position:absolute;top:0;left:0;bottom:0;width:4px;background:' + cc + ';border-radius:16px 0 0 16px"></div>' +
+          '<div style="padding:12px 14px 12px 18px">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">' +
+              '<div style="font-size:11.5px;color:var(--text-muted);font-weight:600">' + (tx.date || '') + '</div>' +
+              '<span style="font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:20px;background:' + cbg + ';color:' + cc + '">' + (isIn ? '\uc785\uae08' : '\ucd9c\uae08') + '</span>' +
+            '</div>' +
+            '<div style="font-size:14px;font-weight:800;color:var(--text-primary);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + _esc(tx.desc || '') + '</div>' +
+            '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
+              '<div style="text-align:center;padding:7px 4px;background:rgba(34,197,94,.06);border-radius:10px">' +
+                '<div style="font-size:9px;font-weight:600;color:var(--text-muted);margin-bottom:2px">\uc785\uae08</div>' +
+                '<div style="font-size:13px;font-weight:900;color:#22c55e">' + (inAmt ? _fmtW(inAmt) : '-') + '</div>' +
+              '</div>' +
+              '<div style="text-align:center;padding:7px 4px;background:rgba(239,68,68,.06);border-radius:10px">' +
+                '<div style="font-size:9px;font-weight:600;color:var(--text-muted);margin-bottom:2px">\ucd9c\uae08</div>' +
+                '<div style="font-size:13px;font-weight:900;color:#ef4444">' + (outAmt ? _fmtW(outAmt) : '-') + '</div>' +
+              '</div>' +
+              '<div style="text-align:center;padding:7px 4px;background:var(--bg-tertiary);border-radius:10px">' +
+                '<div style="font-size:9px;font-weight:600;color:var(--text-muted);margin-bottom:2px">\uc794\uc561</div>' +
+                '<div style="font-size:13px;font-weight:900;color:var(--text-primary)">' + _fmtW(runBal) + '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div></div>';
+      });
 
-    h += '<tr style="border-top:2px solid var(--text-primary);background:var(--bg-tertiary)">' +
-      '<td colspan="2" style="padding:10px;font-weight:800;text-align:center;font-size:13px">\uD569\uACC4</td>' +
-      '<td style="padding:10px;text-align:right;font-weight:800;font-size:13px;color:#22c55e">' + _fmtW(totalIn) + '</td>' +
-      '<td style="padding:10px;text-align:right;font-weight:800;font-size:13px;color:#ef4444">' + _fmtW(totalOut) + '</td>' +
-      '<td style="padding:10px;text-align:right;font-weight:800;font-size:14px">' + _fmtW(runBal) + '</td></tr>' +
-      '</tbody></table>';
-
+      h += '</div>';
+      /* 합계 요약 */
+      h += '<div style="background:var(--bg-tertiary);border-radius:14px;padding:14px 16px;margin-top:6px">' +
+        '<div style="font-size:12px;font-weight:800;color:var(--text-secondary);margin-bottom:10px;text-align:center">\ud569 \uacc4</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
+          '<div style="text-align:center"><div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">\uc785\uae08\ud569\uacc4</div><div style="font-size:13px;font-weight:900;color:#22c55e">' + _fmtW(totalIn) + '</div></div>' +
+          '<div style="text-align:center;border-left:1px solid var(--border-color);border-right:1px solid var(--border-color)"><div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">\ucd9c\uae08\ud569\uacc4</div><div style="font-size:13px;font-weight:900;color:#ef4444">' + _fmtW(totalOut) + '</div></div>' +
+          '<div style="text-align:center"><div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">\uc794\uc561</div><div style="font-size:13px;font-weight:900;color:#4f6ef7">' + _fmtW(runBal) + '</div></div>' +
+        '</div>' +
+      '</div>';
+    } else {
+      /* ── 데스크탑 테이블 ── */
+      var totalIn = 0, totalOut = 0;
+      h += '<table style="width:100%;border-collapse:collapse;table-layout:fixed">' +
+        '<colgroup><col style="width:100px"><col><col style="width:110px"><col style="width:110px"><col style="width:120px"></colgroup>' +
+        '<thead><tr style="background:var(--bg-tertiary);border-bottom:2px solid var(--border-color)">' +
+        '<th style="padding:10px;text-align:left;font-size:12px">\ub0a0\uc9dc</th>' +
+        '<th style="padding:10px;text-align:left;font-size:12px">\uc801\uc694</th>' +
+        '<th style="padding:10px;text-align:right;font-size:12px">\uc785\uae08</th>' +
+        '<th style="padding:10px;text-align:right;font-size:12px">\ucd9c\uae08</th>' +
+        '<th style="padding:10px;text-align:right;font-size:12px">\uc794\uc561</th></tr></thead><tbody>';
+      h += '<tr style="border-bottom:1px solid var(--border-color);background:var(--bg-tertiary)">' +
+        '<td style="padding:8px 10px;font-size:12.5px;font-weight:700">' + year + '-01-01</td>' +
+        '<td style="padding:8px 10px;font-size:12.5px;font-weight:700;color:var(--text-muted)">\uae30\ucd08\uc794\uc561</td>' +
+        '<td></td><td></td>' +
+        '<td style="padding:8px 10px;text-align:right;font-size:12.5px;font-weight:700">' + _fmtW(openBal) + '</td></tr>';
+      cashTxns.forEach(function (tx) {
+        var inAmt = tx.side === 'debit' ? tx.amount : 0;
+        var outAmt = tx.side === 'credit' ? tx.amount : 0;
+        totalIn += inAmt; totalOut += outAmt;
+        runBal += inAmt - outAmt;
+        h += '<tr style="border-bottom:1px solid var(--border-color)">' +
+          '<td style="padding:8px 10px;font-size:12px;color:var(--text-muted)">' + (tx.date || '') + '</td>' +
+          '<td style="padding:8px 10px;font-size:12.5px">' + _esc(tx.desc || '') + '</td>' +
+          '<td style="padding:8px 10px;text-align:right;font-size:12.5px;color:#22c55e;font-weight:600">' + (inAmt ? _fmtW(inAmt) : '') + '</td>' +
+          '<td style="padding:8px 10px;text-align:right;font-size:12.5px;color:#ef4444;font-weight:600;white-space:nowrap">' + (outAmt ? _fmtW(outAmt) : '') + '</td>' +
+          '<td style="padding:8px 10px;text-align:right;font-size:12.5px;font-weight:700">' + _fmtW(runBal) + '</td></tr>';
+      });
+      h += '<tr style="border-top:2px solid var(--text-primary);background:var(--bg-tertiary)">' +
+        '<td colspan="2" style="padding:10px;font-weight:800;text-align:center;font-size:13px">\ud569\uacc4</td>' +
+        '<td style="padding:10px;text-align:right;font-weight:800;font-size:13px;color:#22c55e">' + _fmtW(totalIn) + '</td>' +
+        '<td style="padding:10px;text-align:right;font-weight:800;font-size:13px;color:#ef4444">' + _fmtW(totalOut) + '</td>' +
+        '<td style="padding:10px;text-align:right;font-weight:800;font-size:14px">' + _fmtW(runBal) + '</td></tr>' +
+        '</tbody></table>';
+    }
     if (cashTxns.length === 0) {
       h += '<div class="acct-empty" style="margin-top:12px">\uD604\uAE08 \uAC70\uB798 \uB0B4\uC5ED\uC774 \uC5C6\uC2B5\uB2C8\uB2E4</div>';
     }
