@@ -3922,17 +3922,31 @@
 
   function _makeEntryCard(sideVal, acctCode, amtVal, isRemovable) {
     var opts = _makeAcctOptions().replace('value="'+acctCode+'"','value="'+acctCode+'" selected');
-    var debitActive  = sideVal==='debit'  ? 'background:rgba(79,110,247,.15);color:#4f6ef7;font-weight:700;border:1.5px solid rgba(79,110,247,.3)' : 'background:var(--bg-tertiary);color:var(--text-muted);border:1.5px solid transparent';
-    var creditActive = sideVal==='credit' ? 'background:rgba(239,68,68,.15);color:#ef4444;font-weight:700;border:1.5px solid rgba(239,68,68,.3)' : 'background:var(--bg-tertiary);color:var(--text-muted);border:1.5px solid transparent';
-    var removeBtn = isRemovable ? '<button onclick="this.closest(\'.acct-entry-row\').remove()" style="flex-shrink:0;background:rgba(239,68,68,.1);border:none;border-radius:8px;padding:4px 8px;cursor:pointer;color:#ef4444"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' : '';
-    return '<div class="acct-entry-row" style="background:var(--bg-tertiary);border-radius:14px;padding:10px 10px 10px;display:flex;flex-direction:column;gap:8px">' +
-      /* 1행: 차변/대변 토글 + 계정과목 + 삭제 */
-      '<div style="display:flex;align-items:center;gap:6px">' +
-      '<button type="button" onclick="ACCT._toggleEntrySide(this,\'debit\')" style="flex-shrink:0;'+debitActive+';border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;white-space:nowrap">차변</button>' +
-      '<button type="button" onclick="ACCT._toggleEntrySide(this,\'credit\')" style="flex-shrink:0;'+creditActive+';border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;white-space:nowrap">대변</button>' +
+    var isDebit = sideVal !== 'credit';
+    /* pill switch 스타일 */
+    var trackBg    = isDebit ? '#4f6ef7' : '#ef4444';
+    var knobLeft   = isDebit ? '2px' : 'calc(50% + 1px)';
+    var knobW      = 'calc(50% - 3px)';
+    var debitLbl   = isDebit ? 'color:#fff;font-weight:700' : 'color:rgba(255,255,255,.55);font-weight:500';
+    var creditLbl  = !isDebit ? 'color:#fff;font-weight:700' : 'color:rgba(255,255,255,.55);font-weight:500';
+    var removeBtn  = isRemovable ? '<button onclick="this.closest(\'.acct-entry-row\').remove()" style="flex-shrink:0;background:rgba(239,68,68,.1);border:none;border-radius:8px;width:32px;height:40px;cursor:pointer;color:#ef4444;display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' : '';
+    return '<div class="acct-entry-row" style="background:var(--bg-tertiary);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px">' +
+      /* 1행: pill 스위치 + 계정과목 + 삭제 */
+      '<div style="display:flex;align-items:center;gap:8px">' +
+      /* pill switch wrapper */
+      '<div style="position:relative;flex-shrink:0;width:90px;height:40px;border-radius:20px;background:'+trackBg+';cursor:pointer" onclick="ACCT._toggleEntrySide(this)">' +
+      /* 슬라이딩 놉 */
+      '<div class="vm-knob" style="position:absolute;top:3px;left:'+knobLeft+';width:'+knobW+';height:34px;border-radius:17px;background:rgba(255,255,255,.25);transition:left .18s,width .18s;pointer-events:none"></div>' +
+      /* 차변 레이블 */
+      '<span style="position:absolute;left:0;top:0;width:50%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12.5px;pointer-events:none;'+debitLbl+'">차변</span>' +
+      /* 대변 레이블 */
+      '<span style="position:absolute;right:0;top:0;width:50%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12.5px;pointer-events:none;'+creditLbl+'">대변</span>' +
       '<input type="hidden" class="vm-side" value="'+sideVal+'">' +
-      '<div style="flex:1;position:relative;min-width:0"><select class="vm-acct" style="width:100%;height:40px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);padding:0 30px 0 10px;font-size:12.5px;box-sizing:border-box;-webkit-appearance:none;appearance:none;color:var(--text-primary)">' + opts + '</select>' +
-      '<div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-muted)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div></div>' +
+      '</div>' +
+      /* 계정과목 select */
+      '<div style="flex:1;position:relative;min-width:0">' +
+      '<select class="vm-acct" style="width:100%;height:40px;border-radius:10px;border:1.5px solid var(--border-color);background:var(--bg-secondary);padding:0 28px 0 10px;font-size:12.5px;box-sizing:border-box;-webkit-appearance:none;appearance:none;color:var(--text-primary)">' + opts + '</select>' +
+      '<div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-muted)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></div></div>' +
       removeBtn +
       '</div>' +
       /* 2행: 금액 */
@@ -4026,24 +4040,30 @@
     _ri();
   }
 
-  function _toggleEntrySide(btn, side) {
-    var row = btn.closest('.acct-entry-row');
+  function _toggleEntrySide(el) {
+    /* el = pill switch div */
+    var row = el.closest('.acct-entry-row');
     if (!row) return;
-    var btns = row.querySelectorAll('button[type="button"]');
     var hidden = row.querySelector('.vm-side');
-    if (hidden) hidden.value = side;
-    btns.forEach(function(b) {
-      var bSide = b.getAttribute('onclick') && b.getAttribute('onclick').indexOf("'debit'") > -1 ? 'debit' : 'credit';
-      if (bSide === 'debit') {
-        b.style.cssText = (side==='debit') ?
-          'background:rgba(79,110,247,.15);color:#4f6ef7;font-weight:700;border:1.5px solid rgba(79,110,247,.3);border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer' :
-          'background:var(--bg-tertiary);color:var(--text-muted);border:1.5px solid transparent;border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer';
-      } else {
-        b.style.cssText = (side==='credit') ?
-          'background:rgba(239,68,68,.15);color:#ef4444;font-weight:700;border:1.5px solid rgba(239,68,68,.3);border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer' :
-          'background:var(--bg-tertiary);color:var(--text-muted);border:1.5px solid transparent;border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer';
-      }
-    });
+    var knob   = row.querySelector('.vm-knob');
+    var spans  = el.querySelectorAll('span');
+    var curSide = (hidden && hidden.value) || 'debit';
+    var newSide = curSide === 'debit' ? 'credit' : 'debit';
+    if (hidden) hidden.value = newSide;
+    /* 색 전환 */
+    var col = newSide === 'debit' ? '#4f6ef7' : '#ef4444';
+    el.style.background = col;
+    /* 븕 이동 */
+    if (knob) {
+      knob.style.left = newSide === 'debit' ? '2px' : 'calc(50% + 1px)';
+    }
+    /* 레이블 세기 */
+    if (spans.length >= 2) {
+      spans[0].style.fontWeight = newSide === 'debit' ? '700' : '500';
+      spans[0].style.color = newSide === 'debit' ? '#fff' : 'rgba(255,255,255,.55)';
+      spans[1].style.fontWeight = newSide === 'credit' ? '700' : '500';
+      spans[1].style.color = newSide === 'credit' ? '#fff' : 'rgba(255,255,255,.55)';
+    }
   }
 
   function _selectVType(btn) {
