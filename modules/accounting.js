@@ -2938,14 +2938,21 @@
       '<div class="page-subtitle">' + year + '\uB144\uB3C4 \uC7AC\uBB34\uC81C\uD45C \uBC0F \uC7A5\uBD80\uB97C \uC870\uD68C\uD569\uB2C8\uB2E4</div>' +
       '</div></div>';
 
-    // 탭바
-    html += '<div class="acct-tab-bar" style="margin-bottom:16px;position:sticky;top:52px;z-index:9;background:var(--bg-primary);padding-top:4px">';
+    // 탭바 — 스크롤 가능한 캡슐형
+    html += '<div style="margin-bottom:16px;position:sticky;top:52px;z-index:9;background:var(--bg-primary);padding:6px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none">' +
+      '<div style="display:flex;gap:6px;padding:0 2px;min-width:max-content">';
     tabs.forEach(function (t) {
       var active = _reportTab === t.key;
-      html += '<button class="acct-tab' + (active ? ' active' : '') + '" onclick="ACCT.switchReportTab(\'' + t.key + '\')">' +
-        '<i data-lucide="' + t.icon + '" style="width:13px;height:13px"></i> ' + t.label + '</button>';
+      var btnStyle = 'display:flex;align-items:center;gap:5px;padding:9px 15px;border-radius:24px;border:none;cursor:pointer;font-size:12.5px;font-weight:700;white-space:nowrap;transition:all .2s;';
+      btnStyle += active
+        ? 'background:linear-gradient(135deg,#4f6ef7,#6d8ef9);color:#fff;box-shadow:0 4px 12px rgba(79,110,247,.35);transform:translateY(-1px)'
+        : 'background:var(--bg-card);color:var(--text-secondary);border:1.5px solid var(--border-color)';
+      html += '<button onclick="ACCT.switchReportTab(\'' + t.key + '\')" style="' + btnStyle + '">' +
+        '<i data-lucide="' + t.icon + '" style="width:13px;height:13px"></i>' +
+        '<span>' + t.label + '</span>' +
+        '</button>';
     });
-    html += '</div>';
+    html += '</div></div>';
 
     // 본문
     if (_reportTab === 'bs') html += _renderBS(accounts, vouchers, balances, year);
@@ -3380,7 +3387,7 @@
       return h + '<div class="acct-empty">거래처 데이터가 없습니다</div></div>';
     }
 
-    var isMobAL = window.innerWidth < 768;
+    var isMobAL = window.innerWidth < 960;
     var TYPE = {
       ar:     { label: '\ubbf8\uc218\uae08(\uc678\uc0c1)', c: '#f59e0b', bg: 'rgba(245,158,11,.1)' },
       arCol:  { label: '\ud68c\uc218(\uc218\uae08)', c: '#22c55e', bg: 'rgba(34,197,94,.1)' },
