@@ -5424,6 +5424,14 @@ function _copySyncCmds() {
     if (_tabBarMode === mode) return;
     _tabBarMode = mode;
 
+    /* ── 헤더 모드바 전환 ── */
+    var acctBar = document.getElementById('acctModeBar');
+    var hpBar   = document.getElementById('homepageModeBar');
+    var mobTtl  = document.getElementById('mobileHeaderTitle');
+    if (acctBar) acctBar.style.display = (mode === 'accounting') ? 'flex' : 'none';
+    if (hpBar)   hpBar.style.display   = (mode === 'homepage')   ? 'flex' : 'none';
+    if (mobTtl)  mobTtl.style.display  = (mode === 'default')    ? 'flex' : 'none';
+
     var bar = document.getElementById('mobileTabBar');
     if (!bar) return;
     bar.innerHTML = '';
