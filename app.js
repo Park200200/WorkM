@@ -2070,8 +2070,8 @@ function renderDrExecList() {
       '<td style="font-size:10.5px">' + (filesHtml || '<span style="color:var(--text-muted)">-</span>') + '</td>' +
       '<td style="text-align:center;font-size:11.5px;font-weight:600;color:var(--text-secondary)">' + savedTime + '</td>' +
       '<td style="text-align:center"><div style="display:flex;gap:4px;justify-content:center">' +
-        '<button onclick="drOpenExecForm(\'' + r.id + '\')" title="수정" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 5px">\u270f\ufe0f</button>' +
-        '<button onclick="drDeleteExecReport(\'' + r.id + '\')" title="삭제" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 5px">\uD83D\uDDD1\uFE0F</button>' +
+        '<button onclick="drOpenExecForm(' + r.id + ')" title="수정" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 5px">✏️</button>' +
+        '<button onclick="drDeleteExecReport(' + r.id + ')" title="삭제" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 5px">🗑️</button>' +
       '</div></td></tr>';
   }).join('');
   refreshIcons();
