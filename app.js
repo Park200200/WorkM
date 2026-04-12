@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 
 let sidebarTimer = null;
 
@@ -1276,17 +1276,28 @@ function renderStaffStatusBadge(status) {
   if(status === '퇴사') type = 'done';
   return `<span class="status-badge status-${type}">${status}</span>`;
 }
-/* ── 직원관리: 창 크기 변경 시 모바일/데스크탑 레이아웃 자동 전환 ── */
+/* ── 전역 resize: 모바일/데스크탑 768px 교차 시 카드↔테이블 자동 전환 ── */
 (function() {
-  var _smPrevMob = window.innerWidth < 768;
+  var _prevMob = window.innerWidth < 768;
+
+  function _isActivePage(id) {
+    var p = document.getElementById(id);
+    return p && p.classList.contains('active');
+  }
+
   window.addEventListener('resize', function() {
     var isMobNow = window.innerWidth < 768;
-    if (isMobNow !== _smPrevMob) {
-      _smPrevMob = isMobNow;
-      var page = document.getElementById('page-staff-mgmt');
-      if (page && page.style.display !== 'none' && page.classList.contains('active')) {
-        if (typeof renderPage_StaffMgmt === 'function') renderPage_StaffMgmt();
-      }
+    if (isMobNow === _prevMob) return;        // 임계점 미교차 → 무시
+    _prevMob = isMobNow;
+
+    /* 직원관리 */
+    if (_isActivePage('page-staff-mgmt')) {
+      if (typeof renderPage_StaffMgmt === 'function') renderPage_StaffMgmt();
+    }
+
+    /* 업무분장 / 업무목록 (taskListArea를 공유하는 모든 뷰) */
+    if (_isActivePage('page-tasks')) {
+      if (typeof renderPage_Tasks === 'function') renderPage_Tasks();
     }
   });
 })();
