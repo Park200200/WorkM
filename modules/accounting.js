@@ -1,4 +1,4 @@
-﻿/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    📒 WorkM 회계관리 모듈 (modules/accounting.js)
    예산 → 품의 → 전표 → 입출금 → 보고서 자동 연결 경리 시스템
    ═══════════════════════════════════════════════════════════ */
@@ -2630,7 +2630,7 @@
       '</div>' +
       '<div class="acct-form-row">' +
       '<div class="form-group" style="flex:1"><label class="form-label">입금수단</label>' +
-      '<select class="form-input" id="inc_method"><option value="계좌이체">계좌이체</option><option value="현금">현금</option><option value="카드">카드</option><option value="미수금">미수금(외상)</option><option value="기타">기타</option></select></div>' +
+      '<select class="form-input" id="inc_method"><option value="계좌이체">계좌이체</option><option value="현금">현금</option><option value="카드">카드</option><option value="미수금">미수금(외상)</option><option value="미수금회수">💰 미수금 회수(수금)</option><option value="기타">기타</option></select></div>' +
       '<div class="form-group" style="flex:1"><label class="form-label">날짜</label>' +
       '<input class="form-input" id="inc_date" type="date" value="' + _today() + '"></div>' +
       '<div class="form-group" style="flex:2"><label class="form-label">자동매핑 계정 <span id="inc_auto_label" style="color:var(--accent-blue);font-weight:700"></span></label>' +
@@ -2685,15 +2685,31 @@
 
     // 전표 자동 생성
     var vouchers = _vouchers();
-    // 미수금(외상)은 차변 계정을 미수금(1030)으로, 현금은 1010, 나머지는 보통예금(1020)
-    var incDebitAcct = method === '미수금' ? '1030' : (method === '현금' ? '1010' : '1020');
+    var vEntries;
+    if (method === '미수금회수') {
+      // 미수금 회수: 차변 보통예금(1020) / 대변 미수금(1030)
+      vEntries = [
+        { side: 'debit',  accountCode: '1020', amount: amt },
+        { side: 'credit', accountCode: '1030', amount: amt }
+      ];
+    } else if (method === '미수금') {
+      // 외상 매출: 차변 미수금(1030) / 대변 수익
+      vEntries = [
+        { side: 'debit',  accountCode: '1030', amount: amt },
+        { side: 'credit', accountCode: code,   amount: amt }
+      ];
+    } else {
+      // 일반 입금: 현금 1010 / 그 외 보통예금 1020
+      var incDebitAcct = method === '현금' ? '1010' : '1020';
+      vEntries = [
+        { side: 'debit',  accountCode: incDebitAcct, amount: amt },
+        { side: 'credit', accountCode: code,          amount: amt }
+      ];
+    }
     vouchers.push({
       id: vId, date: date, type: 'income',
       description: desc, counterpart: counter,
-      entries: [
-        { side: 'debit', accountCode: incDebitAcct, amount: amt },
-        { side: 'credit', accountCode: code, amount: amt }
-      ],
+      entries: vEntries,
       sourceType: 'cashflow', sourceId: cfId,
       createdAt: _now(), createdBy: (typeof WS !== 'undefined' && WS.currentUser) ? WS.currentUser.name : '시스템'
     });
