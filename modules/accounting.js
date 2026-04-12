@@ -323,7 +323,7 @@
     if (years.indexOf(nowY - 1) < 0) years.push(nowY - 1);
     if (years.indexOf(nowY + 1) < 0) years.push(nowY + 1);
     years.sort(function (a, b) { return b - a; });
-    var h = '<span style="font-size:11px;color:var(--text-muted);font-weight:600"><i data-lucide="calendar" style="width:12px;height:12px;vertical-align:middle;margin-right:2px"></i>회계년도</span>';
+    var h = '<span class="acct-year-label" style="font-size:11px;color:var(--text-muted);font-weight:600"><i data-lucide="calendar" style="width:12px;height:12px;vertical-align:middle;margin-right:2px"></i>회계년도</span>';
     years.forEach(function (y) {
       var active = y === currentYear;
       h += '<button onclick="window._acctBudgetYear=' + y + ';ACCT._refreshYear()" style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ' +

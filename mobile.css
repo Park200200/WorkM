@@ -528,6 +528,7 @@ button, .btn, .btn-sm, .btn-icon, .nav-item, .tab-item,
   }
   #acctYearBar { margin-left: 4px !important; gap: 4px !important; flex-wrap: nowrap; overflow-x: auto; }
   #acctYearBar button { min-height: unset !important; padding: 4px 8px !important; font-size: 11px !important; }
+  .acct-year-label { display: none !important; }
 
   /* 모바일 전용 헤더 제목 — 검색바 사용하므로 숨김 */
   #mobileHeaderTitle {
