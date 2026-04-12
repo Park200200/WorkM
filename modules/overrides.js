@@ -1668,73 +1668,134 @@ function renderTaskListView(targetEl) {
   const el = targetEl || document.getElementById('taskListArea');
   if (!el) return;
 
-  const renderNode = (parentId, level) => {
-    const tasks = WS.tasks.filter(t =>
-      t.parentId === (parentId === null ? null : Number(parentId))
-    );
-    let html = '';
-    tasks.forEach(t => {
-      const indent = level * 24;
-      const baseScore = t.scoreBase !== undefined ? t.scoreBase : (t.score || 0);
-      const teamStr = t.team || '';
-      // 업무결과: 기타설정과 연동된 아이콘+컴러 배지
-      var resultStr = _buildResultBadge(t.reportContent);
-      // 업무설명
-      const descStr = t.desc
-        ? '<span style="font-size:11.5px;color:var(--text-secondary)">' + t.desc + '</span>'
-        : '<span style="color:var(--text-muted);font-size:11px">-</span>';
+  const isMob = window.innerWidth < 768;
 
-      html += '<tr>' +
-        // ① 업무제목 + 팀리스트 아래 표시
-        '<td>' +
-        '<div class="tree-node" style="padding-left:' + indent + 'px">' +
-        (level > 0 ? '<div class="tree-line"></div>' : '') +
-        '<div class="tree-title">' +
-        t.title +
-        '</div>' +
+  /* 팀컬러 팔레트 (공통) */
+  var TEAM_COLORS = ['#4f6ef7','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#f97316','#14b8a6'];
+  function teamColor(name) {
+    if (!name) return TEAM_COLORS[0];
+    var h = 0;
+    for (var i = 0; i < name.length; i++) h = ((h * 31) + name.charCodeAt(i)) & 0x7fffffff;
+    return TEAM_COLORS[h % TEAM_COLORS.length];
+  }
 
-        '</div>' +
-        (teamStr ? '<div style="font-size:11px;color:var(--text-muted);padding-left:' + indent + 'px;margin-top:2px">' + teamStr + '</div>' : '') +
-        '</td>' +
-        // ② 업무설명
-        '<td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + descStr + '</td>' +
-        // ③ 기본점수
-        '<td style="text-align:center;width:80px">' +
-        '<div class="score-tag">' + baseScore + '<span>pt</span></div>' +
-        '</td>' +
-        // ④ 업무결과 (reportContent)
-        '<td style="width:120px">' + resultStr + '</td>' +
-        // ⑤ 관리 (수정 + 삭제)
-        '<td style="width:90px">' +
-        '<div class="manage-actions">' +
-        '<button class="btn-icon-sm edit" onclick="openEditTaskModal(' + t.id + ')" title="수정">' +
-        '<i data-lucide="edit-3" class="icon-sm"></i>' +
-        '</button>' +
-        '<button class="btn-icon-sm delete" onclick="deleteTask(' + t.id + ')" title="삭제">' +
-        '<i data-lucide="trash-2" class="icon-sm"></i>' +
-        '</button>' +
-        '</div>' +
-        '</td>' +
-        '</tr>';
-      html += renderNode(t.id, level + 1);
-    });
-    return html;
-  };
+  if (isMob) {
+    /* ── 모바일: 트리 평탄화해서 카드로 렌더링 ── */
+    var cards = '';
 
-  const rowsHtml = renderNode(null, 0);
-  el.innerHTML =
-    '<table class="task-table">' +
-    '<thead><tr>' +
-    '<th>업무제목</th>' +
-    '<th>업무설명</th>' +
-    '<th style="text-align:center;width:80px">기본점수</th>' +
-    '<th style="width:120px">업무결과</th>' +
-    '<th style="width:90px;text-align:center">관리</th>' +
-    '</tr></thead>' +
-    '<tbody>' +
-    (rowsHtml || '<tr><td colspan="5" class="empty-state">업무가 없습니다.</td></tr>') +
-    '</tbody>' +
-    '</table>';
+    var renderMobNode = function(parentId, level) {
+      var tasks = WS.tasks.filter(function(t) {
+        return t.parentId === (parentId === null ? null : Number(parentId));
+      });
+      tasks.forEach(function(t) {
+        var baseScore = t.scoreBase !== undefined ? t.scoreBase : (t.score || 0);
+        var tc = teamColor(t.team);
+        var resultStr = _buildResultBadge(t.reportContent);
+        var descText = t.desc ? t.desc.slice(0, 50) + (t.desc.length > 50 ? '…' : '') : '';
+
+        /* 점수 상태 태그 */
+        var stLabel, stC, stBg;
+        if (baseScore >= 20)      { stLabel = '고득점'; stC = '#22c55e'; stBg = 'rgba(34,197,94,.13)'; }
+        else if (baseScore >= 10) { stLabel = '중간'; stC = '#4f6ef7'; stBg = 'rgba(79,110,247,.13)'; }
+        else if (baseScore > 0)   { stLabel = '저점수'; stC = '#f59e0b'; stBg = 'rgba(245,158,11,.13)'; }
+        else                      { stLabel = '미배점'; stC = '#6b7280', stBg = 'rgba(107,114,128,.11)'; }
+
+        /* 계층 들여쓰기 표시 */
+        var indentBadge = level > 0
+          ? '<span class="tlm-level-badge" style="background:' + tc + '22;color:' + tc + '">' +
+            '└ L' + level + '</span>'
+          : '';
+
+        cards += '<div class="tlm-card" style="--tc:' + tc + ';margin-left:' + (level * 12) + 'px">' +
+          /* 헤더: 제목 + 상태태그 */
+          '<div class="tlm-card-header">' +
+            '<div class="tlm-title-wrap">' +
+              (indentBadge || '') +
+              '<div class="tlm-title">' + t.title + '</div>' +
+              (t.team ? '<div class="tlm-team">' + t.team + '</div>' : '') +
+            '</div>' +
+            '<span class="tlm-status-tag" style="color:' + stC + ';background:' + stBg + '">' + stLabel + '</span>' +
+          '</div>' +
+          /* 설명 */
+          (descText ? '<div class="tlm-desc">' + descText + '</div>' : '') +
+          /* 점수 + 결과배지 */
+          '<div class="tlm-meta-row">' +
+            '<div class="tlm-score"><span style="color:' + tc + '">' + baseScore + '</span><em>pt</em></div>' +
+            '<div class="tlm-result">' + resultStr + '</div>' +
+          '</div>' +
+          /* 수정 / 삭제 버튼 */
+          '<div class="tlm-actions">' +
+            '<button class="tlm-btn-edit" onclick="openEditTaskModal(' + t.id + ')">' +
+              '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+              '수정' +
+            '</button>' +
+            '<button class="tlm-btn-delete" onclick="deleteTask(' + t.id + ')">' +
+              '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
+              '삭제' +
+            '</button>' +
+          '</div>' +
+          '<div class="tlm-progress-wrap"></div>' +
+        '</div>';
+
+        renderMobNode(t.id, level + 1);
+      });
+    };
+    renderMobNode(null, 0);
+    el.innerHTML = cards || '<div class="empty-state" style="padding:40px 0;text-align:center;color:var(--text-muted)">업무가 없습니다.</div>';
+
+  } else {
+    /* ── 데스크탑: 기존 테이블 ── */
+    const renderNode = (parentId, level) => {
+      const tasks = WS.tasks.filter(t =>
+        t.parentId === (parentId === null ? null : Number(parentId))
+      );
+      let html = '';
+      tasks.forEach(t => {
+        const indent = level * 24;
+        const baseScore = t.scoreBase !== undefined ? t.scoreBase : (t.score || 0);
+        const teamStr = t.team || '';
+        var resultStr = _buildResultBadge(t.reportContent);
+        const descStr = t.desc
+          ? '<span style="font-size:11.5px;color:var(--text-secondary)">' + t.desc + '</span>'
+          : '<span style="color:var(--text-muted);font-size:11px">-</span>';
+
+        html += '<tr>' +
+          '<td>' +
+          '<div class="tree-node" style="padding-left:' + indent + 'px">' +
+          (level > 0 ? '<div class="tree-line"></div>' : '') +
+          '<div class="tree-title">' + t.title + '</div>' +
+          '</div>' +
+          (teamStr ? '<div style="font-size:11px;color:var(--text-muted);padding-left:' + indent + 'px;margin-top:2px">' + teamStr + '</div>' : '') +
+          '</td>' +
+          '<td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + descStr + '</td>' +
+          '<td style="text-align:center;width:80px"><div class="score-tag">' + baseScore + '<span>pt</span></div></td>' +
+          '<td style="width:120px">' + resultStr + '</td>' +
+          '<td style="width:90px"><div class="manage-actions">' +
+          '<button class="btn-icon-sm edit" onclick="openEditTaskModal(' + t.id + ')" title="수정"><i data-lucide="edit-3" class="icon-sm"></i></button>' +
+          '<button class="btn-icon-sm delete" onclick="deleteTask(' + t.id + ')" title="삭제"><i data-lucide="trash-2" class="icon-sm"></i></button>' +
+          '</div></td>' +
+          '</tr>';
+        html += renderNode(t.id, level + 1);
+      });
+      return html;
+    };
+
+    const rowsHtml = renderNode(null, 0);
+    el.innerHTML =
+      '<table class="task-table">' +
+      '<thead><tr>' +
+      '<th>업무제목</th>' +
+      '<th>업무설명</th>' +
+      '<th style="text-align:center;width:80px">기본점수</th>' +
+      '<th style="width:120px">업무결과</th>' +
+      '<th style="width:90px;text-align:center">관리</th>' +
+      '</tr></thead>' +
+      '<tbody>' +
+      (rowsHtml || '<tr><td colspan="5" class="empty-state">업무가 없습니다.</td></tr>') +
+      '</tbody>' +
+      '</table>';
+  }
+
   refreshIcons();
   setTimeout(function () { if (typeof refreshIcons === 'function') refreshIcons(); }, 60);
 }
