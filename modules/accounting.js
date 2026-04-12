@@ -2090,10 +2090,12 @@
         '<div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-muted)">' +
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>' +
         '</div></div></div>' +
-        /* 날짜 — 풀 너비 */
+        /* 날짜 — 풀 너비, iOS 클리핑 래퍼 */
         '<div><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:4px">' +
         '<i data-lucide="calendar" style="width:11px;height:11px"></i>날짜</div>' +
-        '<input class="form-input" id="exp_date" type="date" value="' + _today() + '" style="border-radius:12px;height:50px;width:100%;box-sizing:border-box"></div>' +
+        '<div style="height:46px;overflow:hidden;border-radius:12px;border:1.5px solid var(--border-color);background:var(--bg-tertiary)">' +
+        '<input id="exp_date" type="date" value="' + _today() + '" style="width:100%;height:60px;border:none;background:transparent;font-size:15px;font-weight:600;padding:0 12px;outline:none;-webkit-appearance:none;appearance:none;color:var(--text-primary)">' +
+        '</div></div>' +
         /* 자동매핑 계정 */
         '<div><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:4px">' +
         '<i data-lucide="tag" style="width:11px;height:11px"></i>자동매핑 계정' +
