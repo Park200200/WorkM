@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════
    📒 WorkM 회계관리 모듈 (modules/accounting.js)
    예산 → 품의 → 전표 → 입출금 → 보고서 자동 연결 경리 시스템
    ═══════════════════════════════════════════════════════════ */
@@ -3433,7 +3433,7 @@
       if (totalAR > 0) {
         h += '<div style="text-align:center"><div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">\uc678\uc0c1\uc561</div><div style="font-size:13px;font-weight:900;color:#f59e0b">' + _fmtW(totalAR) + '</div></div>';
         h += '<div style="text-align:center"><div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">\ud68c\uc218\uc561</div><div style="font-size:13px;font-weight:900;color:#22c55e">' + _fmtW(totalCol) + '</div></div>';
-        h += '<div style="text-align:center"><div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">\ubbf8\uc218\uc794\uc561">\ubbf8\uc218\uc794\uc561</div><div style="font-size:13px;font-weight:900;color:' + arColor + '">' + _fmtW(arBal) + '</div></div>';
+        h += '<div style="text-align:center"><div style="font-size:9px;color:var(--text-muted);margin-bottom:2px">\ubbf8\uc218\uc794\uc561</div><div style="font-size:13px;font-weight:900;color:' + arColor + '">' + _fmtW(arBal) + '</div></div>';
       }
       h += '</div></div>';
 
@@ -3453,7 +3453,7 @@
               '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">' +
                 '<div style="text-align:center;padding:5px 0;background:rgba(79,110,247,.05);border-radius:8px"><div style="font-size:8.5px;color:var(--text-muted);margin-bottom:1px">\ucc28\ubcc0</div><div style="font-size:11.5px;font-weight:800;color:#4f6ef7">' + (r.dr ? _fmtW(r.dr) : '-') + '</div></div>' +
                 '<div style="text-align:center;padding:5px 0;background:rgba(239,68,68,.05);border-radius:8px"><div style="font-size:8.5px;color:var(--text-muted);margin-bottom:1px">\ub300\ubcc0</div><div style="font-size:11.5px;font-weight:800;color:#ef4444">' + (r.cr ? _fmtW(r.cr) : '-') + '</div></div>' +
-                '<div style="text-align:center;padding:5px 0;background:rgba(245,158,11,.05);border-radius:8px"><div style="font-size:8.5px;color:var(--text-muted);margin-bottom:1px">\ubbf8\uc218\uc794\uc561">\ubbf8\uc218\uc794\uc561</div><div style="font-size:11.5px;font-weight:800;color:' + (r.arBal > 0 ? '#f59e0b' : '#22c55e') + '">' + _fmtW(r.arBal) + '</div></div>' +
+                '<div style="text-align:center;padding:5px 0;background:rgba(245,158,11,.05);border-radius:8px"><div style="font-size:8.5px;color:var(--text-muted);margin-bottom:1px">\ubbf8\uc218\uc794\uc561</div><div style="font-size:11.5px;font-weight:800;color:' + (r.arBal > 0 ? '#f59e0b' : '#22c55e') + '">' + _fmtW(r.arBal) + '</div></div>' +
               '</div>' +
             '</div></div>';
         });
@@ -3468,7 +3468,7 @@
           '<th style="padding:7px 10px;text-align:left;font-size:11px">\uac70\ub798\uc720\ud615</th>' +
           '<th style="padding:7px 10px;text-align:right;font-size:11px">\ucc28\ubcc0</th>' +
           '<th style="padding:7px 10px;text-align:right;font-size:11px">\ub300\ubcc0</th>' +
-          '<th style="padding:7px 10px;text-align:right;font-size:11px">\ubbf8\uc218\uc794\uc561">\ubbf8\uc218\uc794\uc561</th>' +
+          '<th style="padding:7px 10px;text-align:right;font-size:11px">\ubbf8\uc218\uc794\uc561</th>' +
           '</tr></thead><tbody>';
 
         rows.forEach(function (r) {
