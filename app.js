@@ -543,12 +543,19 @@ function openReceivedTaskDetail(taskId) {
     t.attachments = instrAttachNorm.concat(t.attachments);
   }
 
-  document.getElementById('tdModalTitle').innerHTML =
-    `<i data-lucide="file-text" style="width:17px;height:17px;color:var(--accent-blue);vertical-align:middle;margin-right:5px;flex-shrink:0"></i>`
-    + `<span style="color:var(--text-primary)">${t.title}</span>`
-    + `<span style="color:var(--text-muted);font-weight:500;margin:${window.innerWidth<=767?'0':'0 6px'}">:</span>`
-    + `<span style="color:var(--accent-blue)">${window.innerWidth<=767?'보고서 작성':'진행보고서 작성'}</span>`
-    + `<span style="font-size:12px;font-weight:700;background:var(--accent-blue);color:#fff;border-radius:20px;padding:2px 9px;vertical-align:middle;margin-left:8px;opacity:.85">${progress}%</span>`;
+  if (window.innerWidth <= 767) {
+    document.getElementById('tdModalTitle').innerHTML =
+      `<i data-lucide="clipboard-list" style="width:18px;height:18px;color:var(--accent-blue);vertical-align:middle;margin-right:5px;flex-shrink:0"></i>`
+      + `<span style="color:var(--text-primary);font-weight:800">보고서작성</span>`
+      + (t.title ? ` <span style="font-size:13px;font-weight:500;color:var(--text-muted);margin-left:4px">${t.title}</span>` : ``);
+  } else {
+    document.getElementById('tdModalTitle').innerHTML =
+      `<i data-lucide="file-text" style="width:17px;height:17px;color:var(--accent-blue);vertical-align:middle;margin-right:5px;flex-shrink:0"></i>`
+      + `<span style="color:var(--text-primary)">${t.title}</span>`
+      + `<span style="color:var(--text-muted);font-weight:500;margin:0 6px">:</span>`
+      + `<span style="color:var(--accent-blue)">진행보고서 작성</span>`
+      + `<span style="font-size:12px;font-weight:700;background:var(--accent-blue);color:#fff;border-radius:20px;padding:2px 9px;vertical-align:middle;margin-left:8px;opacity:.85">${progress}%</span>`;
+  }
   refreshIcons && refreshIcons();
 
   document.getElementById('tdModalBody').innerHTML = `
