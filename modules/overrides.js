@@ -4633,7 +4633,9 @@ function openScheduleProgressModal(taskId) {
         // 기존 내용 유지하되 앞에 "진행보고서 작성 - " 추가
         var task = (WS.tasks || []).find(function (t) { return String(t.id) === String(taskId); });
         var name = task ? task.title : '';
-        tdTitle.innerHTML = '<i data-lucide="clipboard-list" style="width:18px;height:18px;color:var(--accent-blue)"></i> 진행보고서 작성'
+        var isMobile = window.innerWidth <= 767;
+        tdTitle.innerHTML = '<i data-lucide="clipboard-list" style="width:18px;height:18px;color:var(--accent-blue)"></i> '
+          + (isMobile ? '보고서작성' : '진행보고서 작성')
           + (name ? ' <span style="font-size:13px;font-weight:500;color:var(--text-muted);margin-left:6px">— ' + name + '</span>' : '');
         if (typeof refreshIcons === 'function') refreshIcons();
       }
