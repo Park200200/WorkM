@@ -5448,6 +5448,7 @@ function _copySyncCmds() {
       btn.setAttribute('data-tab', m.id);
       btn.innerHTML = iconSVG(m.icon) + '<span class="mob-tab-label">' + m.label + '</span>';
       btn.addEventListener('click', function() {
+        closeMobileDrawer();          /* 항상 드로어 먼저 닫기 */
         if (m.page) {
           if (mode === 'homepage' && m.page === 'dashboard') {
             // 홈페이지 모드에서 내책상 탭 클릭 → 일반 모드로
@@ -5456,7 +5457,6 @@ function _copySyncCmds() {
           } else {
             mobileNav(m.page);
           }
-          closeMobileDrawer();
         } else if (m.drawer) {
           if (mode === 'accounting') {
             buildAcctDrawer(m.drawer, m.id);
