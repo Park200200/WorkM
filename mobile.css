@@ -1775,3 +1775,29 @@ button#mobileFAB {
 @media (max-width: 767px) {
   #drExecFormGrid { grid-template-columns: 1fr !important; }
 }
+
+/* ── 금일 스케줄: 태블릿/데스크탑 테이블 그리드 강제 복원 ── */
+@media (min-width: 768px) {
+  #drSchedListSection .task-table          { display: table !important; min-width: 760px !important; }
+  #drSchedListSection .task-table thead   { display: table-header-group !important; }
+  #drSchedListSection .task-table tbody   { display: table-row-group !important; }
+  #drSchedListSection .task-table tr      {
+    display: table-row !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  #drSchedListSection .task-table td      {
+    display: table-cell !important;
+    width: auto !important;
+    padding: 10px 12px !important;
+    border: none !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    min-height: 0 !important;
+  }
+  #drSchedListSection .task-table td::before { display: none !important; }
+  #drSchedListSection > div               { overflow-x: auto !important; }
+}
