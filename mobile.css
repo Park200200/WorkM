@@ -1801,3 +1801,68 @@ button#mobileFAB {
   #drSchedListSection .task-table td::before { display: none !important; }
   #drSchedListSection > div               { overflow-x: auto !important; }
 }
+
+/* ── 금일 스케줄: 모바일 2행 카드 (nth-child CSS Grid) ── */
+@media (max-width: 767px) {
+  #drSchedListSection .task-table thead { display: none !important; }
+  #drSchedListSection .task-table,
+  #drSchedListSection .task-table tbody { display: block !important; }
+
+  #drSchedListSection .task-table tr {
+    display: grid !important;
+    grid-template-columns: 1fr auto auto !important;
+    grid-template-rows: auto auto !important;
+    width: auto !important;
+    border-radius: 12px !important;
+    border: 1.5px solid var(--border-color) !important;
+    background: var(--bg-card) !important;
+    margin-bottom: 8px !important;
+    padding: 9px 11px !important;
+    gap: 4px 8px !important;
+    align-items: center !important;
+    overflow: hidden !important;
+  }
+  #drSchedListSection .task-table td {
+    padding: 0 !important;
+    border: none !important;
+    min-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+  #drSchedListSection .task-table td::before { display: none !important; }
+
+  /* Row1: col1=업무명, col2=지시자, col3=D-DAY */
+  #drSchedListSection .task-table td:nth-child(1) {
+    grid-row: 1 !important; grid-column: 1 !important;
+    font-weight: 700 !important; font-size: 13px !important;
+    min-width: 0 !important; overflow: hidden !important;
+    text-overflow: ellipsis !important; white-space: nowrap !important;
+  }
+  #drSchedListSection .task-table td:nth-child(2) {
+    grid-row: 1 !important; grid-column: 2 !important;
+    justify-content: flex-start !important; white-space: nowrap !important;
+  }
+  #drSchedListSection .task-table td:nth-child(3) { display: none !important; } /* 협업자 */
+  #drSchedListSection .task-table td:nth-child(4) { display: none !important; } /* 지시일 */
+  #drSchedListSection .task-table td:nth-child(5) {
+    grid-row: 1 !important; grid-column: 3 !important;
+    justify-content: flex-end !important; white-space: nowrap !important;
+  }
+  /* Row2: col1=진행율, col2=상태, col3=보고 */
+  #drSchedListSection .task-table td:nth-child(6) {
+    grid-row: 2 !important; grid-column: 1 !important;
+  }
+  #drSchedListSection .task-table td:nth-child(6) .progress-wrap {
+    min-width: 0 !important; width: 100% !important; flex: 1 !important;
+  }
+  #drSchedListSection .task-table td:nth-child(7) {
+    grid-row: 2 !important; grid-column: 2 !important;
+    justify-content: flex-start !important; white-space: nowrap !important;
+  }
+  #drSchedListSection .task-table td:nth-child(8) { display: none !important; } /* 중요도 */
+  #drSchedListSection .task-table td:nth-child(9) {
+    grid-row: 2 !important; grid-column: 3 !important;
+    justify-content: flex-end !important; white-space: nowrap !important;
+  }
+}

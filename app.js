@@ -1859,36 +1859,13 @@ function renderDailyReportTasks() {
     var reportBadge = hasReport
       ? '<span onclick="openScheduleProgressModal(' + t.id + ')" title="' + (lastH ? lastH.event + ' · ' + (lastH.detail||'').slice(0,20) : '') + '" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:12px;background:#22c55e22;border:1.5px solid #22c55e;color:#22c55e;font-size:10.5px;font-weight:800;cursor:pointer" onmouseover="this.style.opacity=\'.75\'" onmouseout="this.style.opacity=\'1\'"><i data-lucide="check-circle" style="width:10px;height:10px;color:#22c55e"></i>보고완료</span>'
       : '<span onclick="openScheduleProgressModal(' + t.id + ')" title="클릭하여 진행보고서 작성" style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:12px;background:var(--bg-tertiary);border:1.5px solid var(--border-color);color:var(--text-muted);font-size:10.5px;font-weight:700;cursor:pointer" onmouseover="this.style.borderColor=\'#f59e0b\';this.style.color=\'#f59e0b\'" onmouseout="this.style.borderColor=\'var(--border-color)\';this.style.color=\'var(--text-muted)\'"><i data-lucide="clock" style="width:10px;height:10px"></i>보고준비</span>';
-    var isMob = window.matchMedia && window.matchMedia('(max-width: 767px)').matches;
-    if (isMob) {
-      return '<tr onclick="openTaskDetail(' + t.id + ')" style="cursor:pointer"><td colspan="9" data-label="" style="display:block !important;padding:8px 4px !important;border:none">' +
-        // ─ 3열 CSS Grid: 1fr | auto | auto ─
-        // Row1: 업무명           | 지시자(아바타) | D-Day
-        // Row2: 진행바+%         | 상태           | 보고
-        '<div style="display:grid;grid-template-columns:1fr auto auto;gap:5px 8px;align-items:center">' +
-          // ── Row 1 ──
-          '<span style="font-weight:700;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary)">' + (t.isImportant ? '⭐ ' : '') + t.title + '</span>' +
-          '<div style="display:flex;align-items:center;justify-content:flex-start;white-space:nowrap">' + assignerHtml + '</div>' +
-          '<span class="dday-badge ' + dd.cls + '" style="font-size:10px;white-space:nowrap;justify-self:end">' + dd.label + '</span>' +
-          // ── Row 2 ──
-          '<div onclick="event.stopPropagation();openScheduleProgressModal(' + t.id + ')" style="display:flex;align-items:center;gap:5px;cursor:pointer;min-width:0">' +
-            '<div style="flex:1;height:5px;background:var(--border-color);border-radius:3px;overflow:hidden">' +
-              '<div style="height:100%;border-radius:3px;background:var(--accent-blue);width:' + (t.progress||0) + '%"></div>' +
-            '</div>' +
-            '<span style="font-size:10px;font-weight:700;color:var(--text-muted);white-space:nowrap;flex-shrink:0">' + (t.progress||0) + '%</span>' +
-          '</div>' +
-          '<span class="status-badge status-' + t.status + '" style="font-size:10px;white-space:nowrap;justify-self:start">' + WS.getStatusLabel(t.status) + '</span>' +
-          '<span style="justify-self:end">' + reportBadge + '</span>' +
-        '</div>' +
-        '</td></tr>';
-    }
-    return '<tr>' +
-      '<td style="font-weight:600">' + (t.isImportant ? '\u2b50' : '') + t.title + '</td>' +
+    return '<tr onclick="openTaskDetail(' + t.id + ')" style="cursor:pointer">' +
+      '<td style="font-weight:700;font-size:13px">' + (t.isImportant ? '\u2b50 ' : '') + t.title + '</td>' +
       '<td>' + assignerHtml + '</td>' +
       '<td>' + collabHtml + '</td>' +
       '<td style="font-size:11px">' + (t.startDate || '-') + '</td>' +
       '<td><span class="dday-badge ' + dd.cls + '" style="font-size:10px">' + dd.label + '</span></td>' +
-      '<td onclick="openScheduleProgressModal(' + t.id + ')" title="클릭하여 진행보고서 작성" style="cursor:pointer" onmouseover="this.style.background=\'rgba(79,110,247,.08)\'" onmouseout="this.style.background=\'\'"><div class="progress-wrap" style="min-width:80px"><div class="progress-bar"><div class="progress-fill" style="width:' + (t.progress||0) + '%"></div></div><span class="progress-label">' + (t.progress||0) + '%</span></div></td>' +
+      '<td onclick="event.stopPropagation();openScheduleProgressModal(' + t.id + ')" title="\ud074\ub9ad\ud558\uc5ec \uc9c4\ud589\ubcf4\uace0\uc11c \uc791\uc131" style="cursor:pointer" onmouseover="this.style.background=\'rgba(79,110,247,.08)\'" onmouseout="this.style.background=\'\'"><div class="progress-wrap" style="min-width:80px"><div class="progress-bar"><div class="progress-fill" style="width:' + (t.progress||0) + '%"></div></div><span class="progress-label">' + (t.progress||0) + '%</span></div></td>' +
       '<td><span class="status-badge status-' + t.status + '">' + WS.getStatusLabel(t.status) + '</span></td>' +
       '<td style="text-align:center">' + (t.isImportant ? '\u2b50' : '-') + '</td>' +
       '<td style="text-align:center">' + reportBadge + '</td>' +
