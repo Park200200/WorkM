@@ -2493,7 +2493,8 @@ function _hpMcBuildLine(ln, i) {
 
         /* 텍스트 입력 (3개 — 입력 시 미리보기 실시간 업데이트) */
         var txtRow = document.createElement('div');
-        txtRow.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px';
+        var _isMob = window.innerWidth <= 767;
+        txtRow.style.cssText = 'display:grid;grid-template-columns:' + (_isMob ? '1fr' : '1fr 1fr 1fr') + ';gap:' + (_isMob ? '6px' : '8px') + ';margin-top:8px';
 
         var txtLabels = ['텍스트 1 (태그)', '텍스트 2 (제목)', '텍스트 3 (설명)'];
         var txtFields = ['text1', 'text2', 'text3'];
@@ -2511,7 +2512,7 @@ function _hpMcBuildLine(ln, i) {
           var txtInp = document.createElement('input');
           txtInp.value = item[field] || '';
           txtInp.placeholder = txtLabels[fi];
-          txtInp.style.cssText = 'width:100%;border:1px solid var(--border-color);border-radius:6px;padding:4px 7px;font-size:10.5px;background:var(--bg-secondary);color:var(--text-primary);outline:none;box-sizing:border-box;transition:border-color .15s';
+          txtInp.style.cssText = 'width:100%;border:1px solid var(--border-color);border-radius:6px;padding:' + (_isMob ? '8px 10px' : '4px 7px') + ';font-size:' + (_isMob ? '13px' : '10.5px') + ';background:var(--bg-secondary);color:var(--text-primary);outline:none;box-sizing:border-box;transition:border-color .15s';
           txtInp.onfocus = function () { this.style.borderColor = 'var(--accent-blue)'; };
           txtInp.onblur = function () { this.style.borderColor = 'var(--border-color)'; };
           txtInp.oninput = (function (li, ji, f, el, ph) {
