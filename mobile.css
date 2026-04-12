@@ -2123,3 +2123,21 @@ button#mobileFAB {
     text-align: center !important;
   }
 }
+
+/* ── 내가 기획한: 업무성격+첨부파일 태블릿/PC 2열 그리드 (지시사항 등록 스타일) ── */
+@media (min-width: 768px) {
+  #nt_nature_attach_wrap {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 14px !important;
+    align-items: start !important;
+  }
+  #nt_mob_attach {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+  #nt_mob_attach .form-label {
+    margin-bottom: 0 !important;
+  }
+}
