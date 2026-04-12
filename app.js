@@ -639,9 +639,25 @@ function openReceivedTaskDetail(taskId) {
       </div>
       <!-- hidden input (저장용) -->
       <input type="hidden" id="progressInput_${t.id}" value="${progress}">
-      <!-- 진행 내용 입력 (한 줄 칩 UI) -->
+      <!-- 진행 내용 입력 (지시내용 스타일) -->
+      <div style="margin-bottom:8px">
+        <label style="font-size:11px;font-weight:700;color:var(--text-muted);display:flex;align-items:center;gap:5px;margin-bottom:6px;text-transform:uppercase">
+          <i data-lucide="edit-3" style="width:11px;height:11px"></i> 진행 내용
+        </label>
+        <textarea id="td_reportText"
+          placeholder="진행 내용을 입력하세요..."
+          style="width:100%;box-sizing:border-box;background:var(--bg-secondary);
+                 border:1.5px solid var(--border-color);border-radius:10px;
+                 padding:12px 14px;font-size:13px;color:var(--text-primary);
+                 min-height:76px;line-height:1.6;resize:vertical;
+                 font-family:inherit;outline:none;transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--accent-blue)'"
+          onblur="this.style.borderColor='var(--border-color)'"
+        ></textarea>
+      </div>
+      <!-- 하단: 단계 선택 + 추가 버튼 -->
+      <input type="hidden" id="td_reportIconVal" value="message-square|진행보고|#4f6ef7">
       <div style="display:flex;gap:8px;align-items:center">
-        <!-- 왼쪽: 진행순서 선택 칩 (processTags 있을 때만) -->
         ${(t.processTags && t.processTags.length > 0) ? `
         <div style="position:relative;flex-shrink:0">
           <select id="td_stepSelect"
@@ -666,15 +682,9 @@ function openReceivedTaskDetail(taskId) {
             <i data-lucide="chevron-down" style="width:11px;height:11px;opacity:.6"></i>
           </span>
         </div>` : `<input type="hidden" id="td_stepSelect" value="">`}
-        <!-- 진행 내용 텍스트 입력 -->
-        <input id="td_reportText" type="text" placeholder="진행 내용을 입력하세요..."
-          class="form-input"
-          style="flex:1;height:38px;padding:0 12px;font-size:13px;border-radius:20px"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();addProgressReport('${t.id}')}"
-        >
-        <input type="hidden" id="td_reportIconVal" value="message-square|진행보고|#4f6ef7">
+        <div style="flex:1"></div>
         <button onclick="addProgressReport('${t.id}')" class="btn btn-blue"
-          style="height:38px;padding:0 16px;white-space:nowrap;border-radius:20px;font-size:13px;font-weight:700;flex-shrink:0">
+          style="height:38px;padding:0 20px;white-space:nowrap;border-radius:20px;font-size:13px;font-weight:700;flex-shrink:0">
           <i data-lucide="plus" style="width:14px;height:14px"></i> 추가
         </button>
       </div>
