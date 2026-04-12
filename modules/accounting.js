@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════
    📒 WorkM 회계관리 모듈 (modules/accounting.js)
    예산 → 품의 → 전표 → 입출금 → 보고서 자동 연결 경리 시스템
    ═══════════════════════════════════════════════════════════ */
@@ -795,38 +795,80 @@
         var totalBudget = 0, totalSpent = 0;
         filtered.forEach(function (b) { totalBudget += (b.amount || 0); totalSpent += (b.spent || 0); });
 
-        html += '<table class="acct-table"><thead><tr>' +
-          '<th>예산목</th><th>계정과목</th><th style="text-align:right">예산액</th><th style="text-align:right">집행액</th>' +
-          '<th style="text-align:right">잔액</th><th>소진율</th><th style="text-align:center;width:80px">관리</th>' +
-          '</tr></thead><tbody>';
 
-        filtered.forEach(function (b) {
-          var spent = b.spent || 0;
-          var remain = b.amount - spent;
-          var pct = b.amount > 0 ? Math.round(spent / b.amount * 100) : 0;
-          var over = pct > 100;
-          var color = over ? '#ef4444' : pct > 80 ? '#f59e0b' : '#22c55e';
-          html += '<tr>' +
-            '<td><strong>' + _esc(b.itemName || '-') + '</strong></td>' +
-            '<td>' + _esc(_acctName(b.accountCode)) + ' <span style="font-size:11px;color:var(--text-muted)">' + b.accountCode + '</span></td>' +
-            '<td class="num">' + _fmtW(b.amount) + '</td>' +
-            '<td class="num">' + _fmtW(spent) + '</td>' +
-            '<td class="num" style="color:' + (remain < 0 ? '#ef4444' : 'var(--text-primary)') + '">' + _fmtW(remain) + '</td>' +
-            '<td><div class="acct-progress-track" style="width:100px;display:inline-block;vertical-align:middle;margin-right:8px"><div class="acct-progress-fill" style="width:' + Math.min(100, pct) + '%;background:' + color + '"></div></div>' +
-            '<span style="font-weight:700;color:' + color + ';font-size:12px">' + pct + '%</span>' + (over ? ' <span style="color:#ef4444;font-weight:800">⚠️ 초과</span>' : '') + '</td>' +
-            '<td style="text-align:center">' +
-            '<button class="btn-icon-sm edit" onclick="ACCT.openBudgetModal(' + b.id + ')" title="수정"><i data-lucide="edit-3" class="icon-sm"></i></button>' +
-            '<button class="btn-icon-sm delete" onclick="ACCT.deleteBudget(' + b.id + ')" title="삭제"><i data-lucide="trash-2" class="icon-sm"></i></button>' +
-            '</td></tr>';
-        });
+        var BI_COL=['#4f6ef7','#22c55e','#f59e0b','#8b5cf6','#06b6d4','#ec4899','#f97316','#14b8a6','#ef4444'];
+        var isMobItem=window.innerWidth<768;
+        if(isMobItem){
+          html+='<div style="display:flex;flex-direction:column;gap:10px">';
+          filtered.forEach(function(b,idx){
+            var spent=b.spent||0,remain=b.amount-spent,pct=b.amount>0?Math.round(spent/b.amount*100):0;
+            var over=pct>100,color=over?'#ef4444':pct>80?'#f59e0b':'#22c55e',cc=BI_COL[idx%BI_COL.length];
+            html+=
+              '<div style="position:relative;border-radius:16px;overflow:hidden;background:var(--bg-card);border:1.5px solid var(--border-color);box-shadow:0 2px 10px rgba(0,0,0,.06);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">'+
+              '<div style="position:absolute;top:0;left:0;bottom:0;width:4px;background:'+cc+';border-radius:16px 0 0 16px"></div>'+
+              '<div style="padding:13px 14px 11px 18px">'+
+                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'+
+                  '<div style="font-size:15px;font-weight:900;color:var(--text-primary)">'+_esc(b.itemName||'-')+'</div>'+
+                  (over?'<span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;background:rgba(239,68,68,.12);color:#ef4444">\ucd08\uacfc \u26a0\ufe0f</span>':'')+
+                '</div>'+
+                '<div style="font-size:11.5px;color:'+cc+';font-weight:700;margin-bottom:10px">'+_esc(_acctName(b.accountCode))+' <span style="color:var(--text-muted);font-weight:400">'+b.accountCode+'</span></div>'+
+                '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">'+
+                  '<div style="text-align:center"><div style="font-size:10px;font-weight:600;color:var(--text-muted);margin-bottom:2px">\uc608\uc0b0\uc561</div><div style="font-size:13px;font-weight:800;color:var(--text-primary)">'+_fmtW(b.amount)+'</div></div>'+
+                  '<div style="text-align:center;border-left:1px solid var(--border-color);border-right:1px solid var(--border-color)"><div style="font-size:10px;font-weight:600;color:var(--text-muted);margin-bottom:2px">\uc9d1\ud589\uc561</div><div style="font-size:13px;font-weight:800;color:#ef4444">'+_fmtW(spent)+'</div></div>'+
+                  '<div style="text-align:center"><div style="font-size:10px;font-weight:600;color:var(--text-muted);margin-bottom:2px">\uc794\uc561</div><div style="font-size:13px;font-weight:800;color:'+(remain<0?'#ef4444':'#22c55e')+'">'+_fmtW(remain)+'</div></div>'+
+                '</div>'+
+                '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'+
+                  '<div style="flex:1;height:6px;border-radius:3px;background:var(--border-color);overflow:hidden">'+
+                  '<div style="height:100%;width:'+Math.min(100,pct)+'%;background:'+color+';border-radius:3px;transition:width .5s"></div></div>'+
+                  '<span style="font-size:11px;font-weight:800;color:'+color+';min-width:30px;text-align:right">'+pct+'%</span>'+
+                '</div>'+
+              '</div>'+
+              '<div style="display:flex;border-top:1px solid var(--border-color)">'+
+                '<button onclick="ACCT.openBudgetModal('+b.id+')" style="flex:1;height:38px;background:transparent;border:none;border-right:1px solid var(--border-color);font-size:12px;font-weight:700;color:var(--text-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:background .15s">\uc218\uc815</button>'+
+                '<button onclick="ACCT.deleteBudget('+b.id+')" style="flex:1;height:38px;background:transparent;border:none;font-size:12px;font-weight:700;color:#ef4444;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:background .15s">\uc0ad\uc81c</button>'+
+              '</div></div>';
+          });
+          html+='</div>';
+          var tp2=totalBudget>0?Math.round(totalSpent/totalBudget*100):0,tc2=tp2>100?'#ef4444':tp2>80?'#f59e0b':'#22c55e';
+          html+='<div style="background:var(--bg-tertiary);border-radius:14px;padding:14px 16px;margin-top:4px">'+
+            '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;text-align:center">'+
+              '<div><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">\ud569\uacc4 \uc608\uc0b0</div><div style="font-size:13px;font-weight:900;color:var(--text-primary)">'+_fmtW(totalBudget)+'</div></div>'+
+              '<div style="border-left:1px solid var(--border-color);border-right:1px solid var(--border-color)"><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">\ud569\uacc4 \uc9d1\ud589</div><div style="font-size:13px;font-weight:900;color:#ef4444">'+_fmtW(totalSpent)+'</div></div>'+
+              '<div><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">\uc794\uc5ec</div><div style="font-size:13px;font-weight:900;color:'+tc2+'">'+_fmtW(totalBudget-totalSpent)+'</div></div>'+
+            '</div>'+
+            '<div style="display:flex;align-items:center;gap:8px">'+
+              '<div style="flex:1;height:8px;border-radius:4px;background:var(--border-color);overflow:hidden">'+
+              '<div style="height:100%;width:'+Math.min(100,tp2)+'%;background:'+tc2+';border-radius:4px;transition:width .5s"></div></div>'+
+              '<span style="font-size:12px;font-weight:900;color:'+tc2+'">'+tp2+'%</span>'+
+            '</div></div>';
+        }else{
+          html+='<table class="acct-table"><thead><tr>'+
+            '<th>\uc608\uc0b0\ubaa9</th><th>\uacc4\uc815\uacfc\ubaa9</th><th style="text-align:right">\uc608\uc0b0\uc561</th><th style="text-align:right">\uc9d1\ud589\uc561</th>'+
+            '<th style="text-align:right">\uc794\uc561</th><th>\uc18c\uc9c4\uc728</th><th style="text-align:center;width:80px">\uad00\ub9ac</th>'+
+            '</tr></thead><tbody>';
+          filtered.forEach(function(b){
+            var spent=b.spent||0,remain=b.amount-spent,pct=b.amount>0?Math.round(spent/b.amount*100):0;
+            var over=pct>100,color=over?'#ef4444':pct>80?'#f59e0b':'#22c55e';
+            html+='<tr>'+
+              '<td><strong>'+_esc(b.itemName||'-')+'</strong></td>'+
+              '<td>'+_esc(_acctName(b.accountCode))+' <span style="font-size:11px;color:var(--text-muted)">'+b.accountCode+'</span></td>'+
+              '<td class="num">'+_fmtW(b.amount)+'</td><td class="num">'+_fmtW(spent)+'</td>'+
+              '<td class="num" style="color:'+(remain<0?'#ef4444':'var(--text-primary)')+'">'+_fmtW(remain)+'</td>'+
+              '<td><div class="acct-progress-track" style="width:100px;display:inline-block;vertical-align:middle;margin-right:8px"><div class="acct-progress-fill" style="width:'+Math.min(100,pct)+'%;background:'+color+'"></div></div>'+
+              '<span style="font-weight:700;color:'+color+';font-size:12px">'+pct+'%</span>'+(over?' <span style="color:#ef4444;font-weight:800">\u26a0\ufe0f \ucd08\uacfc</span>':'')+
+              '</td><td style="text-align:center">'+
+              '<button class="btn-icon-sm edit" onclick="ACCT.openBudgetModal('+b.id+')" title="\uc218\uc815"><i data-lucide="edit-3" class="icon-sm"></i></button>'+
+              '<button class="btn-icon-sm delete" onclick="ACCT.deleteBudget('+b.id+')" title="\uc0ad\uc81c"><i data-lucide="trash-2" class="icon-sm"></i></button>'+
+              '</td></tr>';
+          });
+          var totalPct=totalBudget>0?Math.round(totalSpent/totalBudget*100):0;
+          html+='<tr style="font-weight:800;background:var(--bg-tertiary)"><td colspan="2">\ud569\uacc4</td>'+
+            '<td class="num">'+_fmtW(totalBudget)+'</td><td class="num">'+_fmtW(totalSpent)+'</td>'+
+            '<td class="num">'+_fmtW(totalBudget-totalSpent)+'</td>'+
+            '<td><span style="font-weight:800">'+totalPct+'%</span></td><td></td></tr>';
+          html+='</tbody></table>';
+        }
 
-        var totalPct = totalBudget > 0 ? Math.round(totalSpent / totalBudget * 100) : 0;
-        html += '<tr style="font-weight:800;background:var(--bg-tertiary)">' +
-          '<td colspan="2">합계</td><td class="num">' + _fmtW(totalBudget) + '</td>' +
-          '<td class="num">' + _fmtW(totalSpent) + '</td>' +
-          '<td class="num">' + _fmtW(totalBudget - totalSpent) + '</td>' +
-          '<td><span style="font-weight:800">' + totalPct + '%</span></td><td></td></tr>';
-        html += '</tbody></table>';
       }
       html += '</div>';
     }
