@@ -312,7 +312,7 @@ function applyAccent(color) {
 function switchProfileTab(tabId, el) {
   document.querySelectorAll('#page-profile .tab-item').forEach(t => t.classList.remove('active'));
   if (el) el.classList.add('active');
-  ['profile-tab', 'notif-tab', 'theme-tab'].forEach(id => {
+  ['login-tab', 'profile-tab', 'notif-tab', 'theme-tab'].forEach(id => {
     const t = document.getElementById(id);
     if (t) t.style.display = id === tabId ? 'block' : 'none';
   });

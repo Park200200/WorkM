@@ -1541,33 +1541,88 @@ function renderPage_Profile() {
   var doneCnt  = myTasks.filter(function(t){ return t.status==='done'; }).length;
   var instrCnt = WS.tasks.filter(function(t){ return t.assignerId===u.id; }).length;
 
-  el.innerHTML =
-    '<div style="display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px">'
-    + '<div class="section-card" style="padding:24px;align-items:center;text-align:center">'
-    +   '<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,'+u.color+',#9747ff);display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;font-weight:800;margin:0 auto 14px">'+u.avatar+'</div>'
-    +   '<div style="font-size:18px;font-weight:800;margin-bottom:4px">'+u.name+'</div>'
-    +   '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">'+u.dept+' \xb7 '+u.role+(u.pos?' | '+u.pos:'')+'</div>'
-    +   '<div style="font-size:12px;color:var(--text-muted);margin-bottom:20px">'+u.email+'</div>'
-    +   '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px">'
-    +     '<div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--accent-blue)">'+myTasks.length+'</div><div style="font-size:11px;color:var(--text-muted)">\ub2f4\ub2f9 \uc5c5\ubb34</div></div>'
-    +     '<div style="width:1px;background:var(--border-color);margin:0 8px"></div>'
-    +     '<div style="text-align:center"><div style="font-size:18px;font-weight:800;color:#22c55e">'+doneCnt+'</div><div style="font-size:11px;color:var(--text-muted)">\uc644\ub8cc</div></div>'
-    +     '<div style="width:1px;background:var(--border-color);margin:0 8px"></div>'
-    +     '<div style="text-align:center"><div style="font-size:18px;font-weight:800;color:#4f6ef7">'+instrCnt+'</div><div style="font-size:11px;color:var(--text-muted)">\uc9c0\uc2dc</div></div>'
-    +   '</div>'
-    +   '<button class="btn btn-blue" style="width:100%" onclick="logout()"><i data-lucide="log-out" class="icon-sm"></i> \ub85c\uadf8\uc544\uc6c3</button>'
-    + '</div>'
-    + '<div class="section-card" style="min-width:0;overflow-x:hidden">'
-    +   '<div class="tab-bar">'
-    +     '<div class="tab-item active" onclick="switchProfileTab(\'profile-tab\',this)">\ud504\ub85c\ud544 \uc124\uc815</div>'
-    +     '<div class="tab-item" onclick="switchProfileTab(\'notif-tab\',this)">\uc54c\ub9bc \uc124\uc815</div>'
-    +     '<div class="tab-item" onclick="switchProfileTab(\'theme-tab\',this)">UI \ud14c\ub9c8</div>'
-    +   '</div>'
-    +   _buildProfileTab(u)
-    +   _buildNotifTab()
-    +   _buildThemeTab()
-    + '</div>'
-    + '</div>';
+  var isMob = window.innerWidth < 768;
+
+  if (isMob) {
+    /* ── 모바일: 단일 카드 + 4탭 Layout ── */
+    var loginTabContent =
+      '<div id="login-tab" style="padding:24px 20px;text-align:center">' +
+        '<div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,' + u.color + ',#9747ff);' +
+          'display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;font-weight:800;' +
+          'margin:0 auto 14px;box-shadow:0 4px 16px ' + u.color + '55">' + u.avatar +
+        '</div>' +
+        '<div style="font-size:20px;font-weight:900;margin-bottom:4px;color:var(--text-primary)">' + u.name + '</div>' +
+        '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:2px">' +
+          u.dept + (u.role ? ' · ' + u.role : '') +
+        '</div>' +
+        '<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:20px">' + (u.email || '') + '</div>' +
+        /* 통계 */
+        '<div style="display:flex;justify-content:center;gap:0;margin-bottom:20px">' +
+          '<div style="text-align:center;padding:0 20px;border-right:1px solid var(--border-color)">' +
+            '<div style="font-size:22px;font-weight:900;color:var(--accent-blue)">' + myTasks.length + '</div>' +
+            '<div style="font-size:11px;color:var(--text-muted)">담당 업무</div>' +
+          '</div>' +
+          '<div style="text-align:center;padding:0 20px;border-right:1px solid var(--border-color)">' +
+            '<div style="font-size:22px;font-weight:900;color:#22c55e">' + doneCnt + '</div>' +
+            '<div style="font-size:11px;color:var(--text-muted)">완료</div>' +
+          '</div>' +
+          '<div style="text-align:center;padding:0 20px">' +
+            '<div style="font-size:22px;font-weight:900;color:#4f6ef7">' + instrCnt + '</div>' +
+            '<div style="font-size:11px;color:var(--text-muted)">지시</div>' +
+          '</div>' +
+        '</div>' +
+        /* 로그아웃 버튼 */
+        '<button class="btn btn-blue" style="width:100%;height:44px;font-size:14px;font-weight:700" onclick="logout()">' +
+          '<i data-lucide="log-out" class="icon-sm"></i> 로그아웃' +
+        '</button>' +
+      '</div>';
+
+    el.innerHTML =
+      '<div class="section-card" style="overflow:hidden;padding:0">' +
+        /* 4탭 바 */
+        '<div class="tab-bar" style="overflow-x:auto;white-space:nowrap;padding:0 4px;scrollbar-width:none">' +
+          '<div class="tab-item active" onclick="switchProfileTab(\'login-tab\',this)" style="min-width:max-content">로그인</div>' +
+          '<div class="tab-item" onclick="switchProfileTab(\'profile-tab\',this)" style="min-width:max-content">프로필 설정</div>' +
+          '<div class="tab-item" onclick="switchProfileTab(\'notif-tab\',this)" style="min-width:max-content">알림 설정</div>' +
+          '<div class="tab-item" onclick="switchProfileTab(\'theme-tab\',this)" style="min-width:max-content">UI 테마</div>' +
+        '</div>' +
+        loginTabContent +
+        _buildProfileTab(u).replace('style="padding:20px"', 'style="padding:20px;display:none"') +
+        _buildNotifTab() +
+        _buildThemeTab() +
+      '</div>';
+
+  } else {
+    /* ── 데스크탑: 기존 2열 레이아웃 ── */
+    el.innerHTML =
+      '<div style="display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px">'
+      + '<div class="section-card" style="padding:24px;align-items:center;text-align:center">'
+      +   '<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,'+u.color+',#9747ff);display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;font-weight:800;margin:0 auto 14px">'+u.avatar+'</div>'
+      +   '<div style="font-size:18px;font-weight:800;margin-bottom:4px">'+u.name+'</div>'
+      +   '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">'+u.dept+' \xb7 '+u.role+(u.pos?' | '+u.pos:'')+'</div>'
+      +   '<div style="font-size:12px;color:var(--text-muted);margin-bottom:20px">'+u.email+'</div>'
+      +   '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px">'
+      +     '<div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--accent-blue)">'+myTasks.length+'</div><div style="font-size:11px;color:var(--text-muted)">\ub2f4\ub2f9 \uc5c5\ubb34</div></div>'
+      +     '<div style="width:1px;background:var(--border-color);margin:0 8px"></div>'
+      +     '<div style="text-align:center"><div style="font-size:18px;font-weight:800;color:#22c55e">'+doneCnt+'</div><div style="font-size:11px;color:var(--text-muted)">\uc644\ub8cc</div></div>'
+      +     '<div style="width:1px;background:var(--border-color);margin:0 8px"></div>'
+      +     '<div style="text-align:center"><div style="font-size:18px;font-weight:800;color:#4f6ef7">'+instrCnt+'</div><div style="font-size:11px;color:var(--text-muted)">\uc9c0\uc2dc</div></div>'
+      +   '</div>'
+      +   '<button class="btn btn-blue" style="width:100%" onclick="logout()"><i data-lucide="log-out" class="icon-sm"></i> \ub85c\uadf8\uc544\uc6c3</button>'
+      + '</div>'
+      + '<div class="section-card" style="min-width:0;overflow-x:hidden">'
+      +   '<div class="tab-bar">'
+      +     '<div class="tab-item active" onclick="switchProfileTab(\'profile-tab\',this)">\ud504\ub85c\ud544 \uc124\uc815</div>'
+      +     '<div class="tab-item" onclick="switchProfileTab(\'notif-tab\',this)">\uc54c\ub9bc \uc124\uc815</div>'
+      +     '<div class="tab-item" onclick="switchProfileTab(\'theme-tab\',this)">UI \ud14c\ub9c8</div>'
+      +   '</div>'
+      +   _buildProfileTab(u)
+      +   _buildNotifTab()
+      +   _buildThemeTab()
+      + '</div>'
+      + '</div>';
+  }
+
   setTimeout(refreshIcons, 50);
 }
 
