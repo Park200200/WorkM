@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>WorkM - 전체현황</title>
 <link rel="stylesheet" href="style.css?v=20260327e">
-<link rel="stylesheet" href="mobile.css?v=20260412s">
+<link rel="stylesheet" href="mobile.css?v=20260412t">
 
 
 
@@ -3196,8 +3196,11 @@
 
         </div><!-- /2열 업무+담당자 -->
 
+        <!-- 업무성격 + 첨부파일 wrapper (desktop:contents passthrough / mobile:2-col grid) -->
+        <div id="nt_nature_attach_wrap" style="display:contents">
+
         <!-- 업무성격 -->
-        <div class="form-group" style="margin:0">
+        <div class="form-group" id="nt_nature_row" style="margin:0">
           <label class="form-label">
             <i data-lucide="layers" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
             업무성격
@@ -3225,10 +3228,29 @@
           <!-- nt_sched_file: 숨김 (기능 유지, UI 제거) -->
           <input type="file" id="nt_sched_file" multiple accept="*/*" style="display:none"
             onchange="_onNtSchedFileChange(this)">
-        </div>
+        </div><!-- /nt_nature_row -->
+
+        <!-- 첨부파일 (모바일 전용: mobile.css에서 display:flex) -->
+        <div class="form-group" id="nt_mob_attach" style="margin:0;display:none">
+          <label class="form-label">
+            <i data-lucide="paperclip" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
+            첨부파일
+          </label>
+          <button type="button" onclick="document.getElementById('nt_sched_file').click()"
+            style="display:flex;align-items:center;gap:6px;width:100%;padding:9px 12px;border-radius:10px;
+                   border:1.5px dashed var(--border-color);background:var(--bg-tertiary);
+                   cursor:pointer;color:var(--text-secondary);font-size:12px"
+            onmouseover="this.style.borderColor='var(--accent-blue)'"
+            onmouseout="this.style.borderColor='var(--border-color)'">
+            <i data-lucide="upload" style="width:13px;height:13px;opacity:.6"></i>
+            파일선택(복수가능)
+          </button>
+        </div><!-- /nt_mob_attach -->
+
+        </div><!-- /nt_nature_attach_wrap -->
 
         <!-- 시작일 + 완료계획일 + 업무성공 배점 3열 -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div id="nt_date_score_row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
           <!-- 시작일 -->
           <div class="form-group" style="margin:0">
             <label class="form-label">

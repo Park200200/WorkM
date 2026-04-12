@@ -1960,3 +1960,43 @@ button#mobileFAB {
     word-break: normal !important;
   }
 }
+
+/* ── 내가 기획한 업무 작성: 모바일 레이아웃 (지시사항 등록 스타일) ── */
+@media (max-width: 767px) {
+  /* wrapper → 2열 그리드 (업무성격 | 첨부파일) */
+  #nt_nature_attach_wrap {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    align-items: start !important;
+  }
+
+  /* 모바일 전용 첨부파일 표시 */
+  #nt_mob_attach {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+
+  /* 업무성격 버튼 소형화 */
+  #nt_nature_btn_daily,
+  #nt_nature_btn_period {
+    padding: 6px 10px !important;
+    font-size: 11.5px !important;
+    gap: 4px !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  #nt_nature_row > div[style*="display:flex"] {
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+
+  /* 날짜 3열 → 2열 + 배점요청 전체너비 */
+  #nt_date_score_row {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  #nt_date_score_row > div:last-child {
+    grid-column: 1 / -1 !important;
+  }
+}
