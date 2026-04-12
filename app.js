@@ -3397,6 +3397,8 @@ function _selectInstrNature(val) {
     btnPeriod.style.borderColor  = 'var(--border-color)';
     btnPeriod.style.color        = 'var(--text-secondary)';
     btnPeriod.style.fontWeight   = '600';
+    btnDaily.classList.add('active-nature');
+    btnPeriod.classList.remove('active-nature');
   } else {
     btnPeriod.style.background   = 'var(--accent-blue)';
     btnPeriod.style.borderColor  = 'var(--accent-blue)';
@@ -3406,6 +3408,8 @@ function _selectInstrNature(val) {
     btnDaily.style.borderColor   = 'var(--border-color)';
     btnDaily.style.color         = 'var(--text-secondary)';
     btnDaily.style.fontWeight    = '600';
+    btnPeriod.classList.add('active-nature');
+    btnDaily.classList.remove('active-nature');
   }
 }
 

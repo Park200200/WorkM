@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>WorkM - 전체현황</title>
 <link rel="stylesheet" href="style.css?v=20260327e">
-<link rel="stylesheet" href="mobile.css?v=20260412h">
+<link rel="stylesheet" href="mobile.css?v=20260412i">
 
 
 
@@ -2542,10 +2542,10 @@
                 <label class="form-label">
                   <i data-lucide="layers" style="width:12px;height:12px;vertical-align:middle;margin-right:3px"></i>
                   업무성격
-                  <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-left:3px">(일정보기 표시 방식 결정)</span>
+                  <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-left:3px"><span class="desktop-only">(일정보기 표시 방식 결정)</span><span class="mobile-only">(일정보기 표시 방식)</span></span>
                 </label>
                 <input type="hidden" id="instrNature" value="일일업무">
-                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <div class="instrNature-wrap" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                   <button type="button" id="instrNatureBtn_daily"
                     onclick="_selectInstrNature('일일업무')"
                     style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;
@@ -2584,7 +2584,7 @@
                   onmouseout="this.style.borderColor='var(--border-color)'">
                   <div style="display:flex;align-items:center;gap:7px;color:var(--text-secondary);font-size:13px">
                     <i data-lucide="upload" style="width:14px;height:14px;opacity:.6;flex-shrink:0"></i>
-                    파일 선택 (여러 개 가능)
+                    <span class="desktop-only">파일 선택 (여러 개 가능)</span><span class="mobile-only">파일선택(복수가능)</span>
                   </div>
                   <div id="instrFileList"
                     onclick="event.stopPropagation()"
@@ -3868,7 +3868,7 @@
 <script src="modules/strings.js?v=20260331"></script>
 <script src="modules/ui.js?v=20260401"></script>
 <script src="data.js?v=20260401c"></script>
-<script src="app.js?v=20260412k"></script>
+<script src="app.js?v=20260412l"></script>
 <script src="modules/dashboard.js?v=20260412a"></script>
 
 
