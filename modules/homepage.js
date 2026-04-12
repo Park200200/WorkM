@@ -1,4 +1,4 @@
-/**
+﻿/**
  * modules/homepage.js
  */
 /* ══════════════════════════════════════════════════════
@@ -1649,7 +1649,7 @@ function _hpSubMenuRenderSets(menuIdx) {
 
         // ── 이미지 2열 그리드 ──
         var imgGrid = document.createElement('div');
-        imgGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px';
+        imgGrid.style.cssText = 'display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:10px';
         imgGrid.appendChild(wrapLbl(makeImgCell('imgH'), '가로 이미지'));
         imgGrid.appendChild(wrapLbl(makeImgCell('imgV'), '세로 이미지'));
         rowEl.appendChild(imgGrid);
@@ -2011,7 +2011,7 @@ function _hpSubMenuRenderBody(body, menuIdx, si) {
 
         // 이미지 2열 그리드
         var imgGrid = document.createElement('div');
-        imgGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px';
+        imgGrid.style.cssText = 'display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:10px';
         imgGrid.appendChild(wrapLbl(makeImgCell('imgH'), '가로 이미지'));
         imgGrid.appendChild(wrapLbl(makeImgCell('imgV'), '세로 이미지'));
         rowEl.appendChild(imgGrid);
