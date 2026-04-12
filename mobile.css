@@ -2029,3 +2029,22 @@ button#mobileFAB {
     transition: all .18s !important;
   }
 }
+
+/* ── 내가 기획한: 업무성격 버튼 2줄 표시 (지시사항 등록 스타일, 모바일만) ── */
+@media (max-width: 767px) {
+  #nt_nature_btn_daily,
+  #nt_nature_btn_period {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 2px !important;
+    padding: 8px 4px !important;
+    line-height: 1.2 !important;
+    font-size: 11px !important;
+  }
+  #nt_nature_btn_daily i,
+  #nt_nature_btn_period i {
+    width: 14px !important;
+    height: 14px !important;
+    flex-shrink: 0 !important;
+  }
+}
