@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════
    📒 WorkM 회계관리 모듈 (modules/accounting.js)
    예산 → 품의 → 전표 → 입출금 → 보고서 자동 연결 경리 시스템
    ═══════════════════════════════════════════════════════════ */
@@ -1979,92 +1979,196 @@
     var approvedItems = _approvals().filter(function (a) { return a.status === 'approved' && _isInYear(a.date || a.createdAt); })
       .sort(function (a, b) { return (b.approvedAt || '').localeCompare(a.approvedAt || ''); });
 
-    var approvalListHtml = '';
-    if (approvedItems.length > 0) {
-      approvalListHtml = '<div class="acct-card" style="margin-bottom:16px">' +
-        '<div class="acct-card-head" style="display:flex;align-items:center;gap:8px">' +
-        '<i data-lucide="check-circle" style="width:16px;height:16px;color:#22c55e"></i>' +
-        ' 승인된 품의 목록' +
-        '<span style="margin-left:auto;font-size:11px;color:var(--text-muted);font-weight:400">' +
-        '클릭하면 지출 등록 폼에 자동 입력</span></div>' +
-        '<table class="acct-table"><thead><tr>' +
-        '<th>승인일</th><th>품의명</th><th>계정과목</th>' +
-        '<th>신청자</th><th style="text-align:right">금액</th>' +
-        '</tr></thead><tbody>';
-      approvedItems.forEach(function (a) {
-        var approvedDate = (a.approvedAt || '').substring(0, 10);
-        approvalListHtml += '<tr class="acct-apv-row" style="cursor:pointer" onclick="ACCT.fillExpenseFromApproval(' + JSON.stringify(a.id) + ')">' +
-          '<td>' + approvedDate + '</td>' +
-          '<td><strong>' + _esc(a.title) + '</strong>' +
-          (a.approverName ? ' <span style="font-size:11px;color:var(--text-muted)">→ ' + _esc(a.approverName) + '</span>' : '') + '</td>' +
-          '<td>' + _acctName(a.accountCode) + '</td>' +
-          '<td>' + _esc(a.requesterName || '') + '</td>' +
-          '<td class="num" style="color:var(--accent-blue)">' + _fmtW(a.amount) + '</td>' +
-          '</tr>';
-      });
-      approvalListHtml += '</tbody></table></div>';
-    }
+    var isMob = window.innerWidth < 960;
 
-    var html = '' +
-      '<div class="page-header"><div>' +
+    /* ── 페이지 헤더 ── */
+    var html = '<div class="page-header"><div>' +
       '<div class="page-title">지출하기</div>' +
       '<div class="page-subtitle">간편하게 지출을 등록하면 전표가 자동 생성됩니다</div>' +
-      '</div></div>' +
-      approvalListHtml +
+      '</div></div>';
 
-      // 간편 입력 폼
-      '<div class="acct-card">' +
-      '<div class="acct-card-head"><i data-lucide="edit-3" style="width:16px;height:16px"></i> 간편 지출 등록</div>' +
-      '<div class="acct-simple-form">' +
-      '<div class="acct-form-row">' +
-      '<div class="form-group" style="flex:2"><label class="form-label">\uC9C0\uCD9C \uB0B4\uC6A9 *</label>' +
-      '<input class="form-input" id="exp_desc" placeholder="\uC608) \uC0AC\uBB34\uC6A9\uD488 \uAD6C\uB9E4, \uD0DD\uBC30\uBE44" oninput="ACCT.autoSuggestAccount(\'exp\')"></div>' +
-      '<div class="form-group" style="flex:1"><label class="form-label">\uAE08\uC561 (\uC6D0) *</label>' +
-      '<input class="form-input" id="exp_amount" type="text" placeholder="0" oninput="this.value = ACCT.fmtInput(this.value)"></div>' +
-      '<div class="form-group" style="flex:1"><label class="form-label">거래처</label>' +
-      '<input class="form-input" id="exp_counter" placeholder="거래처명"></div>' +
-      '</div>' +
-      '<div class="acct-form-row">' +
-      '<div class="form-group" style="flex:1"><label class="form-label">결제수단</label>' +
-      '<select class="form-input" id="exp_method"><option value="현금">현금</option><option value="계좌이체">계좌이체</option><option value="카드">카드</option><option value="기타">기타</option></select></div>' +
-      '<div class="form-group" style="flex:1"><label class="form-label">날짜</label>' +
-      '<input class="form-input" id="exp_date" type="date" value="' + _today() + '"></div>' +
-      '<div class="form-group" style="flex:2"><label class="form-label">자동매핑 계정 <span id="exp_auto_label" style="color:var(--accent-blue);font-weight:700"></span></label>' +
-      '<select class="form-input" id="exp_account">' +
-      '<option value="">자동 매핑됨</option>' +
-      _accounts().filter(function (a) { return a.type === 'expense'; }).map(function (a) { return '<option value="' + a.code + '">' + a.code + ' ' + a.name + '</option>'; }).join('') +
-      '</select></div>' +
-      '</div>' +
-      '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px">' +
-      '<button class="btn btn-blue" onclick="ACCT.saveExpense()" style="padding:8px 20px"><i data-lucide="save" style="width:14px;height:14px"></i> 지출 등록</button>' +
-      '</div></div></div>' +
+    /* ── 승인 품의 목록 (모바일 카드형) ── */
+    if (approvedItems.length > 0) {
+      if (isMob) {
+        html += '<div style="margin-bottom:16px">' +
+          '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">' +
+          '<div style="width:18px;height:18px;border-radius:50%;background:rgba(34,197,94,.15);display:flex;align-items:center;justify-content:center">' +
+          '<i data-lucide="check-circle" style="width:12px;height:12px;color:#22c55e"></i></div>' +
+          '<span style="font-size:13px;font-weight:800;color:var(--text-primary)">승인된 품의</span>' +
+          '<span style="font-size:11px;color:var(--text-muted);padding:2px 8px;background:var(--bg-tertiary);border-radius:20px">' + approvedItems.length + '건</span>' +
+          '<span style="font-size:10px;color:var(--text-muted);margin-left:4px">탭하면 자동 입력</span>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none">';
+        approvedItems.forEach(function(a) {
+          var approvedDate = (a.approvedAt || '').substring(0, 10);
+          html += '<div onclick="ACCT.fillExpenseFromApproval(' + JSON.stringify(a.id) + ')"' +
+            ' style="flex-shrink:0;width:160px;border-radius:14px;background:var(--bg-card);border:1.5px solid rgba(34,197,94,.2);padding:10px 12px;cursor:pointer;transition:all .2s">' +
+            '<div style="font-size:9.5px;color:var(--text-muted);margin-bottom:4px">' + approvedDate + '</div>' +
+            '<div style="font-size:12.5px;font-weight:800;color:var(--text-primary);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + _esc(a.title) + '</div>' +
+            '<div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">' + _esc(a.requesterName || '') + '</div>' +
+            '<div style="font-size:13px;font-weight:900;color:#ef4444">' + _fmtW(a.amount) + '</div>' +
+            '</div>';
+        });
+        html += '</div></div>';
+      } else {
+        html += '<div class="acct-card" style="margin-bottom:16px">' +
+          '<div class="acct-card-head" style="display:flex;align-items:center;gap:8px">' +
+          '<i data-lucide="check-circle" style="width:16px;height:16px;color:#22c55e"></i>' +
+          ' 승인된 품의 목록' +
+          '<span style="margin-left:auto;font-size:11px;color:var(--text-muted);font-weight:400">클릭하면 지출 등록 폼에 자동 입력</span></div>' +
+          '<table class="acct-table"><thead><tr>' +
+          '<th>승인일</th><th>품의명</th><th>계정과목</th>' +
+          '<th>신청자</th><th style="text-align:right">금액</th>' +
+          '</tr></thead><tbody>';
+        approvedItems.forEach(function(a) {
+          var approvedDate = (a.approvedAt || '').substring(0, 10);
+          html += '<tr class="acct-apv-row" style="cursor:pointer" onclick="ACCT.fillExpenseFromApproval(' + JSON.stringify(a.id) + ')">' +
+            '<td>' + approvedDate + '</td>' +
+            '<td><strong>' + _esc(a.title) + '</strong>' +
+            (a.approverName ? ' <span style="font-size:11px;color:var(--text-muted)">→ ' + _esc(a.approverName) + '</span>' : '') + '</td>' +
+            '<td>' + _acctName(a.accountCode) + '</td>' +
+            '<td>' + _esc(a.requesterName || '') + '</td>' +
+            '<td class="num" style="color:var(--accent-blue)">' + _fmtW(a.amount) + '</td>' +
+            '</tr>';
+        });
+        html += '</tbody></table></div>';
+      }
+    }
 
-      // 지출 내역 리스트
-      '<div class="acct-card" style="margin-top:16px">' +
-      '<div class="acct-card-head"><i data-lucide="list" style="width:16px;height:16px"></i> 지출 내역</div>';
+    /* ── 간편 지출 등록 폼 ── */
+    if (isMob) {
+      html += '<div style="border-radius:20px;background:var(--bg-card);border:1.5px solid var(--border-color);overflow:hidden;margin-bottom:16px">' +
+        /* 헤더 그라디언트 */
+        '<div style="background:linear-gradient(135deg,#ef4444,#f87171);padding:14px 16px;display:flex;align-items:center;gap:8px">' +
+        '<div style="width:30px;height:30px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center">' +
+        '<i data-lucide="minus-circle" style="width:16px;height:16px;color:#fff"></i></div>' +
+        '<div><div style="font-size:14px;font-weight:900;color:#fff">간편 지출 등록</div>' +
+        '<div style="font-size:10px;color:rgba(255,255,255,.75)">지출 내역을 입력하세요</div></div>' +
+        '</div>' +
+        /* 폼 바디 */
+        '<div style="padding:14px;display:flex;flex-direction:column;gap:10px">' +
+        /* 지출 내용 */
+        '<div><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:4px">' +
+        '<i data-lucide="file-text" style="width:11px;height:11px"></i>지출 내용 *</div>' +
+        '<input class="form-input" id="exp_desc" placeholder="예) 사무용품 구매, 택배비" oninput="ACCT.autoSuggestAccount(\'exp\')" style="border-radius:12px"></div>' +
+        /* 금액 */
+        '<div><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:4px">' +
+        '<i data-lucide="korean-won" style="width:11px;height:11px"></i>금액 (원) *</div>' +
+        '<input class="form-input" id="exp_amount" type="text" placeholder="0" oninput="this.value=ACCT.fmtInput(this.value)" style="border-radius:12px;font-size:18px;font-weight:800;color:#ef4444;text-align:right"></div>' +
+        /* 거래처 */
+        '<div><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:4px">' +
+        '<i data-lucide="building-2" style="width:11px;height:11px"></i>거래처</div>' +
+        '<input class="form-input" id="exp_counter" placeholder="거래처명" style="border-radius:12px"></div>' +
+        /* 결제수단 + 날짜 (2열) */
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+        '<div><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:4px">' +
+        '<i data-lucide="credit-card" style="width:11px;height:11px"></i>결제수단</div>' +
+        '<select class="form-input" id="exp_method" style="border-radius:12px">' +
+        '<option value="현금">현금</option><option value="계좌이체">계좌이체</option>' +
+        '<option value="카드">카드</option><option value="기타">기타</option>' +
+        '</select></div>' +
+        '<div><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:4px">' +
+        '<i data-lucide="calendar" style="width:11px;height:11px"></i>날짜</div>' +
+        '<input class="form-input" id="exp_date" type="date" value="' + _today() + '" style="border-radius:12px"></div>' +
+        '</div>' +
+        /* 자동매핑 계정 */
+        '<div><div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:4px">' +
+        '<i data-lucide="tag" style="width:11px;height:11px"></i>자동매핑 계정' +
+        '<span id="exp_auto_label" style="color:var(--accent-blue);font-weight:700;margin-left:4px"></span></div>' +
+        '<select class="form-input" id="exp_account" style="border-radius:12px">' +
+        '<option value="">자동 매핑됨</option>' +
+        _accounts().filter(function(a){return a.type==='expense';}).map(function(a){return '<option value="'+a.code+'">'+a.code+' '+a.name+'</option>';}).join('') +
+        '</select></div>' +
+        /* 등록 버튼 */
+        '<button onclick="ACCT.saveExpense()" style="margin-top:4px;width:100%;padding:14px;border-radius:14px;border:none;cursor:pointer;' +
+        'background:linear-gradient(135deg,#ef4444,#f87171);color:#fff;font-size:15px;font-weight:800;' +
+        'box-shadow:0 4px 16px rgba(239,68,68,.35);display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s">' +
+        '<i data-lucide="save" style="width:16px;height:16px"></i>지출 등록</button>' +
+        '</div></div>';
+    } else {
+      html += '<div class="acct-card">' +
+        '<div class="acct-card-head"><i data-lucide="edit-3" style="width:16px;height:16px"></i> 간편 지출 등록</div>' +
+        '<div class="acct-simple-form">' +
+        '<div class="acct-form-row">' +
+        '<div class="form-group" style="flex:2"><label class="form-label">지출 내용 *</label>' +
+        '<input class="form-input" id="exp_desc" placeholder="예) 사무용품 구매, 택배비" oninput="ACCT.autoSuggestAccount(\'exp\')"></div>' +
+        '<div class="form-group" style="flex:1"><label class="form-label">금액 (원) *</label>' +
+        '<input class="form-input" id="exp_amount" type="text" placeholder="0" oninput="this.value=ACCT.fmtInput(this.value)"></div>' +
+        '<div class="form-group" style="flex:1"><label class="form-label">거래처</label>' +
+        '<input class="form-input" id="exp_counter" placeholder="거래처명"></div>' +
+        '</div>' +
+        '<div class="acct-form-row">' +
+        '<div class="form-group" style="flex:1"><label class="form-label">결제수단</label>' +
+        '<select class="form-input" id="exp_method"><option value="현금">현금</option><option value="계좌이체">계좌이체</option><option value="카드">카드</option><option value="기타">기타</option></select></div>' +
+        '<div class="form-group" style="flex:1"><label class="form-label">날짜</label>' +
+        '<input class="form-input" id="exp_date" type="date" value="' + _today() + '"></div>' +
+        '<div class="form-group" style="flex:2"><label class="form-label">자동매핑 계정 <span id="exp_auto_label" style="color:var(--accent-blue);font-weight:700"></span></label>' +
+        '<select class="form-input" id="exp_account"><option value="">자동 매핑됨</option>' +
+        _accounts().filter(function(a){return a.type==='expense';}).map(function(a){return '<option value="'+a.code+'">'+a.code+' '+a.name+'</option>';}).join('') +
+        '</select></div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px">' +
+        '<button class="btn btn-blue" onclick="ACCT.saveExpense()" style="padding:8px 20px"><i data-lucide="save" style="width:14px;height:14px"></i> 지출 등록</button>' +
+        '</div></div></div>';
+    }
 
+    /* ── 지출 내역 리스트 ── */
+    html += '<div style="margin-top:' + (isMob ? '0' : '16px') + '">';
+    if (isMob) {
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">' +
+        '<div style="width:18px;height:18px;border-radius:50%;background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center">' +
+        '<i data-lucide="list" style="width:11px;height:11px;color:#ef4444"></i></div>' +
+        '<span style="font-size:13px;font-weight:800;color:var(--text-primary)">지출 내역</span>' +
+        '<span style="font-size:11px;color:var(--text-muted);padding:2px 8px;background:var(--bg-tertiary);border-radius:20px">' + cashflows.length + '건</span>' +
+        '</div>';
+    } else {
+      html += '<div class="acct-card"><div class="acct-card-head"><i data-lucide="list" style="width:16px;height:16px"></i> 지출 내역</div>';
+    }
     if (cashflows.length === 0) {
       html += '<div class="acct-empty">등록된 지출이 없습니다</div>';
+    } else if (isMob) {
+      html += '<div style="display:flex;flex-direction:column;gap:8px">';
+      cashflows.forEach(function(c) {
+        var methodColors = { '현금':'#22c55e', '계좌이체':'#4f6ef7', '카드':'#8b5cf6', '기타':'#64748b' };
+        var mc = methodColors[c.paymentMethod] || '#64748b';
+        html += '<div style="position:relative;border-radius:14px;background:var(--bg-card);border:1px solid var(--border-color);overflow:hidden">' +
+          '<div style="position:absolute;top:0;left:0;bottom:0;width:3px;background:#ef4444"></div>' +
+          '<div style="padding:10px 12px 10px 15px">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">' +
+              '<div style="font-size:11px;color:var(--text-muted);font-weight:600">' + (c.date||'') + '</div>' +
+              '<span style="font-size:9.5px;font-weight:800;padding:2px 8px;border-radius:20px;background:rgba(239,68,68,.1);color:#ef4444">' + _esc(c.paymentMethod||'') + '</span>' +
+            '</div>' +
+            '<div style="font-size:13.5px;font-weight:800;color:var(--text-primary);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + _esc(c.memo||'') + '</div>' +
+            '<div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">' + _acctName(c.accountCode) + (c.counterpart ? ' · ' + _esc(c.counterpart) : '') + '</div>' +
+            '<div style="display:flex;align-items:center;justify-content:space-between">' +
+              '<div style="font-size:16px;font-weight:900;color:#ef4444">' + _fmtW(c.amount) + '</div>' +
+              '<button class="btn-icon-sm delete" onclick="ACCT.deleteCashflow(' + c.id + ',\'expense\')" style="min-height:unset;width:28px;height:28px">' +
+              '<i data-lucide="trash-2" class="icon-sm"></i></button>' +
+            '</div>' +
+          '</div></div>';
+      });
+      html += '</div>';
     } else {
       html += '<table class="acct-table"><thead><tr>' +
         '<th>날짜</th><th>내용</th><th>계정과목</th><th>거래처</th><th>결제수단</th><th style="text-align:right">금액</th><th style="text-align:center;width:60px">삭제</th>' +
         '</tr></thead><tbody>';
-      cashflows.forEach(function (c) {
-        html += '<tr><td>' + (c.date || '') + '</td>' +
-          '<td>' + _esc(c.memo || '') + '</td>' +
+      cashflows.forEach(function(c) {
+        html += '<tr><td>' + (c.date||'') + '</td>' +
+          '<td>' + _esc(c.memo||'') + '</td>' +
           '<td>' + _acctName(c.accountCode) + '</td>' +
-          '<td>' + _esc(c.counterpart || '') + '</td>' +
-          '<td>' + _esc(c.paymentMethod || '') + '</td>' +
+          '<td>' + _esc(c.counterpart||'') + '</td>' +
+          '<td>' + _esc(c.paymentMethod||'') + '</td>' +
           '<td class="num" style="color:#ef4444">' + _fmtW(c.amount) + '</td>' +
           '<td style="text-align:center"><button class="btn-icon-sm delete" onclick="ACCT.deleteCashflow(' + c.id + ',\'expense\')"><i data-lucide="trash-2" class="icon-sm"></i></button></td></tr>';
       });
       html += '</tbody></table>';
     }
+    if (!isMob) html += '</div>';
     html += '</div>';
+
     el.innerHTML = '<div style="padding-bottom:80px">' + html + '</div>';
     _ri();
   }
-
   function autoSuggestAccount(prefix) {
     var desc = (document.getElementById(prefix + '_desc') || {}).value || '';
     var code = _autoMapAccount(desc);
