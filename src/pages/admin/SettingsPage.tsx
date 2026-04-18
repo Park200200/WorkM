@@ -1354,15 +1354,70 @@ function TabsPreview({ style }: { style: 'underline' | 'box' | 'pill' }) {
   )
 }
 
-/* 날짜 피커 프리뷰 */
+/* 날짜 피커 프리뷰 (인라인 캘린더 항상 표시) */
 function DatePickerPreview() {
   const today = new Date()
   const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`
   const [date, setDate] = useState(todayStr)
+  const [viewYear] = useState(today.getFullYear())
+  const [viewMonth] = useState(today.getMonth())
+
+  const WEEK = ['일','월','화','수','목','금','토']
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay()
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
+  const prevDays = new Date(viewYear, viewMonth, 0).getDate()
+
+  const cells: { day: number; current: boolean }[] = []
+  for (let i = firstDay - 1; i >= 0; i--) cells.push({ day: prevDays - i, current: false })
+  for (let d = 1; d <= daysInMonth; d++) cells.push({ day: d, current: true })
+  while (cells.length % 7 !== 0) cells.push({ day: cells.length - daysInMonth - firstDay + 1, current: false })
+
+  const selectedDay = date ? parseInt(date.split('-')[2]) : -1
+
   return (
     <div>
       <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">날짜 선택</label>
       <DatePicker value={date} onChange={setDate} placeholder="날짜를 선택하세요" />
+
+      {/* 인라인 캘린더 */}
+      <div className="mt-3 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-2xl shadow-lg p-4 w-[290px]">
+        <div className="flex items-center justify-center mb-3">
+          <span className="text-[13px] font-extrabold text-[var(--text-primary)] tracking-tight">
+            {viewYear}년 {String(viewMonth + 1).padStart(2, '0')}월
+          </span>
+        </div>
+        <div className="grid grid-cols-7 mb-1">
+          {WEEK.map((w, i) => (
+            <div key={w} className={`text-center text-[11px] font-bold py-1 ${i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-[var(--text-muted)]'}`}>{w}</div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-0.5">
+          {cells.map((cell, idx) => {
+            const dayOfWeek = idx % 7
+            const isToday = cell.current && cell.day === today.getDate()
+            const isSelected = cell.current && cell.day === selectedDay
+            return (
+              <div
+                key={idx}
+                className={`w-full aspect-square flex items-center justify-center text-[12px] font-medium rounded-xl transition-all ${
+                  !cell.current ? 'text-[var(--text-muted)]/30'
+                  : isSelected ? 'bg-primary-500 text-white font-bold shadow-md'
+                  : isToday ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-bold ring-1 ring-primary-300/50'
+                  : dayOfWeek === 0 ? 'text-red-400'
+                  : dayOfWeek === 6 ? 'text-blue-400'
+                  : 'text-[var(--text-primary)]'
+                }`}
+              >
+                {cell.day}
+              </div>
+            )
+          })}
+        </div>
+        <div className="flex justify-between mt-3 pt-3 border-t border-[var(--border-default)]">
+          <span className="px-3 py-1.5 text-[11px] font-bold text-[var(--text-muted)]">지우기</span>
+          <span className="px-3 py-1.5 text-[11px] font-bold text-primary-500">오늘</span>
+        </div>
+      </div>
     </div>
   )
 }
