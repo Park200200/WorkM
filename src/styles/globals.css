@@ -221,18 +221,18 @@
 
   --border-default: #e2e8f0;
   --border-strong:  #cbd5e1;
-  --border-focus:   var(--palette-500, #4f6ef7);
+  --border-focus:   var(--color-primary-500, #4f6ef7);
 
   --sidebar-bg:     #ffffff;
   --sidebar-text:   #64748b;
-  --sidebar-active: var(--palette-500, #4f6ef7);
+  --sidebar-active: var(--color-primary-500, #4f6ef7);
   --sidebar-hover:  rgba(0,0,0,.04);
   --sidebar-title:  #0f172a;
   --sidebar-border: #e2e8f0;
 
   /* ── Button Tokens (Light) ── */
-  --btn-save-bg:      var(--palette-500, #4f6ef7);
-  --btn-save-hover:   var(--palette-600, #3b54d9);
+  --btn-save-bg:      var(--color-primary-500, #4f6ef7);
+  --btn-save-hover:   var(--color-primary-600, #3b54d9);
   --btn-save-text:    #ffffff;
 
   --btn-edit-bg:      var(--color-info-500);
@@ -251,8 +251,8 @@
   --btn-search-hover: var(--color-gray-800);
   --btn-search-text:  #ffffff;
 
-  --btn-confirm-bg:   var(--palette-500, #4f6ef7);
-  --btn-confirm-hover:var(--palette-600, #3b54d9);
+  --btn-confirm-bg:   var(--color-primary-500, #4f6ef7);
+  --btn-confirm-hover:var(--color-primary-600, #3b54d9);
   --btn-confirm-text: #ffffff;
 
   --btn-upload-bg:    var(--color-purple);
@@ -300,10 +300,10 @@
 
   /* ── Progress Bar ── */
   --progress-track:    #e2e8f0;
-  --progress-fill:     var(--palette-500, #4f6ef7);
+  --progress-fill:     var(--color-primary-500, #4f6ef7);
 
   /* ── Tabs ── */
-  --tab-active-color:  var(--palette-500, #4f6ef7);
+  --tab-active-color:  var(--color-primary-500, #4f6ef7);
   --tab-active-bg:     color-mix(in srgb, var(--color-primary-500) 8%, transparent);
   --tab-border:        #e2e8f0;
   --tab-text:          #64748b;
@@ -326,18 +326,18 @@
 
   --border-default: #232840;
   --border-strong:  #334155;
-  --border-focus:   var(--palette-400, #6b85f2);
+  --border-focus:   var(--color-primary-400, #6b85f2);
 
   --sidebar-bg:     #0a0d13;
   --sidebar-text:   #64748b;
-  --sidebar-active: var(--palette-400, #6b85f2);
+  --sidebar-active: var(--color-primary-400, #6b85f2);
   --sidebar-hover:  rgba(255,255,255,.04);
   --sidebar-title:  #e2e8f0;
   --sidebar-border: #1e2235;
 
   /* ── Button Tokens (Dark) ── */
-  --btn-save-bg:      var(--palette-500, #4f6ef7);
-  --btn-save-hover:   var(--palette-400, #6b85f2);
+  --btn-save-bg:      var(--color-primary-500, #4f6ef7);
+  --btn-save-hover:   var(--color-primary-400, #6b85f2);
   --btn-save-text:    #ffffff;
 
   --btn-edit-bg:      var(--color-info-500);
@@ -356,8 +356,8 @@
   --btn-search-hover: #475569;
   --btn-search-text:  #e8ecf4;
 
-  --btn-confirm-bg:   var(--palette-500, #4f6ef7);
-  --btn-confirm-hover:var(--palette-400, #6b85f2);
+  --btn-confirm-bg:   var(--color-primary-500, #4f6ef7);
+  --btn-confirm-hover:var(--color-primary-400, #6b85f2);
   --btn-confirm-text: #ffffff;
 
   --btn-upload-bg:    var(--color-purple);
@@ -405,10 +405,10 @@
 
   /* ── Progress (Dark) ── */
   --progress-track:    #1e2235;
-  --progress-fill:     var(--palette-400, #6b85f2);
+  --progress-fill:     var(--color-primary-400, #6b85f2);
 
   /* ── Tabs (Dark) ── */
-  --tab-active-color:  var(--palette-400, #6b85f2);
+  --tab-active-color:  var(--color-primary-400, #6b85f2);
   --tab-active-bg:     color-mix(in srgb, var(--color-primary-500) 10%, transparent);
   --tab-border:        #232840;
   --tab-text:          #5a6577;
