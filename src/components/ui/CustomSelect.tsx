@@ -82,7 +82,7 @@ export function CustomSelect({
           'px-3 py-2.5 rounded-lg border text-sm text-left transition-all',
           'bg-[var(--bg-surface)] text-[var(--text-primary)]',
           open
-            ? 'border-[var(--border-focus)] shadow-[0_0_0_3px_rgba(79,110,247,0.12)]'
+            ? 'border-[var(--border-focus)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-primary-500)_12%,transparent)]'
             : 'border-[var(--border-default)]',
           disabled && 'opacity-50 cursor-not-allowed',
           !disabled && 'cursor-pointer hover:border-[var(--border-strong)]',
