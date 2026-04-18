@@ -230,6 +230,60 @@
   --sidebar-title:  #0f172a;
   --sidebar-border: #e2e8f0;
 
+  /* ── Typography Tokens (Light) ── */
+  /* 페이지 타이틀: 각 페이지 최상단 제목 (ex: "기타설정", "진행현황") */
+  --typo-page-title-size:    1.125rem;  /* 18px */
+  --typo-page-title-weight:  800;
+
+  /* 페이지 서브타이틀: 타이틀 아래 설명문 */
+  --typo-page-subtitle-size: 0.8125rem; /* 13px */
+  --typo-page-subtitle-weight: 400;
+
+  /* 섹션 헤더: 카드/그룹 안의 소제목 (ex: "메인 색상", "모드") */
+  --typo-section-title-size: 0.875rem;  /* 14px */
+  --typo-section-title-weight: 700;
+
+  /* 카드 제목: 리스트 항목 제목, 업무명 등 */
+  --typo-card-title-size:    0.8125rem; /* 13px */
+  --typo-card-title-weight:  700;
+
+  /* 사이드바 메뉴 텍스트 */
+  --typo-menu-size:          0.8125rem; /* 13px */
+  --typo-menu-weight:        400;
+  --typo-menu-active-weight: 700;
+
+  /* 사이드바 그룹 라벨 (MAIN, ANALYTICS 등) */
+  --typo-menu-group-size:    0.625rem;  /* 10px */
+  --typo-menu-group-weight:  700;
+
+  /* 탭 텍스트 */
+  --typo-tab-size:           0.75rem;   /* 12px */
+  --typo-tab-weight:         700;
+
+  /* 버튼 텍스트 */
+  --typo-btn-size:           0.75rem;   /* 12px */
+  --typo-btn-weight:         700;
+
+  /* 뱃지/태그 텍스트 */
+  --typo-badge-size:         0.625rem;  /* 10px */
+  --typo-badge-weight:       700;
+
+  /* 본문 텍스트: 테이블 셀, 일반 내용 */
+  --typo-body-size:          0.8125rem; /* 13px */
+  --typo-body-weight:        400;
+
+  /* 캡션/힌트: 날짜, 시간, 부가정보 */
+  --typo-caption-size:       0.6875rem; /* 11px */
+  --typo-caption-weight:     400;
+
+  /* 입력 필드 텍스트 */
+  --typo-input-size:         0.8125rem; /* 13px */
+  --typo-input-weight:       400;
+
+  /* 알림/토스트 텍스트 */
+  --typo-toast-size:         0.8125rem; /* 13px */
+  --typo-toast-weight:       600;
+
   /* ── Button Tokens (Light) ── */
   --btn-save-bg:      var(--color-primary-500, #4f6ef7);
   --btn-save-hover:   var(--color-primary-600, #3b54d9);
