@@ -67,10 +67,11 @@ export function applyAccentToDOM(hex: string) {
   Object.entries(palette).forEach(([key, val]) => {
     root.style.setProperty(`--color-primary-${key}`, val)
   })
-  // 사이드바 active, border-focus 등 하드코딩 값도 업데이트
-  root.style.setProperty('--border-focus', palette['500'])
-  root.style.setProperty('--sidebar-active', palette['500'])
-  // 다크모드 sidebar-active는 400 사용
+  // 이전에 인라인으로 설정된 값을 제거 → CSS의 var(--color-primary-*) 참조가 동작
+  root.style.removeProperty('--sidebar-active')
+  root.style.removeProperty('--border-focus')
+  // --sidebar-active, --border-focus 등은 globals.css에서 var(--color-primary-500)을 참조하므로
+  // 여기서 별도 setProperty 하지 않음 (인라인이 CSS를 덮어쓰는 문제 방지)
   root.style.setProperty('--shadow-glow', `0 0 20px ${palette['500']}25`)
 }
 
