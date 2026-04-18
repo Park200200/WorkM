@@ -6,6 +6,11 @@ export type ThemeAccent = string  // preset key or 'custom_xxxx'
 export type ThemeRadius = 'sharp' | 'default' | 'rounded' | 'pill'
 export type ThemeDensity = 'compact' | 'default' | 'comfortable'
 export type ThemeFontScale = 'xs' | 'sm' | 'default' | 'lg' | 'xl'
+export type ThemeDatePicker = 'default' | 'modern' | 'minimal' | 'bubble'
+
+export const DATEPICKER_LABELS: Record<ThemeDatePicker, string> = {
+  default: '기본', modern: '모던', minimal: '미니멀', bubble: '버블',
+}
 
 /* ── 기본 7가지 프리셋 (삭제 불가) ── */
 export const PRESET_ACCENTS: { key: string; label: string; color: string }[] = [
@@ -109,7 +114,8 @@ interface ThemeStore {
   radius: ThemeRadius
   density: ThemeDensity
   fontScale: ThemeFontScale
-  fontColor: string  // preset key
+  fontColor: string
+  datePickerStyle: ThemeDatePicker
   customAccents: CustomAccent[]
 
   toggle: () => void
@@ -119,6 +125,7 @@ interface ThemeStore {
   setDensity: (density: ThemeDensity) => void
   setFontScale: (scale: ThemeFontScale) => void
   setFontColor: (color: string) => void
+  setDatePickerStyle: (style: ThemeDatePicker) => void
   addCustomAccent: (label: string, color: string) => void
   removeCustomAccent: (key: string) => void
 }
@@ -133,6 +140,7 @@ interface SavedTheme {
   density: ThemeDensity
   fontScale: ThemeFontScale
   fontColor: string
+  datePickerStyle: ThemeDatePicker
 }
 
 function loadTheme(): SavedTheme {
@@ -143,7 +151,7 @@ function loadTheme(): SavedTheme {
     const v2 = localStorage.getItem('ws_theme_v2')
     if (v2) {
       const old = JSON.parse(v2)
-      return { ...old, fontScale: 'default', fontColor: 'default' }
+      return { ...old, fontScale: 'default', fontColor: 'default', datePickerStyle: 'default' }
     }
   } catch { /* noop */ }
   const legacyMode = localStorage.getItem('ws_theme')
@@ -155,6 +163,7 @@ function loadTheme(): SavedTheme {
     density: 'default',
     fontScale: 'default',
     fontColor: 'default',
+    datePickerStyle: 'default' as ThemeDatePicker,
   }
 }
 
@@ -169,6 +178,7 @@ function applyToDOM(t: SavedTheme) {
   html.setAttribute('data-radius', t.radius)
   html.setAttribute('data-density', t.density)
   html.setAttribute('data-font-scale', t.fontScale)
+  html.setAttribute('data-datepicker', t.datePickerStyle || 'default')
 
   // 프리셋이면 data-accent로 CSS에서 처리
   if (PRESET_KEYS.includes(t.accent)) {
@@ -205,6 +215,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => {
   const getSaved = (): SavedTheme => ({
     mode: get().theme, accent: get().accent, radius: get().radius,
     density: get().density, fontScale: get().fontScale, fontColor: get().fontColor,
+    datePickerStyle: get().datePickerStyle,
   })
 
   return {
@@ -214,6 +225,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => {
     density: initial.density,
     fontScale: initial.fontScale,
     fontColor: initial.fontColor,
+    datePickerStyle: initial.datePickerStyle || 'default',
     customAccents: loadCustomAccents(),
 
     toggle: () => {
@@ -257,6 +269,12 @@ export const useThemeStore = create<ThemeStore>((set, get) => {
       const s = { ...getSaved(), fontColor }
       saveTheme(s); applyToDOM(s)
       set({ fontColor })
+    },
+
+    setDatePickerStyle: (datePickerStyle) => {
+      const s = { ...getSaved(), datePickerStyle }
+      saveTheme(s); applyToDOM(s)
+      set({ datePickerStyle })
     },
 
     addCustomAccent: (label, color) => {

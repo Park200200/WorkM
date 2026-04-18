@@ -6,7 +6,7 @@ import { Input } from '../../components/ui/Input'
 import { Modal, ModalBody, ModalFooter } from '../../components/ui/Modal'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { useToastStore } from '../../stores/toastStore'
-import { useThemeStore, PRESET_ACCENTS, PRESET_KEYS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, FONT_SCALE_LABELS, FONT_COLOR_PRESETS, type ThemeRadius, type ThemeDensity, type ThemeFontScale } from '../../stores/themeStore'
+import { useThemeStore, PRESET_ACCENTS, PRESET_KEYS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, FONT_SCALE_LABELS, FONT_COLOR_PRESETS, DATEPICKER_LABELS, type ThemeRadius, type ThemeDensity, type ThemeFontScale, type ThemeDatePicker } from '../../stores/themeStore'
 import { cn } from '../../utils/cn'
 import { getItem } from '../../utils/storage'
 import {
@@ -960,7 +960,7 @@ function PaymentMethodPanel() {
    🎨 테마 설정 패널
    ══════════════════════════════════════════════ */
 function ThemePanel() {
-  const { theme, accent, radius, density, fontScale, fontColor, toggle, setAccent, setRadius, setDensity, setFontScale, setFontColor, customAccents, addCustomAccent, removeCustomAccent } = useThemeStore()
+  const { theme, accent, radius, density, fontScale, fontColor, datePickerStyle, toggle, setAccent, setRadius, setDensity, setFontScale, setFontColor, setDatePickerStyle, customAccents, addCustomAccent, removeCustomAccent } = useThemeStore()
   const addToast = useToastStore((s) => s.add)
 
   const radiusKeys = Object.keys(RADIUS_LABELS) as ThemeRadius[]
@@ -1244,6 +1244,51 @@ function ThemePanel() {
         </div>
       </Card>
 
+      {/* 날짜피커 스타일 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">날짜 피커 스타일</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">달력의 형태를 변경합니다</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {(Object.keys(DATEPICKER_LABELS) as ThemeDatePicker[]).map((key) => {
+            const dayShape = key === 'default' ? 'rounded-lg' : key === 'modern' ? 'rounded-md' : key === 'minimal' ? 'rounded-none' : 'rounded-full'
+            const panelShape = key === 'default' ? 'rounded-xl' : key === 'modern' ? 'rounded-lg border-t-2 border-t-primary-500' : key === 'minimal' ? 'rounded-sm' : 'rounded-2xl'
+            return (
+              <button
+                key={key}
+                onClick={() => setDatePickerStyle(key)}
+                className={cn(
+                  'flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                  datePickerStyle === key
+                    ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                    : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+                )}
+              >
+                {/* 미니 캘린더 프리뷰 */}
+                <div className={cn('w-full bg-[var(--bg-surface)] border border-[var(--border-default)] p-2', panelShape)}>
+                  <div className="text-[8px] font-bold text-center text-[var(--text-primary)] mb-1">2026년 04월</div>
+                  <div className="grid grid-cols-7 gap-px">
+                    {['일','월','화','수','목','금','토'].map((d,i) => (
+                      <div key={d} className={`text-[6px] text-center ${i===0?'text-red-300':i===6?'text-blue-300':'text-[var(--text-muted)]'}`}>{d}</div>
+                    ))}
+                    {[14,15,16,17,18,19,20].map((d) => (
+                      <div
+                        key={d}
+                        className={cn(
+                          'text-[7px] w-full aspect-square flex items-center justify-center font-medium',
+                          dayShape,
+                          d === 18 ? 'bg-primary-500 text-white font-bold' : 'text-[var(--text-primary)]',
+                        )}
+                      >{d}</div>
+                    ))}
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-[var(--text-secondary)]">{DATEPICKER_LABELS[key]}</span>
+              </button>
+            )
+          })}
+        </div>
+      </Card>
+
       {/* ── 컴포넌트 프리뷰 ── */}
       <Card>
         <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">컴포넌트 프리뷰</div>
@@ -1373,6 +1418,10 @@ function DatePickerPreview() {
   while (cells.length % 7 !== 0) cells.push({ day: cells.length - daysInMonth - firstDay + 1, current: false })
 
   const selectedDay = date ? parseInt(date.split('-')[2]) : -1
+  const dpStyle = useThemeStore((s) => s.datePickerStyle) || 'default'
+
+  const panelR = { default: 'rounded-2xl', modern: 'rounded-xl border-t-4 border-t-primary-500', minimal: 'rounded-lg', bubble: 'rounded-3xl' }[dpStyle]
+  const dayR = { default: 'rounded-xl', modern: 'rounded-lg', minimal: 'rounded-none', bubble: 'rounded-full' }[dpStyle]
 
   return (
     <div>
@@ -1380,7 +1429,7 @@ function DatePickerPreview() {
       <DatePicker value={date} onChange={setDate} placeholder="날짜를 선택하세요" />
 
       {/* 인라인 캘린더 */}
-      <div className="mt-3 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-2xl shadow-lg p-4 w-[290px]">
+      <div className={cn('mt-3 bg-[var(--bg-surface)] border border-[var(--border-default)] shadow-lg p-4 w-[290px]', panelR)}>
         <div className="flex items-center justify-center mb-3">
           <span className="text-[13px] font-extrabold text-[var(--text-primary)] tracking-tight">
             {viewYear}년 {String(viewMonth + 1).padStart(2, '0')}월
@@ -1399,14 +1448,16 @@ function DatePickerPreview() {
             return (
               <div
                 key={idx}
-                className={`w-full aspect-square flex items-center justify-center text-[12px] font-medium rounded-xl transition-all ${
+                className={cn(
+                  'w-full aspect-square flex items-center justify-center text-[12px] font-medium transition-all',
+                  dayR,
                   !cell.current ? 'text-[var(--text-muted)]/30'
                   : isSelected ? 'bg-primary-500 text-white font-bold shadow-md'
                   : isToday ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-bold ring-1 ring-primary-300/50'
                   : dayOfWeek === 0 ? 'text-red-400'
                   : dayOfWeek === 6 ? 'text-blue-400'
-                  : 'text-[var(--text-primary)]'
-                }`}
+                  : 'text-[var(--text-primary)]',
+                )}
               >
                 {cell.day}
               </div>
@@ -1414,8 +1465,8 @@ function DatePickerPreview() {
           })}
         </div>
         <div className="flex justify-between mt-3 pt-3 border-t border-[var(--border-default)]">
-          <span className="px-3 py-1.5 text-[11px] font-bold text-[var(--text-muted)]">지우기</span>
-          <span className="px-3 py-1.5 text-[11px] font-bold text-primary-500">오늘</span>
+          <span className={cn('px-3 py-1.5 text-[11px] font-bold text-[var(--text-muted)]', dayR)}>지우기</span>
+          <span className={cn('px-3 py-1.5 text-[11px] font-bold text-primary-500', dayR)}>오늘</span>
         </div>
       </div>
     </div>

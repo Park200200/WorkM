@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
 import { cn } from '../../utils/cn'
+import { useThemeStore } from '../../stores/themeStore'
 
 interface DatePickerProps {
   value: string          // yyyy-MM-dd
@@ -124,6 +125,29 @@ export function DatePicker({ value, onChange, placeholder = '날짜를 선택하
   }
 
   const displayText = value ? value.replace(/(\d{4})-(\d{2})-(\d{2})/, '$1-$2-$3') : ''
+  const dpStyle = useThemeStore((s) => s.datePickerStyle) || 'default'
+
+  /* 스타일별 클래스 */
+  const triggerClass = {
+    default: 'rounded-xl',
+    modern:  'rounded-lg border-l-4 border-l-primary-500',
+    minimal: 'rounded-none border-t-0 border-x-0 border-b-2',
+    bubble:  'rounded-full px-5',
+  }[dpStyle]
+
+  const panelClass = {
+    default: 'rounded-2xl shadow-2xl',
+    modern:  'rounded-xl shadow-xl border-t-4 border-t-primary-500',
+    minimal: 'rounded-lg shadow-md border-0 ring-1 ring-[var(--border-default)]',
+    bubble:  'rounded-3xl shadow-2xl',
+  }[dpStyle]
+
+  const dayClass = {
+    default: 'rounded-xl',
+    modern:  'rounded-lg',
+    minimal: 'rounded-none',
+    bubble:  'rounded-full',
+  }[dpStyle]
 
   return (
     <>
@@ -132,7 +156,8 @@ export function DatePicker({ value, onChange, placeholder = '날짜를 선택하
         ref={triggerRef}
         onClick={() => setOpen(!open)}
         className={cn(
-          'flex items-center gap-2 w-full px-3 py-2.5 rounded-xl border bg-[var(--bg-surface)] text-sm cursor-pointer transition-all',
+          'flex items-center gap-2 w-full px-3 py-2.5 border bg-[var(--bg-surface)] text-sm cursor-pointer transition-all',
+          triggerClass,
           open ? 'border-primary-400 ring-2 ring-primary-200/50' : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
           className,
         )}
@@ -151,16 +176,16 @@ export function DatePicker({ value, onChange, placeholder = '날짜를 선택하
           className="fixed animate-scaleIn"
           style={{ top: pos.top, left: pos.left, zIndex: 99999 }}
         >
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-2xl shadow-2xl p-4 w-[290px]">
-            {/* 헤더: 년월 + 좌우 화살표 */}
+          <div className={cn('bg-[var(--bg-surface)] border border-[var(--border-default)] p-4 w-[290px]', panelClass)}>
+            {/* 헤더 */}
             <div className="flex items-center justify-between mb-3">
-              <button onClick={prevMonth} className="w-8 h-8 rounded-xl hover:bg-[var(--bg-muted)] flex items-center justify-center cursor-pointer transition-colors">
+              <button onClick={prevMonth} className={cn('w-8 h-8 hover:bg-[var(--bg-muted)] flex items-center justify-center cursor-pointer transition-colors', dayClass)}>
                 <ChevronLeft size={16} className="text-[var(--text-secondary)]" />
               </button>
               <span className="text-[13px] font-extrabold text-[var(--text-primary)] tracking-tight">
                 {viewYear}년 {String(viewMonth + 1).padStart(2, '0')}월
               </span>
-              <button onClick={nextMonth} className="w-8 h-8 rounded-xl hover:bg-[var(--bg-muted)] flex items-center justify-center cursor-pointer transition-colors">
+              <button onClick={nextMonth} className={cn('w-8 h-8 hover:bg-[var(--bg-muted)] flex items-center justify-center cursor-pointer transition-colors', dayClass)}>
                 <ChevronRight size={16} className="text-[var(--text-secondary)]" />
               </button>
             </div>
@@ -198,7 +223,8 @@ export function DatePicker({ value, onChange, placeholder = '날짜를 선택하
                         key={di}
                         onClick={() => selectDate(cell.day)}
                         className={cn(
-                          'w-full aspect-square flex items-center justify-center text-[12px] font-medium rounded-xl cursor-pointer transition-all duration-150',
+                          'w-full aspect-square flex items-center justify-center text-[12px] font-medium cursor-pointer transition-all duration-150',
+                          dayClass,
                           selected
                             ? 'bg-primary-500 text-white font-bold shadow-md shadow-primary-500/30'
                             : todayMark
@@ -218,11 +244,11 @@ export function DatePicker({ value, onChange, placeholder = '날짜를 선택하
             <div className="flex justify-between mt-3 pt-3 border-t border-[var(--border-default)]">
               <button
                 onClick={() => { onChange(''); setOpen(false) }}
-                className="px-3 py-1.5 text-[11px] font-bold text-[var(--text-muted)] hover:bg-[var(--bg-muted)] rounded-lg cursor-pointer transition-colors"
+                className={cn('px-3 py-1.5 text-[11px] font-bold text-[var(--text-muted)] hover:bg-[var(--bg-muted)] cursor-pointer transition-colors', dayClass)}
               >지우기</button>
               <button
                 onClick={selectToday}
-                className="px-3 py-1.5 text-[11px] font-bold text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg cursor-pointer transition-colors"
+                className={cn('px-3 py-1.5 text-[11px] font-bold text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 cursor-pointer transition-colors', dayClass)}
               >오늘</button>
             </div>
           </div>
