@@ -172,21 +172,30 @@ export function ProfilePage() {
                     ts === 'underline' && [
                       isActive
                         ? 'text-[var(--tab-active-color)] border-b-2 border-[var(--tab-active-color)]'
-                        : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]',
+                        : 'text-[var(--text-muted)]',
                     ],
                     ts === 'box' && [
                       'rounded-lg',
                       isActive
                         ? 'text-[var(--tab-active-color)] bg-[var(--tab-active-bg)] border border-[var(--tab-active-color)]/20'
-                        : 'text-[var(--text-muted)] hover:bg-[var(--bg-muted)]',
+                        : 'text-[var(--text-muted)]',
                     ],
                     ts === 'pill' && [
                       'rounded-full',
                       isActive
                         ? 'bg-[var(--btn-save-bg)] text-white'
-                        : 'text-[var(--text-muted)] hover:bg-[var(--bg-muted)]',
+                        : 'text-[var(--text-muted)]',
                     ],
                   )}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.color = 'var(--color-primary-500)'
+                      if (ts !== 'underline') e.currentTarget.style.background = 'color-mix(in srgb, var(--color-primary-500) 8%, transparent)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) { e.currentTarget.style.color = ''; e.currentTarget.style.background = '' }
+                  }}
                 >{tab.label}</button>
               )
             })}

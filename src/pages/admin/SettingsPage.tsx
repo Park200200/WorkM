@@ -111,23 +111,39 @@ export function SettingsPage() {
                   'rounded-none border-b-2',
                   isActive
                     ? 'border-[var(--tab-active-color)] text-[var(--tab-active-color)]'
-                    : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
+                    : 'border-transparent text-[var(--text-muted)]',
                 ],
                 /* box */
                 ts === 'box' && [
                   'rounded-xl border',
                   isActive
                     ? 'bg-[var(--tab-active-bg)] border-[var(--tab-active-color)]/20 text-[var(--tab-active-color)] shadow-sm'
-                    : 'border-transparent text-[var(--text-muted)] hover:bg-[var(--bg-muted)]',
+                    : 'border-transparent text-[var(--text-muted)]',
                 ],
                 /* pill */
                 ts === 'pill' && [
                   'rounded-full',
                   isActive
                     ? 'bg-[var(--btn-save-bg)] text-white shadow-sm'
-                    : 'text-[var(--text-muted)] hover:bg-[var(--bg-muted)]',
+                    : 'text-[var(--text-muted)]',
                 ],
               )}
+              style={!isActive ? { ['--tw-tab-hover' as string]: 'var(--color-primary-500)' } : undefined}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  const el = e.currentTarget
+                  el.style.color = 'var(--color-primary-500)'
+                  if (ts === 'box') el.style.background = 'color-mix(in srgb, var(--color-primary-500) 8%, transparent)'
+                  if (ts === 'pill') el.style.background = 'color-mix(in srgb, var(--color-primary-500) 8%, transparent)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  const el = e.currentTarget
+                  el.style.color = ''
+                  el.style.background = ''
+                }
+              }}
             >
               <Icon size={15} style={isActive ? { color: ts === 'pill' && isActive ? 'white' : tab.color } : undefined} />
               {tab.label}
