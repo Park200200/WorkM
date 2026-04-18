@@ -1356,7 +1356,9 @@ function TabsPreview({ style }: { style: 'underline' | 'box' | 'pill' }) {
 
 /* 날짜 피커 프리뷰 */
 function DatePickerPreview() {
-  const [date, setDate] = useState('')
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`
+  const [date, setDate] = useState(todayStr)
   return (
     <div>
       <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">날짜 선택</label>
