@@ -14,13 +14,13 @@ import {
 } from 'lucide-react'
 
 /* ═══════════════════════════════════════════
-   기본 4탭 메뉴 (내책상 | 진행 | 담당 | 설정)
+   기본 4탭 메뉴 (진행 | 담당 | 설정 | 내책상)
    ═══════════════════════════════════════════ */
 const DEFAULT_TABS = [
-  { id: 'dashboard', label: '내책상', icon: Home, page: '/', drawer: null },
   { id: '_jinhaeng', label: '진행',   icon: BarChart3, page: null, drawer: 'jinhaeng' },
   { id: '_damdang',  label: '담당',   icon: User, page: null, drawer: 'damdang' },
   { id: '_settings', label: '설정',   icon: SlidersHorizontal, page: null, drawer: 'settings' },
+  { id: 'dashboard', label: '내책상', icon: Home, page: '/', drawer: null },
 ]
 
 const DEFAULT_DRAWER: Record<string, { icon: React.ElementType; label: string; color: string; bg: string; path: string }[]> = {
