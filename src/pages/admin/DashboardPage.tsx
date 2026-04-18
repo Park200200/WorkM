@@ -228,6 +228,13 @@ export function DashboardPage() {
   useEffect(() => {
     if (chatBodyRef.current) chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight
     if (mobileChatBodyRef.current) mobileChatBodyRef.current.scrollTop = mobileChatBodyRef.current.scrollHeight
+    // 모바일 채팅 열림 → 뒤쪽 스크롤 차단
+    if (mobileChatOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
   }, [mobileChatOpen])
 
   return (
@@ -470,9 +477,19 @@ export function DashboardPage() {
         )}
       </button>
 
-      {/* ── 모바일 채팅 팝업 ── */}
+      {/* ── 모바일 채팅 팝업 (모달 방식 — 닫기 전 다른 작업 차단) ── */}
       {mobileChatOpen && (
-        <div className="lg:hidden fixed inset-0 z-[100] flex flex-col bg-[var(--bg-surface)] animate-slideUp">
+        <>
+          {/* 백드롭: 뒤쪽 콘텐츠 차단 */}
+          <div
+            className="lg:hidden fixed inset-0 z-[99] bg-black/40"
+            onClick={() => setMobileChatOpen(false)}
+          />
+          <div
+            className="lg:hidden fixed inset-0 z-[100] flex flex-col bg-[var(--bg-surface)] animate-slideUp"
+            role="dialog"
+            aria-modal="true"
+          >
           {/* 팝업 헤더 */}
           <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[var(--border-default)] shrink-0">
             <div className="w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
@@ -544,6 +561,7 @@ export function DashboardPage() {
               onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
               placeholder="메시지를 입력하세요..."
               className="flex-1 text-sm bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none"
+              autoFocus
             />
             <button
               onClick={sendMessage}
@@ -553,6 +571,7 @@ export function DashboardPage() {
             </button>
           </div>
         </div>
+        </>
       )}
       {/* ── 모달들 ── */}
       <InstructionModal open={instrOpen} editTaskId={editTaskId} onClose={() => { setInstrOpen(false); setEditTaskId(null); setRefreshKey(k => k + 1) }} />
