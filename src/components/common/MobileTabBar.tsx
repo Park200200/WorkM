@@ -30,7 +30,7 @@ const DEFAULT_DRAWER: Record<string, { icon: React.ElementType; label: string; c
     { icon: BarChart2,  label: '실적보기', color: '#f59e0b', bg: 'rgba(245,158,11,.12)', path: '/performance' },
   ],
   damdang: [
-    { icon: User,       label: '내의정보', color: '#4f6ef7', bg: 'rgba(79,110,247,.12)', path: '/profile' },
+    { icon: User,       label: '나의설정', color: '#4f6ef7', bg: 'rgba(79,110,247,.12)', path: '/profile' },
     { icon: Calculator, label: '회계관리', color: '#f59e0b', bg: 'rgba(245,158,11,.12)', path: '/accounting' },
     { icon: Globe,      label: '홈페이지', color: '#22c55e', bg: 'rgba(34,197,94,.12)',  path: '/homepage' },
   ],
