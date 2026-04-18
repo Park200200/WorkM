@@ -5,7 +5,6 @@ import { useAuthStore } from '../../stores/authStore'
 import { useThemeStore } from '../../stores/themeStore'
 import { Avatar } from '../ui/Avatar'
 import { cn } from '../../utils/cn'
-import { getAccentColor } from '../../utils/accentColor'
 
 import { getItem, setItem } from '../../utils/storage'
 import { useToastStore } from '../../stores/toastStore'
@@ -31,7 +30,6 @@ export function Header() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const accentColor = getAccentColor()
 
   const isAcctMode = location.pathname === '/accounting'
   const isHpMode = location.pathname === '/homepage'
@@ -266,7 +264,7 @@ export function Header() {
                 onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false) }}
                 className="flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-[var(--bg-muted)] transition-colors cursor-pointer"
               >
-                <Avatar name={user.name} color={accentColor} size="xs" />
+                <Avatar name={user.name} useAccent size="xs" />
                 <span className="text-[11px] font-bold text-[var(--text-primary)] hidden md:inline">
                   {user.name}
                 </span>

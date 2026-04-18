@@ -5,6 +5,8 @@ interface AvatarProps {
   color?: string
   size?: 'xs' | 'sm' | 'md' | 'lg'
   className?: string
+  /** true이면 메인 색상(CSS 변수)으로 자동 적용 */
+  useAccent?: boolean
 }
 
 const sizeClasses = {
@@ -14,8 +16,12 @@ const sizeClasses = {
   lg: 'w-12 h-12 text-sm',
 }
 
-export function Avatar({ name, color = '#4f6ef7', size = 'md', className }: AvatarProps) {
+export function Avatar({ name, color = '#4f6ef7', size = 'md', className, useAccent }: AvatarProps) {
   const initial = name.charAt(0)
+  const bg = useAccent
+    ? 'linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700))'
+    : `linear-gradient(135deg, ${color}, ${adjustColor(color, -30)})`
+
   return (
     <div
       className={cn(
@@ -23,7 +29,7 @@ export function Avatar({ name, color = '#4f6ef7', size = 'md', className }: Avat
         sizeClasses[size],
         className,
       )}
-      style={{ background: `linear-gradient(135deg, ${color}, ${adjustColor(color, -30)})` }}
+      style={{ background: bg }}
       title={name}
     >
       {initial}
