@@ -15,6 +15,9 @@ import {
   Palette, Sun, Moon, Check,
 } from 'lucide-react'
 import { ICON_MAP, renderIcon } from '../../utils/iconMap'
+import { Badge } from '../../components/ui/Badge'
+import { Progress } from '../../components/ui/Progress'
+import { Tabs } from '../../components/ui/Tabs'
 
 const ICON_COLORS = [
   '#22c55e','#06b6d4','#9747ff','#ef4444','#f59e0b','#4f6ef7',
@@ -1079,6 +1082,103 @@ function ThemePanel() {
           ))}
         </div>
       </Card>
+
+      {/* ── 컴포넌트 프리뷰 ── */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">컴포넌트 프리뷰</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-4">위의 설정이 적용된 실시간 미리보기입니다</p>
+
+        {/* 버튼 */}
+        <div className="mb-5">
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">버튼</span>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="save" size="sm">저장</Button>
+            <Button variant="edit" size="sm">수정</Button>
+            <Button variant="delete" size="sm">삭제</Button>
+            <Button variant="cancel" size="sm">취소</Button>
+            <Button variant="search" size="sm">검색</Button>
+            <Button variant="confirm" size="sm">확인</Button>
+            <Button variant="upload" size="sm">업로드</Button>
+            <Button variant="download" size="sm">다운로드</Button>
+            <Button variant="add" size="sm">추가</Button>
+            <Button variant="approve" size="sm">승인</Button>
+            <Button variant="reject" size="sm">반려</Button>
+            <Button variant="ghost" size="sm">Ghost</Button>
+            <Button variant="outline" size="sm">Outline</Button>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-2">
+            <Button variant="save" size="sm" loading>로딩중</Button>
+            <Button variant="save" size="sm" disabled>비활성</Button>
+          </div>
+        </div>
+
+        {/* 뱃지 */}
+        <div className="mb-5">
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">뱃지 (상태)</span>
+          <div className="flex flex-wrap gap-2">
+            <Badge status="waiting" dot />
+            <Badge status="progress" dot />
+            <Badge status="complete" dot />
+            <Badge status="delay" dot />
+          </div>
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 mt-3 block">뱃지 (분류)</span>
+          <div className="flex flex-wrap gap-2">
+            <Badge category="news" />
+            <Badge category="youtube" />
+            <Badge category="blog" />
+            <Badge category="website" />
+          </div>
+        </div>
+
+        {/* 진행률 */}
+        <div className="mb-5">
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">진행률</span>
+          <div className="space-y-2">
+            <Progress value={20} showLabel />
+            <Progress value={55} showLabel />
+            <Progress value={85} showLabel />
+          </div>
+        </div>
+
+        {/* 입력 요소 */}
+        <div className="mb-5">
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">입력 요소</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Input label="텍스트 입력" placeholder="내용을 입력하세요" />
+            <Input label="에러 상태" placeholder="필수 항목" error="필수 항목을 입력해주세요" />
+          </div>
+        </div>
+
+        {/* 탭 스타일 */}
+        <div className="mb-5">
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">탭 (3가지 스타일)</span>
+          <div className="space-y-3">
+            <TabsPreview style="underline" />
+            <TabsPreview style="box" />
+            <TabsPreview style="pill" />
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+/* 탭 프리뷰 헬퍼 */
+function TabsPreview({ style }: { style: 'underline' | 'box' | 'pill' }) {
+  const [active, setActive] = useState('all')
+  return (
+    <div>
+      <span className="text-[10px] text-[var(--text-muted)] mb-1 block">{style}</span>
+      <Tabs
+        items={[
+          { key: 'all', label: '전체', count: 12 },
+          { key: 'progress', label: '진행중', count: 5 },
+          { key: 'done', label: '완료', count: 7 },
+        ]}
+        activeKey={active}
+        onChange={setActive}
+        style={style}
+      />
     </div>
   )
 }
