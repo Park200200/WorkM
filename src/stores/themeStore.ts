@@ -180,27 +180,23 @@ function applyToDOM(t: SavedTheme) {
   html.setAttribute('data-font-scale', t.fontScale)
   html.setAttribute('data-datepicker', t.datePickerStyle || 'default')
 
-  // 프리셋이면 data-accent 설정 + palette CSS 변수도 직접 설정
+  // 색상 팔레트를 CSS 변수로 직접 설정 (Tailwind v4 @theme 빌드시점 해석 문제 해결)
+  const applyPalette = (palette: Record<string, string>) => {
+    for (const [step, color] of Object.entries(palette)) {
+      html.style.setProperty(`--palette-${step}`, color)
+      html.style.setProperty(`--color-primary-${step}`, color)
+    }
+  }
+
   if (PRESET_KEYS.includes(t.accent)) {
     html.setAttribute('data-accent', t.accent)
     const preset = PRESET_ACCENTS.find(a => a.key === t.accent)
-    if (preset) {
-      const palette = generatePalette(preset.color)
-      for (const [step, color] of Object.entries(palette)) {
-        html.style.setProperty(`--palette-${step}`, color)
-      }
-    }
+    if (preset) applyPalette(generatePalette(preset.color))
   } else {
-    // 커스텀 색상 → JS로 CSS 변수 직접 설정
     html.removeAttribute('data-accent')
     const customs = loadCustomAccents()
     const found = customs.find(c => c.key === t.accent)
-    if (found) {
-      const palette = generatePalette(found.color)
-      for (const [step, color] of Object.entries(palette)) {
-        html.style.setProperty(`--palette-${step}`, color)
-      }
-    }
+    if (found) applyPalette(generatePalette(found.color))
   }
 
   // 폰트 색상 적용
