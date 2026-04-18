@@ -6,13 +6,13 @@ import { Input } from '../../components/ui/Input'
 import { Modal, ModalBody, ModalFooter } from '../../components/ui/Modal'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { useToastStore } from '../../stores/toastStore'
-import { useThemeStore, ACCENT_LABELS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, type ThemeAccent, type ThemeRadius, type ThemeDensity } from '../../stores/themeStore'
+import { useThemeStore, PRESET_ACCENTS, PRESET_KEYS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, type ThemeRadius, type ThemeDensity } from '../../stores/themeStore'
 import { cn } from '../../utils/cn'
 import { getItem } from '../../utils/storage'
 import {
   Building2, Medal, Briefcase, ListChecks, FileText, Layers,
   Plus, Pencil, Trash2, GripVertical, Calculator, Wallet, CreditCard,
-  Palette, Sun, Moon, Check,
+  Palette, Sun, Moon, Check, X,
 } from 'lucide-react'
 import { ICON_MAP, renderIcon } from '../../utils/iconMap'
 import { Badge } from '../../components/ui/Badge'
@@ -957,11 +957,33 @@ function PaymentMethodPanel() {
    🎨 테마 설정 패널
    ══════════════════════════════════════════════ */
 function ThemePanel() {
-  const { theme, accent, radius, density, toggle, setAccent, setRadius, setDensity } = useThemeStore()
+  const { theme, accent, radius, density, toggle, setAccent, setRadius, setDensity, customAccents, addCustomAccent, removeCustomAccent } = useThemeStore()
+  const addToast = useToastStore((s) => s.add)
 
-  const accentKeys = Object.keys(ACCENT_LABELS) as ThemeAccent[]
   const radiusKeys = Object.keys(RADIUS_LABELS) as ThemeRadius[]
   const densityKeys = Object.keys(DENSITY_LABELS) as ThemeDensity[]
+
+  /* 커스텀 색상 추가 */
+  const [showAddColor, setShowAddColor] = useState(false)
+  const [newColorName, setNewColorName] = useState('')
+  const [newColorValue, setNewColorValue] = useState('#6366f1')
+
+  const handleAddColor = () => {
+    if (!newColorName.trim()) {
+      addToast('error', '색상 이름을 입력하세요')
+      return
+    }
+    addCustomAccent(newColorName.trim(), newColorValue)
+    addToast('success', `"${newColorName.trim()}" 색상이 추가되었습니다`)
+    setNewColorName('')
+    setNewColorValue('#6366f1')
+    setShowAddColor(false)
+  }
+
+  const handleDeleteColor = (key: string, label: string) => {
+    removeCustomAccent(key)
+    addToast('warning', `"${label}" 색상이 삭제되었습니다`)
+  }
 
   return (
     <div className="space-y-5 animate-fadeIn">
@@ -993,30 +1015,110 @@ function ThemePanel() {
 
       {/* 메인 색상 */}
       <Card>
-        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">메인 색상</div>
+        <div className="flex items-center justify-between mb-1">
+          <div className="text-sm font-extrabold text-[var(--text-primary)]">메인 색상</div>
+          <Button
+            variant="add"
+            size="xs"
+            icon={<Plus size={13} />}
+            onClick={() => setShowAddColor(!showAddColor)}
+          >
+            추가
+          </Button>
+        </div>
         <p className="text-[11px] text-[var(--text-muted)] mb-3">UI 전체에 적용되는 브랜드 색상입니다</p>
-        <div className="grid grid-cols-7 gap-2">
-          {accentKeys.map((key) => (
+
+        {/* 커스텀 색상 추가 폼 */}
+        {showAddColor && (
+          <div className="mb-4 p-3 rounded-xl border border-dashed border-[var(--border-strong)] bg-[var(--bg-muted)] space-y-3">
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={newColorValue}
+                onChange={(e) => setNewColorValue(e.target.value)}
+                className="w-10 h-10 rounded-lg cursor-pointer border-0 p-0"
+              />
+              <div className="flex-1">
+                <Input
+                  placeholder="색상 이름 (예: 기업 브랜드)"
+                  value={newColorName}
+                  onChange={(e) => setNewColorName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddColor()}
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-[var(--text-muted)] font-mono">{newColorValue.toUpperCase()}</span>
+              <div className="flex gap-2">
+                <Button variant="cancel" size="xs" onClick={() => setShowAddColor(false)}>취소</Button>
+                <Button variant="save" size="xs" onClick={handleAddColor}>추가</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 기본 프리셋 */}
+        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">기본 프리셋 (삭제 불가)</span>
+        <div className="grid grid-cols-7 gap-2 mb-4">
+          {PRESET_ACCENTS.map((p) => (
             <button
-              key={key}
-              onClick={() => setAccent(key)}
+              key={p.key}
+              onClick={() => setAccent(p.key)}
               className={cn(
                 'flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 cursor-pointer transition-all',
-                accent === key
+                accent === p.key
                   ? 'border-[var(--btn-save-bg)] shadow-md scale-105'
                   : 'border-transparent hover:border-[var(--border-default)]',
               )}
             >
               <div
                 className="w-8 h-8 rounded-full shadow-sm flex items-center justify-center"
-                style={{ backgroundColor: ACCENT_COLORS[key] }}
+                style={{ backgroundColor: p.color }}
               >
-                {accent === key && <Check size={14} className="text-white" />}
+                {accent === p.key && <Check size={14} className="text-white" />}
               </div>
-              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{ACCENT_LABELS[key]}</span>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{p.label}</span>
             </button>
           ))}
         </div>
+
+        {/* 커스텀 색상 */}
+        {customAccents.length > 0 && (
+          <>
+            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">커스텀 색상</span>
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+              {customAccents.map((c) => (
+                <div key={c.key} className="relative group">
+                  <button
+                    onClick={() => setAccent(c.key)}
+                    className={cn(
+                      'w-full flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 cursor-pointer transition-all',
+                      accent === c.key
+                        ? 'border-[var(--btn-save-bg)] shadow-md scale-105'
+                        : 'border-transparent hover:border-[var(--border-default)]',
+                    )}
+                  >
+                    <div
+                      className="w-8 h-8 rounded-full shadow-sm flex items-center justify-center"
+                      style={{ backgroundColor: c.color }}
+                    >
+                      {accent === c.key && <Check size={14} className="text-white" />}
+                    </div>
+                    <span className="text-[10px] font-bold text-[var(--text-secondary)] truncate max-w-full px-1">{c.label}</span>
+                  </button>
+                  {/* 삭제 버튼 */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDeleteColor(c.key, c.label) }}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[var(--color-danger-500)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-sm"
+                    title="삭제"
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </Card>
 
       {/* 모서리 둥글기 */}
