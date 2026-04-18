@@ -18,6 +18,9 @@ import { ICON_MAP, renderIcon } from '../../utils/iconMap'
 import { Badge } from '../../components/ui/Badge'
 import { Progress } from '../../components/ui/Progress'
 import { Tabs } from '../../components/ui/Tabs'
+import { DatePicker } from '../../components/ui/DatePicker'
+import { Checkbox } from '../../components/ui/Checkbox'
+import { CustomSelect } from '../../components/ui/CustomSelect'
 
 const ICON_COLORS = [
   '#22c55e','#06b6d4','#9747ff','#ef4444','#f59e0b','#4f6ef7',
@@ -1305,6 +1308,16 @@ function ThemePanel() {
             <Input label="텍스트 입력" placeholder="내용을 입력하세요" />
             <Input label="에러 상태" placeholder="필수 항목" error="필수 항목을 입력해주세요" />
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+            <DatePickerPreview />
+            <SelectPreview />
+          </div>
+          <div className="flex flex-wrap gap-6 mt-3">
+            <Checkbox label="체크박스 A" defaultChecked />
+            <Checkbox label="체크박스 B" />
+            <Checkbox label="라디오 A" variant="radio" name="preview-radio" defaultChecked />
+            <Checkbox label="라디오 B" variant="radio" name="preview-radio" />
+          </div>
         </div>
 
         {/* 탭 스타일 */}
@@ -1340,3 +1353,35 @@ function TabsPreview({ style }: { style: 'underline' | 'box' | 'pill' }) {
     </div>
   )
 }
+
+/* 날짜 피커 프리뷰 */
+function DatePickerPreview() {
+  const [date, setDate] = useState('')
+  return (
+    <div>
+      <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">날짜 선택</label>
+      <DatePicker value={date} onChange={setDate} placeholder="날짜를 선택하세요" />
+    </div>
+  )
+}
+
+/* 셀렉트 프리뷰 */
+function SelectPreview() {
+  const [val, setVal] = useState('')
+  return (
+    <div>
+      <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">드롭다운</label>
+      <CustomSelect
+        value={val}
+        onChange={setVal}
+        options={[
+          { value: 'design', label: '디자인팀' },
+          { value: 'dev', label: '개발팀' },
+          { value: 'marketing', label: '마케팅팀' },
+        ]}
+        placeholder="부서를 선택하세요"
+      />
+    </div>
+  )
+}
+
