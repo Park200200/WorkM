@@ -180,13 +180,18 @@ function applyToDOM(t: SavedTheme) {
   html.setAttribute('data-font-scale', t.fontScale)
   html.setAttribute('data-datepicker', t.datePickerStyle || 'default')
 
-  // 프리셋이면 data-accent로 CSS에서 처리
+  // 프리셋이면 data-accent 설정 + palette CSS 변수도 직접 설정
   if (PRESET_KEYS.includes(t.accent)) {
     html.setAttribute('data-accent', t.accent)
-    for (const step of ['50','100','200','300','400','500','600','700','800','900']) {
-      html.style.removeProperty(`--palette-${step}`)
+    const preset = PRESET_ACCENTS.find(a => a.key === t.accent)
+    if (preset) {
+      const palette = generatePalette(preset.color)
+      for (const [step, color] of Object.entries(palette)) {
+        html.style.setProperty(`--palette-${step}`, color)
+      }
     }
   } else {
+    // 커스텀 색상 → JS로 CSS 변수 직접 설정
     html.removeAttribute('data-accent')
     const customs = loadCustomAccents()
     const found = customs.find(c => c.key === t.accent)
