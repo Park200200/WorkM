@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuthStore } from '../../stores/authStore'
 import { InstructionModal, DailyReportModal, ScheduleModal, ProgressReportModal } from '../../components/modals/DashboardModals'
 
@@ -464,7 +465,9 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* ── 모바일 채팅 FAB ── */}
+      {/* ── 모바일 채팅 FAB + 팝업 (Portal로 body에 직접 렌더) ── */}
+      {createPortal(
+      <>
       <button
         onClick={() => setMobileChatOpen(true)}
         className="lg:hidden fixed bottom-20 right-4 z-50 w-14 h-14 rounded-full bg-primary-500 hover:bg-primary-600 text-white shadow-xl flex items-center justify-center transition-transform active:scale-90 cursor-pointer"
@@ -573,6 +576,8 @@ export function DashboardPage() {
         </div>
         </>
       )}
+      </>
+      , document.body)}
       {/* ── 모달들 ── */}
       <InstructionModal open={instrOpen} editTaskId={editTaskId} onClose={() => { setInstrOpen(false); setEditTaskId(null); setRefreshKey(k => k + 1) }} />
       <DailyReportModal open={reportOpen} onClose={() => { setReportOpen(false); setRefreshKey(k => k + 1) }} />
