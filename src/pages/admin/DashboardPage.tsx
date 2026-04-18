@@ -482,11 +482,11 @@ export function DashboardPage() {
         <>
           {/* 백드롭: 뒤쪽 콘텐츠 차단 */}
           <div
-            className="lg:hidden fixed inset-0 z-[99] bg-black/40"
+            className="lg:hidden fixed inset-0 z-[199] bg-black/40"
             onClick={() => setMobileChatOpen(false)}
           />
           <div
-            className="lg:hidden fixed inset-0 z-[100] flex flex-col bg-[var(--bg-surface)] animate-slideUp"
+            className="lg:hidden fixed inset-0 z-[200] flex flex-col bg-[var(--bg-surface)] animate-slideUp"
             role="dialog"
             aria-modal="true"
           >
