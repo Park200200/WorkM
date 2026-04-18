@@ -1,6 +1,7 @@
 import { type InputHTMLAttributes, forwardRef, useId } from 'react'
 import { cn } from '../../utils/cn'
 import { Check } from 'lucide-react'
+import { useThemeStore } from '../../stores/themeStore'
 
 /* ═══════════════════════════════════════
    Checkbox & Radio — 토큰 기반
@@ -17,6 +18,11 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
   ({ className, label, description, error, variant = 'checkbox', id, ...props }, ref) => {
     const autoId = useId()
     const inputId = id || autoId
+    const cbStyle = useThemeStore((s) => s.checkboxStyle) || 'default'
+
+    // 스타일별 라운딩
+    const checkRound = { default: 'rounded-[var(--radius-xs)]', sharp: 'rounded-none', circle: 'rounded-full' }[cbStyle]
+    const shapeClass = variant === 'radio' ? 'rounded-full' : checkRound
 
     return (
       <div className={cn('flex items-start gap-3', className)}>
@@ -35,7 +41,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
               'peer-focus-visible:ring-2 peer-focus-visible:ring-primary-400/40 peer-focus-visible:ring-offset-2',
               'peer-checked:bg-[var(--btn-save-bg)] peer-checked:border-[var(--btn-save-bg)]',
               'peer-disabled:opacity-50 peer-disabled:cursor-not-allowed',
-              variant === 'radio' ? 'rounded-full' : 'rounded-[var(--radius-xs)]',
+              shapeClass,
               error && 'border-[var(--color-danger-500)]',
             )}
             onClick={() => {

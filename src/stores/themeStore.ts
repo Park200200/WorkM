@@ -7,9 +7,17 @@ export type ThemeRadius = 'sharp' | 'default' | 'rounded' | 'pill'
 export type ThemeDensity = 'compact' | 'default' | 'comfortable'
 export type ThemeFontScale = 'xs' | 'sm' | 'default' | 'lg' | 'xl'
 export type ThemeDatePicker = 'default' | 'modern' | 'minimal' | 'bubble'
+export type ThemeCheckboxStyle = 'default' | 'sharp' | 'circle'
+export type ThemeTabStyle = 'underline' | 'box' | 'pill'
 
 export const DATEPICKER_LABELS: Record<ThemeDatePicker, string> = {
   default: '기본', modern: '모던', minimal: '미니멀', bubble: '버블',
+}
+export const CHECKBOX_STYLE_LABELS: Record<ThemeCheckboxStyle, string> = {
+  default: '둥근 사각', sharp: '직각', circle: '원형',
+}
+export const TAB_STYLE_LABELS: Record<ThemeTabStyle, string> = {
+  underline: '밑줄', box: '박스', pill: '필',
 }
 
 /* ── 기본 7가지 프리셋 (삭제 불가) ── */
@@ -116,6 +124,8 @@ interface ThemeStore {
   fontScale: ThemeFontScale
   fontColor: string
   datePickerStyle: ThemeDatePicker
+  checkboxStyle: ThemeCheckboxStyle
+  tabStyle: ThemeTabStyle
   customAccents: CustomAccent[]
 
   toggle: () => void
@@ -126,6 +136,8 @@ interface ThemeStore {
   setFontScale: (scale: ThemeFontScale) => void
   setFontColor: (color: string) => void
   setDatePickerStyle: (style: ThemeDatePicker) => void
+  setCheckboxStyle: (style: ThemeCheckboxStyle) => void
+  setTabStyle: (style: ThemeTabStyle) => void
   addCustomAccent: (label: string, color: string) => void
   removeCustomAccent: (key: string) => void
 }
@@ -141,6 +153,8 @@ interface SavedTheme {
   fontScale: ThemeFontScale
   fontColor: string
   datePickerStyle: ThemeDatePicker
+  checkboxStyle: ThemeCheckboxStyle
+  tabStyle: ThemeTabStyle
 }
 
 function loadTheme(): SavedTheme {
@@ -151,7 +165,7 @@ function loadTheme(): SavedTheme {
     const v2 = localStorage.getItem('ws_theme_v2')
     if (v2) {
       const old = JSON.parse(v2)
-      return { ...old, fontScale: 'default', fontColor: 'default', datePickerStyle: 'default' }
+      return { ...old, fontScale: 'default', fontColor: 'default', datePickerStyle: 'default', checkboxStyle: 'default', tabStyle: 'underline' }
     }
   } catch { /* noop */ }
   const legacyMode = localStorage.getItem('ws_theme')
@@ -164,6 +178,8 @@ function loadTheme(): SavedTheme {
     fontScale: 'default',
     fontColor: 'default',
     datePickerStyle: 'default' as ThemeDatePicker,
+    checkboxStyle: 'default' as ThemeCheckboxStyle,
+    tabStyle: 'underline' as ThemeTabStyle,
   }
 }
 
@@ -179,6 +195,8 @@ function applyToDOM(t: SavedTheme) {
   html.setAttribute('data-density', t.density)
   html.setAttribute('data-font-scale', t.fontScale)
   html.setAttribute('data-datepicker', t.datePickerStyle || 'default')
+  html.setAttribute('data-checkbox-style', t.checkboxStyle || 'default')
+  html.setAttribute('data-tab-style', t.tabStyle || 'underline')
 
   // 색상 팔레트를 CSS 변수로 직접 설정 (Tailwind v4 @theme 빌드시점 해석 문제 해결)
   const applyPalette = (palette: Record<string, string>) => {
@@ -216,7 +234,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => {
   const getSaved = (): SavedTheme => ({
     mode: get().theme, accent: get().accent, radius: get().radius,
     density: get().density, fontScale: get().fontScale, fontColor: get().fontColor,
-    datePickerStyle: get().datePickerStyle,
+    datePickerStyle: get().datePickerStyle, checkboxStyle: get().checkboxStyle, tabStyle: get().tabStyle,
   })
 
   return {
@@ -227,6 +245,8 @@ export const useThemeStore = create<ThemeStore>((set, get) => {
     fontScale: initial.fontScale,
     fontColor: initial.fontColor,
     datePickerStyle: initial.datePickerStyle || 'default',
+    checkboxStyle: initial.checkboxStyle || 'default',
+    tabStyle: initial.tabStyle || 'underline',
     customAccents: loadCustomAccents(),
 
     toggle: () => {
@@ -276,6 +296,18 @@ export const useThemeStore = create<ThemeStore>((set, get) => {
       const s = { ...getSaved(), datePickerStyle }
       saveTheme(s); applyToDOM(s)
       set({ datePickerStyle })
+    },
+
+    setCheckboxStyle: (checkboxStyle) => {
+      const s = { ...getSaved(), checkboxStyle }
+      saveTheme(s); applyToDOM(s)
+      set({ checkboxStyle })
+    },
+
+    setTabStyle: (tabStyle) => {
+      const s = { ...getSaved(), tabStyle }
+      saveTheme(s); applyToDOM(s)
+      set({ tabStyle })
     },
 
     addCustomAccent: (label, color) => {

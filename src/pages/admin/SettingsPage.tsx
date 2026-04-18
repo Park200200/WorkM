@@ -6,7 +6,7 @@ import { Input } from '../../components/ui/Input'
 import { Modal, ModalBody, ModalFooter } from '../../components/ui/Modal'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { useToastStore } from '../../stores/toastStore'
-import { useThemeStore, PRESET_ACCENTS, PRESET_KEYS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, FONT_SCALE_LABELS, FONT_COLOR_PRESETS, DATEPICKER_LABELS, type ThemeRadius, type ThemeDensity, type ThemeFontScale, type ThemeDatePicker } from '../../stores/themeStore'
+import { useThemeStore, PRESET_ACCENTS, PRESET_KEYS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, FONT_SCALE_LABELS, FONT_COLOR_PRESETS, DATEPICKER_LABELS, CHECKBOX_STYLE_LABELS, TAB_STYLE_LABELS, type ThemeRadius, type ThemeDensity, type ThemeFontScale, type ThemeDatePicker, type ThemeCheckboxStyle, type ThemeTabStyle } from '../../stores/themeStore'
 import { cn } from '../../utils/cn'
 import { getItem } from '../../utils/storage'
 import {
@@ -960,7 +960,7 @@ function PaymentMethodPanel() {
    🎨 테마 설정 패널
    ══════════════════════════════════════════════ */
 function ThemePanel() {
-  const { theme, accent, radius, density, fontScale, fontColor, datePickerStyle, toggle, setAccent, setRadius, setDensity, setFontScale, setFontColor, setDatePickerStyle, customAccents, addCustomAccent, removeCustomAccent } = useThemeStore()
+  const { theme, accent, radius, density, fontScale, fontColor, datePickerStyle, checkboxStyle, tabStyle, toggle, setAccent, setRadius, setDensity, setFontScale, setFontColor, setDatePickerStyle, setCheckboxStyle, setTabStyle, customAccents, addCustomAccent, removeCustomAccent } = useThemeStore()
   const addToast = useToastStore((s) => s.add)
 
   const radiusKeys = Object.keys(RADIUS_LABELS) as ThemeRadius[]
@@ -1286,6 +1286,77 @@ function ThemePanel() {
               </button>
             )
           })}
+        </div>
+      </Card>
+
+      {/* 체크박스/라디오 스타일 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">체크박스 / 라디오 스타일</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">체크박스와 라디오 버튼의 형태를 변경합니다</p>
+        <div className="grid grid-cols-3 gap-3">
+          {(Object.keys(CHECKBOX_STYLE_LABELS) as ThemeCheckboxStyle[]).map((key) => {
+            const cbR = key === 'default' ? 'rounded-md' : key === 'sharp' ? 'rounded-none' : 'rounded-full'
+            return (
+              <button
+                key={key}
+                onClick={() => setCheckboxStyle(key)}
+                className={cn(
+                  'flex flex-col items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all',
+                  checkboxStyle === key
+                    ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                    : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  {/* 체크박스 미니 */}
+                  <div className={cn('w-5 h-5 border-2 border-primary-500 bg-primary-500 flex items-center justify-center', cbR)}>
+                    <Check size={12} className="text-white" strokeWidth={3} />
+                  </div>
+                  {/* 라디오 미니 */}
+                  <div className={cn('w-5 h-5 border-2 border-primary-500 bg-primary-500 flex items-center justify-center', key === 'circle' ? 'rounded-full' : 'rounded-full')}>
+                    <div className="w-2 h-2 rounded-full bg-white" />
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-[var(--text-secondary)]">{CHECKBOX_STYLE_LABELS[key]}</span>
+              </button>
+            )
+          })}
+        </div>
+      </Card>
+
+      {/* 탭 스타일 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">탭 스타일</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">탭 버튼의 기본 형태를 변경합니다</p>
+        <div className="grid grid-cols-3 gap-3">
+          {(Object.keys(TAB_STYLE_LABELS) as ThemeTabStyle[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setTabStyle(key)}
+              className={cn(
+                'flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                tabStyle === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              {/* 미니 탭 프리뷰 */}
+              <div className="w-full flex gap-1 justify-center">
+                {['전체','진행','완료'].map((t, i) => (
+                  <span
+                    key={t}
+                    className={cn(
+                      'text-[8px] font-bold px-2 py-1 transition-all',
+                      key === 'underline' && (i === 0 ? 'text-primary-500 border-b-2 border-primary-500' : 'text-[var(--text-muted)] border-b-2 border-transparent'),
+                      key === 'box' && (i === 0 ? 'text-primary-500 bg-[var(--tab-active-bg)] border border-primary-200 rounded-md' : 'text-[var(--text-muted)]'),
+                      key === 'pill' && (i === 0 ? 'text-white bg-primary-500 rounded-full' : 'text-[var(--text-muted)]'),
+                    )}
+                  >{t}</span>
+                ))}
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{TAB_STYLE_LABELS[key]}</span>
+            </button>
+          ))}
         </div>
       </Card>
 

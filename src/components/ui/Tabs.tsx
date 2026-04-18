@@ -1,5 +1,6 @@
 import { type ReactNode, useState } from 'react'
 import { cn } from '../../utils/cn'
+import { useThemeStore, type ThemeTabStyle } from '../../stores/themeStore'
 
 /* ═══════════════════════════════════════
    Tabs — 토큰 기반
@@ -24,7 +25,9 @@ interface TabsProps {
   fullWidth?: boolean
 }
 
-export function Tabs({ items, activeKey, onChange, style = 'underline', className, fullWidth }: TabsProps) {
+export function Tabs({ items, activeKey, onChange, style: styleProp, className, fullWidth }: TabsProps) {
+  const globalTab = useThemeStore((s) => s.tabStyle) as TabStyle
+  const style = styleProp || globalTab || 'underline'
   return (
     <div
       className={cn(
