@@ -122,10 +122,21 @@ export function MobileTabBar() {
   const tabs = mode === 'accounting' ? ACCT_TABS : mode === 'homepage' ? HP_TABS : DEFAULT_TABS
 
   /* ── 탭 활성화 판별 ── */
+  const searchParams = new URLSearchParams(location.search)
+  const hpTabParam = searchParams.get('tab') || ''
+
+  // hpTab 값 → 부모 탭 id 매핑
+  const HP_TAB_TO_PARENT: Record<string, string> = {
+    basic: '_hp_main',
+    menu: '_hp_sub',
+    content: '_hp_more', media: '_hp_more', board: '_hp_more', terms: '_hp_more', workshop: '_hp_more',
+  }
+
   const getActiveTabId = () => {
     if (sheetOpen && activeTabId) return activeTabId
     if (mode === 'default') return PAGE_TO_TAB[location.pathname] || 'dashboard'
-    // 회계/홈페이지 모드에서는 첫 탭이 기본
+    if (mode === 'homepage') return HP_TAB_TO_PARENT[hpTabParam] || tabs[0].id
+    // 회계 모드
     return tabs[0].id
   }
 
