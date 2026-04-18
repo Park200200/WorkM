@@ -6,20 +6,34 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string
   hint?: string
   icon?: React.ReactNode
+  required?: boolean
 }
 
+/* ── 공통 입력 필드 스타일 (토큰 기반) ── */
+export const inputBaseClass = cn(
+  'w-full rounded-[var(--radius-sm)] border bg-[var(--bg-surface)]',
+  'px-[var(--input-padding-x)] py-[var(--input-padding-y)]',
+  'text-[length:var(--font-size-body)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]',
+  'border-[var(--border-default)]',
+  'transition-all duration-150',
+  'focus:outline-none focus:ring-2 focus:ring-primary-400/30 focus:border-[var(--border-focus)]',
+  'disabled:opacity-50 disabled:cursor-not-allowed',
+)
+
+export const labelClass = cn(
+  'text-[length:var(--font-size-xxs)] font-bold uppercase tracking-wider text-[var(--text-muted)]',
+)
+
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, hint, icon, id, ...props }, ref) => {
+  ({ className, label, error, hint, icon, id, required, ...props }, ref) => {
     const inputId = id || label?.replace(/\s/g, '-').toLowerCase()
 
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label
-            htmlFor={inputId}
-            className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]"
-          >
+          <label htmlFor={inputId} className={labelClass}>
             {label}
+            {required && <span className="text-[var(--color-danger-500)] ml-0.5">*</span>}
           </label>
         )}
         <div className="relative">
@@ -32,21 +46,16 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'w-full rounded-lg border bg-[var(--bg-surface)] px-3.5 py-2.5',
-              'text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)]',
-              'border-[var(--border-default)]',
-              'transition-all duration-150',
-              'focus:outline-none focus:ring-2 focus:ring-primary-400/30 focus:border-primary-500',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
+              inputBaseClass,
               icon && 'pl-10',
-              error && 'border-danger focus:ring-danger/30 focus:border-danger',
+              error && 'border-[var(--color-danger-500)] focus:ring-[var(--color-danger-500)]/30 focus:border-[var(--color-danger-500)]',
               className,
             )}
             {...props}
           />
         </div>
-        {error && <p className="text-xs text-danger font-medium">{error}</p>}
-        {hint && !error && <p className="text-xs text-[var(--text-muted)]">{hint}</p>}
+        {error && <p className="text-[length:var(--font-size-xs)] text-[var(--color-danger-500)] font-medium">{error}</p>}
+        {hint && !error && <p className="text-[length:var(--font-size-xs)] text-[var(--text-muted)]">{hint}</p>}
       </div>
     )
   }

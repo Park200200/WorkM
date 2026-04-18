@@ -2,6 +2,10 @@ import { useToastStore } from '../../stores/toastStore'
 import { cn } from '../../utils/cn'
 import { X, CheckCircle2, AlertTriangle, XCircle, Info } from 'lucide-react'
 
+/* ═══════════════════════════════════════
+   Toast — 위치/액션 확장
+   ═══════════════════════════════════════ */
+
 const icons = {
   success: CheckCircle2,
   warning: AlertTriangle,
@@ -10,10 +14,17 @@ const icons = {
 }
 
 const styles = {
-  success: 'border-green-500/30 bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-  warning: 'border-amber-500/30 bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  error:   'border-red-500/30 bg-red-50 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-  info:    'border-blue-500/30 bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  success: 'border-[var(--color-success-500)]/30 bg-[var(--color-success-50)] text-[var(--color-success-700)] dark:bg-[var(--color-success-500)]/10 dark:text-[var(--color-success-300)]',
+  warning: 'border-[var(--color-warning-500)]/30 bg-[var(--color-warning-50)] text-[var(--color-warning-700)] dark:bg-[var(--color-warning-500)]/10 dark:text-[var(--color-warning-300)]',
+  error:   'border-[var(--color-danger-500)]/30 bg-[var(--color-danger-50)] text-[var(--color-danger-700)] dark:bg-[var(--color-danger-500)]/10 dark:text-[var(--color-danger-300)]',
+  info:    'border-[var(--color-info-500)]/30 bg-[var(--color-info-50)] text-[var(--color-info-700)] dark:bg-[var(--color-info-500)]/10 dark:text-[var(--color-info-300)]',
+}
+
+const iconColors = {
+  success: 'text-[var(--color-success-500)]',
+  warning: 'text-[var(--color-warning-500)]',
+  error:   'text-[var(--color-danger-500)]',
+  info:    'text-[var(--color-info-500)]',
 }
 
 export function ToastContainer() {
@@ -29,16 +40,19 @@ export function ToastContainer() {
           <div
             key={toast.id}
             className={cn(
-              'pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl border shadow-lg',
+              'pointer-events-auto flex items-start gap-3 px-4 py-3',
+              'rounded-[var(--radius-md)] border shadow-lg',
               'animate-slideRight',
               styles[toast.type],
             )}
           >
-            <Icon size={18} className="shrink-0 mt-0.5" />
-            <p className="text-sm font-medium flex-1">{toast.message}</p>
+            <Icon size={18} className={cn('shrink-0 mt-0.5', iconColors[toast.type])} />
+            <div className="flex-1 min-w-0">
+              <p className="text-[length:var(--font-size-body)] font-medium">{toast.message}</p>
+            </div>
             <button
               onClick={() => remove(toast.id)}
-              className="shrink-0 p-0.5 rounded-md hover:bg-black/10 transition-colors cursor-pointer"
+              className="shrink-0 p-0.5 rounded-[var(--radius-xs)] hover:bg-black/10 transition-colors cursor-pointer"
             >
               <X size={14} />
             </button>

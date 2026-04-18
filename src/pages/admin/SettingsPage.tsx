@@ -6,11 +6,13 @@ import { Input } from '../../components/ui/Input'
 import { Modal, ModalBody, ModalFooter } from '../../components/ui/Modal'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { useToastStore } from '../../stores/toastStore'
+import { useThemeStore, ACCENT_LABELS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, type ThemeAccent, type ThemeRadius, type ThemeDensity } from '../../stores/themeStore'
 import { cn } from '../../utils/cn'
 import { getItem } from '../../utils/storage'
 import {
   Building2, Medal, Briefcase, ListChecks, FileText, Layers,
   Plus, Pencil, Trash2, GripVertical, Calculator, Wallet, CreditCard,
+  Palette, Sun, Moon, Check,
 } from 'lucide-react'
 import { ICON_MAP, renderIcon } from '../../utils/iconMap'
 
@@ -31,6 +33,7 @@ interface Tab {
 }
 
 const tabs: Tab[] = [
+  { key: 'theme',      label: '테마',                icon: Palette,    color: '#f43f5e' },
   { key: 'dept',       label: '부서',                icon: Building2,  color: '#4f6ef7' },
   { key: 'rank',       label: '직급',                icon: Medal,      color: '#9747ff' },
   { key: 'position',   label: '직책',                icon: Briefcase,  color: '#f59e0b' },
@@ -45,7 +48,7 @@ const tabs: Tab[] = [
 ]
 
 export function SettingsPage() {
-  const [activeTab, setActiveTab] = useState('dept')
+  const [activeTab, setActiveTab] = useState('theme')
   const tabRef = useRef<HTMLDivElement>(null)
   const dragState = useRef({ isDown: false, startX: 0, scrollLeft: 0 })
 
@@ -108,6 +111,7 @@ export function SettingsPage() {
       </div>
 
       {/* 탭 콘텐츠 */}
+      {activeTab === 'theme'      && <ThemePanel />}
       {activeTab === 'dept'       && <DeptPanel />}
       {activeTab === 'rank'       && <RankPanel />}
       {activeTab === 'position'   && <PositionPanel />}
@@ -943,5 +947,138 @@ function PaymentMethodPanel() {
         </div>
       )}
     </Card>
+  )
+}
+
+/* ══════════════════════════════════════════════
+   🎨 테마 설정 패널
+   ══════════════════════════════════════════════ */
+function ThemePanel() {
+  const { theme, accent, radius, density, toggle, setAccent, setRadius, setDensity } = useThemeStore()
+
+  const accentKeys = Object.keys(ACCENT_LABELS) as ThemeAccent[]
+  const radiusKeys = Object.keys(RADIUS_LABELS) as ThemeRadius[]
+  const densityKeys = Object.keys(DENSITY_LABELS) as ThemeDensity[]
+
+  return (
+    <div className="space-y-5 animate-fadeIn">
+      {/* 모드 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-3">모드</div>
+        <div className="flex gap-3">
+          {[
+            { key: 'light' as const, label: '라이트', Icon: Sun },
+            { key: 'dark' as const, label: '다크', Icon: Moon },
+          ].map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              onClick={() => { if (theme !== key) toggle() }}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 text-sm font-bold cursor-pointer transition-all',
+                theme === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] text-[var(--tab-active-color)]'
+                  : 'border-[var(--border-default)] text-[var(--text-muted)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <Icon size={18} />
+              {label}
+              {theme === key && <Check size={14} />}
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 메인 색상 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">메인 색상</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">UI 전체에 적용되는 브랜드 색상입니다</p>
+        <div className="grid grid-cols-7 gap-2">
+          {accentKeys.map((key) => (
+            <button
+              key={key}
+              onClick={() => setAccent(key)}
+              className={cn(
+                'flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 cursor-pointer transition-all',
+                accent === key
+                  ? 'border-[var(--btn-save-bg)] shadow-md scale-105'
+                  : 'border-transparent hover:border-[var(--border-default)]',
+              )}
+            >
+              <div
+                className="w-8 h-8 rounded-full shadow-sm flex items-center justify-center"
+                style={{ backgroundColor: ACCENT_COLORS[key] }}
+              >
+                {accent === key && <Check size={14} className="text-white" />}
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{ACCENT_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 모서리 둥글기 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">모서리 둥글기</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">버튼, 카드 등의 모서리 스타일입니다</p>
+        <div className="grid grid-cols-4 gap-2">
+          {radiusKeys.map((key) => {
+            const previewR = key === 'sharp' ? '2px' : key === 'default' ? '8px' : key === 'rounded' ? '14px' : '20px'
+            return (
+              <button
+                key={key}
+                onClick={() => setRadius(key)}
+                className={cn(
+                  'flex flex-col items-center gap-2 py-3 rounded-xl border-2 cursor-pointer transition-all',
+                  radius === key
+                    ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)]'
+                    : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+                )}
+              >
+                <div
+                  className="w-10 h-8 border-2 border-[var(--text-muted)]"
+                  style={{ borderRadius: previewR }}
+                />
+                <span className="text-[10px] font-bold text-[var(--text-secondary)]">{RADIUS_LABELS[key]}</span>
+              </button>
+            )
+          })}
+        </div>
+      </Card>
+
+      {/* 밀도 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">밀도</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">UI 요소 간의 간격과 여백입니다</p>
+        <div className="grid grid-cols-3 gap-2">
+          {densityKeys.map((key) => (
+            <button
+              key={key}
+              onClick={() => setDensity(key)}
+              className={cn(
+                'flex flex-col items-center gap-2 py-3 rounded-xl border-2 cursor-pointer transition-all',
+                density === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)]'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <div className="flex flex-col items-center gap-0.5">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="bg-[var(--text-muted)] rounded-sm"
+                    style={{
+                      width: 28,
+                      height: key === 'compact' ? 3 : key === 'default' ? 4 : 5,
+                      marginBottom: key === 'compact' ? 1 : key === 'default' ? 3 : 5,
+                    }}
+                  />
+                ))}
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{DENSITY_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+    </div>
   )
 }
