@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { cn } from '../../utils/cn'
 import { Avatar } from '../ui/Avatar'
 import { useAuthStore } from '../../stores/authStore'
+import { getAccentColor } from '../../utils/accentColor'
 import {
   Home, Building2, Info, Contact, SlidersHorizontal, Users,
   Settings, Calendar, BarChart3, Briefcase, Globe, Calculator,
@@ -326,7 +327,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               'hover:bg-[var(--sidebar-hover)] transition-colors',
             )}
           >
-            <Avatar name={user.name} color={user.color || '#4f6ef7'} size="sm" />
+            <Avatar name={user.name} color={getAccentColor()} size="sm" />
             {!collapsed && (
               <div className="min-w-0 animate-fadeIn">
                 <div className="text-xs font-bold text-[var(--sidebar-title)] truncate">{user.name}</div>
