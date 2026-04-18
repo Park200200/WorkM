@@ -6,7 +6,7 @@ import { Input } from '../../components/ui/Input'
 import { Modal, ModalBody, ModalFooter } from '../../components/ui/Modal'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { useToastStore } from '../../stores/toastStore'
-import { useThemeStore, PRESET_ACCENTS, PRESET_KEYS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, type ThemeRadius, type ThemeDensity } from '../../stores/themeStore'
+import { useThemeStore, PRESET_ACCENTS, PRESET_KEYS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, FONT_SCALE_LABELS, FONT_COLOR_PRESETS, type ThemeRadius, type ThemeDensity, type ThemeFontScale } from '../../stores/themeStore'
 import { cn } from '../../utils/cn'
 import { getItem } from '../../utils/storage'
 import {
@@ -957,7 +957,7 @@ function PaymentMethodPanel() {
    🎨 테마 설정 패널
    ══════════════════════════════════════════════ */
 function ThemePanel() {
-  const { theme, accent, radius, density, toggle, setAccent, setRadius, setDensity, customAccents, addCustomAccent, removeCustomAccent } = useThemeStore()
+  const { theme, accent, radius, density, fontScale, fontColor, toggle, setAccent, setRadius, setDensity, setFontScale, setFontColor, customAccents, addCustomAccent, removeCustomAccent } = useThemeStore()
   const addToast = useToastStore((s) => s.add)
 
   const radiusKeys = Object.keys(RADIUS_LABELS) as ThemeRadius[]
@@ -1180,6 +1180,62 @@ function ThemePanel() {
                 ))}
               </div>
               <span className="text-[10px] font-bold text-[var(--text-secondary)]">{DENSITY_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 폰트 크기 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">폰트 크기</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">전체 UI의 글자 크기를 조절합니다</p>
+        <div className="grid grid-cols-5 gap-2">
+          {(Object.keys(FONT_SCALE_LABELS) as ThemeFontScale[]).map((key) => {
+            const sampleSize = key === 'xs' ? '12px' : key === 'sm' ? '13px' : key === 'default' ? '14px' : key === 'lg' ? '16px' : '18px'
+            return (
+              <button
+                key={key}
+                onClick={() => setFontScale(key)}
+                className={cn(
+                  'flex flex-col items-center gap-2 py-3 rounded-xl border-2 cursor-pointer transition-all',
+                  fontScale === key
+                    ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)]'
+                    : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+                )}
+              >
+                <span className="font-bold text-[var(--text-primary)]" style={{ fontSize: sampleSize }}>가</span>
+                <span className="text-[10px] font-bold text-[var(--text-secondary)]">{FONT_SCALE_LABELS[key]}</span>
+              </button>
+            )
+          })}
+        </div>
+      </Card>
+
+      {/* 폰트 색상 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">폰트 색상</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">본문 텍스트의 톤을 조절합니다</p>
+        <div className="grid grid-cols-5 gap-2">
+          {FONT_COLOR_PRESETS.map((preset) => (
+            <button
+              key={preset.key}
+              onClick={() => setFontColor(preset.key)}
+              className={cn(
+                'flex flex-col items-center gap-2 py-3 rounded-xl border-2 cursor-pointer transition-all',
+                fontColor === preset.key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)]'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <div className="flex items-center gap-1">
+                <span
+                  className="font-extrabold text-sm"
+                  style={{ color: theme === 'dark' ? preset.dark : preset.light }}
+                >
+                  Aa
+                </span>
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{preset.label}</span>
             </button>
           ))}
         </div>
