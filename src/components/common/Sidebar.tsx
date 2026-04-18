@@ -154,13 +154,14 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   'flex items-center gap-3 rounded-lg h-9 w-full transition-all duration-150 cursor-pointer',
                   collapsed ? 'justify-center px-0 mx-1' : 'px-3',
                   isActive
-                    ? 'bg-primary-50 dark:bg-[var(--sidebar-active)]/15 text-[var(--sidebar-active)] font-bold'
+                    ? 'font-bold'
                     : 'text-[var(--sidebar-text)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-title)]',
                 )}
+                style={isActive ? { color: 'var(--sidebar-active)', background: 'color-mix(in srgb, var(--sidebar-active) 10%, transparent)' } : undefined}
                 title={collapsed ? entry.label : undefined}
               >
-                <Icon size={18} className="shrink-0" />
-                {!collapsed && <span className="text-[13px] truncate">{entry.label}</span>}
+                <Icon size={18} className="shrink-0" style={isActive ? { color: 'var(--sidebar-active)' } : undefined} />
+                {!collapsed && <span className="text-[13px] truncate" style={isActive ? { color: 'var(--sidebar-active)' } : undefined}>{entry.label}</span>}
               </button>
             )
           })}
@@ -172,9 +173,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             onClick={() => navigate('/')}
             className={cn(
               'flex items-center gap-3 rounded-lg h-10 w-full transition-all duration-150 cursor-pointer',
-              'bg-primary-50 dark:bg-primary-900/20 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900/30 font-bold',
+              'hover:opacity-80 font-bold',
               collapsed ? 'justify-center px-0' : 'px-3',
             )}
+            style={{ color: 'var(--sidebar-active)', background: 'color-mix(in srgb, var(--sidebar-active) 10%, transparent)' }}
             title={collapsed ? '내 책상으로' : undefined}
           >
             <ArrowLeft size={18} className="shrink-0" />
@@ -232,13 +234,14 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   'flex items-center gap-3 rounded-lg h-9 w-full transition-all duration-150 cursor-pointer',
                   collapsed ? 'justify-center px-0 mx-1' : 'px-3',
                   isActive
-                    ? 'bg-primary-50 dark:bg-[var(--sidebar-active)]/15 text-[var(--sidebar-active)] font-bold'
+                    ? 'font-bold'
                     : 'text-[var(--sidebar-text)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-title)]',
                 )}
+                style={isActive ? { color: 'var(--sidebar-active)', background: 'color-mix(in srgb, var(--sidebar-active) 10%, transparent)' } : undefined}
                 title={collapsed ? entry.label : undefined}
               >
-                <Icon size={18} className="shrink-0" />
-                {!collapsed && <span className="text-[13px] truncate">{entry.label}</span>}
+                <Icon size={18} className="shrink-0" style={isActive ? { color: 'var(--sidebar-active)' } : undefined} />
+                {!collapsed && <span className="text-[13px] truncate" style={isActive ? { color: 'var(--sidebar-active)' } : undefined}>{entry.label}</span>}
               </button>
             )
           })}
@@ -250,7 +253,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             onClick={() => navigate('/')}
             className={cn(
               'flex items-center gap-3 rounded-lg h-10 w-full transition-all duration-150 cursor-pointer',
-              'bg-primary-50 dark:bg-primary-900/20 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900/30 font-bold',
+              'hover:opacity-80 font-bold',
               collapsed ? 'justify-center px-0' : 'px-3',
             )}
             title={collapsed ? '내 책상으로' : undefined}
@@ -376,16 +379,17 @@ function NavSingleItem({ entry, collapsed }: { entry: NavEntry; collapsed: boole
           'flex items-center gap-3 rounded-lg h-9 transition-all duration-150',
           collapsed ? 'justify-center px-0 mx-1' : 'px-3',
           isActive
-            ? 'bg-primary-50 dark:bg-[var(--sidebar-active)]/15 text-[var(--sidebar-active)] font-bold'
+            ? 'font-bold'
             : 'text-[var(--sidebar-text)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-title)]',
         )
       }
+      style={({ isActive }) => isActive ? { color: 'var(--sidebar-active)', background: 'color-mix(in srgb, var(--sidebar-active) 10%, transparent)' } : undefined}
       title={collapsed ? entry.label : undefined}
     >
       <Icon size={18} className="shrink-0" />
       {!collapsed && <span className="text-[13px] truncate">{entry.label}</span>}
       {!collapsed && entry.badge !== undefined && entry.badge > 0 && (
-        <span className="ml-auto text-[10px] font-bold bg-primary-500 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+        <span className="ml-auto text-[10px] font-bold text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center" style={{ background: 'var(--sidebar-active)' }}>
           {entry.badge}
         </span>
       )}
