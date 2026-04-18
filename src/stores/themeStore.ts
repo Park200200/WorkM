@@ -10,6 +10,67 @@ export type ThemeDatePicker = 'default' | 'modern' | 'minimal' | 'bubble'
 export type ThemeCheckboxStyle = 'default' | 'sharp' | 'circle'
 export type ThemeTabStyle = 'underline' | 'box' | 'pill'
 
+/* ── Typography Token 시스템 ── */
+export interface TypoToken { size: string; weight: number }
+export type TypoCategory =
+  | 'page-title' | 'page-subtitle' | 'section-title' | 'card-title'
+  | 'menu' | 'menu-group' | 'tab' | 'btn' | 'badge' | 'body' | 'caption' | 'input' | 'toast'
+
+export const TYPO_CATEGORY_LABELS: Record<TypoCategory, string> = {
+  'page-title': '페이지 타이틀',
+  'page-subtitle': '서브타이틀',
+  'section-title': '섹션 헤더',
+  'card-title': '카드 제목',
+  'menu': '메뉴 텍스트',
+  'menu-group': '그룹 라벨',
+  'tab': '탭 텍스트',
+  'btn': '버튼 텍스트',
+  'badge': '뱃지/태그',
+  'body': '본문 텍스트',
+  'caption': '캡션/힌트',
+  'input': '입력 필드',
+  'toast': '알림/토스트',
+}
+
+export const DEFAULT_TYPO: Record<TypoCategory, TypoToken> = {
+  'page-title': { size: '1.125rem', weight: 800 },
+  'page-subtitle': { size: '0.8125rem', weight: 400 },
+  'section-title': { size: '0.875rem', weight: 700 },
+  'card-title': { size: '0.8125rem', weight: 700 },
+  'menu': { size: '0.8125rem', weight: 400 },
+  'menu-group': { size: '0.625rem', weight: 700 },
+  'tab': { size: '0.75rem', weight: 700 },
+  'btn': { size: '0.75rem', weight: 700 },
+  'badge': { size: '0.625rem', weight: 700 },
+  'body': { size: '0.8125rem', weight: 400 },
+  'caption': { size: '0.6875rem', weight: 400 },
+  'input': { size: '0.8125rem', weight: 400 },
+  'toast': { size: '0.8125rem', weight: 600 },
+}
+
+export const TYPO_SIZE_OPTIONS = [
+  { value: '0.5625rem', label: '9px' },
+  { value: '0.625rem', label: '10px' },
+  { value: '0.6875rem', label: '11px' },
+  { value: '0.75rem', label: '12px' },
+  { value: '0.8125rem', label: '13px' },
+  { value: '0.875rem', label: '14px' },
+  { value: '1rem', label: '16px' },
+  { value: '1.125rem', label: '18px' },
+  { value: '1.25rem', label: '20px' },
+  { value: '1.5rem', label: '24px' },
+]
+
+export const TYPO_WEIGHT_OPTIONS = [
+  { value: 300, label: 'Light' },
+  { value: 400, label: 'Regular' },
+  { value: 500, label: 'Medium' },
+  { value: 600, label: 'SemiBold' },
+  { value: 700, label: 'Bold' },
+  { value: 800, label: 'ExtraBold' },
+  { value: 900, label: 'Black' },
+]
+
 export const DATEPICKER_LABELS: Record<ThemeDatePicker, string> = {
   default: '기본', modern: '모던', minimal: '미니멀', bubble: '버블',
 }
@@ -127,6 +188,7 @@ interface ThemeStore {
   checkboxStyle: ThemeCheckboxStyle
   tabStyle: ThemeTabStyle
   customAccents: CustomAccent[]
+  typography: Record<TypoCategory, TypoToken>
 
   toggle: () => void
   set: (theme: ThemeMode) => void
@@ -140,6 +202,8 @@ interface ThemeStore {
   setTabStyle: (style: ThemeTabStyle) => void
   addCustomAccent: (label: string, color: string) => void
   removeCustomAccent: (key: string) => void
+  setTypo: (category: TypoCategory, token: TypoToken) => void
+  resetTypo: () => void
 }
 
 /* ── Persistence ── */
@@ -224,6 +288,26 @@ function applyToDOM(t: SavedTheme) {
   } else {
     html.style.removeProperty('--text-primary')
   }
+
+  // 타이포그래피 토큰 적용
+  const typo = loadTypography()
+  for (const [cat, token] of Object.entries(typo)) {
+    html.style.setProperty(`--typo-${cat}-size`, token.size)
+    html.style.setProperty(`--typo-${cat}-weight`, String(token.weight))
+  }
+}
+
+/* ── Typography Persistence ── */
+const TYPO_LS = 'ws_typography'
+function loadTypography(): Record<TypoCategory, TypoToken> {
+  try {
+    const raw = localStorage.getItem(TYPO_LS)
+    if (raw) return { ...DEFAULT_TYPO, ...JSON.parse(raw) }
+  } catch { /* noop */ }
+  return { ...DEFAULT_TYPO }
+}
+function saveTypography(t: Record<TypoCategory, TypoToken>) {
+  localStorage.setItem(TYPO_LS, JSON.stringify(t))
 }
 
 /* ── Store ── */
@@ -248,6 +332,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => {
     checkboxStyle: initial.checkboxStyle || 'default',
     tabStyle: initial.tabStyle || 'underline',
     customAccents: loadCustomAccents(),
+    typography: loadTypography(),
 
     toggle: () => {
       const next = get().theme === 'light' ? 'dark' : 'light'
@@ -327,6 +412,26 @@ export const useThemeStore = create<ThemeStore>((set, get) => {
       } else {
         set({ customAccents: customs })
       }
+    },
+
+    setTypo: (category, token) => {
+      const typo = { ...get().typography, [category]: token }
+      saveTypography(typo)
+      const html = document.documentElement
+      html.style.setProperty(`--typo-${category}-size`, token.size)
+      html.style.setProperty(`--typo-${category}-weight`, String(token.weight))
+      set({ typography: typo })
+    },
+
+    resetTypo: () => {
+      const typo = { ...DEFAULT_TYPO }
+      saveTypography(typo)
+      const html = document.documentElement
+      for (const [cat, token] of Object.entries(typo)) {
+        html.style.setProperty(`--typo-${cat}-size`, token.size)
+        html.style.setProperty(`--typo-${cat}-weight`, String(token.weight))
+      }
+      set({ typography: typo })
     },
   }
 })

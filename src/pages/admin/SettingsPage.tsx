@@ -6,13 +6,13 @@ import { Input } from '../../components/ui/Input'
 import { Modal, ModalBody, ModalFooter } from '../../components/ui/Modal'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { useToastStore } from '../../stores/toastStore'
-import { useThemeStore, PRESET_ACCENTS, PRESET_KEYS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, FONT_SCALE_LABELS, FONT_COLOR_PRESETS, DATEPICKER_LABELS, CHECKBOX_STYLE_LABELS, TAB_STYLE_LABELS, type ThemeRadius, type ThemeDensity, type ThemeFontScale, type ThemeDatePicker, type ThemeCheckboxStyle, type ThemeTabStyle } from '../../stores/themeStore'
+import { useThemeStore, PRESET_ACCENTS, PRESET_KEYS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, FONT_SCALE_LABELS, FONT_COLOR_PRESETS, DATEPICKER_LABELS, CHECKBOX_STYLE_LABELS, TAB_STYLE_LABELS, TYPO_CATEGORY_LABELS, DEFAULT_TYPO, TYPO_SIZE_OPTIONS, TYPO_WEIGHT_OPTIONS, type ThemeRadius, type ThemeDensity, type ThemeFontScale, type ThemeDatePicker, type ThemeCheckboxStyle, type ThemeTabStyle, type TypoCategory } from '../../stores/themeStore'
 import { cn } from '../../utils/cn'
 import { getItem } from '../../utils/storage'
 import {
   Building2, Medal, Briefcase, ListChecks, FileText, Layers,
   Plus, Pencil, Trash2, GripVertical, Calculator, Wallet, CreditCard,
-  Palette, Sun, Moon, Check, X,
+  Palette, Sun, Moon, Check, X, RotateCcw,
 } from 'lucide-react'
 import { ICON_MAP, renderIcon } from '../../utils/iconMap'
 import { Badge } from '../../components/ui/Badge'
@@ -993,7 +993,7 @@ function PaymentMethodPanel() {
    🎨 테마 설정 패널
    ══════════════════════════════════════════════ */
 function ThemePanel() {
-  const { theme, accent, radius, density, fontScale, fontColor, datePickerStyle, checkboxStyle, tabStyle, toggle, setAccent, setRadius, setDensity, setFontScale, setFontColor, setDatePickerStyle, setCheckboxStyle, setTabStyle, customAccents, addCustomAccent, removeCustomAccent } = useThemeStore()
+  const { theme, accent, radius, density, fontScale, fontColor, datePickerStyle, checkboxStyle, tabStyle, toggle, setAccent, setRadius, setDensity, setFontScale, setFontColor, setDatePickerStyle, setCheckboxStyle, setTabStyle, customAccents, addCustomAccent, removeCustomAccent, typography, setTypo, resetTypo } = useThemeStore()
   const addToast = useToastStore((s) => s.add)
 
   const radiusKeys = Object.keys(RADIUS_LABELS) as ThemeRadius[]
@@ -1395,145 +1395,71 @@ function ThemePanel() {
 
       {/* ── 텍스트 스타일 가이드 ── */}
       <Card>
-        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">텍스트 스타일 가이드</div>
-        <p className="text-[11px] text-[var(--text-muted)] mb-4">시스템 전체에서 통일적으로 사용하는 텍스트 스타일 목록입니다</p>
+        <div className="flex items-center justify-between mb-1">
+          <div className="text-sm font-extrabold text-[var(--text-primary)]">텍스트 스타일 가이드</div>
+          <button
+            onClick={() => { resetTypo(); addToast('success', '텍스트 스타일이 기본값으로 복원되었습니다') }}
+            className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-[var(--border-default)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)] transition-all cursor-pointer"
+          >
+            <RotateCcw size={11} /> 전체 초기화
+          </button>
+        </div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-4">각 항목의 크기와 두께를 변경하면 시스템 전체에 즉시 반영됩니다</p>
 
-        <div className="space-y-3">
-          {/* 페이지 타이틀 */}
-          <div className="flex items-baseline justify-between gap-4 py-2 border-b border-[var(--border-default)]">
-            <div className="flex-1 min-w-0">
-              <span style={{ fontSize: 'var(--typo-page-title-size)', fontWeight: 'var(--typo-page-title-weight)' as unknown as number }} className="text-[var(--text-primary)]">페이지 타이틀</span>
-            </div>
-            <div className="text-right shrink-0">
-              <span className="text-[10px] text-[var(--text-muted)] font-mono">18px / 800</span>
-            </div>
-          </div>
+        <div className="space-y-1">
+          {(Object.keys(TYPO_CATEGORY_LABELS) as TypoCategory[]).map((cat) => {
+            const token = typography[cat]
+            const def = DEFAULT_TYPO[cat]
+            const isModified = token.size !== def.size || token.weight !== def.weight
 
-          {/* 페이지 서브타이틀 */}
-          <div className="flex items-baseline justify-between gap-4 py-2 border-b border-[var(--border-default)]">
-            <div className="flex-1 min-w-0">
-              <span style={{ fontSize: 'var(--typo-page-subtitle-size)', fontWeight: 'var(--typo-page-subtitle-weight)' as unknown as number }} className="text-[var(--text-muted)]">페이지 서브타이틀 — 설명문구</span>
-            </div>
-            <div className="text-right shrink-0">
-              <span className="text-[10px] text-[var(--text-muted)] font-mono">13px / 400</span>
-            </div>
-          </div>
-
-          {/* 섹션 제목 */}
-          <div className="flex items-baseline justify-between gap-4 py-2 border-b border-[var(--border-default)]">
-            <div className="flex-1 min-w-0">
-              <span style={{ fontSize: 'var(--typo-section-title-size)', fontWeight: 'var(--typo-section-title-weight)' as unknown as number }} className="text-[var(--text-primary)]">섹션 헤더 제목</span>
-            </div>
-            <div className="text-right shrink-0">
-              <span className="text-[10px] text-[var(--text-muted)] font-mono">14px / 700</span>
-            </div>
-          </div>
-
-          {/* 카드 제목 */}
-          <div className="flex items-baseline justify-between gap-4 py-2 border-b border-[var(--border-default)]">
-            <div className="flex-1 min-w-0">
-              <span style={{ fontSize: 'var(--typo-card-title-size)', fontWeight: 'var(--typo-card-title-weight)' as unknown as number }} className="text-[var(--text-primary)]">카드 제목 / 업무명</span>
-            </div>
-            <div className="text-right shrink-0">
-              <span className="text-[10px] text-[var(--text-muted)] font-mono">13px / 700</span>
-            </div>
-          </div>
-
-          {/* 메뉴 텍스트 */}
-          <div className="flex items-baseline justify-between gap-4 py-2 border-b border-[var(--border-default)]">
-            <div className="flex-1 min-w-0 flex gap-4">
-              <span style={{ fontSize: 'var(--typo-menu-size)', fontWeight: 'var(--typo-menu-weight)' as unknown as number }} className="text-[var(--text-secondary)]">메뉴 텍스트</span>
-              <span style={{ fontSize: 'var(--typo-menu-size)', fontWeight: 'var(--typo-menu-active-weight)' as unknown as number, color: 'var(--color-primary-500)' }}>메뉴 (활성)</span>
-            </div>
-            <div className="text-right shrink-0">
-              <span className="text-[10px] text-[var(--text-muted)] font-mono">13px / 400·700</span>
-            </div>
-          </div>
-
-          {/* 그룹 라벨 */}
-          <div className="flex items-baseline justify-between gap-4 py-2 border-b border-[var(--border-default)]">
-            <div className="flex-1 min-w-0">
-              <span style={{ fontSize: 'var(--typo-menu-group-size)', fontWeight: 'var(--typo-menu-group-weight)' as unknown as number, letterSpacing: '0.12em' }} className="text-[var(--text-muted)] uppercase">MENU GROUP LABEL</span>
-            </div>
-            <div className="text-right shrink-0">
-              <span className="text-[10px] text-[var(--text-muted)] font-mono">10px / 700</span>
-            </div>
-          </div>
-
-          {/* 탭 텍스트 */}
-          <div className="flex items-baseline justify-between gap-4 py-2 border-b border-[var(--border-default)]">
-            <div className="flex-1 min-w-0">
-              <span style={{ fontSize: 'var(--typo-tab-size)', fontWeight: 'var(--typo-tab-weight)' as unknown as number, color: 'var(--color-primary-500)' }}>탭 텍스트</span>
-            </div>
-            <div className="text-right shrink-0">
-              <span className="text-[10px] text-[var(--text-muted)] font-mono">12px / 700</span>
-            </div>
-          </div>
-
-          {/* 버튼 텍스트 */}
-          <div className="flex items-baseline justify-between gap-4 py-2 border-b border-[var(--border-default)]">
-            <div className="flex-1 min-w-0">
-              <span className="inline-block px-3 py-1 rounded-lg text-white" style={{ fontSize: 'var(--typo-btn-size)', fontWeight: 'var(--typo-btn-weight)' as unknown as number, background: 'var(--color-primary-500)' }}>버튼 텍스트</span>
-            </div>
-            <div className="text-right shrink-0">
-              <span className="text-[10px] text-[var(--text-muted)] font-mono">12px / 700</span>
-            </div>
-          </div>
-
-          {/* 뱃지/태그 */}
-          <div className="flex items-baseline justify-between gap-4 py-2 border-b border-[var(--border-default)]">
-            <div className="flex-1 min-w-0 flex gap-2">
-              <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700" style={{ fontSize: 'var(--typo-badge-size)', fontWeight: 'var(--typo-badge-weight)' as unknown as number }}>진행중</span>
-              <span className="inline-block px-2 py-0.5 rounded-full bg-amber-100 text-amber-700" style={{ fontSize: 'var(--typo-badge-size)', fontWeight: 'var(--typo-badge-weight)' as unknown as number }}>대기</span>
-              <span className="inline-block px-2 py-0.5 rounded-full bg-red-100 text-red-700" style={{ fontSize: 'var(--typo-badge-size)', fontWeight: 'var(--typo-badge-weight)' as unknown as number }}>지연</span>
-            </div>
-            <div className="text-right shrink-0">
-              <span className="text-[10px] text-[var(--text-muted)] font-mono">10px / 700</span>
-            </div>
-          </div>
-
-          {/* 본문 텍스트 */}
-          <div className="flex items-baseline justify-between gap-4 py-2 border-b border-[var(--border-default)]">
-            <div className="flex-1 min-w-0">
-              <span style={{ fontSize: 'var(--typo-body-size)', fontWeight: 'var(--typo-body-weight)' as unknown as number }} className="text-[var(--text-secondary)]">본문 텍스트 · 테이블 셀 내용</span>
-            </div>
-            <div className="text-right shrink-0">
-              <span className="text-[10px] text-[var(--text-muted)] font-mono">13px / 400</span>
-            </div>
-          </div>
-
-          {/* 캡션/힌트 */}
-          <div className="flex items-baseline justify-between gap-4 py-2 border-b border-[var(--border-default)]">
-            <div className="flex-1 min-w-0">
-              <span style={{ fontSize: 'var(--typo-caption-size)', fontWeight: 'var(--typo-caption-weight)' as unknown as number }} className="text-[var(--text-muted)]">캡션/힌트 — 날짜, 시간, 부가정보</span>
-            </div>
-            <div className="text-right shrink-0">
-              <span className="text-[10px] text-[var(--text-muted)] font-mono">11px / 400</span>
-            </div>
-          </div>
-
-          {/* 입력 필드 */}
-          <div className="flex items-baseline justify-between gap-4 py-2 border-b border-[var(--border-default)]">
-            <div className="flex-1 min-w-0">
-              <span className="inline-block px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)]" style={{ fontSize: 'var(--typo-input-size)', fontWeight: 'var(--typo-input-weight)' as unknown as number }}>입력 필드 텍스트</span>
-            </div>
-            <div className="text-right shrink-0">
-              <span className="text-[10px] text-[var(--text-muted)] font-mono">13px / 400</span>
-            </div>
-          </div>
-
-          {/* 알림/토스트 */}
-          <div className="flex items-baseline justify-between gap-4 py-2">
-            <div className="flex-1 min-w-0">
-              <span className="inline-block px-3 py-1.5 rounded-lg bg-emerald-500 text-white" style={{ fontSize: 'var(--typo-toast-size)', fontWeight: 'var(--typo-toast-weight)' as unknown as number }}>✓ 알림/토스트 메시지</span>
-            </div>
-            <div className="text-right shrink-0">
-              <span className="text-[10px] text-[var(--text-muted)] font-mono">13px / 600</span>
-            </div>
-          </div>
+            return (
+              <div key={cat} className={cn(
+                'flex items-center gap-3 py-2.5 px-3 rounded-lg transition-all',
+                isModified ? 'bg-[var(--tab-active-bg)] border border-[var(--tab-active-color)]/10' : 'border border-transparent hover:bg-[var(--bg-muted)]',
+              )}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[11px] font-bold text-[var(--text-secondary)]">{TYPO_CATEGORY_LABELS[cat]}</span>
+                    {isModified && (
+                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">수정됨</span>
+                    )}
+                  </div>
+                  <span style={{ fontSize: token.size, fontWeight: token.weight }} className="text-[var(--text-primary)] block truncate">
+                    {TYPO_CATEGORY_LABELS[cat]} 미리보기
+                  </span>
+                </div>
+                <select
+                  value={token.size}
+                  onChange={(e) => setTypo(cat, { ...token, size: e.target.value })}
+                  className="text-[10px] font-mono font-bold px-2 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] cursor-pointer outline-none w-[70px]"
+                >
+                  {TYPO_SIZE_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={token.weight}
+                  onChange={(e) => setTypo(cat, { ...token, weight: Number(e.target.value) })}
+                  className="text-[10px] font-mono font-bold px-2 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] cursor-pointer outline-none w-[90px]"
+                >
+                  {TYPO_WEIGHT_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                {isModified && (
+                  <button
+                    onClick={() => setTypo(cat, { ...def })}
+                    className="p-1 rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer shrink-0"
+                    title="기본값 복원"
+                  >
+                    <RotateCcw size={12} />
+                  </button>
+                )}
+              </div>
+            )
+          })}
         </div>
 
-        {/* CSS 변수 참고 */}
         <div className="mt-5 p-3 rounded-lg bg-[var(--bg-muted)] border border-[var(--border-default)]">
           <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">CSS 변수 사용법</div>
           <code className="text-[11px] text-[var(--text-secondary)] block leading-relaxed font-mono">
