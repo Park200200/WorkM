@@ -226,7 +226,7 @@
   --sidebar-bg:     #ffffff;
   --sidebar-text:   #64748b;
   --sidebar-active: var(--color-primary-500, #4f6ef7);
-  --sidebar-hover:  rgba(0,0,0,.04);
+  --sidebar-hover:  color-mix(in srgb, var(--color-primary-500, #4f6ef7) 8%, transparent);
   --sidebar-title:  #0f172a;
   --sidebar-border: #e2e8f0;
 
@@ -331,7 +331,7 @@
   --sidebar-bg:     #0a0d13;
   --sidebar-text:   #64748b;
   --sidebar-active: var(--color-primary-400, #6b85f2);
-  --sidebar-hover:  rgba(255,255,255,.04);
+  --sidebar-hover:  color-mix(in srgb, var(--color-primary-400, #6b85f2) 10%, transparent);
   --sidebar-title:  #e2e8f0;
   --sidebar-border: #1e2235;
 
