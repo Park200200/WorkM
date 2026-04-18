@@ -55,6 +55,7 @@ const tabs: Tab[] = [
 
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState('theme')
+  const globalTabStyle = useThemeStore((s) => s.tabStyle) || 'underline'
   const tabRef = useRef<HTMLDivElement>(null)
   const dragState = useRef({ isDown: false, startX: 0, scrollLeft: 0 })
 
@@ -97,19 +98,38 @@ export function SettingsPage() {
         {tabs.map((tab) => {
           const Icon = tab.icon
           const isActive = activeTab === tab.key
+          const ts = globalTabStyle
           return (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={cn(
-                'flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap',
+                'flex items-center gap-2 px-3.5 py-2 text-xs font-bold whitespace-nowrap',
                 'transition-all duration-150 cursor-pointer shrink-0',
-                isActive
-                  ? 'bg-[var(--bg-surface)] border border-[var(--border-default)] shadow-sm text-[var(--text-primary)]'
-                  : 'text-[var(--text-muted)] hover:bg-[var(--bg-muted)]',
+                /* underline */
+                ts === 'underline' && [
+                  'rounded-none border-b-2',
+                  isActive
+                    ? 'border-[var(--tab-active-color)] text-[var(--tab-active-color)]'
+                    : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
+                ],
+                /* box */
+                ts === 'box' && [
+                  'rounded-xl border',
+                  isActive
+                    ? 'bg-[var(--tab-active-bg)] border-[var(--tab-active-color)]/20 text-[var(--tab-active-color)] shadow-sm'
+                    : 'border-transparent text-[var(--text-muted)] hover:bg-[var(--bg-muted)]',
+                ],
+                /* pill */
+                ts === 'pill' && [
+                  'rounded-full',
+                  isActive
+                    ? 'bg-[var(--btn-save-bg)] text-white shadow-sm'
+                    : 'text-[var(--text-muted)] hover:bg-[var(--bg-muted)]',
+                ],
               )}
             >
-              <Icon size={15} style={isActive ? { color: tab.color } : undefined} />
+              <Icon size={15} style={isActive ? { color: ts === 'pill' && isActive ? 'white' : tab.color } : undefined} />
               {tab.label}
             </button>
           )

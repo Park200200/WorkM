@@ -155,19 +155,41 @@ export function ProfilePage() {
         {/* ── 우측: 탭 콘텐츠 ── */}
         <Card className="p-0 overflow-hidden">
           {/* 탭 바 */}
-          <div className="flex border-b border-[var(--border-default)]">
-            {tabs.map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={cn(
-                  'flex-1 py-3 text-xs font-bold transition-all cursor-pointer',
-                  activeTab === tab.key
-                    ? 'text-primary-500 border-b-2 border-primary-500'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]',
-                )}
-              >{tab.label}</button>
-            ))}
+          <div className={cn(
+            'flex',
+            (themeStore.tabStyle || 'underline') === 'underline' && 'border-b border-[var(--border-default)]',
+            (themeStore.tabStyle || 'underline') !== 'underline' && 'gap-1 p-2',
+          )}>
+            {tabs.map(tab => {
+              const isActive = activeTab === tab.key
+              const ts = themeStore.tabStyle || 'underline'
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={cn(
+                    'flex-1 py-3 text-xs font-bold transition-all cursor-pointer',
+                    ts === 'underline' && [
+                      isActive
+                        ? 'text-[var(--tab-active-color)] border-b-2 border-[var(--tab-active-color)]'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]',
+                    ],
+                    ts === 'box' && [
+                      'rounded-lg',
+                      isActive
+                        ? 'text-[var(--tab-active-color)] bg-[var(--tab-active-bg)] border border-[var(--tab-active-color)]/20'
+                        : 'text-[var(--text-muted)] hover:bg-[var(--bg-muted)]',
+                    ],
+                    ts === 'pill' && [
+                      'rounded-full',
+                      isActive
+                        ? 'bg-[var(--btn-save-bg)] text-white'
+                        : 'text-[var(--text-muted)] hover:bg-[var(--bg-muted)]',
+                    ],
+                  )}
+                >{tab.label}</button>
+              )
+            })}
           </div>
 
           <div className="p-5">
