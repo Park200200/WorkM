@@ -383,15 +383,19 @@ function NavSingleItem({ entry, collapsed }: { entry: NavEntry; collapsed: boole
             : 'text-[var(--sidebar-text)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-title)]',
         )
       }
-      style={({ isActive }) => isActive ? { color: 'var(--sidebar-active)', background: 'color-mix(in srgb, var(--sidebar-active) 10%, transparent)' } : undefined}
+      style={({ isActive }) => isActive ? { background: 'color-mix(in srgb, var(--sidebar-active) 10%, transparent)' } : undefined}
       title={collapsed ? entry.label : undefined}
     >
-      <Icon size={18} className="shrink-0" />
-      {!collapsed && <span className="text-[13px] truncate">{entry.label}</span>}
-      {!collapsed && entry.badge !== undefined && entry.badge > 0 && (
-        <span className="ml-auto text-[10px] font-bold text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center" style={{ background: 'var(--sidebar-active)' }}>
-          {entry.badge}
-        </span>
+      {({ isActive }) => (
+        <>
+          <Icon size={18} className="shrink-0" style={isActive ? { color: 'var(--sidebar-active)' } : undefined} />
+          {!collapsed && <span className="text-[13px] truncate" style={isActive ? { color: 'var(--sidebar-active)' } : undefined}>{entry.label}</span>}
+          {!collapsed && entry.badge !== undefined && entry.badge > 0 && (
+            <span className="ml-auto text-[10px] font-bold text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center" style={{ background: 'var(--sidebar-active)' }}>
+              {entry.badge}
+            </span>
+          )}
+        </>
       )}
     </NavLink>
   )
