@@ -766,146 +766,124 @@ function TaskTable({
       ? ['업무명', '담당(수신)자', '상태', '진행률', '마감일', '중요도']
       : ['업무명', '지시(기획)자', '상태', '진행률', '마감일', '업무중요도']
 
+  // 테이블 → 카드 디자인
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left">
-        <thead>
-          <tr className="border-b border-[var(--border-default)]">
-            {headers.map((h, i) => (
-              <th key={i} className={cn(
-                'px-3 py-2.5 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap',
-                i === 0 && 'w-[25%]',
-              )}>
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {tasks.map((t) => {
-            const dd = getDdayBadge(t.dueDate)
-            const barColor = t.status === 'done' ? '#22c55e' : t.status === 'delay' ? '#ef4444' : '#4f6ef7'
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 p-3">
+      {tasks.map((t) => {
+        const dd = getDdayBadge(t.dueDate)
+        const barColor = t.status === 'done' ? '#22c55e' : t.status === 'delay' ? '#ef4444' : 'var(--color-primary-500, #4f6ef7)'
 
-            // 지시/수신자
-            const ids = type === 'byMe'
-              ? (Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []))
-              : [t.assignerId || 0]
-            const personUser = getUser(ids[0])
+        // 지시/수신자
+        const ids = type === 'byMe'
+          ? (Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []))
+          : [t.assignerId || 0]
+        const personUser = getUser(ids[0])
 
-            // 중요도
-            const instrRecord = instrList.find((i: Record<string, unknown>) =>
-              i.id === t.id || i.id === Number(t.id) || i.taskId === String(t.id)
-            )
-            const impStr = (instrRecord?.importance as string) || t.importance || ''
-            const impNames = impStr ? impStr.split(',').map(s => s.trim()).filter(Boolean) : []
+        // 중요도
+        const instrRecord = instrList.find((i: Record<string, unknown>) =>
+          i.id === t.id || i.id === Number(t.id) || i.taskId === String(t.id)
+        )
+        const impStr = (instrRecord?.importance as string) || t.importance || ''
+        const impNames = impStr ? impStr.split(',').map(s => s.trim()).filter(Boolean) : []
 
-            return (
-              <tr
-                key={t.id}
-                onClick={() => onProgress?.(t)}
-                className="border-b border-[var(--border-default)] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer"
+        return (
+          <div
+            key={t.id}
+            onClick={() => onProgress?.(t)}
+            className={cn(
+              'relative bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-3.5 cursor-pointer',
+              'hover:shadow-md hover:border-[var(--color-primary-300)] transition-all duration-200 group',
+              type === 'dueToday' && 'border-l-3 border-l-danger',
+            )}
+          >
+            {/* 상단: 업무명 + 상태 */}
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                {impNames.length > 0 && impNames.map((name) => {
+                  const imp = importances.find(i => i.name === name)
+                  return imp?.icon ? (
+                    <span key={name} title={name} className="shrink-0" style={{ color: imp.color || '#9ca3af' }}>
+                      {renderIcon(imp.icon, 14)}
+                    </span>
+                  ) : null
+                })}
+                {t.isImportant && <Star size={12} className="text-amber-500 fill-amber-500 shrink-0" />}
+                {type === 'dueToday' && <AlertCircle size={12} className="text-danger shrink-0" />}
+                <span className={cn(
+                  'text-[13px] font-bold truncate group-hover:text-[var(--color-primary-500)] transition-colors',
+                  type === 'dueToday' ? 'text-danger' : 'text-[var(--text-primary)]',
+                )}>
+                  {t.title}
+                </span>
+              </div>
+              <span
+                className="text-[9px] font-bold px-2 py-0.5 rounded-md shrink-0"
+                style={{
+                  background: `${getStatusColor(t.status)}18`,
+                  color: getStatusColor(t.status),
+                  borderLeft: `2px solid ${getStatusColor(t.status)}`,
+                }}
               >
-                {/* 업무명 */}
-                <td className="px-3 py-2.5 w-[25%]">
+                {getStatusLabel(t.status)}
+              </span>
+            </div>
+
+            {/* 팀명 */}
+            {t.team && <div className="text-[10px] text-[var(--text-muted)] mb-2">{t.team}</div>}
+
+            {/* 진행률 바 */}
+            <div className="flex items-center gap-2 mb-2.5">
+              <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-subtle)] overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${t.progress}%`, background: barColor }}
+                />
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-primary)] min-w-[28px] text-right">
+                {t.progress}%
+              </span>
+            </div>
+
+            {/* 하단: 담당자 + 마감일 + 중요도 */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                {/* 담당자 */}
+                {personUser ? (
                   <div className="flex items-center gap-1.5">
-                    {impNames.length > 0 ? impNames.map((name) => {
-                      const imp = importances.find(i => i.name === name)
-                      return imp?.icon ? (
-                        <span key={name} title={name} className="shrink-0" style={{ color: imp.color || '#9ca3af' }}>
-                          {renderIcon(imp.icon, 14)}
-                        </span>
-                      ) : null
-                    }) : null}
-                    {t.isImportant && <Star size={12} className="text-amber-500 fill-amber-500 shrink-0" />}
-                    {type === 'dueToday' && <AlertCircle size={12} className="text-danger shrink-0" />}
-                    <span
-                      className={cn(
-                        'text-[12.5px] font-semibold truncate hover:underline hover:text-primary-500 cursor-pointer transition-colors',
-                        type === 'dueToday' ? 'text-danger' : 'text-[var(--text-primary)]',
-                      )}>
-                      {t.title}
-                    </span>
+                    <Avatar name={personUser.name} color={personUser.color} size="xs" />
+                    <span className="text-[11px] text-[var(--text-muted)]">{personUser.name}</span>
                   </div>
-                  {t.team && <div className="text-[11px] text-[var(--text-muted)] mt-0.5">{t.team}</div>}
-                </td>
-
-                {/* 담당자 아바타 */}
-                <td className="px-3 py-2.5">
-                  {personUser ? (
-                    <div className="flex items-center gap-1.5">
-                      <Avatar name={personUser.name} color={personUser.color} size="xs" />
-                      <span className="text-[11px] text-[var(--text-muted)] hidden lg:inline">{personUser.name}</span>
-                    </div>
-                  ) : (
-                    <span className="text-[11px] text-[var(--text-muted)]">-</span>
-                  )}
-                </td>
-
-                {/* 상태 */}
-                <td className="px-3 py-2.5">
-                  <span
-                    className="text-[10px] font-bold px-2 py-1 rounded-md inline-flex items-center"
-                    style={{
-                      background: `${getStatusColor(t.status)}18`,
-                      color: getStatusColor(t.status),
-                      borderLeft: `2.5px solid ${getStatusColor(t.status)}`,
-                    }}
-                  >
-                    {getStatusLabel(t.status)}
-                  </span>
-                </td>
-
-                {/* 진행률 */}
-                <td className="px-3 py-2.5">
-                  <div className="flex items-center gap-1.5 group">
-                    <div className="w-[60px] h-1.5 rounded-full bg-[var(--bg-subtle)] overflow-hidden shrink-0 group-hover:h-2.5 transition-all">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${t.progress}%`, background: barColor }}
-                      />
-                    </div>
-                    <span className="text-[10.5px] font-bold text-[var(--text-primary)] min-w-[28px] text-right group-hover:text-primary-500 transition-colors">
-                      {t.progress}%
-                    </span>
-                  </div>
-                </td>
-
-                {/* 마감일 */}
-                <td className="px-3 py-2.5">
-                  <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded', dd.cls)}>
-                    {dd.label}
-                  </span>
-                </td>
-
-                {/* 중요도 */}
-                <td className="px-3 py-2.5">
-                  <div className="flex gap-1 items-center">
-                    {impNames.length > 0 ? impNames.map((name) => {
+                ) : (
+                  <span className="text-[11px] text-[var(--text-muted)]">-</span>
+                )}
+                {/* 중요도 뱃지 */}
+                {impNames.length > 0 && (
+                  <div className="flex gap-0.5 items-center">
+                    {impNames.map((name) => {
                       const imp = importances.find(i => i.name === name)
                       const c = imp?.color || '#9ca3af'
                       return (
                         <span
                           key={name}
                           title={name}
-                          className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                          style={{
-                            background: `${c}18`,
-                            border: `1.5px solid ${c}`,
-                          }}
+                          className="w-4 h-4 rounded-full flex items-center justify-center shrink-0"
+                          style={{ background: `${c}18`, border: `1.5px solid ${c}` }}
                         >
-                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: c }} />
+                          <span className="w-1 h-1 rounded-full" style={{ background: c }} />
                         </span>
                       )
-                    }) : (
-                      <span className="text-[11px] text-[var(--text-muted)]">-</span>
-                    )}
+                    })}
                   </div>
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+                )}
+              </div>
+              {/* 마감일 */}
+              <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded', dd.cls)}>
+                {dd.label}
+              </span>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
