@@ -229,7 +229,10 @@ export function Header() {
           {/* 테마 토글 */}
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-lg hover:bg-[var(--bg-muted)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+            className="p-2 rounded-lg text-[var(--text-muted)] transition-colors cursor-pointer"
+            style={{ ['--hover-color' as string]: 'var(--color-primary-500)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary-500)'; e.currentTarget.style.background = 'color-mix(in srgb, var(--color-primary-500) 8%, transparent)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = ''; e.currentTarget.style.background = '' }}
             title="테마 변경"
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -239,7 +242,9 @@ export function Header() {
           <div className="relative">
             <button
               onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false) }}
-              className="p-2 rounded-lg hover:bg-[var(--bg-muted)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors relative cursor-pointer"
+              className="p-2 rounded-lg text-[var(--text-muted)] transition-colors relative cursor-pointer"
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary-500)'; e.currentTarget.style.background = 'color-mix(in srgb, var(--color-primary-500) 8%, transparent)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = ''; e.currentTarget.style.background = '' }}
             >
               <Bell size={18} />
               <span className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full border border-[var(--bg-surface)]" />

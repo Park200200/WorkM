@@ -128,7 +128,6 @@ export function SettingsPage() {
                     : 'text-[var(--text-muted)]',
                 ],
               )}
-              style={!isActive ? { ['--tw-tab-hover' as string]: 'var(--color-primary-500)' } : undefined}
               onMouseEnter={(e) => {
                 if (!isActive) {
                   const el = e.currentTarget
@@ -138,11 +137,9 @@ export function SettingsPage() {
                 }
               }}
               onMouseLeave={(e) => {
-                if (!isActive) {
-                  const el = e.currentTarget
-                  el.style.color = ''
-                  el.style.background = ''
-                }
+                const el = e.currentTarget
+                el.style.color = ''
+                el.style.background = ''
               }}
             >
               <Icon size={15} style={isActive ? { color: ts === 'pill' && isActive ? 'white' : tab.color } : undefined} />

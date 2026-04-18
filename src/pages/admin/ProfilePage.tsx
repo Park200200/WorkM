@@ -194,7 +194,7 @@ export function ProfilePage() {
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!isActive) { e.currentTarget.style.color = ''; e.currentTarget.style.background = '' }
+                    e.currentTarget.style.color = ''; e.currentTarget.style.background = ''
                   }}
                 >{tab.label}</button>
               )
