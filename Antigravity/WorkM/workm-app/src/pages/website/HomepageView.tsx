@@ -150,6 +150,12 @@ export function HomepageView() {
     const saved = localStorage.getItem('hp_website_theme')
     if (saved === 'dark') setTheme('dark')
     document.title = data?.siteName ? `${data.siteName} - 홈페이지` : 'WorkM Homepage'
+    // 파비콘 적용
+    if ((data as any)?.favicon) {
+      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement
+      if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link) }
+      link.href = (data as any).favicon
+    }
   }, [])
 
   /* 서브메뉴 헬퍼 */

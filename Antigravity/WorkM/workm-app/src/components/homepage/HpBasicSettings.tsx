@@ -37,6 +37,8 @@ interface HpBasicData {
   /* 카피라이트 */
   cpBg: string; cpFc: string; cpFs: number; cpHeight: number
   cpOpacity: number; cpAlign: string; cpText: string
+  /* 파비콘 */
+  favicon: string
 }
 
 interface McItem { imgH: string; imgV: string; text1: string; text2: string; text3: string; url: string; blank: boolean }
@@ -61,6 +63,7 @@ const DEFAULT: HpBasicData = {
   ftOpacity: 100, ftAlign: 'center', ftText: '',
   cpBg: '#050510', cpFc: '#475569', cpFs: 11, cpHeight: 48,
   cpOpacity: 100, cpAlign: 'center', cpText: '',
+  favicon: '',
 }
 
 const STORAGE_KEY = 'hp_basic_settings'
@@ -806,6 +809,70 @@ export function HpBasicSettings() {
           </div>
         </div>
         <div className="flex justify-end"><button onClick={() => save('카피라이트')} className={`${saveBtn} !bg-[#eab308] !text-black hover:!bg-[#ca8a04]`}><Save size={13} /> 저장</button></div>
+      </div>
+
+      {/* ═══ 9. 파비콘 설정 ═══ */}
+      <div className={cardCls}>
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white"><Globe size={15} /></div>
+          <div>
+            <div className="text-sm font-bold text-[var(--text-primary)]">파비콘 설정</div>
+            <div className="text-[10px] text-[var(--text-muted)]">브라우저 탭에 표시되는 아이콘 (32×32 권장)</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+          {/* 업로드 */}
+          <div>
+            <label className={labelCls}><Upload size={11} /> 파비콘 이미지 업로드</label>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-base)] hover:border-primary-400 cursor-pointer transition-colors text-xs font-semibold text-[var(--text-secondary)]">
+                <Upload size={13} /> 이미지 선택
+                <input type="file" accept="image/*" className="hidden" onChange={e => {
+                  const f = e.target.files?.[0]
+                  if (!f) return
+                  const reader = new FileReader()
+                  reader.onload = ev => {
+                    const result = ev.target?.result as string
+                    up({ favicon: result })
+                    // 즉시 브라우저 파비콘 업데이트
+                    let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement
+                    if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link) }
+                    link.href = result
+                  }
+                  reader.readAsDataURL(f)
+                }} />
+              </label>
+              {d.favicon && (
+                <button onClick={() => { up({ favicon: '' }); const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement; if (link) link.href = '/favicon.ico' }}
+                  className="text-[10px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>
+              )}
+            </div>
+            {!d.favicon && <div className="text-[10px] text-[var(--text-muted)] mt-1.5">.ico, .png, .svg 형식 지원 (32×32px 권장)</div>}
+          </div>
+
+          {/* 미리보기 */}
+          <div>
+            <label className={labelCls}><Eye size={11} /> 미리보기</label>
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-xl border-2 border-dashed border-[var(--border-default)] flex items-center justify-center bg-[var(--bg-base)] overflow-hidden">
+                {d.favicon ? (
+                  <img src={d.favicon} alt="favicon" className="w-10 h-10 object-contain" />
+                ) : (
+                  <span className="text-[var(--text-muted)] text-[10px]">미등록</span>
+                )}
+              </div>
+              {d.favicon && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--bg-base)] border border-[var(--border-default)]">
+                  <img src={d.favicon} alt="" className="w-4 h-4" />
+                  <span className="text-xs text-[var(--text-secondary)] font-medium">{d.siteName || 'WorkM'}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end"><button onClick={() => save('파비콘')} className={`${saveBtn} !bg-gradient-to-r !from-indigo-500 !to-purple-500 hover:!from-indigo-600 hover:!to-purple-600`}><Save size={13} /> 저장</button></div>
       </div>
 
       {/* ── 토스트 메시지 ── */}
