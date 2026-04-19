@@ -11,7 +11,7 @@ export type ThemeCheckboxStyle = 'default' | 'sharp' | 'circle'
 export type ThemeTabStyle = 'underline' | 'box' | 'pill'
 
 /* ── Typography Token 시스템 ── */
-export interface TypoToken { size: string; weight: number }
+export interface TypoToken { size: string; weight: number; color: string }
 export type TypoCategory =
   | 'page-title' | 'page-subtitle' | 'section-title' | 'card-title'
   | 'menu' | 'menu-group' | 'tab' | 'btn' | 'badge' | 'body' | 'caption' | 'input' | 'toast'
@@ -33,19 +33,19 @@ export const TYPO_CATEGORY_LABELS: Record<TypoCategory, string> = {
 }
 
 export const DEFAULT_TYPO: Record<TypoCategory, TypoToken> = {
-  'page-title': { size: '1.125rem', weight: 800 },
-  'page-subtitle': { size: '0.8125rem', weight: 400 },
-  'section-title': { size: '0.875rem', weight: 700 },
-  'card-title': { size: '0.8125rem', weight: 700 },
-  'menu': { size: '0.8125rem', weight: 400 },
-  'menu-group': { size: '0.625rem', weight: 700 },
-  'tab': { size: '0.75rem', weight: 700 },
-  'btn': { size: '0.75rem', weight: 700 },
-  'badge': { size: '0.625rem', weight: 700 },
-  'body': { size: '0.8125rem', weight: 400 },
-  'caption': { size: '0.6875rem', weight: 400 },
-  'input': { size: '0.8125rem', weight: 400 },
-  'toast': { size: '0.8125rem', weight: 600 },
+  'page-title': { size: '1.125rem', weight: 800, color: 'var(--text-primary)' },
+  'page-subtitle': { size: '0.8125rem', weight: 400, color: 'var(--text-muted)' },
+  'section-title': { size: '0.875rem', weight: 700, color: 'var(--text-primary)' },
+  'card-title': { size: '0.8125rem', weight: 700, color: 'var(--text-primary)' },
+  'menu': { size: '0.8125rem', weight: 400, color: 'var(--text-secondary)' },
+  'menu-group': { size: '0.625rem', weight: 700, color: 'var(--text-muted)' },
+  'tab': { size: '0.75rem', weight: 700, color: 'var(--text-secondary)' },
+  'btn': { size: '0.75rem', weight: 700, color: '#ffffff' },
+  'badge': { size: '0.625rem', weight: 700, color: 'var(--text-secondary)' },
+  'body': { size: '0.8125rem', weight: 400, color: 'var(--text-secondary)' },
+  'caption': { size: '0.6875rem', weight: 400, color: 'var(--text-muted)' },
+  'input': { size: '0.8125rem', weight: 400, color: 'var(--text-primary)' },
+  'toast': { size: '0.8125rem', weight: 600, color: '#ffffff' },
 }
 
 export const TYPO_SIZE_OPTIONS = [
@@ -69,6 +69,20 @@ export const TYPO_WEIGHT_OPTIONS = [
   { value: 700, label: 'Bold' },
   { value: 800, label: 'ExtraBold' },
   { value: 900, label: 'Black' },
+]
+
+export const TYPO_COLOR_OPTIONS = [
+  { value: 'var(--text-primary)', label: '기본(진)' },
+  { value: 'var(--text-secondary)', label: '보조' },
+  { value: 'var(--text-muted)', label: '연한' },
+  { value: 'var(--color-primary-500)', label: '메인색상' },
+  { value: '#ffffff', label: '흰색' },
+  { value: '#18181b', label: '검정' },
+  { value: '#ef4444', label: '빨강' },
+  { value: '#f59e0b', label: '주황' },
+  { value: '#22c55e', label: '초록' },
+  { value: '#3b82f6', label: '파랑' },
+  { value: '#8b5cf6', label: '보라' },
 ]
 
 export const DATEPICKER_LABELS: Record<ThemeDatePicker, string> = {
@@ -294,6 +308,7 @@ function applyToDOM(t: SavedTheme) {
   for (const [cat, token] of Object.entries(typo)) {
     html.style.setProperty(`--typo-${cat}-size`, token.size)
     html.style.setProperty(`--typo-${cat}-weight`, String(token.weight))
+    html.style.setProperty(`--typo-${cat}-color`, token.color)
   }
 }
 
@@ -420,6 +435,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => {
       const html = document.documentElement
       html.style.setProperty(`--typo-${category}-size`, token.size)
       html.style.setProperty(`--typo-${category}-weight`, String(token.weight))
+      html.style.setProperty(`--typo-${category}-color`, token.color)
       set({ typography: typo })
     },
 
@@ -430,6 +446,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => {
       for (const [cat, token] of Object.entries(typo)) {
         html.style.setProperty(`--typo-${cat}-size`, token.size)
         html.style.setProperty(`--typo-${cat}-weight`, String(token.weight))
+        html.style.setProperty(`--typo-${cat}-color`, token.color)
       }
       set({ typography: typo })
     },

@@ -6,7 +6,7 @@ import { Input } from '../../components/ui/Input'
 import { Modal, ModalBody, ModalFooter } from '../../components/ui/Modal'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { useToastStore } from '../../stores/toastStore'
-import { useThemeStore, PRESET_ACCENTS, PRESET_KEYS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, FONT_SCALE_LABELS, FONT_COLOR_PRESETS, DATEPICKER_LABELS, CHECKBOX_STYLE_LABELS, TAB_STYLE_LABELS, TYPO_CATEGORY_LABELS, DEFAULT_TYPO, TYPO_SIZE_OPTIONS, TYPO_WEIGHT_OPTIONS, type ThemeRadius, type ThemeDensity, type ThemeFontScale, type ThemeDatePicker, type ThemeCheckboxStyle, type ThemeTabStyle, type TypoCategory } from '../../stores/themeStore'
+import { useThemeStore, PRESET_ACCENTS, PRESET_KEYS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, FONT_SCALE_LABELS, FONT_COLOR_PRESETS, DATEPICKER_LABELS, CHECKBOX_STYLE_LABELS, TAB_STYLE_LABELS, TYPO_CATEGORY_LABELS, DEFAULT_TYPO, TYPO_SIZE_OPTIONS, TYPO_WEIGHT_OPTIONS, TYPO_COLOR_OPTIONS, type ThemeRadius, type ThemeDensity, type ThemeFontScale, type ThemeDatePicker, type ThemeCheckboxStyle, type ThemeTabStyle, type TypoCategory } from '../../stores/themeStore'
 import { cn } from '../../utils/cn'
 import { getItem } from '../../utils/storage'
 import {
@@ -1354,7 +1354,7 @@ function ThemePanel() {
           {(Object.keys(TYPO_CATEGORY_LABELS) as TypoCategory[]).map((cat) => {
             const token = typography[cat]
             const def = DEFAULT_TYPO[cat]
-            const isModified = token.size !== def.size || token.weight !== def.weight
+            const isModified = token.size !== def.size || token.weight !== def.weight || token.color !== def.color
 
             return (
               <div key={cat} className={cn(
@@ -1368,7 +1368,7 @@ function ThemePanel() {
                       <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">수정됨</span>
                     )}
                   </div>
-                  <span style={{ fontSize: token.size, fontWeight: token.weight }} className="text-[var(--text-primary)] block truncate">
+                  <span style={{ fontSize: token.size, fontWeight: token.weight, color: token.color }} className="block truncate">
                     {TYPO_CATEGORY_LABELS[cat]} 미리보기
                   </span>
                 </div>
@@ -1387,6 +1387,15 @@ function ThemePanel() {
                   className="text-[10px] font-mono font-bold px-2 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] cursor-pointer outline-none w-[90px]"
                 >
                   {TYPO_WEIGHT_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={token.color}
+                  onChange={(e) => setTypo(cat, { ...token, color: e.target.value })}
+                  className="text-[10px] font-bold px-2 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] cursor-pointer outline-none w-[85px]"
+                >
+                  {TYPO_COLOR_OPTIONS.map(o => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
