@@ -1435,6 +1435,7 @@ function ContentSolutionView({ accent }: { accent: string }) {
   const [search, setSearch] = useState('')
   const [catFilter, setCatFilter] = useState('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   const categories = ['all', ...new Set(items.map((it: any) => it.category).filter(Boolean))]
   const catLabels: Record<string, string> = { all: '전체', news: '뉴스', blog: '블로그', youtube: 'YouTube', website: '웹사이트' }
@@ -1452,7 +1453,7 @@ function ContentSolutionView({ accent }: { accent: string }) {
 
   return (
     <div>
-      {/* 검색 + 카테고리 */}
+      {/* 검색 + 카테고리 + 보기 모드 */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
           <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
@@ -1470,13 +1471,69 @@ function ContentSolutionView({ accent }: { accent: string }) {
             }}>{catLabels[c] || c}</button>
           ))}
         </div>
-        <span style={{ fontSize: 12, color: '#94a3b8', marginLeft: 'auto' }}>총 {filtered.length}건</span>
+        {/* 보기 모드 토글 */}
+        <div style={{ display: 'flex', gap: 3, background: '#f1f5f9', borderRadius: 10, padding: 3, marginLeft: 'auto' }}>
+          <button onClick={() => setViewMode('grid')} title="격자" style={{
+            width: 32, height: 32, borderRadius: 8, border: 'none', fontSize: 15,
+            background: viewMode === 'grid' ? accent : 'transparent',
+            color: viewMode === 'grid' ? '#fff' : '#64748b',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .2s',
+          }}>▦</button>
+          <button onClick={() => setViewMode('list')} title="목록" style={{
+            width: 32, height: 32, borderRadius: 8, border: 'none', fontSize: 15,
+            background: viewMode === 'list' ? accent : 'transparent',
+            color: viewMode === 'list' ? '#fff' : '#64748b',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .2s',
+          }}>☰</button>
+        </div>
+        <span style={{ fontSize: 12, color: '#94a3b8' }}>총 {filtered.length}건</span>
       </div>
 
-      {/* 리스트 */}
+      {/* 컨텐츠 */}
       {filtered.length === 0 ? (
         <p style={{ color: '#94a3b8', textAlign: 'center', padding: '40px 0' }}>등록된 컨텐츠가 없습니다.</p>
+      ) : viewMode === 'grid' ? (
+        /* ── 격자(카드) 모드 ── */
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
+          {filtered.map(it => {
+            const cc = catColors[it.category] || '#94a3b8'
+            return (
+              <div key={it.id} onClick={() => setExpandedId(expandedId === it.id ? null : it.id)}
+                style={{
+                  borderRadius: 14, border: '1.5px solid #e2e8f0', background: '#fff',
+                  overflow: 'hidden', cursor: 'pointer', transition: 'box-shadow .2s, transform .2s',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 8px 24px rgba(0,0,0,.08)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = 'none'; (e.currentTarget as HTMLDivElement).style.transform = 'none' }}
+              >
+                {it.thumbnail && (
+                  <div style={{ width: '100%', aspectRatio: '16/10', overflow: 'hidden', background: '#f1f5f9', position: 'relative' }}>
+                    <img src={it.thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
+                    <span style={{
+                      position: 'absolute', top: 10, left: 10, padding: '3px 10px',
+                      borderRadius: 6, fontSize: 10, fontWeight: 700, background: cc, color: '#fff',
+                    }}>{catLabels[it.category] || it.category}</span>
+                    {it.category === 'youtube' && (
+                      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 44, height: 44, borderRadius: '50%', background: 'rgba(0,0,0,.6)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>▶</div>
+                    )}
+                  </div>
+                )}
+                <div style={{ padding: 14 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4 }}>{it.title}</div>
+                  {it.summary && <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{it.summary}</div>}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                    {it.tags?.slice(0, 3).map((t: string) => (
+                      <span key={t} style={{ padding: '2px 7px', borderRadius: 4, fontSize: 10, fontWeight: 700, background: `${accent}15`, color: accent }}>#{t}</span>
+                    ))}
+                    <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 'auto' }}>{it.date || it.regDate || ''}</span>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       ) : (
+        /* ── 리스트(아코디언) 모드 ── */
         <div style={{ border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
           {filtered.map((it, i) => {
             const isOpen = expandedId === it.id
