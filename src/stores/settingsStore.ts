@@ -42,6 +42,9 @@ interface SettingsStore {
   instrImportances: OrgItem[]
   taskStatuses: TaskStatus[]
 
+  /* 부서별 상세업무 매핑 */
+  deptDetailTasks: Record<number, number[]>
+
   // 부서
   addDept: (name: string) => void
   updateDept: (id: number, name: string) => void
@@ -82,6 +85,10 @@ interface SettingsStore {
   updateImportance: (id: number, name: string, icon?: string, color?: string) => void
   deleteImportance: (id: number) => void
 
+  // 부서별 상세업무
+  setDeptDetailTasks: (deptId: number, taskIds: number[]) => void
+  toggleDeptDetailTask: (deptId: number, taskId: number) => void
+
   // 순서 변경 (범용)
   reorderItems: (category: string, ids: number[]) => void
 }
@@ -100,6 +107,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   detailTasks:      getItem('ws_detail_tasks', []),
   instrImportances: getItem('ws_instr_importances', []),
   taskStatuses:     getItem('ws_task_statuses', []),
+  deptDetailTasks:  getItem<Record<number, number[]>>('ws_dept_detail_tasks', {}),
 
   // ── 부서 ──
   addDept: (name) => set((s) => {
@@ -235,6 +243,22 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     const updated = s.instrImportances.filter(i => i.id !== id)
     setItem('ws_instr_importances', updated)
     return { instrImportances: updated }
+  }),
+
+  // ── 부서별 상세업무 ──
+  setDeptDetailTasks: (deptId, taskIds) => set((s) => {
+    const updated = { ...s.deptDetailTasks, [deptId]: taskIds }
+    setItem('ws_dept_detail_tasks', updated)
+    return { deptDetailTasks: updated }
+  }),
+  toggleDeptDetailTask: (deptId, taskId) => set((s) => {
+    const current = s.deptDetailTasks[deptId] || []
+    const next = current.includes(taskId)
+      ? current.filter(id => id !== taskId)
+      : [...current, taskId]
+    const updated = { ...s.deptDetailTasks, [deptId]: next }
+    setItem('ws_dept_detail_tasks', updated)
+    return { deptDetailTasks: updated }
   }),
 
   // ── 순서 변경 (범용) ──

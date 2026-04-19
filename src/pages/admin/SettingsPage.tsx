@@ -267,18 +267,104 @@ function ReportTypePanel() {
 }
 
 function DetailTaskPanel() {
-  const { detailTasks, addDetailTask, updateDetailTask, deleteDetailTask, reorderItems } = useSettingsStore()
+  const { detailTasks, addDetailTask, updateDetailTask, deleteDetailTask, reorderItems,
+    departments, deptDetailTasks, toggleDeptDetailTask } = useSettingsStore()
+  const [selectedDeptId, setSelectedDeptId] = useState<number | null>(null)
+
   return (
-    <CrudListPanel
-      title="상세업무"
-      items={detailTasks.map(d => ({ id: d.id, name: d.name }))}
-      onAdd={(name) => addDetailTask(name)}
-      onUpdate={(id, name) => updateDetailTask(id, name)}
-      onDelete={deleteDetailTask}
-      onReorder={(ids) => reorderItems('detailTasks', ids)}
-      placeholder="새 상세업무 입력"
-      color="#4f6ef7"
-    />
+    <div className="space-y-4">
+      {/* 상세업무 CRUD */}
+      <CrudListPanel
+        title="상세업무"
+        items={detailTasks.map(d => ({ id: d.id, name: d.name }))}
+        onAdd={(name) => addDetailTask(name)}
+        onUpdate={(id, name) => updateDetailTask(id, name)}
+        onDelete={deleteDetailTask}
+        onReorder={(ids) => reorderItems('detailTasks', ids)}
+        placeholder="새 상세업무 입력"
+        color="#4f6ef7"
+      />
+
+      {/* 부서별 상세업무 배정 */}
+      {departments.length > 0 && detailTasks.length > 0 && (
+        <Card>
+          <div className="text-[12px] font-extrabold text-[var(--text-secondary)] mb-3">📋 부서별 상세업무 배정</div>
+          <div className="text-[10px] text-[var(--text-muted)] mb-3">부서를 선택한 후 체크박스로 해당 부서에 배정할 상세업무를 선택하세요.</div>
+
+          {/* 부서 탭 */}
+          <div className="flex items-center gap-1.5 flex-wrap mb-4">
+            {departments.map(dept => {
+              const isActive = selectedDeptId === dept.id
+              const assignedCount = (deptDetailTasks[dept.id] || []).length
+              return (
+                <button
+                  key={dept.id}
+                  onClick={() => setSelectedDeptId(isActive ? null : dept.id)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition-all border',
+                    isActive
+                      ? 'bg-primary-500 text-white border-primary-500'
+                      : 'text-[var(--text-secondary)] border-[var(--border-default)] bg-[var(--bg-surface)] hover:bg-[var(--bg-muted)]'
+                  )}
+                >
+                  {dept.name}
+                  {assignedCount > 0 && (
+                    <span className={cn(
+                      'text-[9px] font-extrabold min-w-[16px] h-[16px] rounded-full flex items-center justify-center',
+                      isActive ? 'bg-white/25 text-white' : 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-300'
+                    )}>
+                      {assignedCount}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* 상세업무 체크리스트 */}
+          {selectedDeptId && (
+            <div className="border border-[var(--border-default)] rounded-xl overflow-hidden">
+              <div className="bg-[var(--bg-muted)] px-4 py-2 text-[11px] font-bold text-[var(--text-muted)] flex items-center justify-between">
+                <span>{departments.find(d => d.id === selectedDeptId)?.name} 상세업무</span>
+                <span className="text-primary-500">
+                  {(deptDetailTasks[selectedDeptId] || []).length}/{detailTasks.length}개 선택
+                </span>
+              </div>
+              <div className="divide-y divide-[var(--border-default)]">
+                {detailTasks.map(task => {
+                  const isChecked = (deptDetailTasks[selectedDeptId] || []).includes(task.id)
+                  return (
+                    <label
+                      key={task.id}
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--bg-muted)] transition-colors cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleDeptDetailTask(selectedDeptId, task.id)}
+                        className="w-4 h-4 rounded accent-[var(--color-primary-500)] cursor-pointer"
+                      />
+                      <span className={cn(
+                        'text-[12px] font-medium',
+                        isChecked ? 'text-[var(--text-primary)] font-bold' : 'text-[var(--text-secondary)]'
+                      )}>
+                        {task.name}
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {!selectedDeptId && (
+            <div className="py-6 text-center text-[11px] text-[var(--text-muted)] border border-dashed border-[var(--border-default)] rounded-xl">
+              위에서 부서를 선택하면 상세업무를 배정할 수 있습니다.
+            </div>
+          )}
+        </Card>
+      )}
+    </div>
   )
 }
 
