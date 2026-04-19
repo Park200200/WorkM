@@ -69,7 +69,7 @@ export function Tabs({ items, activeKey, onChange, style: styleProp, className, 
 
               /* ── Pill ── */
               style === 'pill' && [
-                'rounded-[var(--radius-lg)]',
+                'rounded-[var(--radius-md)]',
                 isActive
                   ? 'bg-[var(--btn-save-bg)] text-white shadow-sm'
                   : 'text-[var(--tab-text)] hover:bg-[var(--bg-muted)]',
