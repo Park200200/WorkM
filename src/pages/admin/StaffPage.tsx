@@ -226,11 +226,11 @@ export function StaffPage() {
             <div className="text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">기본 정보</div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {/* 프로필 사진 */}
-              <div>
-                <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1">프로필 사진</label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">프로필 사진</label>
                 <div
                   onClick={() => photoFileRef.current?.click()}
-                  className="h-[42px] bg-[var(--bg-muted)] border-2 border-dashed border-[var(--border-default)] rounded-lg flex items-center justify-center gap-2 cursor-pointer hover:border-primary-400 transition-colors overflow-hidden"
+                  className="h-[44px] bg-[var(--bg-muted)] border-2 border-dashed border-[var(--border-default)] rounded-lg flex items-center justify-center gap-2 cursor-pointer hover:border-primary-400 transition-colors overflow-hidden"
                   style={form.photo ? { backgroundImage: `url(${form.photo})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
                 >
                   {!form.photo && <><Camera size={16} className="text-[var(--text-muted)]" /><span className="text-[11px] font-semibold text-[var(--text-muted)]">사진 등록</span></>}
@@ -240,33 +240,33 @@ export function StaffPage() {
               {/* 이름 */}
               <Input label="이름 *" value={form.name || ''} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="이름을 입력하세요" />
               {/* 부서 */}
-              <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1.5">부서 *</label>
-                <select value={form.dept || ''} onChange={e => setForm({ ...form, dept: e.target.value })} className="w-full h-[42px] rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 text-sm text-[var(--text-primary)]">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">부서 *</label>
+                <select value={form.dept || ''} onChange={e => setForm({ ...form, dept: e.target.value })} className="w-full h-[44px] rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 text-sm leading-[44px] text-[var(--text-primary)]">
                   <option value="">선택</option>
                   {departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
                 </select>
               </div>
               {/* 직급 */}
-              <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1.5">직급 *</label>
-                <select value={form.rank || form.role || ''} onChange={e => setForm({ ...form, rank: e.target.value, role: e.target.value })} className="w-full h-[42px] rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 text-sm text-[var(--text-primary)]">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">직급 *</label>
+                <select value={form.rank || form.role || ''} onChange={e => setForm({ ...form, rank: e.target.value, role: e.target.value })} className="w-full h-[44px] rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 text-sm leading-[44px] text-[var(--text-primary)]">
                   <option value="">선택</option>
                   {ranks.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
                 </select>
               </div>
               {/* 직책 */}
-              <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1.5">직책 *</label>
-                <select value={form.position || ''} onChange={e => setForm({ ...form, position: e.target.value })} className="w-full h-[42px] rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 text-sm text-[var(--text-primary)]">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">직책 *</label>
+                <select value={form.position || ''} onChange={e => setForm({ ...form, position: e.target.value })} className="w-full h-[44px] rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 text-sm leading-[44px] text-[var(--text-primary)]">
                   <option value="">선택</option>
                   {positions.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
                 </select>
               </div>
               {/* 상태 */}
-              <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1.5">상태</label>
-                <select value={form.status || '근무'} onChange={e => setForm({ ...form, status: e.target.value })} className="w-full h-[42px] rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 text-sm text-[var(--text-primary)]">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">상태</label>
+                <select value={form.status || '근무'} onChange={e => setForm({ ...form, status: e.target.value })} className="w-full h-[44px] rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 text-sm leading-[44px] text-[var(--text-primary)]">
                   <option>근무</option>
                   <option>근무(휴가)</option>
                   <option>근무(출장)</option>
@@ -299,14 +299,14 @@ export function StaffPage() {
             <div className="text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">시스템 계정 정보</div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <Input label="아이디" value={form.loginId || ''} onChange={e => setForm({ ...form, loginId: e.target.value })} />
-              <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1.5">비밀번호</label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">비밀번호</label>
                 <div className="relative">
                   <input
                     type={showPw ? 'text' : 'password'}
                     value={form.pw || ''}
                     onChange={e => setForm({ ...form, pw: e.target.value })}
-                    className="w-full h-[42px] rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 pr-10 text-sm text-[var(--text-primary)] outline-none focus:border-primary-400"
+                    className="w-full h-[44px] rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 pr-10 text-sm leading-[44px] text-[var(--text-primary)] outline-none focus:border-primary-400"
                   />
                   <button
                     type="button"
@@ -318,16 +318,16 @@ export function StaffPage() {
                 </div>
               </div>
               <Input label="아바타 (2글자)" value={form.avatar || ''} onChange={e => setForm({ ...form, avatar: e.target.value.slice(0, 2) })} />
-              <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1.5">전용 색상</label>
-                <input type="color" value={form.color || '#4f6ef7'} onChange={e => setForm({ ...form, color: e.target.value })} className="w-full h-[42px] rounded-lg border border-[var(--border-default)] p-1 cursor-pointer" />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">전용 색상</label>
+                <input type="color" value={form.color || '#4f6ef7'} onChange={e => setForm({ ...form, color: e.target.value })} className="w-full h-[44px] rounded-lg border border-[var(--border-default)] p-1 cursor-pointer" />
               </div>
-              <div className="col-span-2 md:col-span-3">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1.5">비고</label>
+              <div className="col-span-2 md:col-span-3 flex flex-col gap-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">비고</label>
                 <textarea
                   value={form.note || ''}
                   onChange={e => setForm({ ...form, note: e.target.value })}
-                  className="w-full h-[42px] min-h-[42px] rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none resize-y focus:border-primary-400"
+                  className="w-full h-[44px] min-h-[44px] rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none resize-y focus:border-primary-400"
                 />
               </div>
             </div>
