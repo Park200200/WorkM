@@ -12,7 +12,7 @@ import { getItem } from '../../utils/storage'
 import {
   Building2, Medal, Briefcase, ListChecks, FileText, Layers,
   Plus, Pencil, Trash2, GripVertical, Calculator, Wallet, CreditCard,
-  Palette, Sun, Moon, Check, X, RotateCcw,
+  Palette, Sun, Moon, Check, X, RotateCcw, ChevronRight,
 } from 'lucide-react'
 import { ICON_MAP, renderIcon } from '../../utils/iconMap'
 import { Badge } from '../../components/ui/Badge'
@@ -168,18 +168,110 @@ export function SettingsPage() {
    부서 패널
    ══════════════════════════════════════════════ */
 function DeptPanel() {
-  const { departments, addDept, updateDept, deleteDept, reorderItems } = useSettingsStore()
+  const { departments, addDept, updateDept, deleteDept, reorderItems,
+    detailTasks, deptDetailTasks, toggleDeptDetailTask } = useSettingsStore()
+  const [expandedDeptId, setExpandedDeptId] = useState<number | null>(null)
+
   return (
-    <CrudListPanel
-      title="부서"
-      items={departments.map(d => ({ id: d.id, name: d.name }))}
-      onAdd={(name) => addDept(name)}
-      onUpdate={(id, name) => updateDept(id, name)}
-      onDelete={deleteDept}
-      onReorder={(ids) => reorderItems('departments', ids)}
-      placeholder="새 부서명 입력"
-      color="#4f6ef7"
-    />
+    <div className="space-y-4">
+      <CrudListPanel
+        title="부서"
+        items={departments.map(d => ({ id: d.id, name: d.name }))}
+        onAdd={(name) => addDept(name)}
+        onUpdate={(id, name) => updateDept(id, name)}
+        onDelete={deleteDept}
+        onReorder={(ids) => reorderItems('departments', ids)}
+        placeholder="새 부서명 입력"
+        color="#4f6ef7"
+      />
+
+      {/* 부서별 상세업무 배정 */}
+      {departments.length > 0 && detailTasks.length > 0 && (
+        <Card>
+          <div className="text-[12px] font-extrabold text-[var(--text-secondary)] mb-1">📋 부서별 상세업무 배정</div>
+          <div className="text-[10px] text-[var(--text-muted)] mb-3">부서를 클릭하여 해당 부서에 배정할 상세업무를 선택하세요.</div>
+
+          <div className="space-y-2">
+            {departments.map(dept => {
+              const isExpanded = expandedDeptId === dept.id
+              const assigned = deptDetailTasks[dept.id] || []
+              const assignedNames = detailTasks.filter(t => assigned.includes(t.id)).map(t => t.name)
+
+              return (
+                <div key={dept.id} className="border border-[var(--border-default)] rounded-xl overflow-hidden">
+                  {/* 부서 헤더 */}
+                  <button
+                    onClick={() => setExpandedDeptId(isExpanded ? null : dept.id)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--bg-muted)] transition-colors cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-primary-500 flex items-center justify-center text-white text-[10px] font-extrabold shrink-0">
+                      {dept.name.charAt(0)}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className="text-[12px] font-bold text-[var(--text-primary)]">{dept.name}</div>
+                      {assigned.length > 0 ? (
+                        <div className="text-[10px] text-[var(--text-muted)] truncate max-w-[300px]">
+                          {assignedNames.join(', ')}
+                        </div>
+                      ) : (
+                        <div className="text-[10px] text-[var(--text-muted)]">배정된 업무 없음</div>
+                      )}
+                    </div>
+                    <span
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ background: assigned.length > 0 ? '#4f6ef718' : '#6b728018', color: assigned.length > 0 ? '#4f6ef7' : '#6b7280' }}
+                    >
+                      {assigned.length}건
+                    </span>
+                    <ChevronRight
+                      size={14}
+                      className={cn(
+                        'text-[var(--text-muted)] transition-transform duration-200',
+                        isExpanded && 'rotate-90'
+                      )}
+                    />
+                  </button>
+
+                  {/* 상세업무 체크리스트 */}
+                  {isExpanded && (
+                    <div className="border-t border-[var(--border-default)] bg-[var(--bg-muted)]/50">
+                      <div className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] flex justify-between">
+                        <span>상세업무 선택</span>
+                        <span className="text-primary-500">{assigned.length}/{detailTasks.length}개 선택</span>
+                      </div>
+                      <div className="divide-y divide-[var(--border-default)]">
+                        {detailTasks.map(task => {
+                          const isChecked = assigned.includes(task.id)
+                          return (
+                            <label
+                              key={task.id}
+                              className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--bg-surface)] transition-colors cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => toggleDeptDetailTask(dept.id, task.id)}
+                                className="w-4 h-4 rounded accent-[var(--color-primary-500)] cursor-pointer"
+                              />
+                              <span className={cn(
+                                'text-[12px]',
+                                isChecked ? 'text-[var(--text-primary)] font-bold' : 'text-[var(--text-secondary)] font-medium'
+                              )}>
+                                {task.name}
+                              </span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      )}
+    </div>
   )
 }
 
