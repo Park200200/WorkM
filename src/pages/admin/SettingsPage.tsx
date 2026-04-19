@@ -122,7 +122,7 @@ export function SettingsPage() {
                 ],
                 /* pill */
                 ts === 'pill' && [
-                  'rounded-[var(--radius-2xl)]',
+                  'rounded-[var(--radius-lg)]',
                   isActive
                     ? 'bg-[var(--btn-save-bg)] text-white shadow-sm'
                     : 'text-[var(--text-muted)]',

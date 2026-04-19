@@ -181,7 +181,7 @@ export function ProfilePage() {
                         : 'text-[var(--text-muted)]',
                     ],
                     ts === 'pill' && [
-                      'rounded-[var(--radius-2xl)]',
+                      'rounded-[var(--radius-lg)]',
                       isActive
                         ? 'bg-[var(--btn-save-bg)] text-white'
                         : 'text-[var(--text-muted)]',
