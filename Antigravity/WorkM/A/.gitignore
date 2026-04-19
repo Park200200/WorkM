@@ -1,0 +1,11 @@
+# Antigravity AI 도구 폴더
+.antigravity/
+
+# OS 파일
+.DS_Store
+Thumbs.db
+
+# 에디터 설정
+.vscode/
+*.swp
+*.swo

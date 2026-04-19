@@ -1,0 +1,2053 @@
+import { useState, useRef } from 'react'
+import { PageHeader } from '../../components/common/PageHeader'
+import { Card } from '../../components/ui/Card'
+import { Button } from '../../components/ui/Button'
+import { Input } from '../../components/ui/Input'
+import { Modal, ModalBody, ModalFooter } from '../../components/ui/Modal'
+import { useSettingsStore } from '../../stores/settingsStore'
+import { useToastStore } from '../../stores/toastStore'
+import { useThemeStore, PRESET_ACCENTS, PRESET_KEYS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, FONT_SCALE_LABELS, FONT_COLOR_PRESETS, DATEPICKER_LABELS, CHECKBOX_STYLE_LABELS, CHECKBOX_SIZE_LABELS, CHECKBOX_SIZE_VALUES, TAB_STYLE_LABELS, BUTTON_SIZE_LABELS, TOAST_POSITION_LABELS, TABLE_STRIPE_LABELS, TABLE_DENSITY_LABELS, BADGE_SHAPE_LABELS, SIDEBAR_WIDTH_LABELS, PROGRESS_COLOR_LABELS, TYPO_CATEGORY_LABELS, DEFAULT_TYPO, TYPO_SIZE_OPTIONS, TYPO_WEIGHT_OPTIONS, TYPO_COLOR_OPTIONS, type ThemeRadius, type ThemeDensity, type ThemeFontScale, type ThemeDatePicker, type ThemeCheckboxStyle, type ThemeCheckboxSize, type ThemeTabStyle, type ThemeButtonSize, type ThemeToastPosition, type ThemeTableStripe, type ThemeTableDensity, type ThemeBadgeShape, type ThemeSidebarWidth, type ThemeProgressColor, type TypoCategory } from '../../stores/themeStore'
+import { cn } from '../../utils/cn'
+import { getItem } from '../../utils/storage'
+import {
+  Building2, Medal, Briefcase, ListChecks, FileText, Layers,
+  Plus, Pencil, Trash2, GripVertical, Calculator, Wallet, CreditCard,
+  Palette, Sun, Moon, Check, X, RotateCcw, ChevronRight,
+} from 'lucide-react'
+import { ICON_MAP, renderIcon } from '../../utils/iconMap'
+import { Badge } from '../../components/ui/Badge'
+import { Progress } from '../../components/ui/Progress'
+import { Tabs } from '../../components/ui/Tabs'
+import { DatePicker } from '../../components/ui/DatePicker'
+import { Checkbox } from '../../components/ui/Checkbox'
+import { CustomSelect } from '../../components/ui/CustomSelect'
+
+const ICON_COLORS = [
+  '#22c55e','#06b6d4','#9747ff','#ef4444','#f59e0b','#4f6ef7',
+  '#8b5cf6','#ec4899','#6b7280','#14b8a6','#3b82f6','#dc2626',
+  '#0ea5e9','#f43f5e','#a855f7','#10b981','#6366f1','#0284c7',
+  '#ea580c','#16a34a',
+]
+const ICON_KEYS = Object.keys(ICON_MAP)
+
+/* ── 탭 정의 ── */
+interface Tab {
+  key: string
+  label: string
+  icon: React.ElementType
+  color: string
+}
+
+const tabs: Tab[] = [
+  { key: 'dept',       label: '부서',                icon: Building2,  color: '#4f6ef7' },
+  { key: 'rank',       label: '직급',                icon: Medal,      color: '#9747ff' },
+  { key: 'position',   label: '직책',                icon: Briefcase,  color: '#f59e0b' },
+  { key: 'result',     label: '예상결과물', icon: ListChecks, color: '#22c55e' },
+  { key: 'reportType', label: '진행절차',        icon: FileText,   color: '#8b5cf6' },
+  { key: 'detailTask', label: '상세업무',             icon: Layers,     color: '#4f6ef7' },
+  { key: 'importance', label: '중요도',          icon: Building2,  color: '#ef4444' },
+  { key: 'taskStatus', label: '진행상태',             icon: Layers,     color: '#06b6d4' },
+  { key: 'accounts',   label: '계정과목',             icon: Calculator, color: '#0ea5e9' },
+  { key: 'budgetItems',label: '예산목',               icon: Wallet,     color: '#f97316' },
+  { key: 'payMethods', label: '지출수단',             icon: CreditCard, color: '#ec4899' },
+]
+
+export function SettingsPage() {
+  const [activeTab, setActiveTab] = useState('dept')
+  const globalTabStyle = useThemeStore((s) => s.tabStyle) || 'underline'
+  const tabRef = useRef<HTMLDivElement>(null)
+  const dragState = useRef({ isDown: false, startX: 0, scrollLeft: 0 })
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    const el = tabRef.current; if (!el) return
+    // 버튼 클릭은 드래그로 처리하지 않음
+    if ((e.target as HTMLElement).closest('button')) return
+    dragState.current = { isDown: true, startX: e.clientX, scrollLeft: el.scrollLeft }
+    el.setPointerCapture(e.pointerId)
+    el.style.cursor = 'grabbing'
+  }
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragState.current.isDown) return
+    const el = tabRef.current; if (!el) return
+    const dx = e.clientX - dragState.current.startX
+    el.scrollLeft = dragState.current.scrollLeft - dx
+  }
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (!dragState.current.isDown) return
+    dragState.current.isDown = false
+    const el = tabRef.current; if (!el) return
+    el.releasePointerCapture(e.pointerId)
+    el.style.cursor = 'grab'
+  }
+
+  return (
+    <div className="animate-fadeIn">
+      <PageHeader title="기타설정" subtitle="직급관리 및 기타 관리 항목을 설정합니다" />
+
+      {/* 탭 바 — 모바일: 드래그 스크롤, 데스크탑: 래핑 */}
+      <div
+        ref={tabRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerLeave={onPointerUp}
+        className="flex gap-1.5 mb-5 overflow-x-auto pb-2 -mx-1 px-1 md:flex-wrap select-none scrollbar-hide"
+        style={{ cursor: 'grab', WebkitOverflowScrolling: 'touch' }}
+      >
+        {tabs.map((tab) => {
+          const Icon = tab.icon
+          const isActive = activeTab === tab.key
+          const ts = globalTabStyle
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={cn(
+                'flex items-center gap-2 px-3.5 py-2 text-xs font-bold whitespace-nowrap',
+                'transition-all duration-150 cursor-pointer shrink-0',
+                /* underline */
+                ts === 'underline' && [
+                  'rounded-none border-b-2',
+                  isActive
+                    ? 'border-[var(--tab-active-color)] text-[var(--tab-active-color)]'
+                    : 'border-transparent text-[var(--text-muted)]',
+                ],
+                /* box */
+                ts === 'box' && [
+                  'rounded-[var(--radius-md)] border',
+                  isActive
+                    ? 'bg-[var(--tab-active-bg)] border-[var(--tab-active-color)]/20 text-[var(--tab-active-color)] shadow-sm'
+                    : 'border-transparent text-[var(--text-muted)]',
+                ],
+                /* pill */
+                ts === 'pill' && [
+                  'rounded-[var(--radius-md)]',
+                  isActive
+                    ? 'bg-[var(--btn-save-bg)] text-white shadow-sm'
+                    : 'text-[var(--text-muted)]',
+                ],
+              )}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  const el = e.currentTarget
+                  el.style.color = 'var(--color-primary-500)'
+                  if (ts === 'box') el.style.background = 'color-mix(in srgb, var(--color-primary-500) 8%, transparent)'
+                  if (ts === 'pill') el.style.background = 'color-mix(in srgb, var(--color-primary-500) 8%, transparent)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                const el = e.currentTarget
+                el.style.color = ''
+                el.style.background = ''
+              }}
+            >
+              <Icon size={15} style={isActive ? { color: ts === 'pill' && isActive ? 'white' : tab.color } : undefined} />
+              {tab.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* 탭 콘텐츠 */}
+      {activeTab === 'dept'       && <DeptPanel />}
+      {activeTab === 'rank'       && <RankPanel />}
+      {activeTab === 'position'   && <PositionPanel />}
+      {activeTab === 'result'     && <ResultPanel />}
+      {activeTab === 'reportType' && <ReportTypePanel />}
+      {activeTab === 'detailTask' && <DetailTaskPanel />}
+      {activeTab === 'importance' && <ImportancePanel />}
+      {activeTab === 'taskStatus' && <TaskStatusPanel />}
+      {activeTab === 'accounts' && <AccountPanel />}
+      {activeTab === 'budgetItems' && <BudgetItemPanel />}
+      {activeTab === 'payMethods' && <PaymentMethodPanel />}
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════
+   부서 패널
+   ══════════════════════════════════════════════ */
+function DeptPanel() {
+  const { departments, addDept, updateDept, deleteDept, reorderItems,
+    detailTasks, deptDetailTasks, toggleDeptDetailTask } = useSettingsStore()
+  const [expandedDeptId, setExpandedDeptId] = useState<number | null>(null)
+
+  return (
+    <div className="space-y-4">
+      <CrudListPanel
+        title="부서"
+        items={departments.map(d => ({ id: d.id, name: d.name }))}
+        onAdd={(name) => addDept(name)}
+        onUpdate={(id, name) => updateDept(id, name)}
+        onDelete={deleteDept}
+        onReorder={(ids) => reorderItems('departments', ids)}
+        placeholder="새 부서명 입력"
+        color="#4f6ef7"
+      />
+
+      {/* 부서별 상세업무 배정 */}
+      {departments.length > 0 && detailTasks.length > 0 && (
+        <Card>
+          <div className="text-[12px] font-extrabold text-[var(--text-secondary)] mb-1">📋 부서별 상세업무 배정</div>
+          <div className="text-[10px] text-[var(--text-muted)] mb-3">부서를 클릭하여 해당 부서에 배정할 상세업무를 선택하세요.</div>
+
+          <div className="space-y-2">
+            {departments.map(dept => {
+              const isExpanded = expandedDeptId === dept.id
+              const assigned = deptDetailTasks[dept.id] || []
+              const assignedNames = detailTasks.filter(t => assigned.includes(t.id)).map(t => t.name)
+
+              return (
+                <div key={dept.id} className="border border-[var(--border-default)] rounded-xl overflow-hidden">
+                  {/* 부서 헤더 */}
+                  <button
+                    onClick={() => setExpandedDeptId(isExpanded ? null : dept.id)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--bg-muted)] transition-colors cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-primary-500 flex items-center justify-center text-white text-[10px] font-extrabold shrink-0">
+                      {dept.name.charAt(0)}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className="text-[12px] font-bold text-[var(--text-primary)]">{dept.name}</div>
+                      {assigned.length > 0 ? (
+                        <div className="text-[10px] text-[var(--text-muted)] truncate max-w-[300px]">
+                          {assignedNames.join(', ')}
+                        </div>
+                      ) : (
+                        <div className="text-[10px] text-[var(--text-muted)]">배정된 업무 없음</div>
+                      )}
+                    </div>
+                    <span
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ background: assigned.length > 0 ? '#4f6ef718' : '#6b728018', color: assigned.length > 0 ? '#4f6ef7' : '#6b7280' }}
+                    >
+                      {assigned.length}건
+                    </span>
+                    <ChevronRight
+                      size={14}
+                      className={cn(
+                        'text-[var(--text-muted)] transition-transform duration-200',
+                        isExpanded && 'rotate-90'
+                      )}
+                    />
+                  </button>
+
+                  {/* 상세업무 체크리스트 */}
+                  {isExpanded && (
+                    <div className="border-t border-[var(--border-default)] bg-[var(--bg-muted)]/50">
+                      <div className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] flex justify-between">
+                        <span>상세업무 선택</span>
+                        <span className="text-primary-500">{assigned.length}/{detailTasks.length}개 선택</span>
+                      </div>
+                      <div className="divide-y divide-[var(--border-default)]">
+                        {detailTasks.map(task => {
+                          const isChecked = assigned.includes(task.id)
+                          return (
+                            <label
+                              key={task.id}
+                              className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--bg-surface)] transition-colors cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => toggleDeptDetailTask(dept.id, task.id)}
+                                className="w-4 h-4 rounded accent-[var(--color-primary-500)] cursor-pointer"
+                              />
+                              <span className={cn(
+                                'text-[12px]',
+                                isChecked ? 'text-[var(--text-primary)] font-bold' : 'text-[var(--text-secondary)] font-medium'
+                              )}>
+                                {task.name}
+                              </span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+function RankPanel() {
+  const { ranks, addRank, updateRank, deleteRank, reorderItems } = useSettingsStore()
+  return (
+    <CrudListPanel
+      title="직급"
+      items={ranks.map(r => ({ id: r.id, name: r.name }))}
+      onAdd={(name) => addRank(name)}
+      onUpdate={(id, name) => updateRank(id, name)}
+      onDelete={deleteRank}
+      onReorder={(ids) => reorderItems('ranks', ids)}
+      placeholder="새 직급명 입력"
+      color="#f59e0b"
+    />
+  )
+}
+
+function PositionPanel() {
+  const { positions, addPos, updatePos, deletePos, reorderItems } = useSettingsStore()
+  return (
+    <CrudListPanel
+      title="직책"
+      items={positions.map(p => ({ id: p.id, name: p.name }))}
+      onAdd={(name) => addPos(name)}
+      onUpdate={(id, name) => updatePos(id, name)}
+      onDelete={deletePos}
+      onReorder={(ids) => reorderItems('positions', ids)}
+      placeholder="새 직책명 입력"
+      color="#22c55e"
+    />
+  )
+}
+
+/* 예상결과물 전용 아이콘 */
+const RESULT_ICON_KEYS = [
+  'file-spreadsheet', 'message-square-text', 'users-round',
+  'presentation', 'file-type', 'file-image',
+  'file-video', 'film', 'file-text',
+  'camera', 'file-audio',
+  'link-2', 'cog',
+]
+
+function ResultPanel() {
+  const { taskResults, addResult, updateResult, deleteResult, reorderItems } = useSettingsStore()
+  return (
+    <CrudListPanel
+      title="예상결과물"
+      items={taskResults.map(r => ({ id: r.id, name: r.name, icon: r.icon }))}
+      onAdd={(name, icon) => addResult(name, icon)}
+      onUpdate={(id, name, icon) => updateResult(id, name, icon)}
+      onDelete={deleteResult}
+      onReorder={(ids) => reorderItems('taskResults', ids)}
+      placeholder="새 예상결과물 입력"
+      color="#9747ff"
+      showIcon
+      iconKeys={RESULT_ICON_KEYS}
+    />
+  )
+}
+
+/* 진행절차 전용 아이콘: 시작/조사/작업중/완료/협의/취소/일부완료/보고서/업무지시 */
+const REPORT_TYPE_ICON_KEYS = [
+  'play-circle', 'search', 'wrench', 'check-circle-2',
+  'message-circle', 'x-circle', 'check-check', 'file-text', 'list-checks',
+  'send',
+]
+
+function ReportTypePanel() {
+  const { reportTypes, addReportType, updateReportType, deleteReportType, reorderItems } = useSettingsStore()
+  return (
+    <CrudListPanel
+      title="진행절차"
+      items={reportTypes.map(r => ({ id: r.id, name: r.label, icon: r.icon }))}
+      onAdd={(name, icon) => addReportType(name, icon || 'circle', '#4f6ef7')}
+      onUpdate={(id, name, icon) => updateReportType(id, name, icon || 'circle', '#4f6ef7')}
+      onDelete={deleteReportType}
+      onReorder={(ids) => reorderItems('reportTypes', ids)}
+      placeholder="새 진행절차 입력"
+      color="#06b6d4"
+      showIcon
+      iconKeys={REPORT_TYPE_ICON_KEYS}
+    />
+  )
+}
+
+function DetailTaskPanel() {
+  const { detailTasks, addDetailTask, updateDetailTask, deleteDetailTask, reorderItems,
+    departments, deptDetailTasks, toggleDeptDetailTask } = useSettingsStore()
+  const [selectedDeptId, setSelectedDeptId] = useState<number | null>(null)
+
+  return (
+    <div className="space-y-4">
+      {/* 상세업무 CRUD */}
+      <CrudListPanel
+        title="상세업무"
+        items={detailTasks.map(d => ({ id: d.id, name: d.name }))}
+        onAdd={(name) => addDetailTask(name)}
+        onUpdate={(id, name) => updateDetailTask(id, name)}
+        onDelete={deleteDetailTask}
+        onReorder={(ids) => reorderItems('detailTasks', ids)}
+        placeholder="새 상세업무 입력"
+        color="#4f6ef7"
+      />
+
+      {/* 부서별 상세업무 배정 */}
+      {departments.length > 0 && detailTasks.length > 0 && (
+        <Card>
+          <div className="text-[12px] font-extrabold text-[var(--text-secondary)] mb-3">📋 부서별 상세업무 배정</div>
+          <div className="text-[10px] text-[var(--text-muted)] mb-3">부서를 선택한 후 체크박스로 해당 부서에 배정할 상세업무를 선택하세요.</div>
+
+          {/* 부서 탭 */}
+          <div className="flex items-center gap-1.5 flex-wrap mb-4">
+            {departments.map(dept => {
+              const isActive = selectedDeptId === dept.id
+              const assignedCount = (deptDetailTasks[dept.id] || []).length
+              return (
+                <button
+                  key={dept.id}
+                  onClick={() => setSelectedDeptId(isActive ? null : dept.id)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition-all border',
+                    isActive
+                      ? 'bg-primary-500 text-white border-primary-500'
+                      : 'text-[var(--text-secondary)] border-[var(--border-default)] bg-[var(--bg-surface)] hover:bg-[var(--bg-muted)]'
+                  )}
+                >
+                  {dept.name}
+                  {assignedCount > 0 && (
+                    <span className={cn(
+                      'text-[9px] font-extrabold min-w-[16px] h-[16px] rounded-full flex items-center justify-center',
+                      isActive ? 'bg-white/25 text-white' : 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-300'
+                    )}>
+                      {assignedCount}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* 상세업무 체크리스트 */}
+          {selectedDeptId && (
+            <div className="border border-[var(--border-default)] rounded-xl overflow-hidden">
+              <div className="bg-[var(--bg-muted)] px-4 py-2 text-[11px] font-bold text-[var(--text-muted)] flex items-center justify-between">
+                <span>{departments.find(d => d.id === selectedDeptId)?.name} 상세업무</span>
+                <span className="text-primary-500">
+                  {(deptDetailTasks[selectedDeptId] || []).length}/{detailTasks.length}개 선택
+                </span>
+              </div>
+              <div className="divide-y divide-[var(--border-default)]">
+                {detailTasks.map(task => {
+                  const isChecked = (deptDetailTasks[selectedDeptId] || []).includes(task.id)
+                  return (
+                    <label
+                      key={task.id}
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--bg-muted)] transition-colors cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleDeptDetailTask(selectedDeptId, task.id)}
+                        className="w-4 h-4 rounded accent-[var(--color-primary-500)] cursor-pointer"
+                      />
+                      <span className={cn(
+                        'text-[12px] font-medium',
+                        isChecked ? 'text-[var(--text-primary)] font-bold' : 'text-[var(--text-secondary)]'
+                      )}>
+                        {task.name}
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {!selectedDeptId && (
+            <div className="py-6 text-center text-[11px] text-[var(--text-muted)] border border-dashed border-[var(--border-default)] rounded-xl">
+              위에서 부서를 선택하면 상세업무를 배정할 수 있습니다.
+            </div>
+          )}
+        </Card>
+      )}
+    </div>
+  )
+}
+
+/* 중요도 전용 아이콘: 최상/상/중/하/참고 */
+const IMPORTANCE_ICON_KEYS = [
+  'chevrons-up', 'chevron-up', 'equal', 'chevron-down', 'book-open',
+]
+
+function ImportancePanel() {
+  const { instrImportances, addImportance, updateImportance, deleteImportance, reorderItems } = useSettingsStore()
+  return (
+    <CrudListPanel
+      title="중요도"
+      items={instrImportances.map(i => ({ id: i.id, name: i.name, icon: i.icon }))}
+      onAdd={(name, icon) => addImportance(name, icon)}
+      onUpdate={(id, name, icon) => updateImportance(id, name, icon)}
+      onDelete={deleteImportance}
+      onReorder={(ids) => reorderItems('instrImportances', ids)}
+      placeholder="새 중요도 입력"
+      color="#ef4444"
+      showIcon
+      iconKeys={IMPORTANCE_ICON_KEYS}
+    />
+  )
+}
+
+/* 진행상태 전용 아이콘: 준비/시작/정상진행/지연진행/대기중/보류/일부완료/포기/완료/검토중 */
+const STATUS_ICON_KEYS = [
+  'circle-dot', 'play-circle', 'activity', 'alert-triangle', 'pause-circle',
+  'ban', 'check-check', 'x-circle', 'check-circle-2', 'eye',
+]
+
+function TaskStatusPanel() {
+  const { taskStatuses, addTaskStatus, updateTaskStatus, deleteTaskStatus, reorderItems } = useSettingsStore()
+  return (
+    <CrudListPanel
+      title="진행상태"
+      items={taskStatuses.map(t => ({ id: t.id, name: t.name, icon: t.icon }))}
+      onAdd={(name, icon) => addTaskStatus(name, icon || 'activity', '#06b6d4')}
+      onUpdate={(id, name, icon) => updateTaskStatus(id, name, icon || 'activity', '#06b6d4')}
+      onDelete={deleteTaskStatus}
+      onReorder={(ids) => reorderItems('taskStatuses', ids)}
+      placeholder="새 진행상태 입력 (예: 진행중)"
+      color="#06b6d4"
+      showIcon
+      iconKeys={STATUS_ICON_KEYS}
+    />
+  )
+}
+
+/* ══════════════════════════════════════════════
+   재사용 가능한 CRUD 리스트
+   ══════════════════════════════════════════════ */
+interface CrudItem { id: number; name: string; icon?: string; color?: string }
+
+interface CrudListPanelProps {
+  title: string
+  items: CrudItem[]
+  onAdd: (name: string, icon?: string) => void
+  onUpdate: (id: number, name: string, icon?: string) => void
+  onDelete: (id: number) => void
+  onReorder?: (ids: number[]) => void
+  placeholder: string
+  color: string
+  showIcon?: boolean
+  iconKeys?: string[]
+}
+
+function CrudListPanel({ title, items, onAdd, onUpdate, onDelete, onReorder, placeholder, color, showIcon, iconKeys }: CrudListPanelProps) {
+  const [newName, setNewName] = useState('')
+  const [newIcon, setNewIcon] = useState('')
+  const [editId, setEditId] = useState<number | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editIcon, setEditIcon] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<CrudItem | null>(null)
+  const addToast = useToastStore((s) => s.add)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // 드래그 상태
+  const [dragIdx, setDragIdx] = useState<number | null>(null)
+  const [overIdx, setOverIdx] = useState<number | null>(null)
+
+  const handleAdd = () => {
+    if (!newName.trim()) return
+    onAdd(newName.trim(), showIcon ? newIcon || undefined : undefined)
+    setNewName('')
+    setNewIcon('')
+    addToast('success', `"${newName.trim()}" 추가 완료`)
+    inputRef.current?.focus()
+  }
+
+  const handleUpdate = () => {
+    if (editId === null || !editName.trim()) return
+    onUpdate(editId, editName.trim(), showIcon ? editIcon || undefined : undefined)
+    setEditId(null)
+    setEditName('')
+    setEditIcon('')
+    addToast('info', '항목이 수정되었습니다')
+  }
+
+  const handleDelete = () => {
+    if (!deleteTarget) return
+    onDelete(deleteTarget.id)
+    setDeleteTarget(null)
+    addToast('warning', `"${deleteTarget.name}" 삭제 완료`)
+  }
+
+  const handleDragStart = (idx: number) => {
+    setDragIdx(idx)
+  }
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault()
+    setOverIdx(idx)
+  }
+  const handleDrop = (idx: number) => {
+    if (dragIdx === null || dragIdx === idx || !onReorder) return
+    const reordered = [...items]
+    const [moved] = reordered.splice(dragIdx, 1)
+    reordered.splice(idx, 0, moved)
+    onReorder(reordered.map(i => i.id))
+    setDragIdx(null)
+    setOverIdx(null)
+  }
+  const handleDragEnd = () => {
+    setDragIdx(null)
+    setOverIdx(null)
+  }
+
+  return (
+    <>
+      <Card>
+        {/* 추가 폼 */}
+        <div className="space-y-3 mb-4">
+          <div className="flex items-center gap-2 border border-[var(--border-default)] rounded-xl p-1.5 bg-[var(--bg-surface)]">
+            {showIcon && (
+              <div
+                className="w-[36px] h-[36px] shrink-0 rounded-lg border border-[var(--border-default)] flex items-center justify-center cursor-default"
+                style={{ background: newIcon ? `${ICON_COLORS[ICON_KEYS.indexOf(newIcon) % ICON_COLORS.length]}20` : 'var(--bg-muted)', color: newIcon ? ICON_COLORS[ICON_KEYS.indexOf(newIcon) % ICON_COLORS.length] : 'var(--text-muted)' }}
+                title="아래에서 아이콘을 선택하세요"
+              >
+                {renderIcon(newIcon, 18)}
+              </div>
+            )}
+            <div className="flex-1">
+              <input
+                ref={inputRef}
+                placeholder={placeholder}
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                className="w-full bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
+              />
+            </div>
+            <Button onClick={handleAdd} icon={<Plus size={15} />} size="md" className="shrink-0">
+              <span className="hidden sm:inline">추가</span>
+            </Button>
+          </div>
+
+          {/* 아이콘 빠른 선택 */}
+          {showIcon && (
+            <div>
+              <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 block">빠른 아이콘 선택</span>
+              <div className="flex flex-wrap gap-1.5">
+                {(iconKeys || ICON_KEYS).map((key, i) => {
+                  const c = ICON_COLORS[i % ICON_COLORS.length]
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setNewIcon(key)}
+                      className={cn(
+                        'w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all',
+                        newIcon === key
+                          ? 'ring-2 ring-primary-500 ring-offset-1 shadow-md scale-110'
+                          : 'hover:scale-105 hover:shadow-sm',
+                      )}
+                      style={{ background: `${c}20`, color: c }}
+                      title={key}
+                    >
+                      {renderIcon(key, 16)}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 헤더 */}
+        <div className="flex items-center justify-between pb-2 mb-2 border-b border-[var(--border-default)]">
+          <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+            {title} 목록
+          </span>
+          <span className="text-[11px] font-bold" style={{ color }}>
+            {items.length}건
+          </span>
+        </div>
+
+        {/* 리스트 */}
+        {items.length === 0 ? (
+          <div className="py-10 text-center text-sm text-[var(--text-muted)]">
+            등록된 {title}이 없습니다
+          </div>
+        ) : (
+          <div className="space-y-0.5">
+            {items.map((item, idx) => (
+              <div
+                key={item.id}
+                draggable={!!onReorder}
+                onDragStart={() => handleDragStart(idx)}
+                onDragOver={(e) => handleDragOver(e, idx)}
+                onDrop={() => handleDrop(idx)}
+                onDragEnd={handleDragEnd}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-[var(--bg-muted)] transition-all group',
+                  dragIdx === idx && 'opacity-40 scale-95',
+                  overIdx === idx && dragIdx !== idx && 'ring-2 ring-primary-300 bg-primary-50/50 dark:bg-primary-900/10',
+                )}
+              >
+                {/* 드래그 핸들 */}
+                {onReorder && (
+                  <span className="cursor-grab active:cursor-grabbing text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors shrink-0">
+                    <GripVertical size={14} />
+                  </span>
+                )}
+
+                {/* 순서 번호 */}
+                <span className="text-[11px] font-bold text-[var(--text-muted)] w-5 text-center shrink-0">
+                  {idx + 1}
+                </span>
+
+                {/* 아이콘 */}
+                {showIcon && (
+                  <span
+                    className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: `${ICON_COLORS[ICON_KEYS.indexOf(item.icon || '') % ICON_COLORS.length] || '#6b7280'}20`, color: ICON_COLORS[ICON_KEYS.indexOf(item.icon || '') % ICON_COLORS.length] || '#6b7280' }}
+                  >
+                    {renderIcon(item.icon, 14)}
+                  </span>
+                )}
+
+                {/* 이름 */}
+                <span className="text-sm font-semibold text-[var(--text-primary)] flex-1 truncate">
+                  {item.name}
+                </span>
+
+                {/* 액션 (데스크탑: hover) */}
+                <div className="hidden md:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => { setEditId(item.id); setEditName(item.name); setEditIcon(item.icon || '') }}
+                    className="p-1.5 rounded-md hover:bg-primary-50 dark:hover:bg-primary-900/20 text-primary-500 cursor-pointer transition-colors"
+                    title="수정"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(item)}
+                    className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer transition-colors"
+                    title="삭제"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+
+                {/* 모바일: 항상 보이는 액션 */}
+                <div className="flex items-center gap-1 md:hidden">
+                  <button
+                    onClick={() => { setEditId(item.id); setEditName(item.name); setEditIcon(item.icon || '') }}
+                    className="p-1.5 rounded-md text-[var(--text-muted)] cursor-pointer"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(item)}
+                    className="p-1.5 rounded-md text-danger/60 cursor-pointer"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* 수정 모달 */}
+      <Modal
+        open={editId !== null}
+        onClose={() => setEditId(null)}
+        title={`${title} 수정`}
+      >
+        <ModalBody className="space-y-3">
+          <Input
+            label={`${title}명`}
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleUpdate()}
+            autoFocus
+          />
+          {showIcon && (
+            <div>
+              <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 block">아이콘 선택</span>
+              <div className="flex flex-wrap gap-1.5">
+                {(iconKeys || ICON_KEYS).map((key, i) => {
+                  const c = ICON_COLORS[i % ICON_COLORS.length]
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setEditIcon(key)}
+                      className={cn(
+                        'w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all',
+                        editIcon === key
+                          ? 'ring-2 ring-primary-500 ring-offset-1 shadow-md scale-110'
+                          : 'hover:scale-105 hover:shadow-sm',
+                      )}
+                      style={{ background: `${c}20`, color: c }}
+                      title={key}
+                    >
+                      {renderIcon(key, 16)}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="ghost" onClick={() => setEditId(null)}>취소</Button>
+          <Button onClick={handleUpdate}>저장</Button>
+        </ModalFooter>
+      </Modal>
+
+      {/* 삭제 확인 모달 */}
+      <Modal
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        title="삭제 확인"
+      >
+        <ModalBody>
+          <p className="text-sm text-[var(--text-secondary)]">
+            <strong>"{deleteTarget?.name}"</strong>을(를) 삭제하시겠습니까?
+          </p>
+          <p className="text-xs text-danger mt-2">이 작업은 되돌릴 수 없습니다.</p>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="ghost" onClick={() => setDeleteTarget(null)}>취소</Button>
+          <Button variant="danger" onClick={handleDelete}>삭제</Button>
+        </ModalFooter>
+      </Modal>
+    </>
+  )
+}
+
+/* ══════════════════════════════════════════════
+   계정과목 관리 패널
+   ══════════════════════════════════════════════ */
+interface AcctAccount { code: string; name: string; type: string; group: string }
+
+const DEFAULT_ACCOUNTS: AcctAccount[] = [
+  { code: '1010', name: '현금', type: 'asset', group: '유동자산' },
+  { code: '1020', name: '보통예금', type: 'asset', group: '유동자산' },
+  { code: '1030', name: '미수금', type: 'asset', group: '유동자산' },
+  { code: '1040', name: '선급금', type: 'asset', group: '유동자산' },
+  { code: '1050', name: '재고자산', type: 'asset', group: '유동자산' },
+  { code: '1510', name: '건물', type: 'asset', group: '비유동자산' },
+  { code: '1520', name: '차량운반구', type: 'asset', group: '비유동자산' },
+  { code: '1530', name: '비품', type: 'asset', group: '비유동자산' },
+  { code: '1540', name: '임차보증금', type: 'asset', group: '비유동자산' },
+  { code: '2010', name: '미지급금', type: 'liability', group: '유동부채' },
+  { code: '2020', name: '선수금', type: 'liability', group: '유동부채' },
+  { code: '2030', name: '예수금', type: 'liability', group: '유동부채' },
+  { code: '2510', name: '장기차입금', type: 'liability', group: '비유동부채' },
+  { code: '3010', name: '자본금', type: 'equity', group: '자본' },
+  { code: '3020', name: '이익잉여금', type: 'equity', group: '자본' },
+  { code: '4010', name: '매출', type: 'revenue', group: '매출' },
+  { code: '4020', name: '이자수익', type: 'revenue', group: '영업외수익' },
+  { code: '4030', name: '기타수익', type: 'revenue', group: '영업외수익' },
+  { code: '5010', name: '급여', type: 'expense', group: '인건비' },
+  { code: '5020', name: '복리후생비', type: 'expense', group: '인건비' },
+  { code: '5030', name: '임차료', type: 'expense', group: '임차료' },
+  { code: '5040', name: '통신비', type: 'expense', group: '경비' },
+  { code: '5050', name: '수도광열비', type: 'expense', group: '경비' },
+  { code: '5060', name: '소모품비', type: 'expense', group: '경비' },
+  { code: '5070', name: '운반비', type: 'expense', group: '경비' },
+  { code: '5080', name: '접대비', type: 'expense', group: '경비' },
+  { code: '5090', name: '광고선전비', type: 'expense', group: '경비' },
+  { code: '5100', name: '여비교통비', type: 'expense', group: '경비' },
+  { code: '5110', name: '세금과공과', type: 'expense', group: '경비' },
+  { code: '5120', name: '보험료', type: 'expense', group: '경비' },
+  { code: '5130', name: '감가상각비', type: 'expense', group: '경비' },
+  { code: '5140', name: '수선비', type: 'expense', group: '경비' },
+  { code: '5150', name: '도서인쇄비', type: 'expense', group: '경비' },
+  { code: '5160', name: '교육훈련비', type: 'expense', group: '경비' },
+  { code: '5170', name: '차량유지비', type: 'expense', group: '경비' },
+  { code: '5180', name: '외주용역비', type: 'expense', group: '경비' },
+  { code: '5190', name: '잡비', type: 'expense', group: '경비' },
+]
+
+function initAcctAccounts() {
+  const existing: AcctAccount[] = getItem('acct_accounts', [])
+  if (existing.length > 0) return
+  localStorage.setItem('acct_accounts', JSON.stringify(DEFAULT_ACCOUNTS))
+}
+
+const ACCT_TYPES = [
+  { value: 'asset', label: '자산', color: '#4f6ef7' },
+  { value: 'liability', label: '부채', color: '#ef4444' },
+  { value: 'equity', label: '자본', color: '#8b5cf6' },
+  { value: 'revenue', label: '수익', color: '#22c55e' },
+  { value: 'expense', label: '비용', color: '#f59e0b' },
+]
+
+function AccountPanel() {
+  const [refresh, setRefresh] = useState(0)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editCode, setEditCode] = useState<string | null>(null)
+  const [form, setForm] = useState({ code: '', name: '', type: 'expense', group: '' })
+  const addToast = useToastStore((s) => s.add)
+
+  // 초기화 (기본 계정과목 시딩)
+  initAcctAccounts()
+
+  const accounts: AcctAccount[] = getItem('acct_accounts', [])
+  void refresh // trigger re-read
+
+  const grouped = ACCT_TYPES.map(t => ({
+    ...t,
+    items: accounts.filter(a => a.type === t.value),
+  }))
+
+  const openModal = (code?: string) => {
+    if (code) {
+      const a = accounts.find(x => x.code === code)
+      if (a) {
+        setEditCode(code)
+        setForm({ code: a.code, name: a.name, type: a.type, group: a.group })
+      }
+    } else {
+      setEditCode(null)
+      setForm({ code: '', name: '', type: 'expense', group: '' })
+    }
+    setModalOpen(true)
+  }
+
+  const save = () => {
+    if (!form.code.trim() || !form.name.trim()) {
+      addToast('error', '코드와 이름을 모두 입력하세요')
+      return
+    }
+    let all: AcctAccount[] = getItem('acct_accounts', [])
+    if (editCode) {
+      all = all.map(a => a.code === editCode ? { ...a, ...form } : a)
+      addToast('info', '계정과목이 수정되었습니다')
+    } else {
+      if (all.some(a => a.code === form.code.trim())) {
+        addToast('error', '이미 존재하는 코드입니다')
+        return
+      }
+      all.push({ code: form.code.trim(), name: form.name.trim(), type: form.type, group: form.group.trim() })
+      addToast('success', `계정과목 "${form.name}" 추가 완료`)
+    }
+    localStorage.setItem('acct_accounts', JSON.stringify(all))
+    setModalOpen(false)
+    setRefresh(r => r + 1)
+  }
+
+  const deleteAcct = (code: string) => {
+    if (!confirm('이 계정과목을 삭제하시겠습니까?')) return
+    const all: AcctAccount[] = getItem('acct_accounts', [])
+    localStorage.setItem('acct_accounts', JSON.stringify(all.filter(a => a.code !== code)))
+    addToast('warning', '계정과목이 삭제되었습니다')
+    setRefresh(r => r + 1)
+  }
+
+  return (
+    <>
+      <Card>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="text-sm font-extrabold text-[var(--text-primary)]">계정과목 관리</div>
+            <div className="text-[11px] text-[var(--text-muted)]">자산/부채/자본/수익/비용 계정과목을 관리합니다</div>
+          </div>
+          <Button onClick={() => openModal()} icon={<Plus size={15} />} size="md">
+            <span className="hidden sm:inline">추가</span>
+          </Button>
+        </div>
+
+        {grouped.map(g => (
+          <div key={g.value} className="mb-4 last:mb-0">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: g.color }}>{g.label}</span>
+              <span className="text-[10px] text-[var(--text-muted)]">{g.items.length}건</span>
+            </div>
+            {g.items.length === 0 ? (
+              <div className="py-3 text-center text-[11px] text-[var(--text-muted)]">등록된 {g.label} 계정이 없습니다</div>
+            ) : (
+              <div className="space-y-0.5">
+                {g.items.map(a => (
+                  <div key={a.code} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--bg-muted)] transition-all group">
+                    <span className="text-xs font-mono font-bold w-12 shrink-0" style={{ color: g.color }}>{a.code}</span>
+                    <span className="text-sm font-semibold text-[var(--text-primary)] flex-1 truncate">{a.name}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] bg-[var(--bg-muted)] px-2 py-0.5 rounded-full">{a.group}</span>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openModal(a.code)} className="p-1.5 rounded-md hover:bg-primary-50 dark:hover:bg-primary-900/20 text-primary-500 cursor-pointer"><Pencil size={13} /></button>
+                      <button onClick={() => deleteAcct(a.code)} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer"><Trash2 size={13} /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </Card>
+
+      {/* 추가/수정 모달 */}
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editCode ? '계정과목 수정' : '계정과목 추가'}>
+        <ModalBody className="space-y-3">
+          <Input label="계정코드 *" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} placeholder="예) 5200" disabled={!!editCode} autoFocus />
+          <Input label="계정명 *" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="예) 퇴직급여" />
+          <div>
+            <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">유형 *</label>
+            <select
+              value={form.type}
+              onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+              className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] outline-none"
+            >
+              {ACCT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+          </div>
+          <Input label="그룹" value={form.group} onChange={e => setForm(f => ({ ...f, group: e.target.value }))} placeholder="예) 인건비, 경비" />
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="ghost" onClick={() => setModalOpen(false)}>취소</Button>
+          <Button onClick={save}>저장</Button>
+        </ModalFooter>
+      </Modal>
+    </>
+  )
+}
+
+/* ══════════════════════════════════════════════
+   예산목 관리 패널
+   ══════════════════════════════════════════════ */
+function BudgetItemPanel() {
+  const [refresh, setRefresh] = useState(0)
+  const [newName, setNewName] = useState('')
+  const addToast = useToastStore((s) => s.add)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // 예산 데이터에서 사용된 예산목 + 히스토리
+  const budgets: { itemName: string }[] = getItem('acct_budgets', [])
+  const hist: string[] = getItem('acct_itemName_history', [])
+  void refresh
+
+  const allNames = Array.from(new Set([
+    ...budgets.map(b => b.itemName).filter(Boolean),
+    ...hist.filter(Boolean),
+  ])).sort()
+
+  const handleAdd = () => {
+    if (!newName.trim()) return
+    if (allNames.includes(newName.trim())) {
+      addToast('error', '이미 존재하는 예산목입니다')
+      return
+    }
+    const updated = [...hist, newName.trim()]
+    localStorage.setItem('acct_itemName_history', JSON.stringify(updated))
+    addToast('success', `예산목 "${newName.trim()}" 추가 완료`)
+    setNewName('')
+    setRefresh(r => r + 1)
+    inputRef.current?.focus()
+  }
+
+  const handleDelete = (name: string) => {
+    if (!confirm(`"${name}" 예산목을 삭제하시겠습니까?`)) return
+    // hist에서만 삭제 (실제 예산 데이터의 예산목은 유지)
+    const updated = hist.filter(h => h !== name)
+    localStorage.setItem('acct_itemName_history', JSON.stringify(updated))
+    addToast('warning', `예산목 "${name}" 삭제 완료`)
+    setRefresh(r => r + 1)
+  }
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <div className="text-sm font-extrabold text-[var(--text-primary)]">예산목 관리</div>
+          <div className="text-[11px] text-[var(--text-muted)]">예산 등록 시 자동완성에 표시되는 예산목 목록입니다</div>
+        </div>
+      </div>
+
+      {/* 추가 폼 */}
+      <div className="flex gap-2 mb-4">
+        <div className="flex-1">
+          <Input
+            ref={inputRef}
+            placeholder="새 예산목 입력 (예: 인건비, 소모품비)"
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          />
+        </div>
+        <Button onClick={handleAdd} icon={<Plus size={15} />} size="md" className="shrink-0">
+          <span className="hidden sm:inline">추가</span>
+        </Button>
+      </div>
+
+      {/* 헤더 */}
+      <div className="flex items-center justify-between pb-2 mb-2 border-b border-[var(--border-default)]">
+        <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">예산목 목록</span>
+        <span className="text-[11px] font-bold text-[#f97316]">{allNames.length}건</span>
+      </div>
+
+      {allNames.length === 0 ? (
+        <div className="py-10 text-center text-sm text-[var(--text-muted)]">등록된 예산목이 없습니다</div>
+      ) : (
+        <div className="space-y-0.5">
+          {allNames.map((name, idx) => {
+            const inBudget = budgets.some(b => b.itemName === name)
+            return (
+              <div key={name} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--bg-muted)] transition-all group">
+                <span className="text-[11px] font-bold text-[var(--text-muted)] w-5 text-center shrink-0">{idx + 1}</span>
+                <span className="text-sm font-semibold text-[var(--text-primary)] flex-1 truncate">{name}</span>
+                {inBudget && (
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/20 text-green-600">사용중</span>
+                )}
+                <button
+                  onClick={() => handleDelete(name)}
+                  className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </Card>
+  )
+}
+
+/* ══════════════════════════════════════════════
+   지출수단 관리 패널
+   ══════════════════════════════════════════════ */
+const DEFAULT_PAY_METHODS = ['계좌이체', '현금', '카드', '법인카드', '기타']
+
+function PaymentMethodPanel() {
+  const [refresh, setRefresh] = useState(0)
+  const [newName, setNewName] = useState('')
+  const addToast = useToastStore((s) => s.add)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // 초기화: 기본 지출수단 시딩
+  const stored: string[] = getItem('acct_payment_methods', [])
+  if (stored.length === 0) {
+    localStorage.setItem('acct_payment_methods', JSON.stringify(DEFAULT_PAY_METHODS))
+  }
+  void refresh
+
+  const methods: string[] = getItem('acct_payment_methods', DEFAULT_PAY_METHODS)
+
+  const handleAdd = () => {
+    if (!newName.trim()) return
+    if (methods.includes(newName.trim())) {
+      addToast('error', '이미 존재하는 지출수단입니다')
+      return
+    }
+    const updated = [...methods, newName.trim()]
+    localStorage.setItem('acct_payment_methods', JSON.stringify(updated))
+    addToast('success', `지출수단 "${newName.trim()}" 추가 완료`)
+    setNewName('')
+    setRefresh(r => r + 1)
+    inputRef.current?.focus()
+  }
+
+  const handleDelete = (name: string) => {
+    if (!confirm(`"${name}" 지출수단을 삭제하시겠습니까?`)) return
+    const updated = methods.filter(m => m !== name)
+    localStorage.setItem('acct_payment_methods', JSON.stringify(updated))
+    addToast('warning', `지출수단 "${name}" 삭제 완료`)
+    setRefresh(r => r + 1)
+  }
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <div className="text-sm font-extrabold text-[var(--text-primary)]">지출수단 관리</div>
+          <div className="text-[11px] text-[var(--text-muted)]">지출/입금 등록 시 선택 가능한 지출수단 목록입니다</div>
+        </div>
+      </div>
+
+      {/* 추가 폼 */}
+      <div className="flex gap-2 mb-4">
+        <div className="flex-1">
+          <Input
+            ref={inputRef}
+            placeholder="새 지출수단 입력 (예: 간편결제, 상품권)"
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          />
+        </div>
+        <Button onClick={handleAdd} icon={<Plus size={15} />} size="md" className="shrink-0">
+          <span className="hidden sm:inline">추가</span>
+        </Button>
+      </div>
+
+      {/* 헤더 */}
+      <div className="flex items-center justify-between pb-2 mb-2 border-b border-[var(--border-default)]">
+        <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">지출수단 목록</span>
+        <span className="text-[11px] font-bold text-[#ec4899]">{methods.length}건</span>
+      </div>
+
+      {methods.length === 0 ? (
+        <div className="py-10 text-center text-sm text-[var(--text-muted)]">등록된 지출수단이 없습니다</div>
+      ) : (
+        <div className="space-y-0.5">
+          {methods.map((name, idx) => (
+            <div key={name} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--bg-muted)] transition-all group">
+              <span className="text-[11px] font-bold text-[var(--text-muted)] w-5 text-center shrink-0">{idx + 1}</span>
+              <span className="text-sm font-semibold text-[var(--text-primary)] flex-1 truncate">{name}</span>
+              {DEFAULT_PAY_METHODS.includes(name) && (
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/20 text-blue-600">기본</span>
+              )}
+              <button
+                onClick={() => handleDelete(name)}
+                className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  )
+}
+
+/* ══════════════════════════════════════════════
+   🎨 테마 설정 패널
+   ══════════════════════════════════════════════ */
+export function ThemePanel() {
+  const { theme, accent, radius, density, fontScale, fontColor, datePickerStyle, checkboxStyle, checkboxSize, tabStyle, buttonSize, toastPosition, tableStripe, tableDensity, badgeShape, sidebarWidth, progressColor, toggle, setAccent, setRadius, setDensity, setFontScale, setFontColor, setDatePickerStyle, setCheckboxStyle, setCheckboxSize, setTabStyle, setButtonSize, setToastPosition, setTableStripe, setTableDensity, setBadgeShape, setSidebarWidth, setProgressColor, customAccents, addCustomAccent, removeCustomAccent, typography, setTypo, resetTypo } = useThemeStore()
+  const addToast = useToastStore((s) => s.add)
+
+  const radiusKeys = Object.keys(RADIUS_LABELS) as ThemeRadius[]
+  const densityKeys = Object.keys(DENSITY_LABELS) as ThemeDensity[]
+
+  /* 커스텀 색상 추가 */
+  const [showAddColor, setShowAddColor] = useState(false)
+  const [newColorName, setNewColorName] = useState('')
+  const [newColorValue, setNewColorValue] = useState('#6366f1')
+
+  const handleAddColor = () => {
+    if (!newColorName.trim()) {
+      addToast('error', '색상 이름을 입력하세요')
+      return
+    }
+    addCustomAccent(newColorName.trim(), newColorValue)
+    addToast('success', `"${newColorName.trim()}" 색상이 추가되었습니다`)
+    setNewColorName('')
+    setNewColorValue('#6366f1')
+    setShowAddColor(false)
+  }
+
+  const handleDeleteColor = (key: string, label: string) => {
+    removeCustomAccent(key)
+    addToast('warning', `"${label}" 색상이 삭제되었습니다`)
+  }
+
+  return (
+    <div className="space-y-5 animate-fadeIn">
+      {/* 모드 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-3">모드</div>
+        <div className="flex gap-3">
+          {[
+            { key: 'light' as const, label: '라이트', Icon: Sun },
+            { key: 'dark' as const, label: '다크', Icon: Moon },
+          ].map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              onClick={() => { if (theme !== key) toggle() }}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 text-sm font-bold cursor-pointer transition-all',
+                theme === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] text-[var(--tab-active-color)]'
+                  : 'border-[var(--border-default)] text-[var(--text-muted)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <Icon size={18} />
+              {label}
+              {theme === key && <Check size={14} />}
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 메인 색상 */}
+      <Card>
+        <div className="flex items-center justify-between mb-1">
+          <div className="text-sm font-extrabold text-[var(--text-primary)]">메인 색상</div>
+          <Button
+            variant="add"
+            size="xs"
+            icon={<Plus size={13} />}
+            onClick={() => setShowAddColor(!showAddColor)}
+          >
+            추가
+          </Button>
+        </div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">UI 전체에 적용되는 브랜드 색상입니다</p>
+
+        {/* 커스텀 색상 추가 폼 */}
+        {showAddColor && (
+          <div className="mb-4 p-3 rounded-xl border border-dashed border-[var(--border-strong)] bg-[var(--bg-muted)] space-y-3">
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={newColorValue}
+                onChange={(e) => setNewColorValue(e.target.value)}
+                className="w-10 h-10 rounded-lg cursor-pointer border-0 p-0"
+              />
+              <div className="flex-1">
+                <Input
+                  placeholder="색상 이름 (예: 기업 브랜드)"
+                  value={newColorName}
+                  onChange={(e) => setNewColorName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddColor()}
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-[var(--text-muted)] font-mono">{newColorValue.toUpperCase()}</span>
+              <div className="flex gap-2">
+                <Button variant="cancel" size="xs" onClick={() => setShowAddColor(false)}>취소</Button>
+                <Button variant="save" size="xs" onClick={handleAddColor}>추가</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 기본 프리셋 */}
+        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">기본 프리셋 (삭제 불가)</span>
+        <div className="grid grid-cols-7 gap-2 mb-4">
+          {PRESET_ACCENTS.map((p) => (
+            <button
+              key={p.key}
+              onClick={() => setAccent(p.key)}
+              className={cn(
+                'flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 cursor-pointer transition-all',
+                accent === p.key
+                  ? 'border-[var(--btn-save-bg)] shadow-md scale-105'
+                  : 'border-transparent hover:border-[var(--border-default)]',
+              )}
+            >
+              <div
+                className="w-8 h-8 rounded-full shadow-sm flex items-center justify-center"
+                style={{ backgroundColor: p.color }}
+              >
+                {accent === p.key && <Check size={14} className="text-white" />}
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{p.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* 커스텀 색상 */}
+        {customAccents.length > 0 && (
+          <>
+            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">커스텀 색상</span>
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+              {customAccents.map((c) => (
+                <div key={c.key} className="relative group">
+                  <button
+                    onClick={() => setAccent(c.key)}
+                    className={cn(
+                      'w-full flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 cursor-pointer transition-all',
+                      accent === c.key
+                        ? 'border-[var(--btn-save-bg)] shadow-md scale-105'
+                        : 'border-transparent hover:border-[var(--border-default)]',
+                    )}
+                  >
+                    <div
+                      className="w-8 h-8 rounded-full shadow-sm flex items-center justify-center"
+                      style={{ backgroundColor: c.color }}
+                    >
+                      {accent === c.key && <Check size={14} className="text-white" />}
+                    </div>
+                    <span className="text-[10px] font-bold text-[var(--text-secondary)] truncate max-w-full px-1">{c.label}</span>
+                  </button>
+                  {/* 삭제 버튼 */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDeleteColor(c.key, c.label) }}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[var(--color-danger-500)] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-sm"
+                    title="삭제"
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </Card>
+
+      {/* 모서리 둥글기 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">모서리 둥글기</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">버튼, 카드 등의 모서리 스타일입니다</p>
+        <div className="grid grid-cols-4 gap-2">
+          {radiusKeys.map((key) => {
+            const previewR = key === 'sharp' ? '2px' : key === 'default' ? '8px' : key === 'rounded' ? '14px' : '20px'
+            return (
+              <button
+                key={key}
+                onClick={() => setRadius(key)}
+                className={cn(
+                  'flex flex-col items-center gap-2 py-3 rounded-xl border-2 cursor-pointer transition-all',
+                  radius === key
+                    ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)]'
+                    : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+                )}
+              >
+                <div
+                  className="w-10 h-8 border-2 border-[var(--text-muted)]"
+                  style={{ borderRadius: previewR }}
+                />
+                <span className="text-[10px] font-bold text-[var(--text-secondary)]">{RADIUS_LABELS[key]}</span>
+              </button>
+            )
+          })}
+        </div>
+      </Card>
+
+      {/* 밀도 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">밀도</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">UI 요소 간의 간격과 여백입니다</p>
+        <div className="grid grid-cols-3 gap-2">
+          {densityKeys.map((key) => (
+            <button
+              key={key}
+              onClick={() => setDensity(key)}
+              className={cn(
+                'flex flex-col items-center gap-2 py-3 rounded-xl border-2 cursor-pointer transition-all',
+                density === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)]'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <div className="flex flex-col items-center gap-0.5">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="bg-[var(--text-muted)] rounded-sm"
+                    style={{
+                      width: 28,
+                      height: key === 'compact' ? 3 : key === 'default' ? 4 : 5,
+                      marginBottom: key === 'compact' ? 1 : key === 'default' ? 3 : 5,
+                    }}
+                  />
+                ))}
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{DENSITY_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 날짜피커 스타일 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">날짜 피커 스타일</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">달력의 형태를 변경합니다</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {(Object.keys(DATEPICKER_LABELS) as ThemeDatePicker[]).map((key) => {
+            const dayShape = key === 'default' ? 'rounded-lg' : key === 'modern' ? 'rounded-md' : key === 'minimal' ? 'rounded-none' : 'rounded-full'
+            const panelShape = key === 'default' ? 'rounded-xl' : key === 'modern' ? 'rounded-lg border-t-2 border-t-primary-500' : key === 'minimal' ? 'rounded-sm' : 'rounded-2xl'
+            return (
+              <button
+                key={key}
+                onClick={() => setDatePickerStyle(key)}
+                className={cn(
+                  'flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                  datePickerStyle === key
+                    ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                    : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+                )}
+              >
+                {/* 미니 캘린더 프리뷰 */}
+                <div className={cn('w-full bg-[var(--bg-surface)] border border-[var(--border-default)] p-2', panelShape)}>
+                  <div className="text-[8px] font-bold text-center text-[var(--text-primary)] mb-1">2026년 04월</div>
+                  <div className="grid grid-cols-7 gap-px">
+                    {['일','월','화','수','목','금','토'].map((d,i) => (
+                      <div key={d} className={`text-[6px] text-center ${i===0?'text-red-300':i===6?'text-blue-300':'text-[var(--text-muted)]'}`}>{d}</div>
+                    ))}
+                    {[14,15,16,17,18,19,20].map((d) => (
+                      <div
+                        key={d}
+                        className={cn(
+                          'text-[7px] w-full aspect-square flex items-center justify-center font-medium',
+                          dayShape,
+                          d === 18 ? 'bg-primary-500 text-white font-bold' : 'text-[var(--text-primary)]',
+                        )}
+                      >{d}</div>
+                    ))}
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-[var(--text-secondary)]">{DATEPICKER_LABELS[key]}</span>
+              </button>
+            )
+          })}
+        </div>
+      </Card>
+
+      {/* 체크박스/라디오 스타일 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">체크박스 / 라디오 스타일</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">체크박스와 라디오 버튼의 형태를 변경합니다</p>
+        <div className="grid grid-cols-3 gap-3">
+          {(Object.keys(CHECKBOX_STYLE_LABELS) as ThemeCheckboxStyle[]).map((key) => {
+            const cbR = key === 'default' ? 'rounded-md' : key === 'sharp' ? 'rounded-none' : 'rounded-full'
+            return (
+              <button
+                key={key}
+                onClick={() => setCheckboxStyle(key)}
+                className={cn(
+                  'flex flex-col items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all',
+                  checkboxStyle === key
+                    ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                    : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  {/* 체크박스 미니 */}
+                  <div className={cn('w-5 h-5 border-2 border-primary-500 bg-primary-500 flex items-center justify-center', cbR)}>
+                    <Check size={12} className="text-white" strokeWidth={3} />
+                  </div>
+                  {/* 라디오 미니 */}
+                  <div className={cn('w-5 h-5 border-2 border-primary-500 bg-primary-500 flex items-center justify-center', key === 'circle' ? 'rounded-full' : 'rounded-full')}>
+                    <div className="w-2 h-2 rounded-full bg-white" />
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-[var(--text-secondary)]">{CHECKBOX_STYLE_LABELS[key]}</span>
+              </button>
+            )
+          })}
+        </div>
+      </Card>
+
+      {/* 체크박스/라디오 크기 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">체크박스 / 라디오 크기</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">체크박스와 라디오 버튼의 크기를 변경합니다</p>
+        <div className="grid grid-cols-4 gap-3">
+          {(Object.keys(CHECKBOX_SIZE_LABELS) as ThemeCheckboxSize[]).map((key) => {
+            const sv = CHECKBOX_SIZE_VALUES[key]
+            return (
+              <button
+                key={key}
+                onClick={() => setCheckboxSize(key)}
+                className={cn(
+                  'flex flex-col items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all',
+                  checkboxSize === key
+                    ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                    : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <div
+                    className="border-2 border-primary-500 bg-primary-500 flex items-center justify-center rounded-[var(--radius-xs)]"
+                    style={{ width: sv.box, height: sv.box }}
+                  >
+                    <Check size={sv.icon} className="text-white" strokeWidth={3} />
+                  </div>
+                  <div
+                    className="border-2 border-primary-500 bg-primary-500 flex items-center justify-center rounded-full"
+                    style={{ width: sv.box, height: sv.box }}
+                  >
+                    <div className="rounded-full bg-white" style={{ width: sv.dot, height: sv.dot }} />
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-[var(--text-secondary)]">{CHECKBOX_SIZE_LABELS[key]}</span>
+              </button>
+            )
+          })}
+        </div>
+      </Card>
+
+      {/* 탭 스타일 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">탭 스타일</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">탭 버튼의 기본 형태를 변경합니다</p>
+        <div className="grid grid-cols-3 gap-3">
+          {(Object.keys(TAB_STYLE_LABELS) as ThemeTabStyle[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setTabStyle(key)}
+              className={cn(
+                'flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                tabStyle === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              {/* 미니 탭 프리뷰 */}
+              <div className="w-full flex gap-1 justify-center">
+                {['전체','진행','완료'].map((t, i) => (
+                  <span
+                    key={t}
+                    className={cn(
+                      'text-[8px] font-bold px-2 py-1 transition-all',
+                      key === 'underline' && (i === 0 ? 'text-primary-500 border-b-2 border-primary-500' : 'text-[var(--text-muted)] border-b-2 border-transparent'),
+                      key === 'box' && (i === 0 ? 'text-primary-500 bg-[var(--tab-active-bg)] border border-primary-200 rounded-md' : 'text-[var(--text-muted)]'),
+                      key === 'pill' && (i === 0 ? 'text-white bg-primary-500 rounded-full' : 'text-[var(--text-muted)]'),
+                    )}
+                  >{t}</span>
+                ))}
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{TAB_STYLE_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 버튼 기본 크기 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">버튼 기본 크기</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">버튼의 기본 크기를 변경합니다</p>
+        <div className="grid grid-cols-4 gap-3">
+          {(Object.keys(BUTTON_SIZE_LABELS) as ThemeButtonSize[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setButtonSize(key)}
+              className={cn(
+                'flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                buttonSize === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <div className={cn(
+                'bg-[var(--btn-save-bg)] text-white font-bold rounded-[var(--radius-sm)] flex items-center justify-center',
+                key === 'xs' ? 'h-5 px-2 text-[9px]' : key === 'sm' ? 'h-6 px-2.5 text-[10px]' : key === 'md' ? 'h-7 px-3 text-[11px]' : 'h-9 px-4 text-xs',
+              )}>
+                버튼
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{BUTTON_SIZE_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 토스트 알림 위치 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">토스트 알림 위치</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">알림 메시지의 표시 위치를 변경합니다</p>
+        <div className="grid grid-cols-5 gap-2">
+          {(Object.keys(TOAST_POSITION_LABELS) as ThemeToastPosition[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => { setToastPosition(key); addToast('info', `알림위치: ${TOAST_POSITION_LABELS[key]}`) }}
+              className={cn(
+                'flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                toastPosition === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <div className="w-8 h-6 rounded border border-[var(--border-strong)] relative bg-[var(--bg-muted)]">
+                <div className={cn(
+                  'absolute w-2.5 h-1.5 rounded-sm bg-[var(--btn-save-bg)]',
+                  key === 'top-right' && 'top-0.5 right-0.5',
+                  key === 'top-left' && 'top-0.5 left-0.5',
+                  key === 'bottom-right' && 'bottom-0.5 right-0.5',
+                  key === 'bottom-left' && 'bottom-0.5 left-0.5',
+                  key === 'top-center' && 'top-0.5 left-1/2 -translate-x-1/2',
+                )} />
+              </div>
+              <span className="text-[9px] font-bold text-[var(--text-secondary)]">{TOAST_POSITION_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 테이블 줄무늬 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">테이블 줄무늬</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">테이블의 짝수 행에 배경색을 표시합니다</p>
+        <div className="grid grid-cols-2 gap-3">
+          {(Object.keys(TABLE_STRIPE_LABELS) as ThemeTableStripe[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setTableStripe(key)}
+              className={cn(
+                'flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                tableStripe === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <div className="w-full max-w-[80px] rounded overflow-hidden border border-[var(--border-default)]">
+                {[0,1,2,3].map(i => (
+                  <div key={i} className={cn('h-2', key === 'on' && i % 2 === 1 ? 'bg-[var(--bg-muted)]' : 'bg-[var(--bg-surface)]')} />
+                ))}
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{TABLE_STRIPE_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 테이블 행 밀도 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">테이블 행 밀도</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">테이블 행의 패딩 크기를 변경합니다</p>
+        <div className="grid grid-cols-3 gap-3">
+          {(Object.keys(TABLE_DENSITY_LABELS) as ThemeTableDensity[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setTableDensity(key)}
+              className={cn(
+                'flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                tableDensity === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <div className="w-full max-w-[60px] rounded overflow-hidden border border-[var(--border-default)]">
+                {[0,1,2].map(i => (
+                  <div key={i} className={cn('bg-[var(--bg-surface)] border-b border-[var(--border-default)] last:border-b-0', key === 'compact' ? 'h-1.5' : key === 'comfortable' ? 'h-4' : 'h-2.5')} />
+                ))}
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{TABLE_DENSITY_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 뱃지 모양 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">뱃지 모양</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">상태 뱃지의 형태를 변경합니다</p>
+        <div className="grid grid-cols-3 gap-3">
+          {(Object.keys(BADGE_SHAPE_LABELS) as ThemeBadgeShape[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setBadgeShape(key)}
+              className={cn(
+                'flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                badgeShape === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <span className={cn(
+                'px-3 py-0.5 text-[10px] font-bold border bg-primary-50 text-primary-600 border-primary-200 dark:bg-primary-900/30 dark:text-primary-400 dark:border-primary-800',
+                key === 'pill' ? 'rounded-full' : key === 'rounded' ? 'rounded-[var(--radius-sm)]' : 'rounded-none',
+              )}>진행중</span>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{BADGE_SHAPE_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 사이드바 너비 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">사이드바 너비</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">좌측 사이드바의 펼침 너비를 변경합니다</p>
+        <div className="grid grid-cols-3 gap-3">
+          {(Object.keys(SIDEBAR_WIDTH_LABELS) as ThemeSidebarWidth[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setSidebarWidth(key)}
+              className={cn(
+                'flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                sidebarWidth === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <div className="flex h-8 w-12 rounded border border-[var(--border-strong)] overflow-hidden bg-[var(--bg-muted)]">
+                <div className={cn('bg-[var(--btn-save-bg)]/20 border-r border-[var(--border-strong)]', key === 'narrow' ? 'w-2.5' : key === 'wide' ? 'w-5' : 'w-3.5')} />
+                <div className="flex-1" />
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{SIDEBAR_WIDTH_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 프로그레스 바 색상 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">프로그레스 바 색상</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">진행률 바의 기본 색상 모드를 변경합니다</p>
+        <div className="grid grid-cols-3 gap-3">
+          {(Object.keys(PROGRESS_COLOR_LABELS) as ThemeProgressColor[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setProgressColor(key)}
+              className={cn(
+                'flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                progressColor === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <div className="w-full max-w-[60px] h-2 rounded-full bg-[var(--progress-track)] overflow-hidden">
+                <div className={cn('h-full rounded-full w-2/3', key === 'auto' ? 'bg-[var(--color-warning-500)]' : key === 'primary' ? 'bg-[var(--progress-fill)]' : 'bg-[var(--color-success-500)]')} />
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{PROGRESS_COLOR_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* ── 텍스트 스타일 가이드 ── */}
+      <Card>
+        <div className="flex items-center justify-between mb-1">
+          <div className="text-sm font-extrabold text-[var(--text-primary)]">텍스트 스타일 가이드</div>
+          <button
+            onClick={() => { resetTypo(); addToast('success', '텍스트 스타일이 기본값으로 복원되었습니다') }}
+            className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-[var(--border-default)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)] transition-all cursor-pointer"
+          >
+            <RotateCcw size={11} /> 전체 초기화
+          </button>
+        </div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-4">각 항목의 크기와 두께를 변경하면 시스템 전체에 즉시 반영됩니다</p>
+
+        <div className="space-y-1">
+          {(Object.keys(TYPO_CATEGORY_LABELS) as TypoCategory[]).map((cat) => {
+            const token = typography[cat]
+            const def = DEFAULT_TYPO[cat]
+            const isModified = token.size !== def.size || token.weight !== def.weight || token.color !== def.color
+
+            return (
+              <div key={cat} className={cn(
+                'flex items-center gap-3 py-2.5 px-3 rounded-lg transition-all',
+                isModified ? 'bg-[var(--tab-active-bg)] border border-[var(--tab-active-color)]/10' : 'border border-transparent hover:bg-[var(--bg-muted)]',
+              )}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[11px] font-bold text-[var(--text-secondary)]">{TYPO_CATEGORY_LABELS[cat]}</span>
+                    {isModified && (
+                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">수정됨</span>
+                    )}
+                  </div>
+                  <span style={{ fontSize: token.size, fontWeight: token.weight, color: token.color }} className="block truncate">
+                    {TYPO_CATEGORY_LABELS[cat]} 미리보기
+                  </span>
+                </div>
+                <select
+                  value={token.size}
+                  onChange={(e) => setTypo(cat, { ...token, size: e.target.value })}
+                  className="text-[10px] font-mono font-bold px-2 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] cursor-pointer outline-none w-[70px]"
+                >
+                  {TYPO_SIZE_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={token.weight}
+                  onChange={(e) => setTypo(cat, { ...token, weight: Number(e.target.value) })}
+                  className="text-[10px] font-mono font-bold px-2 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] cursor-pointer outline-none w-[90px]"
+                >
+                  {TYPO_WEIGHT_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={token.color}
+                  onChange={(e) => setTypo(cat, { ...token, color: e.target.value })}
+                  className="text-[10px] font-bold px-2 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] cursor-pointer outline-none w-[85px]"
+                >
+                  {TYPO_COLOR_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                {isModified && (
+                  <button
+                    onClick={() => setTypo(cat, { ...def })}
+                    className="p-1 rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer shrink-0"
+                    title="기본값 복원"
+                  >
+                    <RotateCcw size={12} />
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="mt-5 p-3 rounded-lg bg-[var(--bg-muted)] border border-[var(--border-default)]">
+          <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">CSS 변수 사용법</div>
+          <code className="text-[11px] text-[var(--text-secondary)] block leading-relaxed font-mono">
+            font-size: var(--typo-page-title-size);<br/>
+            font-weight: var(--typo-page-title-weight);<br/>
+            /* page-title | page-subtitle | section-title | card-title |<br/>
+            &nbsp;&nbsp; menu | menu-group | tab | btn | badge | body | caption | input | toast */
+          </code>
+        </div>
+      </Card>
+
+      {/* ── 컴포넌트 프리뷰 ── */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">컴포넌트 프리뷰</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-4">위의 설정이 적용된 실시간 미리보기입니다</p>
+
+        {/* 버튼 */}
+        <div className="mb-5">
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">버튼</span>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="save" size="sm">저장</Button>
+            <Button variant="edit" size="sm">수정</Button>
+            <Button variant="delete" size="sm">삭제</Button>
+            <Button variant="cancel" size="sm">취소</Button>
+            <Button variant="search" size="sm">검색</Button>
+            <Button variant="confirm" size="sm">확인</Button>
+            <Button variant="upload" size="sm">업로드</Button>
+            <Button variant="download" size="sm">다운로드</Button>
+            <Button variant="add" size="sm">추가</Button>
+            <Button variant="approve" size="sm">승인</Button>
+            <Button variant="reject" size="sm">반려</Button>
+            <Button variant="ghost" size="sm">Ghost</Button>
+            <Button variant="outline" size="sm">Outline</Button>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-2">
+            <Button variant="save" size="sm" loading>로딩중</Button>
+            <Button variant="save" size="sm" disabled>비활성</Button>
+          </div>
+        </div>
+
+        {/* 뱃지 */}
+        <div className="mb-5">
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">뱃지 (상태)</span>
+          <div className="flex flex-wrap gap-2">
+            <Badge status="waiting" dot />
+            <Badge status="progress" dot />
+            <Badge status="complete" dot />
+            <Badge status="delay" dot />
+          </div>
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 mt-3 block">뱃지 (분류)</span>
+          <div className="flex flex-wrap gap-2">
+            <Badge category="news" />
+            <Badge category="youtube" />
+            <Badge category="blog" />
+            <Badge category="website" />
+          </div>
+        </div>
+
+        {/* 진행률 */}
+        <div className="mb-5">
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">진행률</span>
+          <div className="space-y-2">
+            <Progress value={20} showLabel />
+            <Progress value={55} showLabel />
+            <Progress value={85} showLabel />
+          </div>
+        </div>
+
+        {/* 입력 요소 */}
+        <div className="mb-5">
+          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">입력 요소</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Input label="텍스트 입력" placeholder="내용을 입력하세요" />
+            <Input label="에러 상태" placeholder="필수 항목" error="필수 항목을 입력해주세요" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+            <DatePickerPreview />
+            <SelectPreview />
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+/* 탭 프리뷰 헬퍼 */
+function TabsPreview({ style }: { style: 'underline' | 'box' | 'pill' }) {
+  const [active, setActive] = useState('all')
+  return (
+    <div>
+      <span className="text-[10px] text-[var(--text-muted)] mb-1 block">{style}</span>
+      <Tabs
+        items={[
+          { key: 'all', label: '전체', count: 12 },
+          { key: 'progress', label: '진행중', count: 5 },
+          { key: 'done', label: '완료', count: 7 },
+        ]}
+        activeKey={active}
+        onChange={setActive}
+        style={style}
+      />
+    </div>
+  )
+}
+
+/* 날짜 피커 프리뷰 (인라인 캘린더 항상 표시) */
+function DatePickerPreview() {
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`
+  const [date, setDate] = useState(todayStr)
+  const [viewYear] = useState(today.getFullYear())
+  const [viewMonth] = useState(today.getMonth())
+
+  const WEEK = ['일','월','화','수','목','금','토']
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay()
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
+  const prevDays = new Date(viewYear, viewMonth, 0).getDate()
+
+  const cells: { day: number; current: boolean }[] = []
+  for (let i = firstDay - 1; i >= 0; i--) cells.push({ day: prevDays - i, current: false })
+  for (let d = 1; d <= daysInMonth; d++) cells.push({ day: d, current: true })
+  while (cells.length % 7 !== 0) cells.push({ day: cells.length - daysInMonth - firstDay + 1, current: false })
+
+  const selectedDay = date ? parseInt(date.split('-')[2]) : -1
+  const dpStyle = useThemeStore((s) => s.datePickerStyle) || 'default'
+
+  const panelR = { default: 'rounded-2xl', modern: 'rounded-xl border-t-4 border-t-primary-500', minimal: 'rounded-lg', bubble: 'rounded-3xl' }[dpStyle]
+  const dayR = { default: 'rounded-xl', modern: 'rounded-lg', minimal: 'rounded-none', bubble: 'rounded-full' }[dpStyle]
+
+  return (
+    <div>
+      <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">날짜 선택</label>
+      <DatePicker value={date} onChange={setDate} placeholder="날짜를 선택하세요" />
+
+      {/* 인라인 캘린더 */}
+      <div className={cn('mt-3 bg-[var(--bg-surface)] border border-[var(--border-default)] shadow-lg p-4 w-[290px]', panelR)}>
+        <div className="flex items-center justify-center mb-3">
+          <span className="text-[13px] font-extrabold text-[var(--text-primary)] tracking-tight">
+            {viewYear}년 {String(viewMonth + 1).padStart(2, '0')}월
+          </span>
+        </div>
+        <div className="grid grid-cols-7 mb-1">
+          {WEEK.map((w, i) => (
+            <div key={w} className={`text-center text-[11px] font-bold py-1 ${i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-[var(--text-muted)]'}`}>{w}</div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-0.5">
+          {cells.map((cell, idx) => {
+            const dayOfWeek = idx % 7
+            const isToday = cell.current && cell.day === today.getDate()
+            const isSelected = cell.current && cell.day === selectedDay
+            return (
+              <div
+                key={idx}
+                className={cn(
+                  'w-full aspect-square flex items-center justify-center text-[12px] font-medium transition-all',
+                  dayR,
+                  !cell.current ? 'text-[var(--text-muted)]/30'
+                  : isSelected ? 'bg-primary-500 text-white font-bold shadow-md'
+                  : isToday ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-bold ring-1 ring-primary-300/50'
+                  : dayOfWeek === 0 ? 'text-red-400'
+                  : dayOfWeek === 6 ? 'text-blue-400'
+                  : 'text-[var(--text-primary)]',
+                )}
+              >
+                {cell.day}
+              </div>
+            )
+          })}
+        </div>
+        <div className="flex justify-between mt-3 pt-3 border-t border-[var(--border-default)]">
+          <span className={cn('px-3 py-1.5 text-[11px] font-bold text-[var(--text-muted)]', dayR)}>지우기</span>
+          <span className={cn('px-3 py-1.5 text-[11px] font-bold text-primary-500', dayR)}>오늘</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* 셀렉트 프리뷰 */
+function SelectPreview() {
+  const [val, setVal] = useState('')
+  return (
+    <div>
+      <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1.5">드롭다운</label>
+      <CustomSelect
+        value={val}
+        onChange={setVal}
+        options={[
+          { value: 'design', label: '디자인팀' },
+          { value: 'dev', label: '개발팀' },
+          { value: 'marketing', label: '마케팅팀' },
+        ]}
+        placeholder="부서를 선택하세요"
+      />
+    </div>
+  )
+}
+
