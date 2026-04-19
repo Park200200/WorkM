@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { Sun, Moon, Pencil, FileText, Pin, Lightbulb, MessageCircle, ClipboardList, Search, CheckCircle2, Send, AlertTriangle, Paperclip } from 'lucide-react'
 import './homepage-view.css'
 
@@ -1301,12 +1302,12 @@ function MediaSolutionView({ accent }: { accent: string }) {
         </div>
       </div>}
 
-      {selectedItem && (
+      {selectedItem && createPortal(
         <div onClick={() => setSelectedItem(null)} style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 9999, animation: 'hp-fade-in .2s ease', padding: 20,
+          zIndex: 99999, animation: 'hp-fade-in .2s ease', padding: 20,
         }}>
           <div onClick={e => e.stopPropagation()} style={{
             background: '#fff', borderRadius: 20, maxWidth: 800, width: '100%',
@@ -1371,7 +1372,8 @@ function MediaSolutionView({ accent }: { accent: string }) {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
