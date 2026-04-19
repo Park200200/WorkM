@@ -215,6 +215,14 @@ function PositionPanel() {
   )
 }
 
+/* 예상결과물 전용 아이콘 */
+const RESULT_ICON_KEYS = [
+  'file-spreadsheet', 'message-square-text', 'users-round',
+  'presentation', 'file-type', 'file-image',
+  'file-video', 'film', 'file-text',
+  'camera', 'file-audio',
+]
+
 function ResultPanel() {
   const { taskResults, addResult, updateResult, deleteResult, reorderItems } = useSettingsStore()
   return (
@@ -228,6 +236,7 @@ function ResultPanel() {
       placeholder="새 예상결과물 입력"
       color="#9747ff"
       showIcon
+      iconKeys={RESULT_ICON_KEYS}
     />
   )
 }
@@ -314,9 +323,10 @@ interface CrudListPanelProps {
   placeholder: string
   color: string
   showIcon?: boolean
+  iconKeys?: string[]
 }
 
-function CrudListPanel({ title, items, onAdd, onUpdate, onDelete, onReorder, placeholder, color, showIcon }: CrudListPanelProps) {
+function CrudListPanel({ title, items, onAdd, onUpdate, onDelete, onReorder, placeholder, color, showIcon, iconKeys }: CrudListPanelProps) {
   const [newName, setNewName] = useState('')
   const [newIcon, setNewIcon] = useState('')
   const [editId, setEditId] = useState<number | null>(null)
@@ -410,7 +420,7 @@ function CrudListPanel({ title, items, onAdd, onUpdate, onDelete, onReorder, pla
             <div>
               <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 block">빠른 아이콘 선택</span>
               <div className="flex flex-wrap gap-1.5">
-                {ICON_KEYS.map((key, i) => {
+                {(iconKeys || ICON_KEYS).map((key, i) => {
                   const c = ICON_COLORS[i % ICON_COLORS.length]
                   return (
                     <button
@@ -550,7 +560,7 @@ function CrudListPanel({ title, items, onAdd, onUpdate, onDelete, onReorder, pla
             <div>
               <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 block">아이콘 선택</span>
               <div className="flex flex-wrap gap-1.5">
-                {ICON_KEYS.map((key, i) => {
+                {(iconKeys || ICON_KEYS).map((key, i) => {
                   const c = ICON_COLORS[i % ICON_COLORS.length]
                   return (
                     <button
