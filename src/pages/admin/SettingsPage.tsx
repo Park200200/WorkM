@@ -6,7 +6,7 @@ import { Input } from '../../components/ui/Input'
 import { Modal, ModalBody, ModalFooter } from '../../components/ui/Modal'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { useToastStore } from '../../stores/toastStore'
-import { useThemeStore, PRESET_ACCENTS, PRESET_KEYS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, FONT_SCALE_LABELS, FONT_COLOR_PRESETS, DATEPICKER_LABELS, CHECKBOX_STYLE_LABELS, TAB_STYLE_LABELS, TYPO_CATEGORY_LABELS, DEFAULT_TYPO, TYPO_SIZE_OPTIONS, TYPO_WEIGHT_OPTIONS, TYPO_COLOR_OPTIONS, type ThemeRadius, type ThemeDensity, type ThemeFontScale, type ThemeDatePicker, type ThemeCheckboxStyle, type ThemeTabStyle, type TypoCategory } from '../../stores/themeStore'
+import { useThemeStore, PRESET_ACCENTS, PRESET_KEYS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, FONT_SCALE_LABELS, FONT_COLOR_PRESETS, DATEPICKER_LABELS, CHECKBOX_STYLE_LABELS, CHECKBOX_SIZE_LABELS, CHECKBOX_SIZE_VALUES, TAB_STYLE_LABELS, TYPO_CATEGORY_LABELS, DEFAULT_TYPO, TYPO_SIZE_OPTIONS, TYPO_WEIGHT_OPTIONS, TYPO_COLOR_OPTIONS, type ThemeRadius, type ThemeDensity, type ThemeFontScale, type ThemeDatePicker, type ThemeCheckboxStyle, type ThemeCheckboxSize, type ThemeTabStyle, type TypoCategory } from '../../stores/themeStore'
 import { cn } from '../../utils/cn'
 import { getItem } from '../../utils/storage'
 import {
@@ -993,7 +993,7 @@ function PaymentMethodPanel() {
    🎨 테마 설정 패널
    ══════════════════════════════════════════════ */
 function ThemePanel() {
-  const { theme, accent, radius, density, fontScale, fontColor, datePickerStyle, checkboxStyle, tabStyle, toggle, setAccent, setRadius, setDensity, setFontScale, setFontColor, setDatePickerStyle, setCheckboxStyle, setTabStyle, customAccents, addCustomAccent, removeCustomAccent, typography, setTypo, resetTypo } = useThemeStore()
+  const { theme, accent, radius, density, fontScale, fontColor, datePickerStyle, checkboxStyle, checkboxSize, tabStyle, toggle, setAccent, setRadius, setDensity, setFontScale, setFontColor, setDatePickerStyle, setCheckboxStyle, setCheckboxSize, setTabStyle, customAccents, addCustomAccent, removeCustomAccent, typography, setTypo, resetTypo } = useThemeStore()
   const addToast = useToastStore((s) => s.add)
 
   const radiusKeys = Object.keys(RADIUS_LABELS) as ThemeRadius[]
@@ -1295,6 +1295,45 @@ function ThemePanel() {
                   </div>
                 </div>
                 <span className="text-[10px] font-bold text-[var(--text-secondary)]">{CHECKBOX_STYLE_LABELS[key]}</span>
+              </button>
+            )
+          })}
+        </div>
+      </Card>
+
+      {/* 체크박스/라디오 크기 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">체크박스 / 라디오 크기</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">체크박스와 라디오 버튼의 크기를 변경합니다</p>
+        <div className="grid grid-cols-4 gap-3">
+          {(Object.keys(CHECKBOX_SIZE_LABELS) as ThemeCheckboxSize[]).map((key) => {
+            const sv = CHECKBOX_SIZE_VALUES[key]
+            return (
+              <button
+                key={key}
+                onClick={() => setCheckboxSize(key)}
+                className={cn(
+                  'flex flex-col items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all',
+                  checkboxSize === key
+                    ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                    : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <div
+                    className="border-2 border-primary-500 bg-primary-500 flex items-center justify-center rounded-[var(--radius-xs)]"
+                    style={{ width: sv.box, height: sv.box }}
+                  >
+                    <Check size={sv.icon} className="text-white" strokeWidth={3} />
+                  </div>
+                  <div
+                    className="border-2 border-primary-500 bg-primary-500 flex items-center justify-center rounded-full"
+                    style={{ width: sv.box, height: sv.box }}
+                  >
+                    <div className="rounded-full bg-white" style={{ width: sv.dot, height: sv.dot }} />
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-[var(--text-secondary)]">{CHECKBOX_SIZE_LABELS[key]}</span>
               </button>
             )
           })}

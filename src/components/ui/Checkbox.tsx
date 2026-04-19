@@ -1,7 +1,7 @@
 import { type InputHTMLAttributes, forwardRef, useId } from 'react'
 import { cn } from '../../utils/cn'
 import { Check } from 'lucide-react'
-import { useThemeStore } from '../../stores/themeStore'
+import { useThemeStore, CHECKBOX_SIZE_VALUES } from '../../stores/themeStore'
 
 /* ═══════════════════════════════════════
    Checkbox & Radio — 토큰 기반
@@ -19,6 +19,8 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
     const autoId = useId()
     const inputId = id || autoId
     const cbStyle = useThemeStore((s) => s.checkboxStyle) || 'default'
+    const cbSize = useThemeStore((s) => s.checkboxSize) || 'default'
+    const sizeVal = CHECKBOX_SIZE_VALUES[cbSize]
 
     // 스타일별 라운딩
     const checkRound = { default: 'rounded-[var(--radius-xs)]', sharp: 'rounded-none', circle: 'rounded-full' }[cbStyle]
@@ -36,7 +38,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
           />
           <div
             className={cn(
-              'w-[18px] h-[18px] border-2 transition-all duration-150 cursor-pointer',
+              'border-2 transition-all duration-150 cursor-pointer',
               'border-[var(--border-strong)]',
               'peer-focus-visible:ring-2 peer-focus-visible:ring-primary-400/40 peer-focus-visible:ring-offset-2',
               'peer-checked:bg-[var(--btn-save-bg)] peer-checked:border-[var(--btn-save-bg)]',
@@ -44,6 +46,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
               shapeClass,
               error && 'border-[var(--color-danger-500)]',
             )}
+            style={{ width: sizeVal.box, height: sizeVal.box }}
             onClick={() => {
               const el = document.getElementById(inputId) as HTMLInputElement
               if (el && !el.disabled) el.click()
@@ -51,18 +54,21 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
           >
             {variant === 'checkbox' && (
               <Check
-                size={12}
+                size={sizeVal.icon}
                 className="text-white opacity-0 peer-checked:opacity-100 transition-opacity absolute inset-0 m-auto pointer-events-none"
                 strokeWidth={3}
               />
             )}
             {variant === 'radio' && (
-              <div className="w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100 transition-opacity absolute inset-0 m-auto pointer-events-none" />
+              <div
+                className="rounded-full bg-white opacity-0 peer-checked:opacity-100 transition-opacity absolute inset-0 m-auto pointer-events-none"
+                style={{ width: sizeVal.dot, height: sizeVal.dot }}
+              />
             )}
           </div>
           {/* Overlay for peer-checked icon visibility */}
           <Check
-            size={12}
+            size={sizeVal.icon}
             className={cn(
               'absolute text-white transition-opacity pointer-events-none',
               variant === 'checkbox' ? 'opacity-0 peer-checked:opacity-100' : 'hidden',
@@ -70,7 +76,10 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             strokeWidth={3}
           />
           {variant === 'radio' && (
-            <div className="absolute w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" />
+            <div
+              className="absolute rounded-full bg-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none"
+              style={{ width: sizeVal.dot, height: sizeVal.dot }}
+            />
           )}
         </div>
         {(label || description) && (

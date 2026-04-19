@@ -8,6 +8,17 @@ export type ThemeDensity = 'compact' | 'default' | 'comfortable'
 export type ThemeFontScale = 'xs' | 'sm' | 'default' | 'lg' | 'xl'
 export type ThemeDatePicker = 'default' | 'modern' | 'minimal' | 'bubble'
 export type ThemeCheckboxStyle = 'default' | 'sharp' | 'circle'
+export type ThemeCheckboxSize = 'sm' | 'default' | 'lg' | 'xl'
+
+export const CHECKBOX_SIZE_LABELS: Record<ThemeCheckboxSize, string> = {
+  sm: '소', default: '기본', lg: '대', xl: '특대',
+}
+export const CHECKBOX_SIZE_VALUES: Record<ThemeCheckboxSize, { box: number; icon: number; dot: number }> = {
+  sm: { box: 14, icon: 9, dot: 5 },
+  default: { box: 18, icon: 12, dot: 8 },
+  lg: { box: 22, icon: 14, dot: 10 },
+  xl: { box: 28, icon: 18, dot: 12 },
+}
 export type ThemeTabStyle = 'underline' | 'box' | 'pill'
 
 /* ── Typography Token 시스템 ── */
@@ -200,6 +211,7 @@ interface ThemeStore {
   fontColor: string
   datePickerStyle: ThemeDatePicker
   checkboxStyle: ThemeCheckboxStyle
+  checkboxSize: ThemeCheckboxSize
   tabStyle: ThemeTabStyle
   customAccents: CustomAccent[]
   typography: Record<TypoCategory, TypoToken>
@@ -213,6 +225,7 @@ interface ThemeStore {
   setFontColor: (color: string) => void
   setDatePickerStyle: (style: ThemeDatePicker) => void
   setCheckboxStyle: (style: ThemeCheckboxStyle) => void
+  setCheckboxSize: (size: ThemeCheckboxSize) => void
   setTabStyle: (style: ThemeTabStyle) => void
   addCustomAccent: (label: string, color: string) => void
   removeCustomAccent: (key: string) => void
@@ -232,6 +245,7 @@ interface SavedTheme {
   fontColor: string
   datePickerStyle: ThemeDatePicker
   checkboxStyle: ThemeCheckboxStyle
+  checkboxSize: ThemeCheckboxSize
   tabStyle: ThemeTabStyle
 }
 
@@ -257,6 +271,7 @@ function loadTheme(): SavedTheme {
     fontColor: 'default',
     datePickerStyle: 'default' as ThemeDatePicker,
     checkboxStyle: 'default' as ThemeCheckboxStyle,
+    checkboxSize: 'default' as ThemeCheckboxSize,
     tabStyle: 'underline' as ThemeTabStyle,
   }
 }
@@ -333,7 +348,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => {
   const getSaved = (): SavedTheme => ({
     mode: get().theme, accent: get().accent, radius: get().radius,
     density: get().density, fontScale: get().fontScale, fontColor: get().fontColor,
-    datePickerStyle: get().datePickerStyle, checkboxStyle: get().checkboxStyle, tabStyle: get().tabStyle,
+    datePickerStyle: get().datePickerStyle, checkboxStyle: get().checkboxStyle, checkboxSize: get().checkboxSize, tabStyle: get().tabStyle,
   })
 
   return {
@@ -345,6 +360,7 @@ export const useThemeStore = create<ThemeStore>((set, get) => {
     fontColor: initial.fontColor,
     datePickerStyle: initial.datePickerStyle || 'default',
     checkboxStyle: initial.checkboxStyle || 'default',
+    checkboxSize: initial.checkboxSize || 'default',
     tabStyle: initial.tabStyle || 'underline',
     customAccents: loadCustomAccents(),
     typography: loadTypography(),
@@ -402,6 +418,12 @@ export const useThemeStore = create<ThemeStore>((set, get) => {
       const s = { ...getSaved(), checkboxStyle }
       saveTheme(s); applyToDOM(s)
       set({ checkboxStyle })
+    },
+
+    setCheckboxSize: (checkboxSize) => {
+      const s = { ...getSaved(), checkboxSize }
+      saveTheme(s); applyToDOM(s)
+      set({ checkboxSize })
     },
 
     setTabStyle: (tabStyle) => {
