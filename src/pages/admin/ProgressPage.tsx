@@ -273,121 +273,178 @@ export function ProgressPage() {
 
                 {/* 테이블 */}
                 {!isCollapsed && (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-[11.5px] min-w-[750px]">
-                      <thead>
-                        <tr className="border-t border-b border-[var(--border-default)] bg-[var(--bg-muted)]">
-                          <th className="text-left py-2 px-4 font-bold text-[var(--text-muted)] w-[30%]">업무명</th>
-                          <th className="text-left py-2 px-3 font-bold text-[var(--text-muted)]">지시자</th>
-                          <th className="text-left py-2 px-3 font-bold text-[var(--text-muted)]">담당자</th>
-                          <th className="text-left py-2 px-3 font-bold text-[var(--text-muted)]">우선순위</th>
-                          <th className="text-left py-2 px-3 font-bold text-[var(--text-muted)]">상태</th>
-                          <th className="text-left py-2 px-3 font-bold text-[var(--text-muted)] w-[20%]">진행률</th>
-                          <th className="text-left py-2 px-3 font-bold text-[var(--text-muted)]">마감일</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {teamTasks.map(task => {
-                          const stBadge = getStatusBadge(task.status)
-                          const prBadge = getPriorityBadge(task)
-                          const barColor = getBarColor(task.status)
+                  <>
+                    {/* 데스크탑: 테이블 */}
+                    <div className="overflow-x-auto hidden md:block">
+                      <table className="w-full text-[11.5px] min-w-[750px]">
+                        <thead>
+                          <tr className="border-t border-b border-[var(--border-default)] bg-[var(--bg-muted)]">
+                            <th className="text-left py-2 px-4 font-bold text-[var(--text-muted)] w-[30%]">업무명</th>
+                            <th className="text-left py-2 px-3 font-bold text-[var(--text-muted)]">지시자</th>
+                            <th className="text-left py-2 px-3 font-bold text-[var(--text-muted)]">담당자</th>
+                            <th className="text-left py-2 px-3 font-bold text-[var(--text-muted)]">우선순위</th>
+                            <th className="text-left py-2 px-3 font-bold text-[var(--text-muted)]">상태</th>
+                            <th className="text-left py-2 px-3 font-bold text-[var(--text-muted)] w-[20%]">진행률</th>
+                            <th className="text-left py-2 px-3 font-bold text-[var(--text-muted)]">마감일</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {teamTasks.map(task => {
+                            const stBadge = getStatusBadge(task.status)
+                            const prBadge = getPriorityBadge(task)
+                            const barColor = getBarColor(task.status)
 
-
-                          return (
-                            <tr
-                              key={task.id}
-                              onClick={() => setSelectedTask(task)}
-                              className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors cursor-pointer"
-                            >
-                              {/* 업무명 */}
-                              <td className="py-2.5 px-4">
-                                <div className="flex items-center gap-1.5">
-                                  {task.isImportant && <Star size={12} className="text-amber-500 fill-amber-500 shrink-0" />}
-                                  <span className="font-bold text-[var(--text-primary)] truncate">{task.title}</span>
-                                </div>
-                              </td>
-
-                              {/* 지시자 */}
-                              <td className="py-2.5 px-3">
-                                <span className="text-[var(--text-secondary)]">{getUserName(task.assignerId)}</span>
-                              </td>
-
-                              {/* 담당자 */}
-                              <td className="py-2.5 px-3">
-                                <div className="flex items-center gap-1.5">
-                                  {(task.assigneeIds || []).slice(0, 2).map(id => {
-                                    const u = users.find(u => u.id === id)
-                                    if (!u) return null
-                                    return (
-                                      <div key={id} className="flex items-center gap-1">
-                                        <div
-                                          className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[8px] font-bold shrink-0"
-                                          style={{ background: u.color || '#4f6ef7' }}
-                                        >
-                                          {u.name.charAt(0)}
-                                        </div>
-                                        <span className="text-[var(--text-secondary)]">{u.name}</span>
-                                      </div>
-                                    )
-                                  })}
-                                  {(task.assigneeIds || []).length > 2 && (
-                                    <span className="text-[10px] text-[var(--text-muted)]">+{(task.assigneeIds || []).length - 2}</span>
-                                  )}
-                                  {(!task.assigneeIds || task.assigneeIds.length === 0) && (
-                                    <span className="text-[var(--text-muted)]">-</span>
-                                  )}
-                                </div>
-                              </td>
-
-                              {/* 우선순위 */}
-                              <td className="py-2.5 px-3">
-                                <span
-                                  className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                                  style={{ background: prBadge.color + '18', color: prBadge.color }}
-                                >
-                                  {prBadge.label}
-                                </span>
-                              </td>
-
-                              {/* 상태 */}
-                              <td className="py-2.5 px-3">
-                                <span
-                                  className="text-[10px] font-bold px-2 py-0.5 rounded-md inline-flex items-center"
-                                  style={{
-                                    background: stBadge.color + '18',
-                                    color: stBadge.color,
-                                    borderLeft: `2.5px solid ${stBadge.color}`,
-                                  }}
-                                >
-                                  ✦ {stBadge.label}
-                                </span>
-                              </td>
-
-                              {/* 진행률 */}
-                              <td className="py-2.5 px-3">
-                                <div className="flex items-center gap-2">
-                                  <div className="flex-1 h-2 rounded-full bg-[var(--bg-subtle)] overflow-hidden max-w-[100px]">
-                                    <div
-                                      className="h-full rounded-full transition-all duration-500"
-                                      style={{ width: `${task.progress}%`, background: barColor }}
-                                    />
+                            return (
+                              <tr
+                                key={task.id}
+                                onClick={() => setSelectedTask(task)}
+                                className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors cursor-pointer"
+                              >
+                                <td className="py-2.5 px-4">
+                                  <div className="flex items-center gap-1.5">
+                                    {task.isImportant && <Star size={12} className="text-amber-500 fill-amber-500 shrink-0" />}
+                                    <span className="font-bold text-[var(--text-primary)] truncate">{task.title}</span>
                                   </div>
-                                  <span className="text-[10px] font-bold text-[var(--text-primary)] min-w-[28px] text-right">
-                                    {task.progress}%
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <span className="text-[var(--text-secondary)]">{getUserName(task.assignerId)}</span>
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <div className="flex items-center gap-1.5">
+                                    {(task.assigneeIds || []).slice(0, 2).map(id => {
+                                      const u = users.find(u => u.id === id)
+                                      if (!u) return null
+                                      return (
+                                        <div key={id} className="flex items-center gap-1">
+                                          <div
+                                            className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[8px] font-bold shrink-0"
+                                            style={{ background: u.color || '#4f6ef7' }}
+                                          >
+                                            {u.name.charAt(0)}
+                                          </div>
+                                          <span className="text-[var(--text-secondary)]">{u.name}</span>
+                                        </div>
+                                      )
+                                    })}
+                                    {(task.assigneeIds || []).length > 2 && (
+                                      <span className="text-[10px] text-[var(--text-muted)]">+{(task.assigneeIds || []).length - 2}</span>
+                                    )}
+                                    {(!task.assigneeIds || task.assigneeIds.length === 0) && (
+                                      <span className="text-[var(--text-muted)]">-</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <span
+                                    className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                    style={{ background: prBadge.color + '18', color: prBadge.color }}
+                                  >
+                                    {prBadge.label}
                                   </span>
-                                </div>
-                              </td>
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <span
+                                    className="text-[10px] font-bold px-2 py-0.5 rounded-md inline-flex items-center"
+                                    style={{
+                                      background: stBadge.color + '18',
+                                      color: stBadge.color,
+                                      borderLeft: `2.5px solid ${stBadge.color}`,
+                                    }}
+                                  >
+                                    ✦ {stBadge.label}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 h-2 rounded-full bg-[var(--bg-subtle)] overflow-hidden max-w-[100px]">
+                                      <div
+                                        className="h-full rounded-full transition-all duration-500"
+                                        style={{ width: `${task.progress}%`, background: barColor }}
+                                      />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-[var(--text-primary)] min-w-[28px] text-right">
+                                      {task.progress}%
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <span className="text-[11px] text-[var(--text-secondary)]">{task.dueDate}</span>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
 
-                              {/* 마감일 */}
-                              <td className="py-2.5 px-3">
-                                <span className="text-[11px] text-[var(--text-secondary)]">{task.dueDate}</span>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                    {/* 모바일: 카드 */}
+                    <div className="md:hidden divide-y divide-[var(--border-default)] border-t border-[var(--border-default)]">
+                      {teamTasks.map(task => {
+                        const stBadge = getStatusBadge(task.status)
+                        const prBadge = getPriorityBadge(task)
+                        const barColor = getBarColor(task.status)
+
+                        return (
+                          <div
+                            key={task.id}
+                            onClick={() => setSelectedTask(task)}
+                            className="p-4 active:bg-[var(--bg-muted)] transition-colors cursor-pointer"
+                          >
+                            {/* 제목 + 중요 */}
+                            <div className="flex items-start gap-1.5 mb-2">
+                              {task.isImportant && <Star size={13} className="text-amber-500 fill-amber-500 shrink-0 mt-0.5" />}
+                              <span className="text-[13px] font-extrabold text-[var(--text-primary)] leading-snug">{task.title}</span>
+                            </div>
+
+                            {/* 뱃지 행: 우선순위 + 상태 */}
+                            <div className="flex items-center gap-2 mb-3">
+                              <span
+                                className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                style={{ background: prBadge.color + '18', color: prBadge.color }}
+                              >
+                                {prBadge.label}
+                              </span>
+                              <span
+                                className="text-[10px] font-bold px-2 py-0.5 rounded-md inline-flex items-center"
+                                style={{
+                                  background: stBadge.color + '18',
+                                  color: stBadge.color,
+                                  borderLeft: `2.5px solid ${stBadge.color}`,
+                                }}
+                              >
+                                ✦ {stBadge.label}
+                              </span>
+                            </div>
+
+                            {/* 진행률 바 */}
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="flex-1 h-2 rounded-full bg-[var(--bg-subtle)] overflow-hidden">
+                                <div
+                                  className="h-full rounded-full transition-all duration-500"
+                                  style={{ width: `${task.progress}%`, background: barColor }}
+                                />
+                              </div>
+                              <span className="text-[11px] font-bold text-[var(--text-primary)] min-w-[32px] text-right">
+                                {task.progress}%
+                              </span>
+                            </div>
+
+                            {/* 상세 정보 */}
+                            <div className="flex items-center gap-4 text-[11px] text-[var(--text-muted)]">
+                              <span>지시: <b className="text-[var(--text-secondary)]">{getUserName(task.assignerId)}</b></span>
+                              <span>담당: <b className="text-[var(--text-secondary)]">
+                                {(task.assigneeIds || []).length > 0
+                                  ? (task.assigneeIds || []).slice(0, 2).map(id => getUserName(id)).join(', ')
+                                    + ((task.assigneeIds || []).length > 2 ? ` 외 ${(task.assigneeIds || []).length - 2}명` : '')
+                                  : '-'}
+                              </b></span>
+                              <span className="ml-auto">{task.dueDate}</span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </>
                 )}
               </div>
             )
