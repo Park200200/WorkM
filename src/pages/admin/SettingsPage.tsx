@@ -221,6 +221,7 @@ const RESULT_ICON_KEYS = [
   'presentation', 'file-type', 'file-image',
   'file-video', 'film', 'file-text',
   'camera', 'file-audio',
+  'link-2', 'cog',
 ]
 
 function ResultPanel() {
