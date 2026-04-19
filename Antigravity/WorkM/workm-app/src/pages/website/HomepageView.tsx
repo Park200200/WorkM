@@ -1436,6 +1436,7 @@ function ContentSolutionView({ accent }: { accent: string }) {
   const [catFilter, setCatFilter] = useState('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [selectedItem, setSelectedItem] = useState<any>(null)
 
   const categories = ['all', ...new Set(items.map((it: any) => it.category).filter(Boolean))]
   const catLabels: Record<string, string> = { all: '전체', news: '뉴스', blog: '블로그', youtube: 'YouTube', website: '웹사이트' }
@@ -1498,7 +1499,7 @@ function ContentSolutionView({ accent }: { accent: string }) {
           {filtered.map(it => {
             const cc = catColors[it.category] || '#94a3b8'
             return (
-              <div key={it.id} onClick={() => setExpandedId(expandedId === it.id ? null : it.id)}
+              <div key={it.id} onClick={() => setSelectedItem(it)}
                 style={{
                   borderRadius: 14, border: '1.5px solid #e2e8f0', background: '#fff',
                   overflow: 'hidden', cursor: 'pointer', transition: 'box-shadow .2s, transform .2s',
@@ -1587,6 +1588,86 @@ function ContentSolutionView({ accent }: { accent: string }) {
             )
           })}
         </div>
+      )}
+
+      {/* 상세보기 모달 */}
+      {selectedItem && createPortal(
+        <div onClick={() => setSelectedItem(null)} style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 99999, animation: 'hp-fade-in .2s ease', padding: 20,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: '#fff', borderRadius: 20, maxWidth: 700, width: '100%',
+            maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column',
+            boxShadow: '0 25px 80px rgba(0,0,0,.3)',
+          }}>
+            {/* 이미지 */}
+            {selectedItem.thumbnail && (
+              <div style={{ position: 'relative', background: '#0a0a12', display: 'flex', alignItems: 'center', justifyContent: 'center', maxHeight: '50vh' }}>
+                <img src={selectedItem.thumbnail} alt="" style={{ maxWidth: '100%', maxHeight: '50vh', objectFit: 'contain' }} />
+                <span style={{
+                  position: 'absolute', top: 14, left: 14, padding: '4px 12px',
+                  borderRadius: 8, fontSize: 11, fontWeight: 700,
+                  background: catColors[selectedItem.category] || '#94a3b8', color: '#fff',
+                }}>{catLabels[selectedItem.category] || selectedItem.category}</span>
+                {selectedItem.category === 'youtube' && (
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 56, height: 56, borderRadius: '50%', background: 'rgba(0,0,0,.6)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>▶</div>
+                )}
+              </div>
+            )}
+            {/* 닫기 */}
+            <button onClick={() => setSelectedItem(null)} style={{
+              position: 'absolute', top: 12, right: 12, width: 36, height: 36,
+              borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,.5)',
+              color: '#fff', fontSize: 20, cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', zIndex: 1,
+            }}>✕</button>
+            {/* 정보 */}
+            <div style={{ padding: '20px 24px', overflowY: 'auto' }}>
+              <h3 style={{ fontSize: 20, fontWeight: 800, color: '#1e293b', margin: '0 0 8px' }}>{selectedItem.title}</h3>
+              {selectedItem.summary && <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.7, margin: '0 0 14px' }}>{selectedItem.summary}</p>}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                {selectedItem.tags?.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                    {selectedItem.tags.map((t: string) => (
+                      <span key={t} style={{ padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: `${accent}15`, color: accent }}>#{t}</span>
+                    ))}
+                  </div>
+                )}
+                <span style={{ fontSize: 12, color: '#94a3b8', marginLeft: 'auto' }}>{selectedItem.date || selectedItem.regDate || ''}</span>
+              </div>
+              {selectedItem.url && (
+                <a href={selectedItem.url.startsWith('http') ? selectedItem.url : `https://${selectedItem.url}`}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'inline-block', marginTop: 16, padding: '10px 20px', borderRadius: 10, background: accent, color: '#fff', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
+                  원본 보기 ↗
+                </a>
+              )}
+            </div>
+            {/* 이전/다음 */}
+            {filtered.length > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 24px 16px', gap: 8 }}>
+                <button onClick={() => {
+                  const idx = filtered.findIndex(it => it.id === selectedItem.id)
+                  setSelectedItem(filtered[(idx - 1 + filtered.length) % filtered.length])
+                }} style={{
+                  flex: 1, padding: '10px', borderRadius: 10, border: '1.5px solid #e2e8f0',
+                  background: '#fff', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                }}>◀ 이전</button>
+                <button onClick={() => {
+                  const idx = filtered.findIndex(it => it.id === selectedItem.id)
+                  setSelectedItem(filtered[(idx + 1) % filtered.length])
+                }} style={{
+                  flex: 1, padding: '10px', borderRadius: 10, border: '1.5px solid #e2e8f0',
+                  background: '#fff', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                }}>다음 ▶</button>
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   )
