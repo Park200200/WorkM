@@ -21,7 +21,7 @@ export const inputBaseClass = cn(
 )
 
 export const labelClass = cn(
-  'text-[length:var(--font-size-xxs)] font-bold uppercase tracking-wider text-[var(--text-muted)]',
+  'text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]',
 )
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
