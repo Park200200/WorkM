@@ -412,10 +412,10 @@ function CrudListPanel({ title, items, onAdd, onUpdate, onDelete, onReorder, pla
       <Card>
         {/* 추가 폼 */}
         <div className="space-y-3 mb-4">
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2 border border-[var(--border-default)] rounded-xl p-1.5 bg-[var(--bg-surface)]">
             {showIcon && (
               <div
-                className="w-[42px] h-[42px] shrink-0 rounded-xl border border-[var(--border-default)] flex items-center justify-center cursor-default"
+                className="w-[36px] h-[36px] shrink-0 rounded-lg border border-[var(--border-default)] flex items-center justify-center cursor-default"
                 style={{ background: newIcon ? `${ICON_COLORS[ICON_KEYS.indexOf(newIcon) % ICON_COLORS.length]}20` : 'var(--bg-muted)', color: newIcon ? ICON_COLORS[ICON_KEYS.indexOf(newIcon) % ICON_COLORS.length] : 'var(--text-muted)' }}
                 title="아래에서 아이콘을 선택하세요"
               >
@@ -423,12 +423,13 @@ function CrudListPanel({ title, items, onAdd, onUpdate, onDelete, onReorder, pla
               </div>
             )}
             <div className="flex-1">
-              <Input
+              <input
                 ref={inputRef}
                 placeholder={placeholder}
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                className="w-full bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
               />
             </div>
             <Button onClick={handleAdd} icon={<Plus size={15} />} size="md" className="shrink-0">
