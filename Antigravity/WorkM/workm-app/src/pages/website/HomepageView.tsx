@@ -423,10 +423,27 @@ export function HomepageView() {
         background: s.footerBg || '#1a1a2e',
         height: `${s.footerHeight || 120}px`,
         opacity: (s.footerOpacity ?? 100) / 100,
+        flexDirection: 'column', gap: 12,
       }}>
-        {s.logoBotH && <img src={s.logoBotH} alt="" style={s.logoBotHW ? { width:`${s.logoBotHW}px`, height:'auto' } : undefined} />}
-        {s.logoBotV && <img src={s.logoBotV} alt="" style={s.logoBotVW ? { width:`${s.logoBotVW}px`, height:'auto' } : undefined} />}
-        {!s.logoBotH && !s.logoBotV && <span style={{ color:'rgba(255,255,255,.3)', fontSize:14 }}>하단 로고 미등록</span>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {s.logoBotH && <img src={s.logoBotH} alt="" style={s.logoBotHW ? { width:`${s.logoBotHW}px`, height:'auto' } : undefined} />}
+          {s.logoBotV && <img src={s.logoBotV} alt="" style={s.logoBotVW ? { width:`${s.logoBotVW}px`, height:'auto' } : undefined} />}
+          {!s.logoBotH && !s.logoBotV && <span style={{ color:'rgba(255,255,255,.3)', fontSize:14 }}>하단 로고 미등록</span>}
+        </div>
+        {(s as any).snsLinks?.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            {(s as any).snsLinks.map((sns: any, i: number) => (
+              <a key={i} href={sns.url || '#'} target="_blank" rel="noopener noreferrer"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,.08)', transition: 'transform .2s, background .2s', textDecoration: 'none', overflow: 'hidden' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.15)'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,.18)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,.08)' }}
+                title={sns.name}>
+                {sns.icon ? <img src={sns.icon} alt="" style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                  : <span style={{ color: 'rgba(255,255,255,.5)', fontSize: 13, fontWeight: 700 }}>{sns.name?.charAt(0) || '?'}</span>}
+              </a>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 하단 텍스트 */}

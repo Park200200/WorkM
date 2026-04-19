@@ -39,7 +39,11 @@ interface HpBasicData {
   cpOpacity: number; cpAlign: string; cpText: string
   /* 파비콘 */
   favicon: string
+  /* SNS 링크 */
+  snsLinks: SnsLink[]
 }
+
+interface SnsLink { name: string; icon: string; logo: string; url: string }
 
 interface McItem { imgH: string; imgV: string; text1: string; text2: string; text3: string; url: string; blank: boolean }
 interface McLine { type: 'image' | 'solution'; duration: number; items: McItem[]; solution: string }
@@ -64,6 +68,11 @@ const DEFAULT: HpBasicData = {
   cpBg: '#050510', cpFc: '#475569', cpFs: 11, cpHeight: 48,
   cpOpacity: 100, cpAlign: 'center', cpText: '',
   favicon: '',
+  snsLinks: [
+    { name: '인스타그램', icon: '', logo: '', url: 'https://instagram.com' },
+    { name: '페이스북', icon: '', logo: '', url: 'https://facebook.com' },
+    { name: '카카오톡', icon: '', logo: '', url: 'https://pf.kakao.com' },
+  ],
 }
 
 const STORAGE_KEY = 'hp_basic_settings'
@@ -873,6 +882,117 @@ export function HpBasicSettings() {
         </div>
 
         <div className="flex justify-end"><button onClick={() => save('파비콘')} className={`${saveBtn} !bg-gradient-to-r !from-indigo-500 !to-purple-500 hover:!from-indigo-600 hover:!to-purple-600`}><Save size={13} /> 저장</button></div>
+      </div>
+
+      {/* ═══ 10. SNS 링크 설정 ═══ */}
+      <div className={cardCls}>
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center text-white"><Link2 size={15} /></div>
+          <div>
+            <div className="text-sm font-bold text-[var(--text-primary)]">SNS 링크 설정</div>
+            <div className="text-[10px] text-[var(--text-muted)]">홈페이지 푸터에 표시될 SNS 아이콘 및 링크</div>
+          </div>
+          <button onClick={() => up({ snsLinks: [...(d.snsLinks || []), { name: '', icon: '', logo: '', url: '' }] })}
+            className="ml-auto flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-pink-500 to-orange-400 text-white text-[11px] font-bold cursor-pointer border-none hover:from-pink-600 hover:to-orange-500 transition-all">
+            <Plus size={12} /> 추가
+          </button>
+        </div>
+
+        {(!d.snsLinks || d.snsLinks.length === 0) ? (
+          <div className="text-center py-8 text-[var(--text-muted)] text-sm">등록된 SNS 링크가 없습니다. "추가" 버튼을 눌러주세요.</div>
+        ) : (
+          <div className="space-y-3">
+            {d.snsLinks.map((sns, i) => (
+              <div key={i} className="border border-[var(--border-default)] rounded-xl p-4 bg-[var(--bg-base)] space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-400 to-orange-300 flex items-center justify-center text-white text-[10px] font-bold">{i + 1}</div>
+                  <span className="text-xs font-bold text-[var(--text-primary)] flex-1">{sns.name || `SNS ${i + 1}`}</span>
+                  <button onClick={() => { const arr = [...d.snsLinks]; arr.splice(i, 1); up({ snsLinks: arr }) }}
+                    className="w-6 h-6 rounded-full flex items-center justify-center bg-red-50 text-red-400 hover:bg-red-100 cursor-pointer border-none transition-colors">
+                    <X size={12} />
+                  </button>
+                </div>
+
+                {/* 이름 + URL */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}><Tag size={10} /> 이름</label>
+                    <input value={sns.name} onChange={e => { const arr = [...d.snsLinks]; arr[i] = { ...arr[i], name: e.target.value }; up({ snsLinks: arr }) }}
+                      placeholder="예: 인스타그램" className={inputCls} />
+                  </div>
+                  <div>
+                    <label className={labelCls}><Link size={10} /> URL</label>
+                    <input value={sns.url} onChange={e => { const arr = [...d.snsLinks]; arr[i] = { ...arr[i], url: e.target.value }; up({ snsLinks: arr }) }}
+                      placeholder="https://..." className={inputCls} />
+                  </div>
+                </div>
+
+                {/* 파비콘(아이콘) + 로고 이미지 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* 파비콘 */}
+                  <div>
+                    <label className={labelCls}><Globe size={10} /> 파비콘 (아이콘)</label>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
+                        {sns.icon ? <img src={sns.icon} alt="" className="w-7 h-7 object-contain" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
+                      </div>
+                      <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
+                        <Upload size={11} /> 선택
+                        <input type="file" accept="image/*" className="hidden" onChange={e => {
+                          const f = e.target.files?.[0]; if (!f) return
+                          const reader = new FileReader()
+                          reader.onload = ev => { const arr = [...d.snsLinks]; arr[i] = { ...arr[i], icon: ev.target?.result as string }; up({ snsLinks: arr }) }
+                          reader.readAsDataURL(f)
+                        }} />
+                      </label>
+                      {sns.icon && <button onClick={() => { const arr = [...d.snsLinks]; arr[i] = { ...arr[i], icon: '' }; up({ snsLinks: arr }) }}
+                        className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
+                    </div>
+                  </div>
+                  {/* 로고 */}
+                  <div>
+                    <label className={labelCls}><ImageIcon size={10} /> 로고 이미지</label>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
+                        {sns.logo ? <img src={sns.logo} alt="" className="w-7 h-7 object-contain" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
+                      </div>
+                      <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
+                        <Upload size={11} /> 선택
+                        <input type="file" accept="image/*" className="hidden" onChange={e => {
+                          const f = e.target.files?.[0]; if (!f) return
+                          const reader = new FileReader()
+                          reader.onload = ev => { const arr = [...d.snsLinks]; arr[i] = { ...arr[i], logo: ev.target?.result as string }; up({ snsLinks: arr }) }
+                          reader.readAsDataURL(f)
+                        }} />
+                      </label>
+                      {sns.logo && <button onClick={() => { const arr = [...d.snsLinks]; arr[i] = { ...arr[i], logo: '' }; up({ snsLinks: arr }) }}
+                        className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 미리보기 */}
+        {d.snsLinks?.length > 0 && (
+          <div>
+            <label className={labelCls}><Eye size={11} /> 푸터 미리보기</label>
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-[#1a1a2e] justify-center">
+              {d.snsLinks.map((sns, i) => (
+                <a key={i} href={sns.url || '#'} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-1 no-underline group">
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center overflow-hidden transition-transform group-hover:scale-110">
+                    {sns.icon ? <img src={sns.icon} alt="" className="w-6 h-6 object-contain" /> : <span className="text-white/40 text-xs">{sns.name?.charAt(0) || '?'}</span>}
+                  </div>
+                  <span className="text-[9px] text-white/50 font-medium">{sns.name || `SNS ${i + 1}`}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-end"><button onClick={() => save('SNS 링크')} className={`${saveBtn} !bg-gradient-to-r !from-pink-500 !to-orange-400 hover:!from-pink-600 hover:!to-orange-500`}><Save size={13} /> 저장</button></div>
       </div>
 
       {/* ── 토스트 메시지 ── */}
