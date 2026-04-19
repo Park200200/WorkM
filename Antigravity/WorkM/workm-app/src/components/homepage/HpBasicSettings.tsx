@@ -230,8 +230,19 @@ export function HpBasicSettings() {
   const [d, setD] = useState<HpBasicData>(() => ({ ...DEFAULT, ...getItem<Partial<HpBasicData>>(STORAGE_KEY, {}) }))
   const [toast, setToast] = useState<string|null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout>|null>(null)
+  const isFirstRender = useRef(true)
 
   const up = useCallback((patch: Partial<HpBasicData>) => setD(prev => ({ ...prev, ...patch })), [])
+
+  /* ── 자동 저장: d가 변경될 때마다 500ms 디바운스로 localStorage에 저장 ── */
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return }
+    const timer = setTimeout(() => {
+      setItem(STORAGE_KEY, d)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [d])
+
   const save = useCallback((section: string) => {
     const ok = setItem(STORAGE_KEY, d)
     if (toastTimer.current) clearTimeout(toastTimer.current)

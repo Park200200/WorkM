@@ -964,7 +964,21 @@ function TaskTable({
                   className="px-3 py-2.5 cursor-pointer"
                   onClick={(e) => { e.stopPropagation(); onChat?.(t) }}
                 >
-                  {personUser ? (
+                  {ids.length >= 2 ? (
+                    <div className="flex items-center hover:opacity-80 transition-opacity">
+                      <div className="flex -space-x-2">
+                        {ids.slice(0, 4).map((uid) => {
+                          const u = getUser(uid)
+                          return u ? (
+                            <Avatar key={uid} name={u.name} color={u.color} size="xs" className="border-2 border-[var(--bg-surface)]" />
+                          ) : null
+                        })}
+                      </div>
+                      {ids.length > 4 && (
+                        <span className="text-[9px] text-[var(--text-muted)] ml-1">+{ids.length - 4}</span>
+                      )}
+                    </div>
+                  ) : personUser ? (
                     <div className="flex items-center gap-1.5 hover:text-primary-500 transition-colors">
                       <Avatar name={personUser.name} color={personUser.color} size="xs" />
                       <span className="text-[11px] text-[var(--text-muted)] hidden lg:inline hover:text-primary-500">{personUser.name}</span>

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { PageHeader } from '../../components/common/PageHeader'
 import { cn } from '../../utils/cn'
 import { getItem } from '../../utils/storage'
+import { useAuthStore } from '../../stores/authStore'
 import { BarChart3, TrendingUp, Trophy, Target, Users } from 'lucide-react'
 
 /* ─────────────────────────────────────────────
@@ -62,6 +63,9 @@ function inPeriod(dateStr: string | undefined, period: PeriodKey, now: Date): bo
 export function PerformancePage() {
   const [period, setPeriod] = useState<PeriodKey>('weekly')
   const now = new Date()
+  const myUser = useAuthStore(s => s.user)
+  const myId = String(myUser?.id ?? '')
+  const myName = myUser?.name ?? ''
 
   const tasks = useMemo(() => getItem<TaskItem[]>('ws_tasks', []), [])
   const users = useMemo(() => getItem<UserItem[]>('ws_users', []), [])
@@ -105,33 +109,7 @@ export function PerformancePage() {
     <div className="animate-fadeIn">
       <PageHeader title="실적보기" subtitle="팀/개인별 업무 달성 현황을 분석합니다" />
 
-      {/* ── 요약 카드 ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-        {summaryCards.map(card => {
-          const Icon = card.icon
-          return (
-            <div
-              key={card.label}
-              className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4 hover:border-[var(--border-strong)] transition-colors"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div
-                  className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: card.bg, color: card.color }}
-                >
-                  <Icon size={17} />
-                </div>
-              </div>
-              <div className="text-xl md:text-2xl font-extrabold text-[var(--text-primary)] tracking-tight">
-                {card.value}
-              </div>
-              <div className="text-[10px] md:text-[11px] font-bold text-[var(--text-muted)] mt-0.5">
-                {card.label}
-              </div>
-            </div>
-          )
-        })}
-      </div>
+
 
       {/* ── 메인 테이블 카드 ── */}
       <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
@@ -197,18 +175,24 @@ export function PerformancePage() {
                 {stats.map((s, idx) => {
                   const rank = idx + 1
                   const rateColor = s.rate >= 80 ? '#22c55e' : s.rate >= 50 ? '#f59e0b' : '#ef4444'
-                  const rowBg = rank === 1
-                    ? 'rgba(245,158,11,.07)'
-                    : rank === 2
-                      ? 'rgba(156,163,175,.05)'
-                      : rank === 3
-                        ? 'rgba(180,83,9,.05)'
-                        : ''
+                  const isMe = String(s.u.id) === myId || (myName && s.u.name === myName)
+                  const rowBg = isMe
+                    ? 'rgba(79,110,247,.08)'
+                    : rank === 1
+                      ? 'rgba(245,158,11,.07)'
+                      : rank === 2
+                        ? 'rgba(156,163,175,.05)'
+                        : rank === 3
+                          ? 'rgba(180,83,9,.05)'
+                          : ''
 
                   return (
                     <tr
                       key={s.u.id}
-                      className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors"
+                      className={cn(
+                        'border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors',
+                        isMe && 'ring-1 ring-primary-400/50',
+                      )}
                       style={{ background: rowBg }}
                     >
                       {/* 순위 */}
@@ -303,7 +287,12 @@ export function PerformancePage() {
           return (
             <div
               key={s.u.id}
-              className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4 hover:border-[var(--border-strong)] transition-colors"
+              className={cn(
+                'rounded-xl p-4 transition-colors',
+                (String(s.u.id) === myId || (myName && s.u.name === myName))
+                  ? 'bg-primary-50/60 dark:bg-primary-900/15 border-2 border-primary-400 shadow-sm shadow-primary-200/30 dark:shadow-primary-900/20'
+                  : 'bg-[var(--bg-surface)] border border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
             >
               <div className="flex items-center gap-3 mb-3">
                 {rank <= 3 && <span className="text-lg">{MEDALS[rank - 1]}</span>}
