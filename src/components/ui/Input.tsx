@@ -11,8 +11,8 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 /* ── 공통 입력 필드 스타일 (토큰 기반) ── */
 export const inputBaseClass = cn(
-  'w-full rounded-[var(--radius-sm)] border bg-[var(--bg-surface)]',
-  'px-[var(--input-padding-x)] py-[var(--input-padding-y)]',
+  'w-full h-[42px] rounded-[var(--radius-sm)] border bg-[var(--bg-surface)]',
+  'px-[var(--input-padding-x)] py-0',
   'text-[length:var(--font-size-body)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)]',
   'border-[var(--border-default)]',
   'transition-all duration-150',
