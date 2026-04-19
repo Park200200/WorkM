@@ -496,17 +496,39 @@ export function DashboardPage() {
           >
           {/* 팝업 헤더 */}
           <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border-default)] shrink-0">
-            <div className="w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center shrink-0">
               <MessageSquare size={14} className="text-primary-500" />
             </div>
-            <span className="text-[13px] font-bold text-[var(--text-primary)] flex-1 truncate">{channelTitle}</span>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-bold text-[var(--text-primary)] truncate">{channelTitle}</div>
+              {channelMembers.length > 0 && (
+                <div className="flex items-center gap-1 mt-0.5">
+                  <div className="flex -space-x-1.5">
+                    {channelMembers.slice(0, 5).map(m => (
+                      <div
+                        key={m.id}
+                        className="w-5 h-5 rounded-full flex items-center justify-center text-[7px] font-extrabold text-white border border-[var(--bg-surface)] shrink-0"
+                        style={{ background: `linear-gradient(135deg, ${m.color || '#9747ff'}, #4f6ef7)` }}
+                        title={m.name}
+                      >
+                        {m.avatar || m.name?.charAt(0) || '?'}
+                      </div>
+                    ))}
+                  </div>
+                  <span className="text-[10px] text-[var(--text-muted)] truncate">
+                    {channelMembers.slice(0, 3).map(m => m.name).join(', ')}
+                    {channelMembers.length > 3 && ` 외 ${channelMembers.length - 3}명`}
+                  </span>
+                </div>
+              )}
+            </div>
             {activeTaskChannel && (
               <button onClick={() => setActiveTaskChannel(null)}
-                className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--bg-muted)] text-[var(--text-muted)] cursor-pointer mr-1">전체</button>
+                className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--bg-muted)] text-[var(--text-muted)] cursor-pointer shrink-0">전체채널</button>
             )}
             <button
               onClick={() => setMobileChatOpen(false)}
-              className="w-8 h-8 rounded-lg bg-[var(--bg-muted)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+              className="w-8 h-8 rounded-lg bg-[var(--bg-muted)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer shrink-0"
             >
               ✕
             </button>
