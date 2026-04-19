@@ -191,6 +191,7 @@ export function DashboardPage() {
   const [progressTask, setProgressTask] = useState<any>(null)
   const chatBodyRef = useRef<HTMLDivElement>(null)
   const mobileChatBodyRef = useRef<HTMLDivElement>(null)
+  const mobileChatContainerRef = useRef<HTMLDivElement>(null)
 
   // 채팅 채널 키: 업무별 또는 전체
   const chatKey = activeTaskChannel ? `ws_messages_task_${activeTaskChannel.id}` : 'ws_messages'
@@ -229,26 +230,44 @@ export function DashboardPage() {
   useEffect(() => {
     if (chatBodyRef.current) chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight
     if (mobileChatBodyRef.current) mobileChatBodyRef.current.scrollTop = mobileChatBodyRef.current.scrollHeight
-    // iOS Safari 키보드 대응: body 스크롤 완전 잠금
-    if (mobileChatOpen) {
-      const scrollY = window.scrollY
-      document.body.style.overflow = 'hidden'
-      document.body.style.position = 'fixed'
-      document.body.style.top = `-${scrollY}px`
-      document.body.style.left = '0'
-      document.body.style.right = '0'
-      document.body.style.width = '100%'
-      return () => {
-        document.body.style.overflow = ''
-        document.body.style.position = ''
-        document.body.style.top = ''
-        document.body.style.left = ''
-        document.body.style.right = ''
-        document.body.style.width = ''
-        window.scrollTo(0, scrollY)
+    if (!mobileChatOpen) return
+
+    // iOS Safari 키보드 대응: body 스크롤 잠금
+    const scrollY = window.scrollY
+    document.body.style.overflow = 'hidden'
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.left = '0'
+    document.body.style.right = '0'
+    document.body.style.width = '100%'
+
+    // VisualViewport API로 실제 보이는 영역에 맞춤
+    const vv = window.visualViewport
+    const update = () => {
+      const el = mobileChatContainerRef.current
+      if (!el || !vv) return
+      el.style.top = `${vv.offsetTop}px`
+      el.style.height = `${vv.height}px`
+    }
+    if (vv) {
+      vv.addEventListener('resize', update)
+      vv.addEventListener('scroll', update)
+      update()
+    }
+
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.left = ''
+      document.body.style.right = ''
+      document.body.style.width = ''
+      window.scrollTo(0, scrollY)
+      if (vv) {
+        vv.removeEventListener('resize', update)
+        vv.removeEventListener('scroll', update)
       }
     }
-    return () => { document.body.style.overflow = '' }
   }, [mobileChatOpen])
 
   return (
@@ -502,8 +521,9 @@ export function DashboardPage() {
             onClick={() => setMobileChatOpen(false)}
           />
           <div
-            className="lg:hidden fixed inset-0 z-[200] flex flex-col bg-[var(--bg-surface)] animate-slideUp"
-            style={{ overflow: 'hidden' }}
+            ref={mobileChatContainerRef}
+            className="lg:hidden fixed z-[200] flex flex-col bg-[var(--bg-surface)] animate-slideUp"
+            style={{ top: 0, left: 0, right: 0, height: '100%', overflow: 'hidden' }}
             role="dialog"
             aria-modal="true"
           >
