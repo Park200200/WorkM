@@ -1531,12 +1531,6 @@ function ThemePanel() {
             <DatePickerPreview />
             <SelectPreview />
           </div>
-          <div className="flex flex-wrap gap-6 mt-3">
-            <Checkbox label="체크박스 A" defaultChecked />
-            <Checkbox label="체크박스 B" />
-            <Checkbox label="라디오 A" variant="radio" name="preview-radio" defaultChecked />
-            <Checkbox label="라디오 B" variant="radio" name="preview-radio" />
-          </div>
         </div>
       </Card>
     </div>
