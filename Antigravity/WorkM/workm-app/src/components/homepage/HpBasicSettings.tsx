@@ -41,9 +41,12 @@ interface HpBasicData {
   favicon: string
   /* SNS 링크 */
   snsLinks: SnsLink[]
+  /* 팝업 */
+  popups: PopupItem[]
 }
 
 interface SnsLink { name: string; icon: string; logo: string; url: string }
+interface PopupItem { id: string; imgH: string; imgV: string; url: string; active: boolean }
 
 interface McItem { imgH: string; imgV: string; text1: string; text2: string; text3: string; url: string; blank: boolean }
 interface McLine { type: 'image' | 'solution'; duration: number; items: McItem[]; solution: string }
@@ -73,6 +76,7 @@ const DEFAULT: HpBasicData = {
     { name: '페이스북', icon: '', logo: '', url: 'https://facebook.com' },
     { name: '카카오톡', icon: '', logo: '', url: 'https://pf.kakao.com' },
   ],
+  popups: [],
 }
 
 const STORAGE_KEY = 'hp_basic_settings'
@@ -993,6 +997,102 @@ export function HpBasicSettings() {
         )}
 
         <div className="flex justify-end"><button onClick={() => save('SNS 링크')} className={`${saveBtn} !bg-gradient-to-r !from-pink-500 !to-orange-400 hover:!from-pink-600 hover:!to-orange-500`}><Save size={13} /> 저장</button></div>
+      </div>
+
+      {/* ═══ 11. 팝업관리 ═══ */}
+      <div className={cardCls}>
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white"><Monitor size={15} /></div>
+          <div>
+            <div className="text-sm font-bold text-[var(--text-primary)]">팝업 관리</div>
+            <div className="text-[10px] text-[var(--text-muted)]">홈페이지 접속 시 표시될 팝업 이미지 관리</div>
+          </div>
+          <button onClick={() => up({ popups: [...(d.popups || []), { id: `pop_${Date.now()}`, imgH: '', imgV: '', url: '', active: true }] })}
+            className="ml-auto flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[11px] font-bold cursor-pointer border-none hover:from-cyan-600 hover:to-blue-700 transition-all">
+            <Plus size={12} /> 추가
+          </button>
+        </div>
+
+        {(!d.popups || d.popups.length === 0) ? (
+          <div className="text-center py-8 text-[var(--text-muted)] text-sm">등록된 팝업이 없습니다. "추가" 버튼을 눌러주세요.</div>
+        ) : (
+          <div className="space-y-3">
+            {d.popups.map((pop, i) => (
+              <div key={pop.id} className="border border-[var(--border-default)] rounded-xl p-4 bg-[var(--bg-base)]" style={{ opacity: pop.active ? 1 : 0.5, transition: 'opacity .2s' }}>
+                {/* 헤더: 번호 + 스위치 + 삭제 */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-[10px] font-bold">{i + 1}</div>
+                  <span className="text-xs font-bold text-[var(--text-primary)] flex-1">팝업 {i + 1}</span>
+                  {/* 팝업 여부 스위치 */}
+                  <button onClick={() => { const arr = [...d.popups]; arr[i] = { ...arr[i], active: !arr[i].active }; up({ popups: arr }) }}
+                    className="relative w-10 h-5 rounded-full cursor-pointer border-none transition-colors"
+                    style={{ background: pop.active ? '#22c55e' : '#cbd5e1' }}>
+                    <div className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all"
+                      style={{ left: pop.active ? 22 : 2 }} />
+                  </button>
+                  <span className={`text-[10px] font-bold ${pop.active ? 'text-green-500' : 'text-[var(--text-muted)]'}`}>{pop.active ? '활성' : '비활성'}</span>
+                  <button onClick={() => { const arr = [...d.popups]; arr.splice(i, 1); up({ popups: arr }) }}
+                    className="w-6 h-6 rounded-full flex items-center justify-center bg-red-50 text-red-400 hover:bg-red-100 cursor-pointer border-none transition-colors">
+                    <X size={12} />
+                  </button>
+                </div>
+
+                {/* 이미지 가로 + 세로 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  {/* 가로 이미지 */}
+                  <div>
+                    <label className={labelCls}><ImageIcon size={10} /> 이미지 (가로)</label>
+                    <div className="flex items-center gap-3">
+                      <div className="w-24 h-14 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
+                        {pop.imgH ? <img src={pop.imgH} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
+                      </div>
+                      <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
+                        <Upload size={11} /> 선택
+                        <input type="file" accept="image/*" className="hidden" onChange={e => {
+                          const f = e.target.files?.[0]; if (!f) return
+                          const reader = new FileReader()
+                          reader.onload = ev => { const arr = [...d.popups]; arr[i] = { ...arr[i], imgH: ev.target?.result as string }; up({ popups: arr }) }
+                          reader.readAsDataURL(f)
+                        }} />
+                      </label>
+                      {pop.imgH && <button onClick={() => { const arr = [...d.popups]; arr[i] = { ...arr[i], imgH: '' }; up({ popups: arr }) }}
+                        className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
+                    </div>
+                  </div>
+                  {/* 세로 이미지 */}
+                  <div>
+                    <label className={labelCls}><ImageIcon size={10} /> 이미지 (세로)</label>
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-20 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
+                        {pop.imgV ? <img src={pop.imgV} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
+                      </div>
+                      <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
+                        <Upload size={11} /> 선택
+                        <input type="file" accept="image/*" className="hidden" onChange={e => {
+                          const f = e.target.files?.[0]; if (!f) return
+                          const reader = new FileReader()
+                          reader.onload = ev => { const arr = [...d.popups]; arr[i] = { ...arr[i], imgV: ev.target?.result as string }; up({ popups: arr }) }
+                          reader.readAsDataURL(f)
+                        }} />
+                      </label>
+                      {pop.imgV && <button onClick={() => { const arr = [...d.popups]; arr[i] = { ...arr[i], imgV: '' }; up({ popups: arr }) }}
+                        className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 클릭 URL */}
+                <div>
+                  <label className={labelCls}><Link size={10} /> 클릭 URL</label>
+                  <input value={pop.url} onChange={e => { const arr = [...d.popups]; arr[i] = { ...arr[i], url: e.target.value }; up({ popups: arr }) }}
+                    placeholder="클릭 시 이동할 URL (비워두면 링크 없음)" className={inputCls} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex justify-end"><button onClick={() => save('팝업')} className={`${saveBtn} !bg-gradient-to-r !from-cyan-500 !to-blue-600 hover:!from-cyan-600 hover:!to-blue-700`}><Save size={13} /> 저장</button></div>
       </div>
 
       {/* ── 토스트 메시지 ── */}

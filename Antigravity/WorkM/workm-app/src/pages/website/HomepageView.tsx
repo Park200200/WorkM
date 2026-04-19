@@ -139,6 +139,7 @@ export function HomepageView() {
   const [hoveredMenu, setHoveredMenu] = useState<number | null>(null)
   const [activeSolution, setActiveSolution] = useState<string | null>(null)
   const [activeSolName, setActiveSolName] = useState<string | null>(null)
+  const [openPopups, setOpenPopups] = useState<any[]>([])
   const megaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const navRef = useRef<HTMLElement>(null)
   const headerRef = useRef<HTMLElement>(null)
@@ -156,6 +157,12 @@ export function HomepageView() {
       if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link) }
       link.href = (data as any).favicon
     }
+    // 팝업 표시 (오늘 하루 안보기 체크)
+    const pops = ((data as any)?.popups || []).filter((p: any) => p.active)
+    const dismissed = JSON.parse(localStorage.getItem('hp_popups_dismissed') || '{}')
+    const today = new Date().toISOString().slice(0, 10)
+    const visible = pops.filter((p: any) => dismissed[p.id] !== today)
+    setOpenPopups(visible)
   }, [])
 
   /* 서브메뉴 헬퍼 */
@@ -488,6 +495,60 @@ export function HomepageView() {
       <button className="hp-theme-btn" onClick={toggleTheme} title="테마 변경">
         {theme === 'dark' ? <Sun size={18}/> : <Moon size={18}/>}
       </button>
+
+      {/* ═══ 팝업 ═══ */}
+      {openPopups.length > 0 && createPortal(
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 99998, padding: 20, gap: 16, flexWrap: 'wrap',
+        }}>
+          {openPopups.map((pop: any) => {
+            const isMobile = window.innerWidth < 768
+            const img = isMobile && pop.imgV ? pop.imgV : (pop.imgH || pop.imgV)
+            return (
+              <div key={pop.id} style={{
+                position: 'relative', maxWidth: isMobile ? '90vw' : 480, width: '100%',
+                borderRadius: 16, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,.4)',
+                animation: 'hp-fade-in .3s ease',
+              }}>
+                {img ? (
+                  pop.url ? (
+                    <a href={pop.url.startsWith('http') ? pop.url : `https://${pop.url}`} target="_blank" rel="noopener noreferrer">
+                      <img src={img} alt="" style={{ width: '100%', display: 'block' }} />
+                    </a>
+                  ) : (
+                    <img src={img} alt="" style={{ width: '100%', display: 'block' }} />
+                  )
+                ) : (
+                  <div style={{ padding: 40, textAlign: 'center', background: '#fff', color: '#94a3b8', fontSize: 14 }}>팝업 이미지가 없습니다</div>
+                )}
+                {/* 버튼 영역 */}
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '10px 14px', background: '#fff',
+                }}>
+                  <button onClick={() => {
+                    const dismissed = JSON.parse(localStorage.getItem('hp_popups_dismissed') || '{}')
+                    dismissed[pop.id] = new Date().toISOString().slice(0, 10)
+                    localStorage.setItem('hp_popups_dismissed', JSON.stringify(dismissed))
+                    setOpenPopups(prev => prev.filter(p => p.id !== pop.id))
+                  }} style={{
+                    background: 'none', border: 'none', color: '#94a3b8', fontSize: 12,
+                    cursor: 'pointer', padding: '4px 0',
+                  }}>오늘 하루 안보기</button>
+                  <button onClick={() => setOpenPopups(prev => prev.filter(p => p.id !== pop.id))} style={{
+                    background: 'none', border: 'none', color: '#1e293b', fontSize: 13,
+                    fontWeight: 700, cursor: 'pointer', padding: '4px 8px',
+                  }}>닫기 ✕</button>
+                </div>
+              </div>
+            )
+          })}
+        </div>,
+        document.body
+      )}
     </div>
   )
 }
