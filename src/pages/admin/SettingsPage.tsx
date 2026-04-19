@@ -298,6 +298,12 @@ function ImportancePanel() {
   )
 }
 
+/* 진행상태 전용 아이콘: 준비/시작/정상진행/지연진행/대기중/보류/일부완료/포기/완료/검토중 */
+const STATUS_ICON_KEYS = [
+  'circle-dot', 'play-circle', 'activity', 'alert-triangle', 'pause-circle',
+  'ban', 'check-check', 'x-circle', 'check-circle-2', 'eye',
+]
+
 function TaskStatusPanel() {
   const { taskStatuses, addTaskStatus, updateTaskStatus, deleteTaskStatus, reorderItems } = useSettingsStore()
   return (
@@ -311,6 +317,7 @@ function TaskStatusPanel() {
       placeholder="새 진행상태 입력 (예: 진행중)"
       color="#06b6d4"
       showIcon
+      iconKeys={STATUS_ICON_KEYS}
     />
   )
 }
