@@ -24,6 +24,8 @@ import {
   FileSpreadsheet, Presentation, FileDown, Film,
   FileImage, FileVideo, FileAudio,
   Smartphone, AppWindow, Globe2, Layout,
+  /* 추가: PDF/실행파일/URL/문자/미팅 */
+  FileType, Cog, Link2, MessageSquareText, UsersRound, HandshakeIcon,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -66,6 +68,10 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   'smartphone': Smartphone, 'app-window': AppWindow,
   'globe-2': Globe2, 'layout': Layout,
   'list-checks': ListChecks,
+  /* PDF/실행파일/URL/문자/미팅 */
+  'file-type': FileType, 'cog': Cog, 'link-2': Link2,
+  'message-square-text': MessageSquareText, 'users-round': UsersRound,
+  'handshake': HandshakeIcon,
 }
 
 export function renderIcon(name?: string, size = 16) {
