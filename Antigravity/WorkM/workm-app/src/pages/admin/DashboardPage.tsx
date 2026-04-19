@@ -489,13 +489,12 @@ export function DashboardPage() {
             onClick={() => setMobileChatOpen(false)}
           />
           <div
-            className="lg:hidden fixed inset-x-0 top-0 z-[200] flex flex-col bg-[var(--bg-surface)] animate-slideUp"
-            style={{ height: '100dvh' }}
+            className="lg:hidden fixed inset-0 z-[200] flex flex-col bg-[var(--bg-surface)] animate-slideUp"
             role="dialog"
             aria-modal="true"
           >
-          {/* 팝업 헤더 */}
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border-default)] shrink-0">
+          {/* 팝업 헤더 — 키보드가 올라와도 상단 고정 */}
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border-default)] shrink-0 bg-[var(--bg-surface)] sticky top-0 z-10">
             <div className="w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center shrink-0">
               <MessageSquare size={14} className="text-primary-500" />
             </div>
