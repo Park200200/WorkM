@@ -1499,16 +1499,6 @@ function ThemePanel() {
             <Checkbox label="라디오 B" variant="radio" name="preview-radio" />
           </div>
         </div>
-
-        {/* 탭 스타일 */}
-        <div className="mb-5">
-          <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 block">탭 (3가지 스타일)</span>
-          <div className="space-y-3">
-            <TabsPreview style="underline" />
-            <TabsPreview style="box" />
-            <TabsPreview style="pill" />
-          </div>
-        </div>
       </Card>
     </div>
   )
