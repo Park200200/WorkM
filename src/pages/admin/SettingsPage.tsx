@@ -245,7 +245,7 @@ function ResultPanel() {
 /* 진행절차 전용 아이콘: 시작/조사/작업중/완료/협의/취소/일부완료/보고서 */
 const REPORT_TYPE_ICON_KEYS = [
   'play-circle', 'search', 'wrench', 'check-circle-2',
-  'message-circle', 'x-circle', 'check-check', 'file-text',
+  'message-circle', 'x-circle', 'check-check', 'file-text', 'list-checks',
 ]
 
 function ReportTypePanel() {
