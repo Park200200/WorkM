@@ -1301,11 +1301,76 @@ function MediaSolutionView({ accent }: { accent: string }) {
         </div>
       </div>}
 
-      {selectedItem&&dMode!=='slide'&&(
-        <div style={{marginTop:20,padding:20,borderRadius:14,border:'1.5px solid #e2e8f0',background:'#fafbfc'}}>
-          <img src={selectedItem.dataUrl} alt="" style={{width:'100%',maxHeight:500,objectFit:'contain',borderRadius:10,marginBottom:14}}/>
-          <h3 style={{fontSize:18,fontWeight:700,color:'#1e293b',margin:'0 0 6px'}}>{selectedItem.title}</h3>
-          {selectedItem.desc&&<p style={{fontSize:14,color:'#475569',lineHeight:1.7,margin:0}}>{selectedItem.desc}</p>}
+      {selectedItem && (
+        <div onClick={() => setSelectedItem(null)} style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, animation: 'hp-fade-in .2s ease', padding: 20,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: '#fff', borderRadius: 20, maxWidth: 800, width: '100%',
+            maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column',
+            boxShadow: '0 25px 80px rgba(0,0,0,.3)',
+          }}>
+            {/* 이미지 영역 */}
+            <div style={{ position: 'relative', background: '#0a0a12', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300, maxHeight: '55vh' }}>
+              <img src={selectedItem.dataUrl} alt="" style={{ maxWidth: '100%', maxHeight: '55vh', objectFit: 'contain' }} />
+              {/* 닫기 */}
+              <button onClick={() => setSelectedItem(null)} style={{
+                position: 'absolute', top: 12, right: 12, width: 36, height: 36,
+                borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,.5)',
+                color: '#fff', fontSize: 20, cursor: 'pointer', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+              }}>✕</button>
+              {/* 이전/다음 */}
+              {fl.length > 1 && (
+                <>
+                  <button onClick={() => {
+                    const idx = fl.findIndex(it => it.id === selectedItem.id)
+                    setSelectedItem(fl[(idx - 1 + fl.length) % fl.length])
+                  }} style={{
+                    position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
+                    width: 40, height: 40, borderRadius: '50%', border: 'none',
+                    background: 'rgba(0,0,0,.45)', color: '#fff', fontSize: 20,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>◀</button>
+                  <button onClick={() => {
+                    const idx = fl.findIndex(it => it.id === selectedItem.id)
+                    setSelectedItem(fl[(idx + 1) % fl.length])
+                  }} style={{
+                    position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                    width: 40, height: 40, borderRadius: '50%', border: 'none',
+                    background: 'rgba(0,0,0,.45)', color: '#fff', fontSize: 20,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>▶</button>
+                </>
+              )}
+              {/* 인디케이터 */}
+              <div style={{
+                position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
+                padding: '4px 12px', borderRadius: 20, background: 'rgba(0,0,0,.5)',
+                color: '#fff', fontSize: 12, fontWeight: 700,
+              }}>
+                {fl.findIndex(it => it.id === selectedItem.id) + 1} / {fl.length}
+              </div>
+            </div>
+            {/* 정보 영역 */}
+            <div style={{ padding: '20px 24px', overflowY: 'auto' }}>
+              <h3 style={{ fontSize: 20, fontWeight: 800, color: '#1e293b', margin: '0 0 8px' }}>{selectedItem.title}</h3>
+              {selectedItem.desc && <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.7, margin: '0 0 12px' }}>{selectedItem.desc}</p>}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                {selectedItem.tags?.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                    {selectedItem.tags.map((t: string) => (
+                      <span key={t} style={{ padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: `${accent}15`, color: accent }}>#{t}</span>
+                    ))}
+                  </div>
+                )}
+                <span style={{ fontSize: 12, color: '#94a3b8', marginLeft: 'auto' }}>{selectedItem.regDate}</span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
