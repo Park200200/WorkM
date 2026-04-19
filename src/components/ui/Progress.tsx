@@ -1,4 +1,5 @@
 import { cn } from '../../utils/cn'
+import { useThemeStore } from '../../stores/themeStore'
 
 /* ═══════════════════════════════════════
    Progress Bar — 토큰 기반
@@ -32,9 +33,11 @@ const colorMap: Record<string, string> = {
   danger:  'var(--color-danger-500)',
 }
 
-export function Progress({ value, showLabel, size = 'md', colorMode = 'auto', className, animate = true }: ProgressProps) {
+export function Progress({ value, showLabel, size = 'md', colorMode, className, animate = true }: ProgressProps) {
+  const globalColor = useThemeStore((s) => s.progressColor) || 'auto'
+  const mode = colorMode || globalColor
   const clamped = Math.max(0, Math.min(100, value))
-  const fillColor = colorMode === 'auto' ? getAutoColor(clamped) : colorMap[colorMode]
+  const fillColor = mode === 'auto' ? getAutoColor(clamped) : colorMap[mode]
 
   return (
     <div className={cn('flex items-center gap-2.5', className)}>

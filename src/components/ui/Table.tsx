@@ -1,6 +1,7 @@
 import type { ReactNode, ThHTMLAttributes, TdHTMLAttributes, TableHTMLAttributes } from 'react'
 import { cn } from '../../utils/cn'
 import { ChevronUp, ChevronDown } from 'lucide-react'
+import { useThemeStore } from '../../stores/themeStore'
 
 /* ═══════════════════════════════════════
    Table System — 토큰 기반
@@ -28,8 +29,10 @@ export function TableHead({ children, className }: { children: ReactNode; classN
 
 /* ── Body ── */
 export function TableBody({ children, className, striped }: { children: ReactNode; className?: string; striped?: boolean }) {
+  const globalStripe = useThemeStore((s) => s.tableStripe)
+  const useStripe = striped !== undefined ? striped : globalStripe === 'on'
   return (
-    <tbody className={cn(striped && '[&>tr:nth-child(even)]:bg-[var(--table-stripe)]', className)}>
+    <tbody className={cn(useStripe && '[&>tr:nth-child(even)]:bg-[var(--table-stripe)]', className)}>
       {children}
     </tbody>
   )
@@ -63,10 +66,12 @@ interface ThProps extends ThHTMLAttributes<HTMLTableCellElement> {
 }
 
 export function Th({ children, className, sortable, sorted, onSort, ...props }: ThProps) {
+  const td = useThemeStore((s) => s.tableDensity) || 'default'
+  const pyClass = td === 'compact' ? 'py-1.5 px-3' : td === 'comfortable' ? 'py-4 px-5' : 'px-4 py-3'
   return (
     <th
       className={cn(
-        'px-4 py-3 text-left text-[length:var(--font-size-xs)] font-bold uppercase tracking-wider',
+        pyClass, 'text-left text-[length:var(--font-size-xs)] font-bold uppercase tracking-wider',
         'text-[var(--text-muted)]',
         sortable && 'cursor-pointer select-none hover:text-[var(--text-primary)]',
         className,
@@ -89,10 +94,12 @@ export function Th({ children, className, sortable, sorted, onSort, ...props }: 
 
 /* ── Data Cell ── */
 export function Td({ children, className, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
+  const td = useThemeStore((s) => s.tableDensity) || 'default'
+  const pyClass = td === 'compact' ? 'py-1.5 px-3' : td === 'comfortable' ? 'py-4 px-5' : 'px-4 py-3'
   return (
     <td
       className={cn(
-        'px-4 py-3 text-[length:var(--font-size-body)] text-[var(--text-primary)]',
+        pyClass, 'text-[length:var(--font-size-body)] text-[var(--text-primary)]',
         className,
       )}
       {...props}

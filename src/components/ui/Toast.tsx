@@ -1,6 +1,7 @@
 import { useToastStore } from '../../stores/toastStore'
 import { cn } from '../../utils/cn'
 import { X, CheckCircle2, AlertTriangle, XCircle, Info } from 'lucide-react'
+import { useThemeStore } from '../../stores/themeStore'
 
 /* ═══════════════════════════════════════
    Toast — 위치/액션 확장
@@ -27,13 +28,22 @@ const iconColors = {
   info:    'text-[var(--color-info-500)]',
 }
 
+const positionClasses = {
+  'top-right': 'top-4 right-4',
+  'top-left': 'top-4 left-4',
+  'bottom-right': 'bottom-4 right-4',
+  'bottom-left': 'bottom-4 left-4',
+  'top-center': 'top-4 left-1/2 -translate-x-1/2',
+}
+
 export function ToastContainer() {
   const { toasts, remove } = useToastStore()
+  const pos = useThemeStore((s) => s.toastPosition) || 'top-right'
 
   if (!toasts.length) return null
 
   return (
-    <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+    <div className={cn('fixed z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none', positionClasses[pos])}>
       {toasts.map((toast) => {
         const Icon = icons[toast.type]
         return (

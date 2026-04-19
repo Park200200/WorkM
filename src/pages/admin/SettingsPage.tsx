@@ -6,7 +6,7 @@ import { Input } from '../../components/ui/Input'
 import { Modal, ModalBody, ModalFooter } from '../../components/ui/Modal'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { useToastStore } from '../../stores/toastStore'
-import { useThemeStore, PRESET_ACCENTS, PRESET_KEYS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, FONT_SCALE_LABELS, FONT_COLOR_PRESETS, DATEPICKER_LABELS, CHECKBOX_STYLE_LABELS, CHECKBOX_SIZE_LABELS, CHECKBOX_SIZE_VALUES, TAB_STYLE_LABELS, TYPO_CATEGORY_LABELS, DEFAULT_TYPO, TYPO_SIZE_OPTIONS, TYPO_WEIGHT_OPTIONS, TYPO_COLOR_OPTIONS, type ThemeRadius, type ThemeDensity, type ThemeFontScale, type ThemeDatePicker, type ThemeCheckboxStyle, type ThemeCheckboxSize, type ThemeTabStyle, type TypoCategory } from '../../stores/themeStore'
+import { useThemeStore, PRESET_ACCENTS, PRESET_KEYS, ACCENT_COLORS, RADIUS_LABELS, DENSITY_LABELS, FONT_SCALE_LABELS, FONT_COLOR_PRESETS, DATEPICKER_LABELS, CHECKBOX_STYLE_LABELS, CHECKBOX_SIZE_LABELS, CHECKBOX_SIZE_VALUES, TAB_STYLE_LABELS, BUTTON_SIZE_LABELS, TOAST_POSITION_LABELS, TABLE_STRIPE_LABELS, TABLE_DENSITY_LABELS, BADGE_SHAPE_LABELS, SIDEBAR_WIDTH_LABELS, PROGRESS_COLOR_LABELS, TYPO_CATEGORY_LABELS, DEFAULT_TYPO, TYPO_SIZE_OPTIONS, TYPO_WEIGHT_OPTIONS, TYPO_COLOR_OPTIONS, type ThemeRadius, type ThemeDensity, type ThemeFontScale, type ThemeDatePicker, type ThemeCheckboxStyle, type ThemeCheckboxSize, type ThemeTabStyle, type ThemeButtonSize, type ThemeToastPosition, type ThemeTableStripe, type ThemeTableDensity, type ThemeBadgeShape, type ThemeSidebarWidth, type ThemeProgressColor, type TypoCategory } from '../../stores/themeStore'
 import { cn } from '../../utils/cn'
 import { getItem } from '../../utils/storage'
 import {
@@ -993,7 +993,7 @@ function PaymentMethodPanel() {
    🎨 테마 설정 패널
    ══════════════════════════════════════════════ */
 function ThemePanel() {
-  const { theme, accent, radius, density, fontScale, fontColor, datePickerStyle, checkboxStyle, checkboxSize, tabStyle, toggle, setAccent, setRadius, setDensity, setFontScale, setFontColor, setDatePickerStyle, setCheckboxStyle, setCheckboxSize, setTabStyle, customAccents, addCustomAccent, removeCustomAccent, typography, setTypo, resetTypo } = useThemeStore()
+  const { theme, accent, radius, density, fontScale, fontColor, datePickerStyle, checkboxStyle, checkboxSize, tabStyle, buttonSize, toastPosition, tableStripe, tableDensity, badgeShape, sidebarWidth, progressColor, toggle, setAccent, setRadius, setDensity, setFontScale, setFontColor, setDatePickerStyle, setCheckboxStyle, setCheckboxSize, setTabStyle, setButtonSize, setToastPosition, setTableStripe, setTableDensity, setBadgeShape, setSidebarWidth, setProgressColor, customAccents, addCustomAccent, removeCustomAccent, typography, setTypo, resetTypo } = useThemeStore()
   const addToast = useToastStore((s) => s.add)
 
   const radiusKeys = Object.keys(RADIUS_LABELS) as ThemeRadius[]
@@ -1371,6 +1371,197 @@ function ThemePanel() {
                 ))}
               </div>
               <span className="text-[10px] font-bold text-[var(--text-secondary)]">{TAB_STYLE_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 버튼 기본 크기 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">버튼 기본 크기</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">버튼의 기본 크기를 변경합니다</p>
+        <div className="grid grid-cols-4 gap-3">
+          {(Object.keys(BUTTON_SIZE_LABELS) as ThemeButtonSize[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setButtonSize(key)}
+              className={cn(
+                'flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                buttonSize === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <div className={cn(
+                'bg-[var(--btn-save-bg)] text-white font-bold rounded-[var(--radius-sm)] flex items-center justify-center',
+                key === 'xs' ? 'h-5 px-2 text-[9px]' : key === 'sm' ? 'h-6 px-2.5 text-[10px]' : key === 'md' ? 'h-7 px-3 text-[11px]' : 'h-9 px-4 text-xs',
+              )}>
+                버튼
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{BUTTON_SIZE_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 토스트 알림 위치 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">토스트 알림 위치</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">알림 메시지의 표시 위치를 변경합니다</p>
+        <div className="grid grid-cols-5 gap-2">
+          {(Object.keys(TOAST_POSITION_LABELS) as ThemeToastPosition[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => { setToastPosition(key); addToast('info', `알림위치: ${TOAST_POSITION_LABELS[key]}`) }}
+              className={cn(
+                'flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                toastPosition === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <div className="w-8 h-6 rounded border border-[var(--border-strong)] relative bg-[var(--bg-muted)]">
+                <div className={cn(
+                  'absolute w-2.5 h-1.5 rounded-sm bg-[var(--btn-save-bg)]',
+                  key === 'top-right' && 'top-0.5 right-0.5',
+                  key === 'top-left' && 'top-0.5 left-0.5',
+                  key === 'bottom-right' && 'bottom-0.5 right-0.5',
+                  key === 'bottom-left' && 'bottom-0.5 left-0.5',
+                  key === 'top-center' && 'top-0.5 left-1/2 -translate-x-1/2',
+                )} />
+              </div>
+              <span className="text-[9px] font-bold text-[var(--text-secondary)]">{TOAST_POSITION_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 테이블 줄무늬 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">테이블 줄무늬</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">테이블의 짝수 행에 배경색을 표시합니다</p>
+        <div className="grid grid-cols-2 gap-3">
+          {(Object.keys(TABLE_STRIPE_LABELS) as ThemeTableStripe[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setTableStripe(key)}
+              className={cn(
+                'flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                tableStripe === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <div className="w-full max-w-[80px] rounded overflow-hidden border border-[var(--border-default)]">
+                {[0,1,2,3].map(i => (
+                  <div key={i} className={cn('h-2', key === 'on' && i % 2 === 1 ? 'bg-[var(--bg-muted)]' : 'bg-[var(--bg-surface)]')} />
+                ))}
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{TABLE_STRIPE_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 테이블 행 밀도 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">테이블 행 밀도</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">테이블 행의 패딩 크기를 변경합니다</p>
+        <div className="grid grid-cols-3 gap-3">
+          {(Object.keys(TABLE_DENSITY_LABELS) as ThemeTableDensity[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setTableDensity(key)}
+              className={cn(
+                'flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                tableDensity === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <div className="w-full max-w-[60px] rounded overflow-hidden border border-[var(--border-default)]">
+                {[0,1,2].map(i => (
+                  <div key={i} className={cn('bg-[var(--bg-surface)] border-b border-[var(--border-default)] last:border-b-0', key === 'compact' ? 'h-1.5' : key === 'comfortable' ? 'h-4' : 'h-2.5')} />
+                ))}
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{TABLE_DENSITY_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 뱃지 모양 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">뱃지 모양</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">상태 뱃지의 형태를 변경합니다</p>
+        <div className="grid grid-cols-3 gap-3">
+          {(Object.keys(BADGE_SHAPE_LABELS) as ThemeBadgeShape[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setBadgeShape(key)}
+              className={cn(
+                'flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                badgeShape === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <span className={cn(
+                'px-3 py-0.5 text-[10px] font-bold border bg-primary-50 text-primary-600 border-primary-200 dark:bg-primary-900/30 dark:text-primary-400 dark:border-primary-800',
+                key === 'pill' ? 'rounded-full' : key === 'rounded' ? 'rounded-[var(--radius-sm)]' : 'rounded-none',
+              )}>진행중</span>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{BADGE_SHAPE_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 사이드바 너비 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">사이드바 너비</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">좌측 사이드바의 펼침 너비를 변경합니다</p>
+        <div className="grid grid-cols-3 gap-3">
+          {(Object.keys(SIDEBAR_WIDTH_LABELS) as ThemeSidebarWidth[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setSidebarWidth(key)}
+              className={cn(
+                'flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                sidebarWidth === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <div className="flex h-8 w-12 rounded border border-[var(--border-strong)] overflow-hidden bg-[var(--bg-muted)]">
+                <div className={cn('bg-[var(--btn-save-bg)]/20 border-r border-[var(--border-strong)]', key === 'narrow' ? 'w-2.5' : key === 'wide' ? 'w-5' : 'w-3.5')} />
+                <div className="flex-1" />
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{SIDEBAR_WIDTH_LABELS[key]}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 프로그레스 바 색상 */}
+      <Card>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] mb-1">프로그레스 바 색상</div>
+        <p className="text-[11px] text-[var(--text-muted)] mb-3">진행률 바의 기본 색상 모드를 변경합니다</p>
+        <div className="grid grid-cols-3 gap-3">
+          {(Object.keys(PROGRESS_COLOR_LABELS) as ThemeProgressColor[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setProgressColor(key)}
+              className={cn(
+                'flex flex-col items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all',
+                progressColor === key
+                  ? 'border-[var(--btn-save-bg)] bg-[var(--tab-active-bg)] shadow-md'
+                  : 'border-[var(--border-default)] hover:border-[var(--border-strong)]',
+              )}
+            >
+              <div className="w-full max-w-[60px] h-2 rounded-full bg-[var(--progress-track)] overflow-hidden">
+                <div className={cn('h-full rounded-full w-2/3', key === 'auto' ? 'bg-[var(--color-warning-500)]' : key === 'primary' ? 'bg-[var(--progress-fill)]' : 'bg-[var(--color-success-500)]')} />
+              </div>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)]">{PROGRESS_COLOR_LABELS[key]}</span>
             </button>
           ))}
         </div>

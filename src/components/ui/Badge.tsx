@@ -1,4 +1,5 @@
 import { cn } from '../../utils/cn'
+import { useThemeStore } from '../../stores/themeStore'
 
 /* ═══════════════════════════════════════
    Badge — 상태/분류 프리셋 포함
@@ -72,10 +73,14 @@ export function Badge({ children, variant = 'default', status, category, classNa
     resolvedLabel = resolvedLabel || preset.label
   }
 
+  const shape = useThemeStore((s) => s.badgeShape) || 'pill'
+  const shapeClass = shape === 'pill' ? 'rounded-full' : shape === 'rounded' ? 'rounded-[var(--radius-sm)]' : 'rounded-none'
+
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 font-bold rounded-full border',
+        'inline-flex items-center gap-1.5 font-bold border',
+        shapeClass,
         size === 'sm' ? 'px-2 py-px text-[10px]' : 'px-2.5 py-0.5 text-xs',
         variantClasses[resolvedVariant],
         className,

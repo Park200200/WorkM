@@ -5,10 +5,12 @@ import { Header } from '../components/common/Header'
 import { MobileTabBar } from '../components/common/MobileTabBar'
 import { MobileDrawer } from '../components/common/MobileDrawer'
 import { cn } from '../utils/cn'
+import { useThemeStore, SIDEBAR_WIDTH_VALUES } from '../stores/themeStore'
 
 export function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const sidebarW = SIDEBAR_WIDTH_VALUES[useThemeStore((s) => s.sidebarWidth) || 'default']
 
   return (
     <div className="min-h-screen bg-[var(--bg-base)]">
@@ -19,7 +21,7 @@ export function AdminLayout() {
       <div
         className={cn(
           'flex flex-col min-h-screen transition-all duration-300',
-          collapsed ? 'md:ml-[68px]' : 'md:ml-[240px]',
+          collapsed ? 'md:ml-[68px]' : `md:ml-[${sidebarW}px]`,
         )}
       >
         <Header />

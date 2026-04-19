@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { cn } from '../../utils/cn'
 import { Avatar } from '../ui/Avatar'
 import { useAuthStore } from '../../stores/authStore'
+import { useThemeStore, SIDEBAR_WIDTH_VALUES } from '../../stores/themeStore'
 import {
   Home, Building2, Info, Contact, SlidersHorizontal, Users,
   Settings, Calendar, BarChart3, Briefcase, Globe, Calculator,
@@ -106,6 +107,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
   const isAcctMode = location.pathname === '/accounting'
   const isHpMode = location.pathname === '/homepage'
+  const sidebarW = SIDEBAR_WIDTH_VALUES[useThemeStore((s) => s.sidebarWidth) || 'default']
 
   /* ═══════════════════════════════════════════
      회계관리 전용 사이드바
@@ -119,7 +121,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           'fixed inset-y-0 left-0 z-40 flex flex-col',
           'bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)]',
           'transition-all duration-300 ease-in-out',
-          collapsed ? 'w-[68px]' : 'w-[240px]',
+          collapsed ? 'w-[68px]' : `w-[${sidebarW}px]`,
           'max-md:hidden',
         )}
       >
@@ -199,7 +201,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           'fixed inset-y-0 left-0 z-40 flex flex-col',
           'bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)]',
           'transition-all duration-300 ease-in-out',
-          collapsed ? 'w-[68px]' : 'w-[240px]',
+          collapsed ? 'w-[68px]' : `w-[${sidebarW}px]`,
           'max-md:hidden',
         )}
       >
@@ -275,7 +277,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         'fixed inset-y-0 left-0 z-40 flex flex-col',
         'bg-[var(--sidebar-bg)] border-r border-[var(--sidebar-border)]',
         'transition-all duration-300 ease-in-out',
-        collapsed ? 'w-[68px]' : 'w-[240px]',
+        collapsed ? 'w-[68px]' : `w-[${sidebarW}px]`,
         'max-md:hidden',
       )}
     >

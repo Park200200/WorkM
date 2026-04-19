@@ -9,6 +9,14 @@ export type ThemeFontScale = 'xs' | 'sm' | 'default' | 'lg' | 'xl'
 export type ThemeDatePicker = 'default' | 'modern' | 'minimal' | 'bubble'
 export type ThemeCheckboxStyle = 'default' | 'sharp' | 'circle'
 export type ThemeCheckboxSize = 'sm' | 'default' | 'lg' | 'xl'
+export type ThemeTabStyle = 'underline' | 'box' | 'pill'
+export type ThemeButtonSize = 'xs' | 'sm' | 'md' | 'lg'
+export type ThemeToastPosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center'
+export type ThemeTableStripe = 'on' | 'off'
+export type ThemeTableDensity = 'compact' | 'default' | 'comfortable'
+export type ThemeBadgeShape = 'pill' | 'rounded' | 'square'
+export type ThemeSidebarWidth = 'narrow' | 'default' | 'wide'
+export type ThemeProgressColor = 'auto' | 'primary' | 'success'
 
 export const CHECKBOX_SIZE_LABELS: Record<ThemeCheckboxSize, string> = {
   sm: '소', default: '기본', lg: '대', xl: '특대',
@@ -19,7 +27,30 @@ export const CHECKBOX_SIZE_VALUES: Record<ThemeCheckboxSize, { box: number; icon
   lg: { box: 22, icon: 14, dot: 10 },
   xl: { box: 28, icon: 18, dot: 12 },
 }
-export type ThemeTabStyle = 'underline' | 'box' | 'pill'
+export const BUTTON_SIZE_LABELS: Record<ThemeButtonSize, string> = {
+  xs: '초소', sm: '소', md: '기본', lg: '대',
+}
+export const TOAST_POSITION_LABELS: Record<ThemeToastPosition, string> = {
+  'top-right': '우상단', 'top-left': '좌상단', 'bottom-right': '우하단', 'bottom-left': '좌하단', 'top-center': '상단중앙',
+}
+export const TABLE_STRIPE_LABELS: Record<ThemeTableStripe, string> = {
+  on: '켜기', off: '끄기',
+}
+export const TABLE_DENSITY_LABELS: Record<ThemeTableDensity, string> = {
+  compact: '컴팩트', default: '기본', comfortable: '넓음',
+}
+export const BADGE_SHAPE_LABELS: Record<ThemeBadgeShape, string> = {
+  pill: '둥글', rounded: '둥근사각', square: '사각',
+}
+export const SIDEBAR_WIDTH_LABELS: Record<ThemeSidebarWidth, string> = {
+  narrow: '좀음', default: '기본', wide: '넓음',
+}
+export const SIDEBAR_WIDTH_VALUES: Record<ThemeSidebarWidth, number> = {
+  narrow: 200, default: 240, wide: 280,
+}
+export const PROGRESS_COLOR_LABELS: Record<ThemeProgressColor, string> = {
+  auto: '자동', primary: '메인색상', success: '초록',
+}
 
 /* ── Typography Token 시스템 ── */
 export interface TypoToken { size: string; weight: number; color: string }
@@ -213,6 +244,13 @@ interface ThemeStore {
   checkboxStyle: ThemeCheckboxStyle
   checkboxSize: ThemeCheckboxSize
   tabStyle: ThemeTabStyle
+  buttonSize: ThemeButtonSize
+  toastPosition: ThemeToastPosition
+  tableStripe: ThemeTableStripe
+  tableDensity: ThemeTableDensity
+  badgeShape: ThemeBadgeShape
+  sidebarWidth: ThemeSidebarWidth
+  progressColor: ThemeProgressColor
   customAccents: CustomAccent[]
   typography: Record<TypoCategory, TypoToken>
 
@@ -227,6 +265,13 @@ interface ThemeStore {
   setCheckboxStyle: (style: ThemeCheckboxStyle) => void
   setCheckboxSize: (size: ThemeCheckboxSize) => void
   setTabStyle: (style: ThemeTabStyle) => void
+  setButtonSize: (size: ThemeButtonSize) => void
+  setToastPosition: (pos: ThemeToastPosition) => void
+  setTableStripe: (s: ThemeTableStripe) => void
+  setTableDensity: (d: ThemeTableDensity) => void
+  setBadgeShape: (s: ThemeBadgeShape) => void
+  setSidebarWidth: (w: ThemeSidebarWidth) => void
+  setProgressColor: (c: ThemeProgressColor) => void
   addCustomAccent: (label: string, color: string) => void
   removeCustomAccent: (key: string) => void
   setTypo: (category: TypoCategory, token: TypoToken) => void
@@ -247,6 +292,13 @@ interface SavedTheme {
   checkboxStyle: ThemeCheckboxStyle
   checkboxSize: ThemeCheckboxSize
   tabStyle: ThemeTabStyle
+  buttonSize: ThemeButtonSize
+  toastPosition: ThemeToastPosition
+  tableStripe: ThemeTableStripe
+  tableDensity: ThemeTableDensity
+  badgeShape: ThemeBadgeShape
+  sidebarWidth: ThemeSidebarWidth
+  progressColor: ThemeProgressColor
 }
 
 function loadTheme(): SavedTheme {
@@ -273,6 +325,13 @@ function loadTheme(): SavedTheme {
     checkboxStyle: 'default' as ThemeCheckboxStyle,
     checkboxSize: 'default' as ThemeCheckboxSize,
     tabStyle: 'underline' as ThemeTabStyle,
+    buttonSize: 'md' as ThemeButtonSize,
+    toastPosition: 'top-right' as ThemeToastPosition,
+    tableStripe: 'off' as ThemeTableStripe,
+    tableDensity: 'default' as ThemeTableDensity,
+    badgeShape: 'pill' as ThemeBadgeShape,
+    sidebarWidth: 'default' as ThemeSidebarWidth,
+    progressColor: 'auto' as ThemeProgressColor,
   }
 }
 
@@ -349,6 +408,8 @@ export const useThemeStore = create<ThemeStore>((set, get) => {
     mode: get().theme, accent: get().accent, radius: get().radius,
     density: get().density, fontScale: get().fontScale, fontColor: get().fontColor,
     datePickerStyle: get().datePickerStyle, checkboxStyle: get().checkboxStyle, checkboxSize: get().checkboxSize, tabStyle: get().tabStyle,
+    buttonSize: get().buttonSize, toastPosition: get().toastPosition, tableStripe: get().tableStripe,
+    tableDensity: get().tableDensity, badgeShape: get().badgeShape, sidebarWidth: get().sidebarWidth, progressColor: get().progressColor,
   })
 
   return {
@@ -362,6 +423,13 @@ export const useThemeStore = create<ThemeStore>((set, get) => {
     checkboxStyle: initial.checkboxStyle || 'default',
     checkboxSize: initial.checkboxSize || 'default',
     tabStyle: initial.tabStyle || 'underline',
+    buttonSize: initial.buttonSize || 'md',
+    toastPosition: initial.toastPosition || 'top-right',
+    tableStripe: initial.tableStripe || 'off',
+    tableDensity: initial.tableDensity || 'default',
+    badgeShape: initial.badgeShape || 'pill',
+    sidebarWidth: initial.sidebarWidth || 'default',
+    progressColor: initial.progressColor || 'auto',
     customAccents: loadCustomAccents(),
     typography: loadTypography(),
 
@@ -430,6 +498,48 @@ export const useThemeStore = create<ThemeStore>((set, get) => {
       const s = { ...getSaved(), tabStyle }
       saveTheme(s); applyToDOM(s)
       set({ tabStyle })
+    },
+
+    setButtonSize: (buttonSize) => {
+      const s = { ...getSaved(), buttonSize }
+      saveTheme(s); applyToDOM(s)
+      set({ buttonSize })
+    },
+
+    setToastPosition: (toastPosition) => {
+      const s = { ...getSaved(), toastPosition }
+      saveTheme(s); applyToDOM(s)
+      set({ toastPosition })
+    },
+
+    setTableStripe: (tableStripe) => {
+      const s = { ...getSaved(), tableStripe }
+      saveTheme(s); applyToDOM(s)
+      set({ tableStripe })
+    },
+
+    setTableDensity: (tableDensity) => {
+      const s = { ...getSaved(), tableDensity }
+      saveTheme(s); applyToDOM(s)
+      set({ tableDensity })
+    },
+
+    setBadgeShape: (badgeShape) => {
+      const s = { ...getSaved(), badgeShape }
+      saveTheme(s); applyToDOM(s)
+      set({ badgeShape })
+    },
+
+    setSidebarWidth: (sidebarWidth) => {
+      const s = { ...getSaved(), sidebarWidth }
+      saveTheme(s); applyToDOM(s)
+      set({ sidebarWidth })
+    },
+
+    setProgressColor: (progressColor) => {
+      const s = { ...getSaved(), progressColor }
+      saveTheme(s); applyToDOM(s)
+      set({ progressColor })
     },
 
     addCustomAccent: (label, color) => {
