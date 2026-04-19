@@ -39,7 +39,6 @@ interface Tab {
 }
 
 const tabs: Tab[] = [
-  { key: 'theme',      label: '테마',                icon: Palette,    color: '#f43f5e' },
   { key: 'dept',       label: '부서',                icon: Building2,  color: '#4f6ef7' },
   { key: 'rank',       label: '직급',                icon: Medal,      color: '#9747ff' },
   { key: 'position',   label: '직책',                icon: Briefcase,  color: '#f59e0b' },
@@ -54,7 +53,7 @@ const tabs: Tab[] = [
 ]
 
 export function SettingsPage() {
-  const [activeTab, setActiveTab] = useState('theme')
+  const [activeTab, setActiveTab] = useState('dept')
   const globalTabStyle = useThemeStore((s) => s.tabStyle) || 'underline'
   const tabRef = useRef<HTMLDivElement>(null)
   const dragState = useRef({ isDown: false, startX: 0, scrollLeft: 0 })
@@ -150,7 +149,6 @@ export function SettingsPage() {
       </div>
 
       {/* 탭 콘텐츠 */}
-      {activeTab === 'theme'      && <ThemePanel />}
       {activeTab === 'dept'       && <DeptPanel />}
       {activeTab === 'rank'       && <RankPanel />}
       {activeTab === 'position'   && <PositionPanel />}
@@ -992,7 +990,7 @@ function PaymentMethodPanel() {
 /* ══════════════════════════════════════════════
    🎨 테마 설정 패널
    ══════════════════════════════════════════════ */
-function ThemePanel() {
+export function ThemePanel() {
   const { theme, accent, radius, density, fontScale, fontColor, datePickerStyle, checkboxStyle, checkboxSize, tabStyle, buttonSize, toastPosition, tableStripe, tableDensity, badgeShape, sidebarWidth, progressColor, toggle, setAccent, setRadius, setDensity, setFontScale, setFontColor, setDatePickerStyle, setCheckboxStyle, setCheckboxSize, setTabStyle, setButtonSize, setToastPosition, setTableStripe, setTableDensity, setBadgeShape, setSidebarWidth, setProgressColor, customAccents, addCustomAccent, removeCustomAccent, typography, setTypo, resetTypo } = useThemeStore()
   const addToast = useToastStore((s) => s.add)
 
