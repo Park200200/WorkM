@@ -229,11 +229,24 @@ export function DashboardPage() {
   useEffect(() => {
     if (chatBodyRef.current) chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight
     if (mobileChatBodyRef.current) mobileChatBodyRef.current.scrollTop = mobileChatBodyRef.current.scrollHeight
-    // 모바일 채팅 열림 → 뒤쪽 스크롤 차단
+    // iOS Safari 키보드 대응: body 스크롤 완전 잠금
     if (mobileChatOpen) {
+      const scrollY = window.scrollY
       document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.left = '0'
+      document.body.style.right = '0'
+      document.body.style.width = '100%'
+      return () => {
+        document.body.style.overflow = ''
+        document.body.style.position = ''
+        document.body.style.top = ''
+        document.body.style.left = ''
+        document.body.style.right = ''
+        document.body.style.width = ''
+        window.scrollTo(0, scrollY)
+      }
     }
     return () => { document.body.style.overflow = '' }
   }, [mobileChatOpen])
@@ -490,11 +503,14 @@ export function DashboardPage() {
           />
           <div
             className="lg:hidden fixed inset-0 z-[200] flex flex-col bg-[var(--bg-surface)] animate-slideUp"
+            style={{ overflow: 'hidden' }}
             role="dialog"
             aria-modal="true"
           >
-          {/* 팝업 헤더 — 키보드가 올라와도 상단 고정 */}
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border-default)] shrink-0 bg-[var(--bg-surface)] sticky top-0 z-10">
+          {/* 팝업 헤더 — iOS 키보드와 무관하게 최상단 고정 */}
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border-default)] shrink-0 bg-[var(--bg-surface)] z-10"
+            style={{ minHeight: 48 }}
+          >
             <div className="w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center shrink-0">
               <MessageSquare size={14} className="text-primary-500" />
             </div>
@@ -534,7 +550,7 @@ export function DashboardPage() {
           </div>
 
           {/* 팝업 바디 */}
-          <div ref={mobileChatBodyRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+          <div ref={mobileChatBodyRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-2" style={{ minHeight: 0, overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
             {messages.length === 0 ? (
               <div className="flex items-center justify-center h-full text-sm text-[var(--text-muted)]">
                 메시지가 없습니다
@@ -578,7 +594,7 @@ export function DashboardPage() {
           </div>
 
           {/* 팝업 입력 */}
-          <div className="flex items-center gap-2 px-3 py-1.5 border-t border-[var(--border-default)] shrink-0" style={{ paddingBottom: 'max(0.375rem, env(safe-area-inset-bottom))' }}>
+          <div className="flex items-center gap-2 px-3 py-1.5 border-t border-[var(--border-default)] shrink-0 bg-[var(--bg-surface)]" style={{ paddingBottom: 'max(0.375rem, env(safe-area-inset-bottom))' }}>
             <input
               type="text"
               value={chatInput}
