@@ -115,14 +115,14 @@ export function SettingsPage() {
                 ],
                 /* box */
                 ts === 'box' && [
-                  'rounded-xl border',
+                  'rounded-[var(--radius-md)] border',
                   isActive
                     ? 'bg-[var(--tab-active-bg)] border-[var(--tab-active-color)]/20 text-[var(--tab-active-color)] shadow-sm'
                     : 'border-transparent text-[var(--text-muted)]',
                 ],
                 /* pill */
                 ts === 'pill' && [
-                  'rounded-full',
+                  'rounded-[var(--radius-2xl)]',
                   isActive
                     ? 'bg-[var(--btn-save-bg)] text-white shadow-sm'
                     : 'text-[var(--text-muted)]',

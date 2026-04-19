@@ -69,7 +69,7 @@ export function Tabs({ items, activeKey, onChange, style: styleProp, className, 
 
               /* ── Pill ── */
               style === 'pill' && [
-                'rounded-[var(--radius-xl)]',
+                'rounded-[var(--radius-2xl)]',
                 isActive
                   ? 'bg-[var(--btn-save-bg)] text-white shadow-sm'
                   : 'text-[var(--tab-text)] hover:bg-[var(--bg-muted)]',
@@ -81,7 +81,7 @@ export function Tabs({ items, activeKey, onChange, style: styleProp, className, 
             {item.count !== undefined && (
               <span
                 className={cn(
-                  'text-[length:var(--font-size-xxs)] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center',
+                  'text-[length:var(--font-size-xxs)] font-bold px-1.5 py-0.5 rounded-[var(--radius-xl)] min-w-[20px] text-center',
                   isActive
                     ? (style === 'pill' ? 'bg-white/20 text-white' : 'bg-[var(--tab-active-color)]/10 text-[var(--tab-active-color)]')
                     : 'bg-[var(--bg-muted)] text-[var(--text-muted)]',

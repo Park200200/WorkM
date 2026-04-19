@@ -175,13 +175,13 @@ export function ProfilePage() {
                         : 'text-[var(--text-muted)]',
                     ],
                     ts === 'box' && [
-                      'rounded-lg',
+                      'rounded-[var(--radius-md)]',
                       isActive
                         ? 'text-[var(--tab-active-color)] bg-[var(--tab-active-bg)] border border-[var(--tab-active-color)]/20'
                         : 'text-[var(--text-muted)]',
                     ],
                     ts === 'pill' && [
-                      'rounded-full',
+                      'rounded-[var(--radius-2xl)]',
                       isActive
                         ? 'bg-[var(--btn-save-bg)] text-white'
                         : 'text-[var(--text-muted)]',
