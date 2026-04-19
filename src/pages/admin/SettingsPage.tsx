@@ -275,6 +275,11 @@ function DetailTaskPanel() {
   )
 }
 
+/* 중요도 전용 아이콘: 최상/상/중/하/참고 */
+const IMPORTANCE_ICON_KEYS = [
+  'chevrons-up', 'chevron-up', 'equal', 'chevron-down', 'book-open',
+]
+
 function ImportancePanel() {
   const { instrImportances, addImportance, updateImportance, deleteImportance, reorderItems } = useSettingsStore()
   return (
@@ -288,6 +293,7 @@ function ImportancePanel() {
       placeholder="새 중요도 입력"
       color="#ef4444"
       showIcon
+      iconKeys={IMPORTANCE_ICON_KEYS}
     />
   )
 }
