@@ -110,22 +110,8 @@ export function HpBoardMgmt() {
   })
   const [cat, setCat] = useState('all')
 
-  /* ── 메뉴등록에서 활성화된 게시판 카테고리를 동적으로 계산 ── */
-  const activeCats = useMemo(() => {
-    const menuReg = getItem<{ details?: Record<number, { sets?: { type: string; solutions?: string[] }[] }> }>('hp_menu_reg', null)
-    if (!menuReg?.details) return Object.keys(ALL_CAT_MAP) // 설정 없으면 전체 표시
-    const found = new Set<string>()
-    Object.values(menuReg.details).forEach(detail => {
-      detail.sets?.forEach(set => {
-        if (set.type === 'solution' && set.solutions) {
-          set.solutions.forEach(solId => {
-            if (SOL_TO_CAT[solId]) found.add(SOL_TO_CAT[solId])
-          })
-        }
-      })
-    })
-    return found.size > 0 ? Array.from(found) : Object.keys(ALL_CAT_MAP)
-  }, [])
+  /* ── 게시판 카테고리: 항상 전체 표시 ── */
+  const activeCats = useMemo(() => Object.keys(ALL_CAT_MAP), [])
 
   const CAT_MAP = useMemo(() => {
     const map: Record<string,string> = { all: '전체' }
