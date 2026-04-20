@@ -101,15 +101,18 @@ export function AcctHqVendor() {
   /* 단가수정 모달 */
   const [priceModal, setPriceModal] = useState(false)
   const [priceForm, setPriceForm] = useState({
-    monthlyFee: '0', dbUnitPrice: '0', usageUnitPrice: '0', salesRate: '0',
+    monthlyFee: '0', dbUnitPrice: '0', dbUsage: '', usageUnitPrice: '0', usageCount: '', salesRate: '0', periodSales: '0',
   })
 
   const openPriceModal = () => {
     setPriceForm({
       monthlyFee: formatNumber(data.monthlyFee),
       dbUnitPrice: formatNumber(data.dbUnitPrice),
+      dbUsage: data.dbUsage || '',
       usageUnitPrice: formatNumber(data.usageUnitPrice),
+      usageCount: data.usageCountLabel || '',
       salesRate: String(data.salesRate),
+      periodSales: formatNumber(data.periodSales),
     })
     setPriceModal(true)
   }
@@ -119,8 +122,11 @@ export function AcctHqVendor() {
     const patch = {
       monthlyFee: parseInt(priceForm.monthlyFee.replace(/,/g, '')) || 0,
       dbUnitPrice: parseInt(priceForm.dbUnitPrice.replace(/,/g, '')) || 0,
+      dbUsage: priceForm.dbUsage,
       usageUnitPrice: parseInt(priceForm.usageUnitPrice.replace(/,/g, '')) || 0,
+      usageCountLabel: priceForm.usageCount,
       salesRate: parseFloat(priceForm.salesRate) || 0,
+      periodSales: parseInt(priceForm.periodSales.replace(/,/g, '')) || 0,
       history: [...(data.history || []), { date: now, desc: '단가 수정' }],
     }
     const updated = { ...data, ...patch }
@@ -507,6 +513,7 @@ export function AcctHqVendor() {
             </div>
             {/* 바디 */}
             <div className="p-5 space-y-4">
+              {/* 기본금액 */}
               <div>
                 <label className={labelCls}><Server size={9} /> 기본금액 (월관리비)</label>
                 <input
@@ -516,44 +523,83 @@ export function AcctHqVendor() {
                     if (/^\d*$/.test(raw)) setPriceForm(p => ({ ...p, monthlyFee: formatNumber(parseInt(raw) || 0) }))
                   }}
                   className={inputCls}
-                  placeholder="200,000"
+                  placeholder="50,000"
                 />
               </div>
-              <div>
-                <label className={labelCls}><Database size={9} /> DB 단가 (100MB당)</label>
-                <input
-                  value={priceForm.dbUnitPrice}
-                  onChange={e => {
-                    const raw = e.target.value.replace(/,/g, '')
-                    if (/^\d*$/.test(raw)) setPriceForm(p => ({ ...p, dbUnitPrice: formatNumber(parseInt(raw) || 0) }))
-                  }}
-                  className={inputCls}
-                  placeholder="1,000"
-                />
+              {/* DB 단가 + 사용량 */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}><Database size={9} /> DB 단가 (100MB당)</label>
+                  <input
+                    value={priceForm.dbUnitPrice}
+                    onChange={e => {
+                      const raw = e.target.value.replace(/,/g, '')
+                      if (/^\d*$/.test(raw)) setPriceForm(p => ({ ...p, dbUnitPrice: formatNumber(parseInt(raw) || 0) }))
+                    }}
+                    className={inputCls}
+                    placeholder="1,000"
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>사용량</label>
+                  <input
+                    value={priceForm.dbUsage}
+                    onChange={e => setPriceForm(p => ({ ...p, dbUsage: e.target.value }))}
+                    className={inputCls}
+                    placeholder="25,000 MB"
+                  />
+                </div>
               </div>
-              <div>
-                <label className={labelCls}><Hash size={9} /> 자료 단가 (건당)</label>
-                <input
-                  value={priceForm.usageUnitPrice}
-                  onChange={e => {
-                    const raw = e.target.value.replace(/,/g, '')
-                    if (/^\d*$/.test(raw)) setPriceForm(p => ({ ...p, usageUnitPrice: formatNumber(parseInt(raw) || 0) }))
-                  }}
-                  className={inputCls}
-                  placeholder="10"
-                />
+              {/* 자료 단가 + 사용건수 */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}><Hash size={9} /> 자료 단가 (10건당)</label>
+                  <input
+                    value={priceForm.usageUnitPrice}
+                    onChange={e => {
+                      const raw = e.target.value.replace(/,/g, '')
+                      if (/^\d*$/.test(raw)) setPriceForm(p => ({ ...p, usageUnitPrice: formatNumber(parseInt(raw) || 0) }))
+                    }}
+                    className={inputCls}
+                    placeholder="1"
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>사용건수</label>
+                  <input
+                    value={priceForm.usageCount}
+                    onChange={e => setPriceForm(p => ({ ...p, usageCount: e.target.value }))}
+                    className={inputCls}
+                    placeholder="135,321 건"
+                  />
+                </div>
               </div>
-              <div>
-                <label className={labelCls}><Percent size={9} /> 수수료 (%)</label>
-                <input
-                  value={priceForm.salesRate}
-                  onChange={e => {
-                    const v = e.target.value
-                    if (/^\d*\.?\d*$/.test(v)) setPriceForm(p => ({ ...p, salesRate: v }))
-                  }}
-                  className={inputCls}
-                  placeholder="5"
-                />
+              {/* 수수료 + 매출 */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}><Percent size={9} /> 수수료 (%)</label>
+                  <input
+                    value={priceForm.salesRate}
+                    onChange={e => {
+                      const v = e.target.value
+                      if (/^\d*\.?\d*$/.test(v)) setPriceForm(p => ({ ...p, salesRate: v }))
+                    }}
+                    className={inputCls}
+                    placeholder="7"
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>매출</label>
+                  <input
+                    value={priceForm.periodSales}
+                    onChange={e => {
+                      const raw = e.target.value.replace(/,/g, '')
+                      if (/^\d*$/.test(raw)) setPriceForm(p => ({ ...p, periodSales: formatNumber(parseInt(raw) || 0) }))
+                    }}
+                    className={inputCls}
+                    placeholder="12,350,000 원"
+                  />
+                </div>
               </div>
             </div>
             {/* 푸터 */}
