@@ -372,14 +372,14 @@ export function AcctHqVendor() {
                     <thead>
                       <tr className="bg-[var(--bg-muted)]">
                         {['과금기간', '월관리비(서버)', 'DB사용료', 'Data사용건수', '수수료', '총금액', '상태'].map((h, i) => (
-                          <th key={i} className={`py-2.5 px-3 text-[10px] font-bold text-[var(--text-muted)] ${i === 0 ? 'text-left' : 'text-right'}`}>{h}</th>
+                          <th key={i} className={`py-2.5 px-3 text-[10px] font-bold text-[var(--text-muted)] ${i === 6 ? 'text-center' : i === 0 ? 'text-left' : 'text-right'}`}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {(!data.billingList || data.billingList.length === 0) ? (
                         <tr><td colSpan={7} className="py-6 text-center text-[11px] text-[var(--text-muted)]">청구 내역이 없습니다</td></tr>
-                      ) : data.billingList.map((b, i) => {
+                      ) : [...data.billingList].reverse().map((b, i) => {
                         const statusStyle = b.status === '납부'
                           ? { bg: 'rgba(34,197,94,.1)', color: '#22c55e' }
                           : b.status === '청구'
@@ -395,8 +395,8 @@ export function AcctHqVendor() {
                             <td className="py-2.5 px-3 text-[11px] text-[var(--text-secondary)] text-right tabular-nums">{formatNumber(b.dataFee)}원</td>
                             <td className="py-2.5 px-3 text-[11px] text-[var(--text-secondary)] text-right tabular-nums">{formatNumber(b.commission)}원</td>
                             <td className="py-2.5 px-3 text-[11px] font-extrabold text-[var(--text-primary)] text-right tabular-nums">{formatNumber(b.total)}원</td>
-                            <td className="py-2.5 px-3 text-right">
-                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ background: statusStyle.bg, color: statusStyle.color }}>{b.status}</span>
+                            <td className="py-2.5 px-3 text-center align-middle">
+                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full inline-block" style={{ background: statusStyle.bg, color: statusStyle.color }}>{b.status}</span>
                             </td>
                           </tr>
                         )
