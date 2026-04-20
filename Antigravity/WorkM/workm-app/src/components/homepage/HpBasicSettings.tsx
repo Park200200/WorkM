@@ -718,15 +718,78 @@ export function HpBasicSettings() {
                       {/* ── 웹에디터형 ── */}
                       {item.type === 'editor' && (
                         <div className="p-3">
+                          {/* 에디팅 툴바 */}
+                          <div className="flex flex-wrap gap-1 mb-2 p-2 bg-[var(--bg-muted)] rounded-lg border border-[var(--border-default)]">
+                            {[
+                              { cmd: 'bold', label: 'B', style: 'font-bold' },
+                              { cmd: 'italic', label: 'I', style: 'italic' },
+                              { cmd: 'underline', label: 'U', style: 'underline' },
+                              { cmd: 'strikeThrough', label: 'S', style: 'line-through' },
+                            ].map(b => (
+                              <button key={b.cmd} onMouseDown={e => { e.preventDefault(); document.execCommand(b.cmd) }}
+                                className={`w-7 h-7 rounded flex items-center justify-center text-[12px] ${b.style} cursor-pointer border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]`}
+                                title={b.cmd}>{b.label}</button>
+                            ))}
+                            <span className="w-px h-6 bg-[var(--border-default)] mx-0.5 self-center" />
+                            {[
+                              { cmd: 'justifyLeft', label: '⬅' },
+                              { cmd: 'justifyCenter', label: '⬛' },
+                              { cmd: 'justifyRight', label: '➡' },
+                            ].map(b => (
+                              <button key={b.cmd} onMouseDown={e => { e.preventDefault(); document.execCommand(b.cmd) }}
+                                className="w-7 h-7 rounded flex items-center justify-center text-[10px] cursor-pointer border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
+                                title={b.cmd}>{b.label}</button>
+                            ))}
+                            <span className="w-px h-6 bg-[var(--border-default)] mx-0.5 self-center" />
+                            {[
+                              { cmd: 'insertUnorderedList', label: '• 목록' },
+                              { cmd: 'insertOrderedList', label: '1. 목록' },
+                            ].map(b => (
+                              <button key={b.cmd} onMouseDown={e => { e.preventDefault(); document.execCommand(b.cmd) }}
+                                className="px-2 h-7 rounded flex items-center justify-center text-[10px] cursor-pointer border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
+                                title={b.cmd}>{b.label}</button>
+                            ))}
+                            <span className="w-px h-6 bg-[var(--border-default)] mx-0.5 self-center" />
+                            <select onMouseDown={e => e.stopPropagation()} onChange={e => { document.execCommand('formatBlock', false, e.target.value); e.target.value = '' }}
+                              className="h-7 px-1 rounded text-[10px] border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] cursor-pointer outline-none">
+                              <option value="">제목</option>
+                              <option value="h1">H1</option>
+                              <option value="h2">H2</option>
+                              <option value="h3">H3</option>
+                              <option value="p">본문</option>
+                            </select>
+                            <select onMouseDown={e => e.stopPropagation()} onChange={e => { document.execCommand('fontSize', false, e.target.value); e.target.value = '' }}
+                              className="h-7 px-1 rounded text-[10px] border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] cursor-pointer outline-none">
+                              <option value="">크기</option>
+                              <option value="1">작게</option>
+                              <option value="3">보통</option>
+                              <option value="5">크게</option>
+                              <option value="7">매우크게</option>
+                            </select>
+                            <input type="color" defaultValue="#000000" onInput={e => document.execCommand('foreColor', false, (e.target as HTMLInputElement).value)}
+                              className="w-7 h-7 rounded border border-[var(--border-default)] cursor-pointer p-0" title="글자색" />
+                            <input type="color" defaultValue="#ffffff" onInput={e => document.execCommand('hiliteColor', false, (e.target as HTMLInputElement).value)}
+                              className="w-7 h-7 rounded border border-[var(--border-default)] cursor-pointer p-0" title="배경색" />
+                            <button onMouseDown={e => { e.preventDefault(); const url = prompt('이미지 URL:'); if (url) document.execCommand('insertImage', false, url) }}
+                              className="px-2 h-7 rounded flex items-center justify-center text-[10px] cursor-pointer border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
+                              title="이미지">🖼</button>
+                            <button onMouseDown={e => { e.preventDefault(); const url = prompt('링크 URL:'); if (url) document.execCommand('createLink', false, url) }}
+                              className="px-2 h-7 rounded flex items-center justify-center text-[10px] cursor-pointer border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
+                              title="링크">🔗</button>
+                            <button onMouseDown={e => { e.preventDefault(); document.execCommand('removeFormat') }}
+                              className="px-2 h-7 rounded flex items-center justify-center text-[10px] cursor-pointer border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
+                              title="서식제거">🧹</button>
+                          </div>
+                          {/* 에디터 영역 */}
                           <div
                             contentEditable
                             suppressContentEditableWarning
                             dangerouslySetInnerHTML={{ __html: item.editorHtml || '' }}
                             onBlur={e => updateMcItem(i, j, { editorHtml: (e.target as HTMLDivElement).innerHTML })}
-                            className="min-h-[150px] p-3 rounded-lg border border-[var(--border-default)] bg-white text-sm text-[#1e293b] leading-relaxed outline-none focus:border-[#4f6ef7] transition-colors"
-                            style={{ overflowY: 'auto', maxHeight: 400 }}
+                            className="min-h-[200px] p-4 rounded-lg border border-[var(--border-default)] bg-white text-sm text-[#1e293b] leading-relaxed outline-none focus:border-[#4f6ef7] transition-colors"
+                            style={{ overflowY: 'auto', maxHeight: 500 }}
                           />
-                          <div className="text-[9px] text-[var(--text-muted)] mt-1">직접 HTML 편집이 가능합니다</div>
+                          <div className="text-[9px] text-[var(--text-muted)] mt-1.5">텍스트를 선택한 후 상단 툴바로 서식을 적용하세요</div>
                         </div>
                       )}
                     </div>
