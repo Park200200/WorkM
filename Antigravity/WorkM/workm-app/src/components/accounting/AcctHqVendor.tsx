@@ -308,7 +308,7 @@ export function AcctHqVendor() {
                   <Clock size={10} className="text-[var(--text-muted)]" />
                   <span className="font-bold text-[var(--text-muted)]">과금일자 :</span>
                   <span className="font-extrabold text-[var(--text-primary)]">
-                    {new Date(new Date().getFullYear(), new Date().getMonth(), 11).toISOString().slice(0,10).replace(/-/g,'.')}
+                    {new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0,10).replace(/-/g,'.')}
                     {' - '}
                     {new Date().toISOString().slice(0,10).replace(/-/g,'.')}
                   </span>
@@ -345,7 +345,7 @@ export function AcctHqVendor() {
                 {/* 사용건수 */}
                 <div className="bg-[var(--bg-muted)] rounded-xl p-3 border border-[var(--border-default)]">
                   <div className="flex items-center gap-1 text-[9px] font-bold text-[var(--text-muted)] mb-1">
-                    <Hash size={9}/> 사용건수(단가 : {formatNumber(data.usageUnitPrice)}건당 1원)
+                    <Hash size={9}/> 자료단가(단가 : {formatNumber(data.usageUnitPrice)}건당 1원)
                   </div>
                   <div className="text-[15px] font-extrabold text-[var(--text-primary)]">{formatNumber(data.usageCount)}원</div>
                   <div className="text-[9px] text-[var(--text-muted)] mt-0.5">{data.usageCountLabel || '0건'}</div>
