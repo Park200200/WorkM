@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { getItem, setItem } from '../../utils/storage'
 import { formatNumber } from '../../utils/format'
 import {
   Building2, User, Phone, Mail, IdCard, Lock, Upload, X, Save, Search, Plus,
   FileText, Clock, CreditCard, Server, Database, Hash, Percent, Calculator, ScrollText, Puzzle,
-  Edit3, Trash2, MoreVertical, Eye,
+  Edit3, Trash2, MoreVertical, Eye, ChevronDown,
 } from 'lucide-react'
 
 /* ─── 타입 ─── */
@@ -108,6 +108,7 @@ export function AcctHqVendor() {
   const [editVendor, setEditVendor] = useState<HqVendor | null>(null)
   const [showDetail, setShowDetail] = useState(false)
   const [menuOpen, setMenuOpen] = useState<number | null>(null)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
 
   const saveAll = (list: HqVendor[]) => { setVendors(list); setItem(STORAGE_KEY, list) }
 
@@ -168,8 +169,12 @@ export function AcctHqVendor() {
                 const activeSols = (v.solutions || []).filter(s => s.enabled).map(s => s.name)
                 const unpaid = (v.billingList || []).filter(b => b.status === '청구' || b.status === '미납').reduce((s, b) => s + b.total, 0)
                 return (
-                  <tr key={v.id} className="border-t border-[var(--border-default)] hover:bg-[var(--bg-muted)] transition-colors">
-                    <td className="py-3 px-3 text-[11px] text-[var(--text-muted)] tabular-nums">{idx + 1}</td>
+                  <React.Fragment key={v.id}>
+                  <tr className="border-t border-[var(--border-default)] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer" onClick={() => setExpandedId(expandedId === v.id ? null : v.id)}>
+                    <td className="py-3 px-3 text-[11px] text-[var(--text-muted)] tabular-nums">
+                      <ChevronDown size={12} className={`inline transition-transform ${expandedId === v.id ? 'rotate-180' : ''}`} />
+                      {' '}{idx + 1}
+                    </td>
                     <td className="py-3 px-3">
                       <div className="text-[12px] font-bold text-[var(--text-primary)]">{v.companyName || '(미입력)'}</div>
                       <div className="text-[9px] text-[var(--text-muted)]">{v.bizNo || '-'}</div>
@@ -194,7 +199,7 @@ export function AcctHqVendor() {
                         <span className="text-[11px] text-emerald-500 font-bold">없음</span>
                       )}
                     </td>
-                    <td className="py-3 px-3 text-center relative">
+                    <td className="py-3 px-3 text-center relative" onClick={e => e.stopPropagation()}>
                       <button onClick={() => setMenuOpen(menuOpen === v.id ? null : v.id)} className="p-1.5 rounded-lg hover:bg-[var(--bg-muted)] cursor-pointer transition-colors">
                         <MoreVertical size={14} className="text-[var(--text-muted)]" />
                       </button>
@@ -210,6 +215,52 @@ export function AcctHqVendor() {
                       )}
                     </td>
                   </tr>
+                  {expandedId === v.id && (() => {
+                    const { db, data: df, comm } = calcTotal(v)
+                    const curBilling: BillingItem = { period: `${new Date().getFullYear()}.${String(new Date().getMonth()+1).padStart(2,'0')}.01~`, monthlyFee: v.monthlyFee, dbFee: db, dataFee: df, commission: comm, total: v.monthlyFee + db + df + comm, status: '과금중' }
+                    const all = [...(v.billingList || []), curBilling]
+                    return (
+                      <tr>
+                        <td colSpan={8} className="p-0">
+                          <div className="bg-[var(--bg-muted)]/50 px-6 py-3 border-t border-[var(--border-default)]">
+                            <div className="flex items-center gap-2 mb-2">
+                              <ScrollText size={12} className="text-primary-500" />
+                              <span className="text-[10px] font-bold text-[var(--text-primary)]">청구 리스트</span>
+                              <span className="text-[8px] text-[var(--text-muted)] ml-auto">{all.length}건</span>
+                            </div>
+                            <table className="w-full">
+                              <thead>
+                                <tr>
+                                  {['과금기간','월관리비','DB사용료','Data사용건수','수수료','총금액','상태'].map((h,i) => (
+                                    <th key={i} className={`py-1.5 px-2 text-[9px] font-bold text-[var(--text-muted)] ${i===6?'text-center':i===0?'text-left':'text-right'}`}>{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {[...all].reverse().map((b,i) => {
+                                  const sc = b.status==='납부'?'#22c55e':b.status==='청구'?'#4f6ef7':b.status==='미납'?'#ef4444':b.status==='과금중'?'#f59e0b':'#9ca3af'
+                                  return (
+                                    <tr key={i} className="border-t border-[var(--border-default)]/50">
+                                      <td className="py-1.5 px-2 text-[10px] font-semibold text-[var(--text-primary)]">{b.period}</td>
+                                      <td className="py-1.5 px-2 text-[10px] text-[var(--text-secondary)] text-right tabular-nums">{formatNumber(b.monthlyFee)}원</td>
+                                      <td className="py-1.5 px-2 text-[10px] text-[var(--text-secondary)] text-right tabular-nums">{formatNumber(b.dbFee)}원</td>
+                                      <td className="py-1.5 px-2 text-[10px] text-[var(--text-secondary)] text-right tabular-nums">{formatNumber(b.dataFee)}원</td>
+                                      <td className="py-1.5 px-2 text-[10px] text-[var(--text-secondary)] text-right tabular-nums">{formatNumber(b.commission)}원</td>
+                                      <td className="py-1.5 px-2 text-[10px] font-bold text-[var(--text-primary)] text-right tabular-nums">{formatNumber(b.total)}원</td>
+                                      <td className="py-1.5 px-2 text-center">
+                                        <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: sc+'1a', color: sc }}>{b.status}</span>
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })()}
+                  </React.Fragment>
                 )
               })}
             </tbody>
