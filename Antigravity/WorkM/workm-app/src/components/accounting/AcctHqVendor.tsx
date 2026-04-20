@@ -92,7 +92,10 @@ function toFile(files: FileList | null, cb: (url: string) => void) {
 }
 
 export function AcctHqVendor() {
-  const [data, setData] = useState<HqVendor>(() => getItem<HqVendor>(STORAGE_KEY, EMPTY))
+  const [data, setData] = useState<HqVendor>(() => {
+    const saved = getItem<Partial<HqVendor>>(STORAGE_KEY, {})
+    return { ...EMPTY, ...saved }
+  })
   const [saved, setSaved] = useState(false)
 
   /* 단가수정 모달 */
