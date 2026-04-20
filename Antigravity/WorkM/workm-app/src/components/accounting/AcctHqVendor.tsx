@@ -159,9 +159,11 @@ export function AcctHqVendor() {
     setTimeout(() => setSaved(false), 2000)
   }
 
-  /* 솔루션 사용료 계산 */
+  /* 솔루션 사용료 자동계산 */
+  const calcDbFee = Math.round((stripUnit(data.dbUsage || '0') / 100) * data.dbUnitPrice)
+  const calcDataFee = Math.round((stripUnit(data.usageCountLabel || '0') / 10) * data.usageUnitPrice)
   const salesAmount = Math.round(data.periodSales * (data.salesRate / 100))
-  const grandTotal = data.monthlyFee + data.dbFee + data.usageCount + salesAmount
+  const grandTotal = data.monthlyFee + calcDbFee + calcDataFee + salesAmount
 
   return (
     <div className="space-y-4 animate-fadeIn">
@@ -337,7 +339,7 @@ export function AcctHqVendor() {
                   <div className="flex items-center gap-1 text-[9px] font-bold text-[var(--text-muted)] mb-1">
                     <Database size={9}/> DB사용료(단가:100M당 {formatNumber(data.dbUnitPrice)}원)
                   </div>
-                  <div className="text-[15px] font-extrabold text-[var(--text-primary)]">{formatNumber(data.dbFee)}원</div>
+                  <div className="text-[15px] font-extrabold text-[var(--text-primary)]">{formatNumber(calcDbFee)}원</div>
                   <div className="text-[9px] text-[var(--text-muted)] mt-0.5">{data.dbUsage || '0MB'}</div>
                 </div>
                 {/* 사용건수 */}
@@ -345,7 +347,7 @@ export function AcctHqVendor() {
                   <div className="flex items-center gap-1 text-[9px] font-bold text-[var(--text-muted)] mb-1">
                     <Hash size={9}/> 자료단가(10건당 1원)
                   </div>
-                  <div className="text-[15px] font-extrabold text-[var(--text-primary)]">{formatNumber(data.usageCount)}원</div>
+                  <div className="text-[15px] font-extrabold text-[var(--text-primary)]">{formatNumber(calcDataFee)}원</div>
                   <div className="text-[9px] text-[var(--text-muted)] mt-0.5">{data.usageCountLabel || '0건'}</div>
                 </div>
                 {/* 수수료 */}
