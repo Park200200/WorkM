@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { getItem, setItem } from '../../utils/storage'
 import { formatNumber } from '../../utils/format'
 import {
@@ -75,6 +76,37 @@ function toFile(files: FileList | null, cb: (url: string) => void) {
 export function AcctHqVendor() {
   const [data, setData] = useState<HqVendor>(() => getItem<HqVendor>(STORAGE_KEY, EMPTY))
   const [saved, setSaved] = useState(false)
+
+  /* 단가수정 모달 */
+  const [priceModal, setPriceModal] = useState(false)
+  const [priceForm, setPriceForm] = useState({
+    monthlyFee: '0', dbUnitPrice: '0', usageUnitPrice: '0', salesRate: '0',
+  })
+
+  const openPriceModal = () => {
+    setPriceForm({
+      monthlyFee: formatNumber(data.monthlyFee),
+      dbUnitPrice: formatNumber(data.dbUnitPrice),
+      usageUnitPrice: formatNumber(data.usageUnitPrice),
+      salesRate: String(data.salesRate),
+    })
+    setPriceModal(true)
+  }
+
+  const savePriceModal = () => {
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ')
+    const patch = {
+      monthlyFee: parseInt(priceForm.monthlyFee.replace(/,/g, '')) || 0,
+      dbUnitPrice: parseInt(priceForm.dbUnitPrice.replace(/,/g, '')) || 0,
+      usageUnitPrice: parseInt(priceForm.usageUnitPrice.replace(/,/g, '')) || 0,
+      salesRate: parseFloat(priceForm.salesRate) || 0,
+      history: [...(data.history || []), { date: now, desc: '단가 수정' }],
+    }
+    const updated = { ...data, ...patch }
+    setItem(STORAGE_KEY, updated)
+    setData(updated)
+    setPriceModal(false)
+  }
 
   const upd = (patch: Partial<HqVendor>) => {
     setData(prev => ({ ...prev, ...patch }))
@@ -251,7 +283,7 @@ export function AcctHqVendor() {
                   <span className="font-bold text-[var(--text-muted)]">총금액 :</span>
                   <span className="font-extrabold text-primary-600 dark:text-primary-400">{formatNumber(grandTotal)}원</span>
                 </div>
-                <button className="px-3 py-1.5 rounded-lg bg-[var(--bg-muted)] border border-[var(--border-default)] text-[10px] font-bold text-[var(--text-secondary)] cursor-pointer hover:border-primary-400 transition-colors flex items-center gap-1">
+                <button onClick={openPriceModal} className="px-3 py-1.5 rounded-lg bg-[var(--bg-muted)] border border-[var(--border-default)] text-[10px] font-bold text-[var(--text-secondary)] cursor-pointer hover:border-primary-400 transition-colors flex items-center gap-1">
                   <Save size={10} /> 단가수정
                 </button>
               </div>
@@ -419,6 +451,79 @@ export function AcctHqVendor() {
           {saved ? '✓ 저장되었습니다' : '저장'}
         </button>
       </div>
+
+      {/* ── 단가수정 모달 ── */}
+      {priceModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) setPriceModal(false) }}>
+          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-scaleIn">
+            {/* 헤더 */}
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border-default)]">
+              <div className="flex items-center gap-2">
+                <Calculator size={16} className="text-primary-500" />
+                <span className="text-sm font-extrabold text-[var(--text-primary)]">단가 수정</span>
+              </div>
+              <button onClick={() => setPriceModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer"><X size={18} /></button>
+            </div>
+            {/* 바디 */}
+            <div className="p-5 space-y-4">
+              <div>
+                <label className={labelCls}><Server size={9} /> 기본금액 (월관리비)</label>
+                <input
+                  value={priceForm.monthlyFee}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/,/g, '')
+                    if (/^\d*$/.test(raw)) setPriceForm(p => ({ ...p, monthlyFee: formatNumber(parseInt(raw) || 0) }))
+                  }}
+                  className={inputCls}
+                  placeholder="200,000"
+                />
+              </div>
+              <div>
+                <label className={labelCls}><Database size={9} /> DB 단가 (100MB당)</label>
+                <input
+                  value={priceForm.dbUnitPrice}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/,/g, '')
+                    if (/^\d*$/.test(raw)) setPriceForm(p => ({ ...p, dbUnitPrice: formatNumber(parseInt(raw) || 0) }))
+                  }}
+                  className={inputCls}
+                  placeholder="1,000"
+                />
+              </div>
+              <div>
+                <label className={labelCls}><Hash size={9} /> 자료 단가 (건당)</label>
+                <input
+                  value={priceForm.usageUnitPrice}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/,/g, '')
+                    if (/^\d*$/.test(raw)) setPriceForm(p => ({ ...p, usageUnitPrice: formatNumber(parseInt(raw) || 0) }))
+                  }}
+                  className={inputCls}
+                  placeholder="10"
+                />
+              </div>
+              <div>
+                <label className={labelCls}><Percent size={9} /> 수수료 (%)</label>
+                <input
+                  value={priceForm.salesRate}
+                  onChange={e => {
+                    const v = e.target.value
+                    if (/^\d*\.?\d*$/.test(v)) setPriceForm(p => ({ ...p, salesRate: v }))
+                  }}
+                  className={inputCls}
+                  placeholder="5"
+                />
+              </div>
+            </div>
+            {/* 푸터 */}
+            <div className="flex gap-2 px-5 py-3.5 border-t border-[var(--border-default)]">
+              <button onClick={() => setPriceModal(false)} className="flex-1 py-2.5 rounded-xl border border-[var(--border-default)] text-sm font-semibold text-[var(--text-secondary)] cursor-pointer hover:bg-[var(--bg-muted)] transition-colors">취소</button>
+              <button onClick={savePriceModal} className="flex-[2] py-2.5 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#4f6ef7] text-white text-sm font-bold cursor-pointer shadow-md hover:shadow-lg transition-all">등록</button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   )
 }
