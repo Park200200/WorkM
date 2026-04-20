@@ -46,7 +46,7 @@ interface HpBasicData {
 }
 
 interface SnsLink { name: string; icon: string; logo: string; url: string }
-interface PopupItem { id: string; imgH: string; imgV: string; url: string; active: boolean }
+interface PopupItem { id: string; imgH: string; imgV: string; url: string; active: boolean; mode: 'overlay' | 'newwin'; width: number; height: number }
 
 interface McItem { imgH: string; imgV: string; text1: string; text2: string; text3: string; url: string; blank: boolean }
 interface McLine { type: 'image' | 'solution'; duration: number; items: McItem[]; solution: string }
@@ -943,7 +943,7 @@ export function HpBasicSettings() {
             <div className="text-sm font-bold text-[var(--text-primary)]">팝업 관리</div>
             <div className="text-[10px] text-[var(--text-muted)]">홈페이지 접속 시 표시될 팝업 이미지 관리</div>
           </div>
-          <button onClick={() => up({ popups: [...(d.popups || []), { id: `pop_${Date.now()}`, imgH: '', imgV: '', url: '', active: true }] })}
+          <button onClick={() => up({ popups: [...(d.popups || []), { id: `pop_${Date.now()}`, imgH: '', imgV: '', url: '', active: true, mode: 'overlay' as const, width: 480, height: 400 }] })}
             className="ml-auto flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[11px] font-bold cursor-pointer border-none hover:from-cyan-600 hover:to-blue-700 transition-all">
             <Plus size={12} /> 추가
           </button>
@@ -1001,14 +1001,48 @@ export function HpBasicSettings() {
                     placeholder="클릭 시 이동할 URL (비워두면 링크 없음)" className={inputCls} />
                 </div>
 
-                {/* 실제 사이즈 미리보기 */}
+                {/* 표시 방식 + 사이즈 */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                  {/* 표시 방식 */}
+                  <div>
+                    <label className={labelCls}><Monitor size={10} /> 표시 방식</label>
+                    <div className="flex rounded-lg overflow-hidden border border-[var(--border-default)]">
+                      <button onClick={() => { const arr = [...d.popups]; arr[i] = { ...arr[i], mode: 'overlay' }; up({ popups: arr }) }}
+                        className={`flex-1 py-2 text-[11px] font-bold border-none cursor-pointer transition-colors ${
+                          (pop.mode || 'overlay') === 'overlay' ? 'bg-blue-500 text-white' : 'bg-[var(--bg-surface)] text-[var(--text-muted)]'
+                        }`}>현창</button>
+                      <button onClick={() => { const arr = [...d.popups]; arr[i] = { ...arr[i], mode: 'newwin' }; up({ popups: arr }) }}
+                        className={`flex-1 py-2 text-[11px] font-bold border-none cursor-pointer transition-colors ${
+                          pop.mode === 'newwin' ? 'bg-blue-500 text-white' : 'bg-[var(--bg-surface)] text-[var(--text-muted)]'
+                        }`}>새창</button>
+                    </div>
+                  </div>
+                  {/* 너비 */}
+                  <div>
+                    <label className={labelCls}><Ruler size={10} /> 너비 ({pop.width || 480}px)</label>
+                    <input type="range" min={200} max={800} step={10} value={pop.width || 480}
+                      onChange={e => { const arr = [...d.popups]; arr[i] = { ...arr[i], width: Number(e.target.value) }; up({ popups: arr }) }}
+                      className="w-full accent-blue-500" />
+                  </div>
+                  {/* 높이 */}
+                  <div>
+                    <label className={labelCls}><Ruler size={10} /> 높이 ({pop.height || 400}px)</label>
+                    <input type="range" min={150} max={800} step={10} value={pop.height || 400}
+                      onChange={e => { const arr = [...d.popups]; arr[i] = { ...arr[i], height: Number(e.target.value) }; up({ popups: arr }) }}
+                      className="w-full accent-blue-500" />
+                  </div>
+                </div>
+
+                {/* 실시간 미리보기 */}
                 {pop.imgH && (
                   <div>
-                    <label className={labelCls}><Eye size={11} /> 실제 팝업 미리보기 (최대 480px)</label>
+                    <label className={labelCls}><Eye size={11} /> 실제 팝업 미리보기 ({pop.width || 480}×{pop.height || 400}px) - {(pop.mode || 'overlay') === 'overlay' ? '현재페이지 오버레이' : '새창'}</label>
                     <div className="flex justify-center p-4 rounded-xl bg-black/60">
-                      <div style={{ maxWidth: 480, width: '100%', borderRadius: 16, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,.4)' }}>
-                        <img src={pop.imgH} alt="" style={{ width: '100%', display: 'block' }} />
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#fff' }}>
+                      <div style={{ width: pop.width || 480, maxWidth: '100%', borderRadius: 16, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,.4)', background: '#fff' }}>
+                        <div style={{ width: '100%', height: pop.height || 400, overflow: 'hidden' }}>
+                          <img src={pop.imgH} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#fff', borderTop: '1px solid #e2e8f0' }}>
                           <span style={{ color: '#94a3b8', fontSize: 12 }}>오늘 하루 안보기</span>
                           <span style={{ color: '#1e293b', fontSize: 13, fontWeight: 700 }}>닫기 ✕</span>
                         </div>

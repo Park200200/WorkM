@@ -496,58 +496,92 @@ export function HomepageView() {
       </button>
 
       {/* ═══ 팝업 ═══ */}
-      {openPopups.length > 0 && createPortal(
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 99998, padding: 20, gap: 16, flexWrap: 'wrap',
-        }}>
-          {openPopups.map((pop: any) => {
-            const isMobile = window.innerWidth < 768
-            const img = isMobile && pop.imgV ? pop.imgV : (pop.imgH || pop.imgV)
-            return (
-              <div key={pop.id} style={{
-                position: 'relative', maxWidth: isMobile ? '90vw' : 480, width: '100%',
-                borderRadius: 16, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,.4)',
-                animation: 'hp-fade-in .3s ease',
-              }}>
-                {img ? (
-                  pop.url ? (
-                    <a href={pop.url.startsWith('http') ? pop.url : `https://${pop.url}`} target="_blank" rel="noopener noreferrer">
-                      <img src={img} alt="" style={{ width: '100%', display: 'block' }} />
-                    </a>
-                  ) : (
-                    <img src={img} alt="" style={{ width: '100%', display: 'block' }} />
-                  )
-                ) : (
-                  <div style={{ padding: 40, textAlign: 'center', background: '#fff', color: '#94a3b8', fontSize: 14 }}>팝업 이미지가 없습니다</div>
-                )}
-                {/* 버튼 영역 */}
-                <div style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '10px 14px', background: '#fff',
+      {openPopups.length > 0 && (() => {
+        const overlays = openPopups.filter((p: any) => (p.mode || 'overlay') === 'overlay')
+        const newwins = openPopups.filter((p: any) => p.mode === 'newwin')
+        // 새창 팝업: 즉시 window.open
+        if (newwins.length > 0) {
+          newwins.forEach((pop: any) => {
+            const w = pop.width || 480
+            const h = pop.height || 400
+            const left = (window.screen.width - w) / 2
+            const top = (window.screen.height - h) / 2
+            const win = window.open('', `popup_${pop.id}`, `width=${w},height=${h + 50},left=${left},top=${top},scrollbars=no,resizable=no`)
+            if (win) {
+              const img = pop.imgH || pop.imgV
+              win.document.write(`<!DOCTYPE html><html><head><title>팝업</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:sans-serif}</style></head><body>`)
+              if (img) {
+                const imgTag = pop.url
+                  ? `<a href="${pop.url.startsWith('http') ? pop.url : 'https://' + pop.url}" target="_blank"><img src="${img}" style="width:100%;height:${h}px;object-fit:cover;display:block" /></a>`
+                  : `<img src="${img}" style="width:100%;height:${h}px;object-fit:cover;display:block" />`
+                win.document.write(imgTag)
+              }
+              win.document.write(`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#fff;border-top:1px solid #e2e8f0">`)
+              win.document.write(`<button onclick="localStorage.setItem('hp_popups_dismissed',JSON.stringify({...JSON.parse(localStorage.getItem('hp_popups_dismissed')||'{}'),'${pop.id}':'${new Date().toISOString().slice(0, 10)}'}));window.close()" style="background:none;border:none;color:#94a3b8;font-size:12px;cursor:pointer">오늘 하루 안보기</button>`)
+              win.document.write(`<button onclick="window.close()" style="background:none;border:none;color:#1e293b;font-size:13px;font-weight:700;cursor:pointer">닫기 ✕</button>`)
+              win.document.write(`</div></body></html>`)
+              win.document.close()
+            }
+          })
+          // 새창 열었으면 목록에서 제거
+          setOpenPopups(prev => prev.filter(p => (p.mode || 'overlay') === 'overlay'))
+        }
+        if (overlays.length === 0) return null
+        return createPortal(
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 99998, padding: 20, gap: 16, flexWrap: 'wrap',
+          }}>
+            {overlays.map((pop: any) => {
+              const img = pop.imgH || pop.imgV
+              const w = pop.width || 480
+              const h = pop.height || 400
+              return (
+                <div key={pop.id} style={{
+                  position: 'relative', width: w, maxWidth: '95vw',
+                  borderRadius: 16, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,.4)',
+                  animation: 'hp-fade-in .3s ease', background: '#fff',
                 }}>
-                  <button onClick={() => {
-                    const dismissed = JSON.parse(localStorage.getItem('hp_popups_dismissed') || '{}')
-                    dismissed[pop.id] = new Date().toISOString().slice(0, 10)
-                    localStorage.setItem('hp_popups_dismissed', JSON.stringify(dismissed))
-                    setOpenPopups(prev => prev.filter(p => p.id !== pop.id))
-                  }} style={{
-                    background: 'none', border: 'none', color: '#94a3b8', fontSize: 12,
-                    cursor: 'pointer', padding: '4px 0',
-                  }}>오늘 하루 안보기</button>
-                  <button onClick={() => setOpenPopups(prev => prev.filter(p => p.id !== pop.id))} style={{
-                    background: 'none', border: 'none', color: '#1e293b', fontSize: 13,
-                    fontWeight: 700, cursor: 'pointer', padding: '4px 8px',
-                  }}>닫기 ✕</button>
+                  {img ? (
+                    <div style={{ width: '100%', height: h, overflow: 'hidden' }}>
+                      {pop.url ? (
+                        <a href={pop.url.startsWith('http') ? pop.url : `https://${pop.url}`} target="_blank" rel="noopener noreferrer">
+                          <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        </a>
+                      ) : (
+                        <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ padding: 40, textAlign: 'center', background: '#fff', color: '#94a3b8', fontSize: 14 }}>팝업 이미지가 없습니다</div>
+                  )}
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '10px 14px', background: '#fff', borderTop: '1px solid #e2e8f0',
+                  }}>
+                    <button onClick={() => {
+                      const dismissed = JSON.parse(localStorage.getItem('hp_popups_dismissed') || '{}')
+                      dismissed[pop.id] = new Date().toISOString().slice(0, 10)
+                      localStorage.setItem('hp_popups_dismissed', JSON.stringify(dismissed))
+                      setOpenPopups(prev => prev.filter(p => p.id !== pop.id))
+                    }} style={{
+                      background: 'none', border: 'none', color: '#94a3b8', fontSize: 12,
+                      cursor: 'pointer', padding: '4px 0',
+                    }}>오늘 하루 안보기</button>
+                    <button onClick={() => setOpenPopups(prev => prev.filter(p => p.id !== pop.id))} style={{
+                      background: 'none', border: 'none', color: '#1e293b', fontSize: 13,
+                      fontWeight: 700, cursor: 'pointer', padding: '4px 8px',
+                    }}>닫기 ✕</button>
+                  </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>,
-        document.body
-      )}
+              )
+            })}
+          </div>,
+          document.body
+        )
+      })()}
     </div>
   )
 }
