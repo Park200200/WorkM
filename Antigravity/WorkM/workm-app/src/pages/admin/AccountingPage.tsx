@@ -17,7 +17,7 @@ import {
   BookOpen, PieChart, ScrollText, Settings2, ContactRound, Building2,
   TrendingDown, TrendingUp, Banknote, Clock,
   Plus, Edit3, Trash2, Save, X, Check, Ban,
-  Search, MoreVertical, Upload, User, Phone, Mail, IdCard, FileText,
+  Search, MoreVertical, Upload, User, Phone, Mail, IdCard, FileText, Lock,
 } from 'lucide-react'
 
 /* ─── 회계 시드 데이터 초기화 ── */
@@ -2051,7 +2051,11 @@ interface Vendor {
   ceoName?: string
   ceoPhone?: string
   managerName?: string
+  managerTitle?: string    // 직함
   managerPhone?: string
+  managerEmail?: string    // 담당자 이메일
+  managerId?: string       // 아이디
+  managerPw?: string       // 비밀번호
   /* 사업자정보 */
   bizNo?: string
   bizType?: string       // 업태
@@ -2066,7 +2070,8 @@ interface Vendor {
 
 const EMPTY_VENDOR: Omit<Vendor, 'id'> = {
   name: '', zipCode: '', address1: '', address2: '', phone: '',
-  ceoName: '', ceoPhone: '', managerName: '', managerPhone: '',
+  ceoName: '', ceoPhone: '',
+  managerName: '', managerTitle: '', managerPhone: '', managerEmail: '', managerId: '', managerPw: '',
   bizNo: '', bizType: '', bizCategory: '', invoiceEmail: '', bizRegImage: '',
   memo: '',
 }
@@ -2144,7 +2149,8 @@ function AcctVendors() {
     setForm({
       name: v.name, zipCode: v.zipCode || '', address1: v.address1 || v.address || '', address2: v.address2 || '', phone: v.phone || '',
       ceoName: v.ceoName || '', ceoPhone: v.ceoPhone || '',
-      managerName: v.managerName || '', managerPhone: v.managerPhone || '',
+      managerName: v.managerName || '', managerTitle: v.managerTitle || '', managerPhone: v.managerPhone || '',
+      managerEmail: v.managerEmail || '', managerId: v.managerId || '', managerPw: v.managerPw || '',
       bizNo: v.bizNo || '', bizType: v.bizType || '', bizCategory: v.bizCategory || '',
       invoiceEmail: v.invoiceEmail || '', bizRegImage: v.bizRegImage || '', memo: v.memo || '',
     })
@@ -2273,10 +2279,20 @@ function AcctVendors() {
                   {/* 담당자 */}
                   <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
                     <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border-default)]"><User size={14} className="text-blue-500" /><span className="text-[12px] font-extrabold text-[var(--text-primary)]">담당자 정보</span></div>
-                    <div className="p-4"><div className="grid grid-cols-2 gap-2">
-                      <div><label className={labelCls}><User size={9}/> 담당자명</label><input value={form.managerName} onChange={e => setForm(f => ({ ...f, managerName: e.target.value }))} placeholder="담당자 이름" className={fieldCls} /></div>
-                      <div><label className={labelCls}><Phone size={9}/> 연락처</label><input value={form.managerPhone} onChange={e => setForm(f => ({ ...f, managerPhone: fmtPhone(e.target.value) }))} placeholder="010-0000-0000" className={fieldCls} maxLength={13} /></div>
-                    </div></div>
+                    <div className="p-4 space-y-2.5">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div><label className={labelCls}><User size={9}/> 담당자 이름</label><input value={form.managerName} onChange={e => setForm(f => ({ ...f, managerName: e.target.value }))} placeholder="담당자 이름" className={fieldCls} /></div>
+                        <div><label className={labelCls}>직함</label><input value={form.managerTitle} onChange={e => setForm(f => ({ ...f, managerTitle: e.target.value }))} placeholder="예) 팀장/사장" className={fieldCls} /></div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div><label className={labelCls}><Phone size={9}/> 휴대폰</label><input value={form.managerPhone} onChange={e => setForm(f => ({ ...f, managerPhone: fmtPhone(e.target.value) }))} placeholder="010-0000-0000" className={fieldCls} maxLength={13} /></div>
+                        <div><label className={labelCls}><Mail size={9}/> 이메일</label><input value={form.managerEmail} onChange={e => setForm(f => ({ ...f, managerEmail: e.target.value }))} placeholder="email@example.com" className={fieldCls} /></div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div><label className={labelCls}><IdCard size={9}/> 아이디(ID)</label><input value={form.managerId} onChange={e => setForm(f => ({ ...f, managerId: e.target.value }))} placeholder="system_id" className={fieldCls} /></div>
+                        <div><label className={labelCls}><Lock size={9}/> 비밀번호</label><input value={form.managerPw} onChange={e => setForm(f => ({ ...f, managerPw: e.target.value }))} placeholder="•••" type="password" className={fieldCls} /></div>
+                      </div>
+                    </div>
                   </div>
                   {/* 비고 */}
                   <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
@@ -2333,7 +2349,7 @@ function AcctVendors() {
                   <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
                     <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border-default)]"><User size={14} className="text-blue-500" /><span className="text-[12px] font-extrabold text-[var(--text-primary)]">담당자 정보</span></div>
                     <div className="p-4 space-y-1.5">
-                      {[{label:'담당자명',value:viewVendor.managerName},{label:'연락처',value:viewVendor.managerPhone}].map((r,i) => (
+                      {[{label:'담당자명',value:viewVendor.managerName},{label:'직함',value:viewVendor.managerTitle},{label:'휴대폰',value:viewVendor.managerPhone},{label:'이메일',value:viewVendor.managerEmail},{label:'아이디',value:viewVendor.managerId}].map((r,i) => (
                         <div key={i} className="flex items-start gap-2 py-1.5"><span className="text-[10px] font-bold text-[var(--text-muted)] w-20 shrink-0">{r.label}</span><span className="text-[12px] text-[var(--text-primary)] flex-1">{r.value || '-'}</span></div>
                       ))}
                     </div>
