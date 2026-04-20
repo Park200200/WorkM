@@ -55,13 +55,13 @@
           <span class="nav-icon"><i data-lucide="info"></i></span>
           <span class="nav-text">본사정보</span>
         </div>
-        <div class="sub-item" onclick="showPage('staff-mgmt',this)" data-page="staff-mgmt">
-          <span class="nav-icon"><i data-lucide="contact"></i></span>
-          <span class="nav-text">직원관리</span>
-        </div>
         <div class="sub-item" onclick="showPage('rank-mgmt',this)" data-page="rank-mgmt">
           <span class="nav-icon"><i data-lucide="sliders-horizontal"></i></span>
           <span class="nav-text">기타설정</span>
+        </div>
+        <div class="sub-item" onclick="showPage('staff-mgmt',this)" data-page="staff-mgmt">
+          <span class="nav-icon"><i data-lucide="contact"></i></span>
+          <span class="nav-text">사원관리</span>
         </div>
         <div class="sub-item" onclick="showPage('tasks',this)" data-page="tasks">
           <span class="nav-icon"><i data-lucide="users"></i></span>
@@ -464,6 +464,18 @@
               <button class="btn-sm btn-primary" onclick="openOrgModal('pos')"><i data-lucide="plus" style="width:12px;height:12px"></i> 추가</button>
             </div>
             <div class="section-body" id="posList"></div>
+          </div>
+          <!-- 거래처구분 -->
+          <div class="section-card">
+            <div class="section-head">
+              <div class="section-title-group">
+                <div class="section-dot" style="background:#06b6d4"><i data-lucide="tags"></i></div>
+                <div class="section-title">거래처구분</div>
+                <span class="section-count" id="bizCatCount">0</span>
+              </div>
+              <button class="btn-sm btn-primary" onclick="openOrgModal('bizCat')"><i data-lucide="plus" style="width:12px;height:12px"></i> 추가</button>
+            </div>
+            <div class="section-body" id="bizCatList"></div>
           </div>
         </div>
 
@@ -932,12 +944,12 @@
       </div>
 
       <!-- ══════════════════════════════
-           👤 직원관리 페이지 (신규)
+           👤 사원관리 페이지 (신규)
       ══════════════════════════════ -->
       <div class="page" id="page-staff-mgmt">
         <div class="page-header">
           <div>
-            <div class="page-title">직원관리</div>
+            <div class="page-title">사원관리</div>
             <div class="page-subtitle">명부 등록 및 인사 정보 관리</div>
           </div>
           <button class="btn btn-blue" onclick="openStaffModal()">등록+</button>

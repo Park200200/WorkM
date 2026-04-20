@@ -1016,6 +1016,13 @@ function renderPage_RankMgmt() {
     ];
     WS.savePositions && WS.savePositions();
   }
+  if (!WS.bizCategories || !WS.bizCategories.length) {
+    WS.bizCategories = [
+      { id: 1, name: '일반거래처' }, { id: 2, name: '협력업체' }, { id: 3, name: '외주업체' },
+      { id: 4, name: '고객사' }, { id: 5, name: '공공기관' }
+    ];
+    WS.saveBizCategories && WS.saveBizCategories();
+  }
   if (!WS.taskResults || !WS.taskResults.length) {
     WS.taskResults = [
       { id: 1, name: '정상완료', icon: 'check-circle', color: '#22c55e' },
@@ -1075,6 +1082,7 @@ function renderPage_RankMgmt() {
   const deptList = document.getElementById('deptList');
   const rankList = document.getElementById('rankList');
   const posList = document.getElementById('posList');
+  const bizCatList = document.getElementById('bizCatList');
   const resultList = document.getElementById('resultList');
   const rtList = document.getElementById('reportTypeList');
 
@@ -1083,6 +1091,7 @@ function renderPage_RankMgmt() {
   if (deptList) deptList.innerHTML = WS.departments.map(d => itemCard('dept', d)).join('') || emptyMsg;
   if (rankList) rankList.innerHTML = WS.ranks.sort((a, b) => a.level - b.level).map(r => itemCard('rank', r)).join('') || emptyMsg;
   if (posList) posList.innerHTML = WS.positions.map(p => itemCard('pos', p)).join('') || emptyMsg;
+  if (bizCatList) bizCatList.innerHTML = (WS.bizCategories || []).map(c => itemCard('bizCat', c)).join('') || emptyMsg;
   if (resultList) resultList.innerHTML = WS.taskResults.map(r => {
     var c = r.color || '#22c55e';
     var hasLucide = r.icon && r.icon.length > 2;
@@ -1121,6 +1130,7 @@ function renderPage_RankMgmt() {
   const deptCount = document.getElementById('deptCount');
   const rankCount = document.getElementById('rankCount');
   const posCount = document.getElementById('posCount');
+  const bizCatCount = document.getElementById('bizCatCount');
   const resultCount = document.getElementById('resultCount');
   const rtCount = document.getElementById('reportTypeCount');
   const iiCount = document.getElementById('instrImportanceCount');
@@ -1128,6 +1138,7 @@ function renderPage_RankMgmt() {
   if (deptCount) deptCount.textContent = WS.departments.length;
   if (rankCount) rankCount.textContent = WS.ranks.length;
   if (posCount) posCount.textContent = WS.positions.length;
+  if (bizCatCount) bizCatCount.textContent = (WS.bizCategories || []).length;
   if (resultCount) resultCount.textContent = WS.taskResults.length;
   if (rtCount) rtCount.textContent = WS.reportTypes.length;
 
@@ -1975,7 +1986,7 @@ var _orgCtx = { type: null, id: null, mode: 'add' }; // add | edit
 
 /* ── orgModal 열기 (추가) ── */
 function openOrgModal(type) {
-  var labels = { dept: '부서', rank: '직급', pos: '직책' };
+  var labels = { dept: '부서', rank: '직급', pos: '직책', bizCat: '거래처구분' };
   var label = labels[type] || type;
   _orgCtx.type = type; _orgCtx.id = null; _orgCtx.mode = 'add';
   var titleEl = document.getElementById('orgModalTitle');
@@ -1990,8 +2001,8 @@ function openOrgModal(type) {
 
 /* ── orgModal 열기 (수정) ── */
 function editOrgItem(type, id) {
-  var lists = { dept: WS.departments, rank: WS.ranks, pos: WS.positions, result: WS.taskResults };
-  var labels = { dept: '부서', rank: '직급', pos: '직책', result: '업무결과' };
+  var lists = { dept: WS.departments, rank: WS.ranks, pos: WS.positions, bizCat: WS.bizCategories, result: WS.taskResults };
+  var labels = { dept: '부서', rank: '직급', pos: '직책', bizCat: '거래처구분', result: '업무결과' };
   var list = lists[type];
   if (!list) return;
   var item = list.find(function (x) { return x.id === id; });
@@ -2045,10 +2056,12 @@ function saveOrgItem() {
       WS.ranks.push({ id: Date.now(), name: name, level: maxLv + 1 }); WS.saveRanks();
     } else if (type === 'pos') {
       WS.positions.push({ id: Date.now(), name: name }); WS.savePos();
+    } else if (type === 'bizCat') {
+      WS.bizCategories.push({ id: Date.now(), name: name }); WS.saveBizCategories();
     }
     showToast('success', name + ' 추가 완료!');
   } else {
-    var lists = { dept: WS.departments, rank: WS.ranks, pos: WS.positions };
+    var lists = { dept: WS.departments, rank: WS.ranks, pos: WS.positions, bizCat: WS.bizCategories };
     var list = lists[type];
     var item = list ? list.find(function (x) { return x.id === id; }) : null;
     if (item) {
@@ -2056,6 +2069,7 @@ function saveOrgItem() {
       if (type === 'dept') WS.saveDepts();
       else if (type === 'rank') WS.saveRanks();
       else if (type === 'pos') WS.savePos();
+      else if (type === 'bizCat') WS.saveBizCategories();
     }
     showToast('info', '수정 완료!');
   }
@@ -2272,11 +2286,12 @@ document.addEventListener('input', function (e) {
 
 /* ── deleteOrgItem – confirm 없이 즉시 삭제 ── */
 function deleteOrgItem(type, id) {
-  var labels = { dept: '부서', rank: '직급', pos: '직책', result: '업무결과', reportType: '진행보고 유형' };
+  var labels = { dept: '부서', rank: '직급', pos: '직책', bizCat: '거래처구분', result: '업무결과', reportType: '진행보고 유형' };
   var label = labels[type] || type;
   if (type === 'dept') { WS.departments = WS.departments.filter(function (x) { return x.id !== id; }); WS.saveDepts(); }
   else if (type === 'rank') { WS.ranks = WS.ranks.filter(function (x) { return x.id !== id; }); WS.saveRanks(); }
   else if (type === 'pos') { WS.positions = WS.positions.filter(function (x) { return x.id !== id; }); WS.savePos(); }
+  else if (type === 'bizCat') { WS.bizCategories = WS.bizCategories.filter(function (x) { return x.id !== id; }); WS.saveBizCategories(); }
   else if (type === 'result') { WS.taskResults = WS.taskResults.filter(function (x) { return x.id !== id; }); WS.saveTaskResults(); }
   else if (type === 'reportType') { WS.reportTypes = WS.reportTypes.filter(function (x) { return x.id !== id; }); WS.saveReportTypes(); }
   renderPage_RankMgmt();
@@ -5228,8 +5243,8 @@ function _copySyncCmds() {
     ],
     settings: [
       { icon: 'building-2', label: '본사정보', color: '#4f6ef7', bg: 'rgba(79,110,247,.12)',  page: 'hq-info' },
-      { icon: 'contact',    label: '직원관리', color: '#9747ff', bg: 'rgba(151,71,255,.12)',  page: 'staff-mgmt' },
       { icon: 'sliders',    label: '기타설정', color: '#06b6d4', bg: 'rgba(6,182,212,.12)',   page: 'rank-mgmt' },
+      { icon: 'contact',    label: '사원관리', color: '#9747ff', bg: 'rgba(151,71,255,.12)',  page: 'staff-mgmt' },
       { icon: 'users',      label: '업무분장', color: '#8b5cf6', bg: 'rgba(139,92,246,.12)',  page: 'tasks' }
     ]
   };
@@ -5252,7 +5267,7 @@ function _copySyncCmds() {
   var PAGE_NAMES = {
     dashboard:'내의책상', tasks:'업무분장', schedule:'일정보기', accounting:'회계관리',
     settings:'진행현황', performance:'실적보기', 'hq-info':'본사정보',
-    'staff-mgmt':'직원관리', 'rank-mgmt':'기타설정', homepage:'홈페이지', profile:'내의정보'
+    'staff-mgmt':'사원관리', 'rank-mgmt':'기타설정', homepage:'홈페이지', profile:'내의정보'
   };
 
   var FAB_ACTIONS = {

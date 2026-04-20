@@ -50,6 +50,15 @@ const WS = {
     { id: 6, name: 'CEO' },
   ],
 
+  // 거래처구분 목록
+  bizCategories: JSON.parse(localStorage.getItem('ws_biz_categories')) || [
+    { id: 1, name: '일반거래처' },
+    { id: 2, name: '협력업체' },
+    { id: 3, name: '외주업체' },
+    { id: 4, name: '고객사' },
+    { id: 5, name: '공공기관' },
+  ],
+
   // 업무결과 목록
   taskResults: JSON.parse(localStorage.getItem('ws_task_results')) || [
     { id:1, name:'정상완료', icon:'✅' },
@@ -366,6 +375,12 @@ const WS = {
   addPos(name){ this.positions.push({ id:Date.now(), name }); this.savePos(); },
   updatePos(id, name){ const p=this.positions.find(x=>x.id===id); if(p) p.name=name; this.savePos(); },
   deletePos(id){ this.positions=this.positions.filter(x=>x.id!==id); this.savePos(); },
+
+  // 거래처구분 CRUD
+  saveBizCategories(){ localStorage.setItem('ws_biz_categories', JSON.stringify(this.bizCategories)); },
+  addBizCategory(name){ this.bizCategories.push({ id:Date.now(), name }); this.saveBizCategories(); },
+  updateBizCategory(id, name){ const c=this.bizCategories.find(x=>x.id===id); if(c) c.name=name; this.saveBizCategories(); },
+  deleteBizCategory(id){ this.bizCategories=this.bizCategories.filter(x=>x.id!==id); this.saveBizCategories(); },
 
   // 출퇴근 기록
   get attendance() {

@@ -43,8 +43,8 @@ const mainNav: NavItem[] = [
     label: '기본관리', icon: Building2,
     children: [
       { path: '/hq-info', label: '본사정보', icon: Info },
-      { path: '/staff', label: '직원관리', icon: Contact },
       { path: '/settings', label: '기타설정', icon: SlidersHorizontal },
+      { path: '/staff', label: '사원관리', icon: Contact },
       { path: '/tasks', label: '업무분장', icon: Users },
     ],
   },
