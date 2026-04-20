@@ -304,6 +304,8 @@ export function AcctHqVendor() {
               <div className="flex items-center gap-2">
                 <CreditCard size={16} className="text-emerald-500" />
                 <span className="text-sm font-extrabold text-[var(--text-primary)]">결제 정보</span>
+                <span className="text-[9px] font-bold text-[var(--text-muted)] ml-1">사용솔루션 :</span>
+                <span className="text-[9px] font-bold text-primary-600 dark:text-primary-400">워크엠, 홈페이지, 원단공급사</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5 text-[10px]">
