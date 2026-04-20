@@ -48,9 +48,10 @@ interface HpBasicData {
 interface SnsLink { name: string; icon: string; logo: string; url: string }
 interface PopupItem { id: string; imgH: string; imgV: string; url: string; active: boolean; mode: 'overlay' | 'newwin'; width: number; height: number }
 
-interface McItem { imgH: string; imgV: string; text1: string; text2: string; text3: string; url: string; blank: boolean }
-interface McLine { type: 'image' | 'solution'; duration: number; items: McItem[]; solution: string }
-const EMPTY_MC_ITEM: McItem = { imgH:'', imgV:'', text1:'', text2:'', text3:'', url:'', blank:false }
+
+interface McItem { type: 'image' | 'solution' | 'editor'; imgH: string; imgV: string; text1: string; text2: string; text3: string; url: string; blank: boolean; editorHtml: string; solution: string }
+interface McLine { duration: number; items: McItem[] }
+const EMPTY_MC_ITEM: McItem = { type:'image', imgH:'', imgV:'', text1:'', text2:'', text3:'', url:'', blank:false, editorHtml:'', solution:'' }
 const SOLUTIONS = ['컨텐츠관리','미디어관리','개인정보처리방침','게시물 게재 원칙','홈페이지 이용약관','공지사항','뉴스','자유게시판','Q&A','FAQ','가맹점신청','워크샵','대관(교육관)']
 
 const DEFAULT: HpBasicData = {
@@ -325,7 +326,7 @@ export function HpBasicSettings() {
   const removeMenu = (i: number) => up({ menuItems: d.menuItems.filter((_, idx) => idx !== i) })
 
   /* ── 메인 컨텐츠 라인 ── */
-  const addMcLine = () => up({ mcLines: [...d.mcLines, { type:'image', duration:5, items:[], solution:'' }] })
+  const addMcLine = () => up({ mcLines: [...d.mcLines, { duration:5, items:[{ ...EMPTY_MC_ITEM }] }] })
   const updateMcLine = (i: number, patch: Partial<McLine>) => {
     const lines = [...d.mcLines]
     lines[i] = { ...lines[i], ...patch }
@@ -583,138 +584,154 @@ export function HpBasicSettings() {
                 {/* ── 라인 헤더 ── */}
                 <div className="flex items-center gap-2 px-3.5 py-2.5 bg-[var(--bg-muted)] border-b border-[var(--border-default)]">
                   <span className="w-5 h-5 rounded-full bg-[#4f6ef7] text-white text-[10px] font-extrabold flex items-center justify-center shrink-0">{i+1}</span>
-                  <span className="text-[12px] font-bold text-[var(--text-primary)]">컨텐츠 {i+1}라인</span>
-                  {/* 이미지형/솔루션형 토글 */}
-                  {(['image','solution'] as const).map(t => (
-                    <button key={t} onClick={() => updateMcLine(i, { type: t })}
-                      className="px-3 py-1 rounded-full text-[11px] font-bold cursor-pointer border-none transition-all"
-                      style={{ background: line.type===t?'#4f6ef7':'var(--bg-surface)', color: line.type===t?'#fff':'var(--text-muted)' }}>
-                      {t==='image'?'이미지형':'솔루션형'}
-                    </button>
-                  ))}
-                  {/* 전환 시간 */}
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-default)] text-[11px]">
-                    <Timer size={11} className="text-[var(--text-muted)]"/>
-                    <input type="number" min={1} max={30} value={line.duration||5} onChange={e => updateMcLine(i, { duration: parseInt(e.target.value)||5 })}
-                      className="w-[35px] border-none bg-transparent text-[11px] font-bold text-center text-[var(--text-primary)] outline-none" />
-                    <span className="text-[var(--text-muted)]">초</span>
-                  </div>
-                  <button onClick={() => removeMcLine(i)} className="ml-auto w-[22px] h-[22px] rounded-md bg-red-500/10 text-red-500 flex items-center justify-center cursor-pointer border-none hover:bg-red-500/20"><X size={12}/></button>
+                  <span className="text-[12px] font-bold text-[var(--text-primary)]">컨텐츠라인 {i+1}</span>
+                  {/* 노출타임: 항목 2개 이상일 때만 */}
+                  {line.items.length >= 2 && (
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-default)] text-[11px]">
+                      <Timer size={11} className="text-[var(--text-muted)]"/>
+                      <input type="number" min={1} max={30} value={line.duration||5} onChange={e => updateMcLine(i, { duration: parseInt(e.target.value)||5 })}
+                        className="w-[35px] border-none bg-transparent text-[11px] font-bold text-center text-[var(--text-primary)] outline-none" />
+                      <span className="text-[var(--text-muted)]">초</span>
+                    </div>
+                  )}
+                  <button onClick={() => addMcItem(i)} className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#4f6ef7] bg-[#4f6ef708] text-[#4f6ef7] text-[11px] font-bold cursor-pointer hover:bg-[#4f6ef718]">
+                    <Plus size={11}/> 항목추가
+                  </button>
+                  <button onClick={() => removeMcLine(i)} className="w-[22px] h-[22px] rounded-md bg-red-500/10 text-red-500 flex items-center justify-center cursor-pointer border-none hover:bg-red-500/20"><X size={12}/></button>
                 </div>
 
-                {/* ── 이미지형 본문 ── */}
-                {line.type === 'image' && (
-                  <div className="p-3.5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <ImageIcon size={12} className="text-[var(--text-muted)]" />
-                      <span className="text-[11px] font-bold text-[var(--text-secondary)]">이미지 & 텍스트 목록</span>
-                      <span className="text-[10px] text-[var(--text-muted)]">가로·세로 이미지(반응형) + 텍스트 3줄</span>
-                      <button onClick={() => addMcItem(i)} className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#4f6ef7] bg-[#4f6ef708] text-[#4f6ef7] text-[11px] font-bold cursor-pointer">
-                        <Plus size={11}/> 항목 추가
-                      </button>
+                {/* ── 항목 목록 ── */}
+                <div className="p-3.5 space-y-3">
+                  {line.items.length === 0 ? (
+                    <div className="py-6 text-center text-[12px] text-[var(--text-muted)] border border-dashed border-[var(--border-default)] rounded-xl bg-[var(--bg-muted)]">
+                      항목추가 버튼으로 항목을 추가하세요
                     </div>
-                    {line.items.length === 0 ? (
-                      <div className="py-6 text-center text-[12px] text-[var(--text-muted)] border border-dashed border-[var(--border-default)] rounded-xl bg-[var(--bg-muted)]">
-                        + 항목 추가 버튼으로 항목을 추가하세요
+                  ) : line.items.map((item, j) => (
+                    <div key={j} className="border border-[var(--border-default)] rounded-xl overflow-hidden bg-[var(--bg-muted)]">
+                      {/* 항목 헤더: 번호 + 타입 스위치 + X */}
+                      <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-surface)] border-b border-[var(--border-default)]">
+                        <span className="text-[11px] font-bold text-[var(--text-muted)]">항목 {j+1}</span>
+                        <div className="flex items-center border border-[var(--border-default)] rounded-lg overflow-hidden ml-1">
+                          {(['image','solution','editor'] as const).map(t => {
+                            const active = (item.type || 'image') === t
+                            const label = t === 'image' ? '이미지형' : t === 'solution' ? '솔루션형' : '웹에디터형'
+                            return (
+                              <button key={t} onClick={() => updateMcItem(i, j, { type: t })}
+                                className="px-2.5 py-1 text-[10px] border-none cursor-pointer transition-all whitespace-nowrap"
+                                style={{
+                                  fontWeight: active ? 700 : 500,
+                                  background: active ? '#4f6ef7' : 'transparent',
+                                  color: active ? '#fff' : 'var(--text-secondary)',
+                                }}>
+                                {label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        <button onClick={() => removeMcItem(i, j)} className="ml-auto w-[22px] h-[22px] rounded-md bg-red-500/10 text-red-500 flex items-center justify-center cursor-pointer border-none text-[13px] font-bold">×</button>
                       </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {line.items.map((item, j) => (
-                          <div key={j} className="border border-[var(--border-default)] rounded-xl overflow-hidden bg-[var(--bg-muted)]">
-                            {/* 항목 헤더 */}
-                            <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--bg-surface)] border-b border-[var(--border-default)]">
-                              <span className="text-[11px] font-bold text-[var(--text-muted)]">항목 {j+1}</span>
-                              <button onClick={() => removeMcItem(i, j)} className="w-[22px] h-[22px] rounded-md bg-red-500/10 text-red-500 flex items-center justify-center cursor-pointer border-none text-[13px] font-bold">×</button>
+
+                      {/* ── 이미지형 ── */}
+                      {(item.type || 'image') === 'image' && (
+                        <div className="p-3 space-y-2">
+                          {/* 미리보기 */}
+                          <div className="relative w-full min-h-[140px] bg-[#0a0a12] flex items-center justify-center overflow-hidden rounded-lg">
+                            {(item.imgH || item.imgV) && (
+                              <img src={item.imgH || item.imgV} className="absolute inset-0 w-full h-full object-cover opacity-55" />
+                            )}
+                            <div className="relative z-[1] text-center px-6 py-4">
+                              {item.text1 && <div className="inline-block px-3 py-1 rounded-full bg-white/20 text-white text-[10px] font-bold mb-2">{item.text1}</div>}
+                              <div className="text-white text-[16px] font-extrabold">{item.text2 || '제목을 입력하세요'}</div>
+                              {item.text3 && <div className="text-white/70 text-[11px] mt-1">{item.text3}</div>}
                             </div>
-                            {/* 미리보기 */}
-                            <div className="relative w-full min-h-[180px] bg-[#0a0a12] flex items-center justify-center overflow-hidden">
-                              {(item.imgH || item.imgV) && (
-                                <img src={item.imgH || item.imgV} className="absolute inset-0 w-full h-full object-cover opacity-55" />
-                              )}
-                              <div className="relative z-[1] text-center px-6 py-4">
-                                {item.text1 && <div className="inline-block px-3 py-1 rounded-full bg-white/20 text-white text-[10px] font-bold mb-2">{item.text1}</div>}
-                                <div className="text-white text-[18px] font-extrabold">{item.text2 || '제목을 입력하세요'}</div>
-                                {item.text3 && <div className="text-white/70 text-[12px] mt-1">{item.text3}</div>}
-                              </div>
-                              {/* 가로/세로 전환 */}
-                              <div className="absolute top-2 right-2 flex rounded-md overflow-hidden border border-white/25 shadow-lg z-[2]">
-                                <button onClick={() => {}} className="px-2 py-1 text-[10px] font-bold bg-black/50 text-white border-none cursor-default flex items-center gap-1"><Monitor size={10}/> 가로</button>
-                                <button onClick={() => {}} className="px-2 py-1 text-[10px] font-bold bg-black/30 text-white/70 border-none cursor-default flex items-center gap-1">세로</button>
-                              </div>
-                            </div>
-                            {/* 입력 필드 */}
-                            <div className="p-3 space-y-2">
-                              <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                  <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Monitor size={9}/> 가로 이미지 (PC)</label>
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-20 h-12 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
-                                      {item.imgH ? <img src={item.imgH} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
-                                    </div>
-                                    <label className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
-                                      <Upload size={10}/> 선택
-                                      <input type="file" accept="image/*" className="hidden" onChange={e => handleMcFileUpload(i, j, 'imgH', e.target.files)} />
-                                    </label>
-                                    {item.imgH && <button onClick={() => updateMcItem(i, j, { imgH: '' })}
-                                      className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
-                                  </div>
+                          </div>
+                          {/* 이미지 업로드 */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Monitor size={9}/> 가로 이미지 (PC)</label>
+                              <div className="flex items-center gap-2">
+                                <div className="w-20 h-12 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
+                                  {item.imgH ? <img src={item.imgH} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
                                 </div>
-                                <div>
-                                  <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1">📱 세로 이미지 (모바일)</label>
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-12 h-16 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
-                                      {item.imgV ? <img src={item.imgV} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
-                                    </div>
-                                    <label className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
-                                      <Upload size={10}/> 선택
-                                      <input type="file" accept="image/*" className="hidden" onChange={e => handleMcFileUpload(i, j, 'imgV', e.target.files)} />
-                                    </label>
-                                    {item.imgV && <button onClick={() => updateMcItem(i, j, { imgV: '' })}
-                                      className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-3 gap-2">
-                                <div>
-                                  <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={9}/> 텍스트 1 (태그)</label>
-                                  <input value={item.text1} onChange={e => updateMcItem(i, j, { text1: e.target.value })} placeholder="태그" className={`${inputCls} !text-[10.5px]`} />
-                                </div>
-                                <div>
-                                  <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={9}/> 텍스트 2 (제목)</label>
-                                  <input value={item.text2} onChange={e => updateMcItem(i, j, { text2: e.target.value })} placeholder="제목" className={`${inputCls} !text-[10.5px]`} />
-                                </div>
-                                <div>
-                                  <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={9}/> 텍스트 3 (설명)</label>
-                                  <input value={item.text3} onChange={e => updateMcItem(i, j, { text3: e.target.value })} placeholder="설명" className={`${inputCls} !text-[10.5px]`} />
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2 pt-1 border-t border-dashed border-[var(--border-default)]">
-                                <span className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 shrink-0"><Link size={10}/> 클릭URL</span>
-                                <input value={item.url} onChange={e => updateMcItem(i, j, { url: e.target.value })} placeholder="https://example.com  (비워두면 클릭 비활성)" className={`flex-1 ${inputCls} !text-[10.5px]`} />
-                                <label className="flex items-center gap-1 cursor-pointer text-[10px] text-[var(--text-muted)] whitespace-nowrap shrink-0 select-none">
-                                  <input type="checkbox" checked={item.blank} onChange={e => updateMcItem(i, j, { blank: e.target.checked })} className="w-3.5 h-3.5 cursor-pointer" /> 새탭
+                                <label className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
+                                  <Upload size={10}/> 선택
+                                  <input type="file" accept="image/*" className="hidden" onChange={e => handleMcFileUpload(i, j, 'imgH', e.target.files)} />
                                 </label>
+                                {item.imgH && <button onClick={() => updateMcItem(i, j, { imgH: '' })}
+                                  className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1">📱 세로 이미지 (모바일)</label>
+                              <div className="flex items-center gap-2">
+                                <div className="w-12 h-16 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
+                                  {item.imgV ? <img src={item.imgV} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
+                                </div>
+                                <label className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
+                                  <Upload size={10}/> 선택
+                                  <input type="file" accept="image/*" className="hidden" onChange={e => handleMcFileUpload(i, j, 'imgV', e.target.files)} />
+                                </label>
+                                {item.imgV && <button onClick={() => updateMcItem(i, j, { imgV: '' })}
+                                  className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
                               </div>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                          {/* 텍스트 */}
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={9}/> 텍스트 1 (태그)</label>
+                              <input value={item.text1} onChange={e => updateMcItem(i, j, { text1: e.target.value })} placeholder="태그" className={`${inputCls} !text-[10.5px]`} />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={9}/> 텍스트 2 (제목)</label>
+                              <input value={item.text2} onChange={e => updateMcItem(i, j, { text2: e.target.value })} placeholder="제목" className={`${inputCls} !text-[10.5px]`} />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={9}/> 텍스트 3 (설명)</label>
+                              <input value={item.text3} onChange={e => updateMcItem(i, j, { text3: e.target.value })} placeholder="설명" className={`${inputCls} !text-[10.5px]`} />
+                            </div>
+                          </div>
+                          {/* 클릭 URL */}
+                          <div className="flex items-center gap-2 pt-1 border-t border-dashed border-[var(--border-default)]">
+                            <span className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 shrink-0"><Link size={10}/> 클릭URL</span>
+                            <input value={item.url} onChange={e => updateMcItem(i, j, { url: e.target.value })} placeholder="https://example.com  (비워두면 클릭 비활성)" className={`flex-1 ${inputCls} !text-[10.5px]`} />
+                            <label className="flex items-center gap-1 cursor-pointer text-[10px] text-[var(--text-muted)] whitespace-nowrap shrink-0 select-none">
+                              <input type="checkbox" checked={item.blank} onChange={e => updateMcItem(i, j, { blank: e.target.checked })} className="w-3.5 h-3.5 cursor-pointer" /> 새탭
+                            </label>
+                          </div>
+                        </div>
+                      )}
 
-                {/* ── 솔루션형 본문 ── */}
-                {line.type === 'solution' && (
-                  <div className="p-3.5 flex flex-wrap gap-2">
-                    {SOLUTIONS.map(s => (
-                      <button key={s} onClick={() => updateMcLine(i, { solution: s })}
-                        className="px-3.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer transition-all"
-                        style={{ border:`1.5px solid ${line.solution===s?'#4f6ef7':'var(--border-default)'}`, background:line.solution===s?'#4f6ef7':'var(--bg-surface)', color:line.solution===s?'#fff':'var(--text-secondary)' }}>
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                      {/* ── 솔루션형 ── */}
+                      {item.type === 'solution' && (
+                        <div className="p-3 flex flex-wrap gap-2">
+                          {SOLUTIONS.map(s => (
+                            <button key={s} onClick={() => updateMcItem(i, j, { solution: s })}
+                              className="px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all"
+                              style={{ border:`1.5px solid ${item.solution===s?'#4f6ef7':'var(--border-default)'}`, background:item.solution===s?'#4f6ef7':'var(--bg-surface)', color:item.solution===s?'#fff':'var(--text-secondary)' }}>
+                              {s}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* ── 웹에디터형 ── */}
+                      {item.type === 'editor' && (
+                        <div className="p-3">
+                          <div
+                            contentEditable
+                            suppressContentEditableWarning
+                            dangerouslySetInnerHTML={{ __html: item.editorHtml || '' }}
+                            onBlur={e => updateMcItem(i, j, { editorHtml: (e.target as HTMLDivElement).innerHTML })}
+                            className="min-h-[150px] p-3 rounded-lg border border-[var(--border-default)] bg-white text-sm text-[#1e293b] leading-relaxed outline-none focus:border-[#4f6ef7] transition-colors"
+                            style={{ overflowY: 'auto', maxHeight: 400 }}
+                          />
+                          <div className="text-[9px] text-[var(--text-muted)] mt-1">직접 HTML 편집이 가능합니다</div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
