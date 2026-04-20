@@ -83,10 +83,9 @@ const EMPTY: HqVendor = {
   salesRate: 5, periodSales: 12350000, bizCertPhoto: '',
   history: [],
   billingList: [
-    { period: '2026.01.11~2026.02.10', monthlyFee: 200000, dbFee: 25000, dataFee: 5400, commission: 500000, total: 730400, status: '납부' },
-    { period: '2026.02.11~2026.03.10', monthlyFee: 200000, dbFee: 28000, dataFee: 6200, commission: 520000, total: 754200, status: '납부' },
-    { period: '2026.03.11~2026.04.10', monthlyFee: 200000, dbFee: 25000, dataFee: 5800, commission: 480000, total: 710800, status: '청구' },
-    { period: '2026.04.11~2026.05.10', monthlyFee: 200000, dbFee: 25000, dataFee: 0, commission: 0, total: 225000, status: '대기' },
+    { period: '2026.01.01~2026.01.31', monthlyFee: 200000, dbFee: 250000, dataFee: 48200, commission: 500000, total: 998200, status: '납부' },
+    { period: '2026.02.01~2026.02.28', monthlyFee: 200000, dbFee: 280000, dataFee: 52100, commission: 520000, total: 1052100, status: '납부' },
+    { period: '2026.03.01~2026.03.31', monthlyFee: 200000, dbFee: 250000, dataFee: 49800, commission: 480000, total: 979800, status: '청구' },
   ],
 }
 
@@ -175,6 +174,21 @@ export function AcctHqVendor() {
   const calcDataFee = Math.round((stripUnit(data.usageCountLabel || '0') / 10) * data.usageUnitPrice)
   const salesAmount = Math.round(data.periodSales * (data.salesRate / 100))
   const grandTotal = data.monthlyFee + calcDbFee + calcDataFee + salesAmount
+
+  /* 현재 과금중 기간 행 */
+  const now = new Date()
+  const curY = now.getFullYear()
+  const curM = String(now.getMonth() + 1).padStart(2, '0')
+  const currentBilling: BillingItem = {
+    period: `${curY}.${curM}.01~`,
+    monthlyFee: data.monthlyFee,
+    dbFee: calcDbFee,
+    dataFee: calcDataFee,
+    commission: salesAmount,
+    total: grandTotal,
+    status: '과금중',
+  }
+  const fullBillingList = [...(data.billingList || []), currentBilling]
 
   return (
     <div className="space-y-4 animate-fadeIn">
@@ -428,7 +442,7 @@ export function AcctHqVendor() {
                 <div className="flex items-center gap-2 mb-2">
                   <ScrollText size={14} className="text-primary-500" />
                   <span className="text-[12px] font-extrabold text-[var(--text-primary)]">청구 리스트</span>
-                  <span className="text-[9px] text-[var(--text-muted)] ml-auto">{data.billingList?.length || 0}건</span>
+                  <span className="text-[9px] text-[var(--text-muted)] ml-auto">{fullBillingList.length}건</span>
                 </div>
                 <div className="overflow-x-auto rounded-lg border border-[var(--border-default)]">
                   <table className="w-full min-w-[700px]">
@@ -440,16 +454,18 @@ export function AcctHqVendor() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(!data.billingList || data.billingList.length === 0) ? (
+                      {fullBillingList.length === 0 ? (
                         <tr><td colSpan={7} className="py-6 text-center text-[11px] text-[var(--text-muted)]">청구 내역이 없습니다</td></tr>
-                      ) : [...data.billingList].reverse().map((b, i) => {
+                      ) : [...fullBillingList].reverse().map((b, i) => {
                         const statusStyle = b.status === '납부'
                           ? { bg: 'rgba(34,197,94,.1)', color: '#22c55e' }
                           : b.status === '청구'
                             ? { bg: 'rgba(79,110,247,.1)', color: '#4f6ef7' }
                             : b.status === '미납'
                               ? { bg: 'rgba(239,68,68,.1)', color: '#ef4444' }
-                              : { bg: 'rgba(156,163,175,.1)', color: '#9ca3af' }
+                              : b.status === '과금중'
+                                ? { bg: 'rgba(245,158,11,.15)', color: '#f59e0b' }
+                                : { bg: 'rgba(156,163,175,.1)', color: '#9ca3af' }
                         return (
                           <tr key={i} className="border-t border-[var(--border-default)] hover:bg-[var(--bg-muted)] transition-colors">
                             <td className="py-2.5 px-3 text-[11px] font-semibold text-[var(--text-primary)]">{b.period}</td>
