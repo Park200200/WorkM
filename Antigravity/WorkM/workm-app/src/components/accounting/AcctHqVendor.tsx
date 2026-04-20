@@ -4,7 +4,7 @@ import { getItem, setItem } from '../../utils/storage'
 import { formatNumber } from '../../utils/format'
 import {
   Building2, User, Phone, Mail, IdCard, Lock, Upload, X, Save,
-  FileText, Clock, CreditCard, Server, Database, Hash, Percent, Calculator, Image,
+  FileText, Clock, CreditCard, Server, Database, Hash, Percent, Calculator, Image, ScrollText,
 } from 'lucide-react'
 
 /* ─── 타입 ─── */
@@ -46,6 +46,18 @@ interface HqVendor {
   bizCertPhoto: string
   /* 수정이력 */
   history: { date: string; desc: string }[]
+  /* 청구리스트 */
+  billingList: BillingItem[]
+}
+
+interface BillingItem {
+  period: string
+  monthlyFee: number
+  dbFee: number
+  dataFee: number
+  commission: number
+  total: number
+  status: '청구' | '납부' | '미납' | '대기'
 }
 
 const EMPTY: HqVendor = {
@@ -59,6 +71,12 @@ const EMPTY: HqVendor = {
   usageCount: 5400, usageCountLabel: '540,000건', usageUnitPrice: 10,
   salesRate: 5, periodSales: 10000000, bizCertPhoto: '',
   history: [],
+  billingList: [
+    { period: '2026.01.11~2026.02.10', monthlyFee: 200000, dbFee: 25000, dataFee: 5400, commission: 500000, total: 730400, status: '납부' },
+    { period: '2026.02.11~2026.03.10', monthlyFee: 200000, dbFee: 28000, dataFee: 6200, commission: 520000, total: 754200, status: '납부' },
+    { period: '2026.03.11~2026.04.10', monthlyFee: 200000, dbFee: 25000, dataFee: 5800, commission: 480000, total: 710800, status: '청구' },
+    { period: '2026.04.11~2026.05.10', monthlyFee: 200000, dbFee: 25000, dataFee: 0, commission: 0, total: 225000, status: '대기' },
+  ],
 }
 
 const STORAGE_KEY = 'acct_hq_vendor'
@@ -324,30 +342,50 @@ export function AcctHqVendor() {
                 </div>
               </div>
 
-              {/* 세부 금액 입력 */}
-              <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2">
-                <div>
-                  <label className={labelCls}><Server size={9}/> 월관리비</label>
-                  <input value={formatNumber(data.monthlyFee)} onChange={e => upd({ monthlyFee: parseInt(e.target.value.replace(/,/g, '')) || 0 })} className={inputCls} />
+              {/* 청구리스트 */}
+              <div className="mt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <ScrollText size={14} className="text-primary-500" />
+                  <span className="text-[12px] font-extrabold text-[var(--text-primary)]">청구 리스트</span>
+                  <span className="text-[9px] text-[var(--text-muted)] ml-auto">{data.billingList?.length || 0}건</span>
                 </div>
-                <div>
-                  <label className={labelCls}><Database size={9}/> DB사용료</label>
-                  <input value={formatNumber(data.dbFee)} onChange={e => upd({ dbFee: parseInt(e.target.value.replace(/,/g, '')) || 0 })} className={inputCls} />
+                <div className="overflow-x-auto rounded-lg border border-[var(--border-default)]">
+                  <table className="w-full min-w-[700px]">
+                    <thead>
+                      <tr className="bg-[var(--bg-muted)]">
+                        {['과금기간', '월관리비(서버)', 'DB사용료', 'Data사용건수', '수수료', '총금액', '상태'].map((h, i) => (
+                          <th key={i} className={`py-2.5 px-3 text-[10px] font-bold text-[var(--text-muted)] ${i === 0 ? 'text-left' : 'text-right'}`}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(!data.billingList || data.billingList.length === 0) ? (
+                        <tr><td colSpan={7} className="py-6 text-center text-[11px] text-[var(--text-muted)]">청구 내역이 없습니다</td></tr>
+                      ) : data.billingList.map((b, i) => {
+                        const statusStyle = b.status === '납부'
+                          ? { bg: 'rgba(34,197,94,.1)', color: '#22c55e' }
+                          : b.status === '청구'
+                            ? { bg: 'rgba(79,110,247,.1)', color: '#4f6ef7' }
+                            : b.status === '미납'
+                              ? { bg: 'rgba(239,68,68,.1)', color: '#ef4444' }
+                              : { bg: 'rgba(156,163,175,.1)', color: '#9ca3af' }
+                        return (
+                          <tr key={i} className="border-t border-[var(--border-default)] hover:bg-[var(--bg-muted)] transition-colors">
+                            <td className="py-2.5 px-3 text-[11px] font-semibold text-[var(--text-primary)]">{b.period}</td>
+                            <td className="py-2.5 px-3 text-[11px] text-[var(--text-secondary)] text-right tabular-nums">{formatNumber(b.monthlyFee)}원</td>
+                            <td className="py-2.5 px-3 text-[11px] text-[var(--text-secondary)] text-right tabular-nums">{formatNumber(b.dbFee)}원</td>
+                            <td className="py-2.5 px-3 text-[11px] text-[var(--text-secondary)] text-right tabular-nums">{formatNumber(b.dataFee)}원</td>
+                            <td className="py-2.5 px-3 text-[11px] text-[var(--text-secondary)] text-right tabular-nums">{formatNumber(b.commission)}원</td>
+                            <td className="py-2.5 px-3 text-[11px] font-extrabold text-[var(--text-primary)] text-right tabular-nums">{formatNumber(b.total)}원</td>
+                            <td className="py-2.5 px-3 text-right">
+                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ background: statusStyle.bg, color: statusStyle.color }}>{b.status}</span>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-                <div>
-                  <label className={labelCls}><Hash size={9}/> 사용건수금액</label>
-                  <input value={formatNumber(data.usageCount)} onChange={e => upd({ usageCount: parseInt(e.target.value.replace(/,/g, '')) || 0 })} className={inputCls} />
-                </div>
-                <div>
-                  <label className={labelCls}><Percent size={9}/> 기간매출</label>
-                  <input value={formatNumber(data.periodSales)} onChange={e => upd({ periodSales: parseInt(e.target.value.replace(/,/g, '')) || 0 })} className={inputCls} />
-                </div>
-              </div>
-
-              <div className="flex justify-end mt-3">
-                <button onClick={save} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#4f6ef7] text-white text-[11px] font-bold cursor-pointer shadow-md hover:shadow-lg transition-all">
-                  <Save size={12} /> 결과 수정
-                </button>
               </div>
             </div>
           </div>
