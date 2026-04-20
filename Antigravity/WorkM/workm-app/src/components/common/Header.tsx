@@ -109,11 +109,17 @@ export function Header() {
         if (c.year) return c.year
         if (c.periodFrom) return parseInt(c.periodFrom.substring(0, 4))
         return currentYear
-      }))).sort((a: number, b: number) => b - a) as number[]
-      const years = budgetYears.length > 0 ? budgetYears : [currentYear]
-
+      }))) as number[]
+      
       const activeTab = searchParams.get('tab') || 'overview'
+      const isBudget = activeTab === 'budget'
       const isOverview = activeTab === 'overview'
+      
+      /* 예산설정 탭: 기존 년도 + 현재 ±1 / 기타 탭: 기존 년도만 */
+      const baseYears = isBudget
+        ? Array.from(new Set([...budgetYears, currentYear - 1, currentYear, currentYear + 1]))
+        : budgetYears.length > 0 ? budgetYears : [currentYear]
+      const years = baseYears.sort((a, b) => b - a)
 
       return (
         <div className="flex items-center gap-2 min-w-0">
