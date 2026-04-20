@@ -57,59 +57,94 @@ const SOLUTION_LABELS: Record<string, string> = {
 interface SubItem { name: string; url: string; blank: boolean; isSolution?: boolean; solutionIds?: string[] }
 
 /* ═══════════════════════════════════
-   캐러셀 컴포넌트
+   통합 라인 슬라이더 (이미지/솔루션/웹에디터 모두 슬라이드)
    ═══════════════════════════════════ */
-function Carousel({ items, duration }: { items: McItem[]; duration: number }) {
+function LineSlider({ items, duration, onSolution }: {
+  items: any[]; duration: number;
+  onSolution: (sol: string) => void
+}) {
   const [cur, setCur] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const valid = items.filter(it => (it.imgH || '').length > 4 || (it.imgV || '').length > 4)
 
   const go = useCallback((n: number) => {
-    setCur((n % valid.length + valid.length) % valid.length)
-  }, [valid.length])
+    setCur((n % items.length + items.length) % items.length)
+  }, [items.length])
 
+  /* 자동 슬라이드 (항목 2개 이상) */
   useEffect(() => {
-    if (valid.length <= 1) return
-    timerRef.current = setInterval(() => setCur(p => (p + 1) % valid.length), duration * 1000)
+    if (items.length <= 1) return
+    timerRef.current = setInterval(() => setCur(p => (p + 1) % items.length), duration * 1000)
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [valid.length, duration])
+  }, [items.length, duration])
 
-  if (!valid.length) return null
+  if (!items.length) return null
+
+  const renderItem = (item: any) => {
+    const itemType = item.type || 'image'
+
+    /* 이미지형 */
+    if (itemType === 'image') {
+      const hasH = (item.imgH || '').length > 4
+      const hasV = (item.imgV || '').length > 4
+      const hasText = item.text1 || item.text2 || item.text3
+      if (!hasH && !hasV && !hasText) return null
+      const content = (
+        <>
+          {hasH && <img className="hp-cs-img-h" src={item.imgH} alt="" loading="lazy" />}
+          {hasV && <img className="hp-cs-img-v" src={item.imgV} alt="" loading="lazy" />}
+          {hasText && (
+            <div className="hp-cs-overlay">
+              <div className="hp-cs-overlay-inner">
+                {item.text1 && <span className="hp-cs-tag">{item.text1}</span>}
+                {item.text2 && <div className="hp-cs-title">{item.text2}</div>}
+                {item.text3 && <div className="hp-cs-desc">{item.text3}</div>}
+              </div>
+            </div>
+          )}
+        </>
+      )
+      return item.url ? (
+        <a href={item.url.startsWith('http') ? item.url : `https://${item.url}`}
+          target={item.blank ? '_blank' : '_self'} rel="noopener noreferrer" className="hp-cs-link"
+          style={{ display:'block', width:'100%', height:'100%' }}>
+          {content}
+        </a>
+      ) : content
+    }
+
+    /* 솔루션형 */
+    if (itemType === 'solution') {
+      return (
+        <div style={{ width:'100%', height:'100%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', cursor:'pointer', background:'linear-gradient(135deg,#1a1a2e,#16213e)' }}
+          onClick={() => onSolution(item.solution)}>
+          <h2 style={{ color:'#fff', fontSize:28, fontWeight:800, margin:0 }}>
+            {SOLUTION_LABELS[item.solution] || item.solution || '솔루션'}
+          </h2>
+          <p style={{ color:'rgba(255,255,255,.5)', fontSize:14, marginTop:8 }}>클릭하여 상세 페이지로 이동</p>
+        </div>
+      )
+    }
+
+    /* 웹에디터형 */
+    if (itemType === 'editor') {
+      return (
+        <div style={{ width:'100%', height:'100%', overflow:'auto', padding:'40px 5%', background:'#fff' }}
+          dangerouslySetInnerHTML={{ __html: item.editorHtml || '' }}
+        />
+      )
+    }
+
+    return null
+  }
 
   return (
     <div className="hp-carousel" style={{ aspectRatio: '16/7', maxHeight: '75vh' }}>
-      {valid.map((item, i) => {
-        const hasH = (item.imgH || '').length > 4
-        const hasV = (item.imgV || '').length > 4
-        const hasText = item.text1 || item.text2 || item.text3
-        const content = (
-          <>
-            {hasH && <img className="hp-cs-img-h" src={item.imgH} alt="" loading="lazy" />}
-            {hasV && <img className="hp-cs-img-v" src={item.imgV} alt="" loading="lazy" />}
-            {!hasH && !hasV && null}
-            {hasText && (
-              <div className="hp-cs-overlay">
-                <div className="hp-cs-overlay-inner">
-                  {item.text1 && <span className="hp-cs-tag">{item.text1}</span>}
-                  {item.text2 && <div className="hp-cs-title">{item.text2}</div>}
-                  {item.text3 && <div className="hp-cs-desc">{item.text3}</div>}
-                </div>
-              </div>
-            )}
-          </>
-        )
-        return (
-          <div key={i} className={`hp-carousel-slide ${i === cur ? 'active' : ''}`}>
-            {item.url ? (
-              <a href={item.url.startsWith('http') ? item.url : `https://${item.url}`}
-                target={item.blank ? '_blank' : '_self'} rel="noopener noreferrer" className="hp-cs-link">
-                {content}
-              </a>
-            ) : content}
-          </div>
-        )
-      })}
-      {valid.length > 1 && (
+      {items.map((item, i) => (
+        <div key={i} className={`hp-carousel-slide ${i === cur ? 'active' : ''}`}>
+          {renderItem(item)}
+        </div>
+      ))}
+      {items.length > 1 && (
         <>
           <button className="hp-carousel-arrow prev" onClick={() => go(cur - 1)}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
@@ -118,7 +153,7 @@ function Carousel({ items, duration }: { items: McItem[]; duration: number }) {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
           <div className="hp-carousel-dots">
-            {valid.map((_, i) => (
+            {items.map((_, i) => (
               <button key={i} className={`hp-carousel-dot ${i === cur ? 'active' : ''}`} onClick={() => go(i)} />
             ))}
           </div>
@@ -407,38 +442,14 @@ export function HomepageView() {
             </div>
           </div>
         ) : (
-          s.mcLines.map((line, i) => {
-            /* 각 라인의 항목들을 타입별로 분류 */
-            const imgItems = (line.items || []).filter((it: any) => (it.type || 'image') === 'image')
-            const solItems = (line.items || []).filter((it: any) => it.type === 'solution')
-            const editorItems = (line.items || []).filter((it: any) => it.type === 'editor')
-
-            return (
-              <div key={i}>
-                {/* 이미지형 항목 → 캐러셀 */}
-                {imgItems.length > 0 && (
-                  <Carousel items={imgItems} duration={line.duration || 5} />
-                )}
-                {/* 솔루션형 항목 */}
-                {solItems.map((sol: any, si: number) => (
-                  <div key={`sol-${si}`} className="hp-solution-section hp-fade-in"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => { setActiveSolution(sol.solution); setActiveSolName(null) }}
-                  >
-                    <h2>{SOLUTION_LABELS[sol.solution] || sol.solution || '솔루션'}</h2>
-                    <p style={{ fontSize: 14, opacity: .6 }}>클릭하여 상세 페이지로 이동</p>
-                  </div>
-                ))}
-                {/* 웹에디터형 항목 → HTML 렌더링 */}
-                {editorItems.map((ed: any, ei: number) => (
-                  <div key={`ed-${ei}`} className="hp-editor-section hp-fade-in"
-                    style={{ padding: '40px 5%', maxWidth: 1200, margin: '0 auto' }}
-                    dangerouslySetInnerHTML={{ __html: ed.editorHtml || '' }}
-                  />
-                ))}
-              </div>
-            )
-          })
+          s.mcLines.map((line, i) => (
+            <LineSlider
+              key={i}
+              items={line.items || []}
+              duration={line.duration || 5}
+              onSolution={(sol) => { setActiveSolution(sol); setActiveSolName(null) }}
+            />
+          ))
         )}
       </main>
 
