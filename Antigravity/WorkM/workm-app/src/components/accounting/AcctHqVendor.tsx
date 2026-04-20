@@ -83,9 +83,9 @@ const EMPTY: HqVendor = {
   salesRate: 5, periodSales: 12350000, bizCertPhoto: '',
   history: [],
   billingList: [
-    { period: '2026.01.01~2026.01.31', monthlyFee: 200000, dbFee: 250000, dataFee: 48200, commission: 500000, total: 998200, status: '납부' },
-    { period: '2026.02.01~2026.02.28', monthlyFee: 200000, dbFee: 280000, dataFee: 52100, commission: 520000, total: 1052100, status: '납부' },
-    { period: '2026.03.01~2026.03.31', monthlyFee: 200000, dbFee: 250000, dataFee: 49800, commission: 480000, total: 979800, status: '청구' },
+    { period: '2026.01.01-2026.01.31', monthlyFee: 200000, dbFee: 250000, dataFee: 48200, commission: 500000, total: 998200, status: '납부' },
+    { period: '2026.02.01-2026.02.28', monthlyFee: 200000, dbFee: 280000, dataFee: 52100, commission: 520000, total: 1052100, status: '납부' },
+    { period: '2026.03.01-2026.03.31', monthlyFee: 200000, dbFee: 250000, dataFee: 49800, commission: 480000, total: 979800, status: '청구' },
   ],
 }
 
@@ -113,7 +113,14 @@ function toFile(files: FileList | null, cb: (url: string) => void) {
 export function AcctHqVendor() {
   const [data, setData] = useState<HqVendor>(() => {
     const saved = getItem<Partial<HqVendor>>(STORAGE_KEY, {})
-    return { ...EMPTY, ...saved }
+    const merged = { ...EMPTY, ...saved }
+    /* old billingList 마이그레이션: ~11~ 형식 제거, ~ → - 변환 */
+    if (merged.billingList) {
+      merged.billingList = merged.billingList
+        .filter(b => !b.period.includes('.11~') && !b.period.includes('.11-'))
+        .map(b => ({ ...b, period: b.period.replace(/~/g, '-') }))
+    }
+    return merged
   })
   const [saved, setSaved] = useState(false)
 
@@ -516,37 +523,6 @@ export function AcctHqVendor() {
                 </label>
                 {data.bizCertPhoto && (
                   <button onClick={() => upd({ bizCertPhoto: '' })} className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-500 text-[10px] font-bold cursor-pointer hover:bg-red-100 transition-colors">
-                    <X size={10} />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* 솔루션 메인 이미지 */}
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border-default)]">
-              <Image size={14} className="text-emerald-500" />
-              <span className="text-[12px] font-extrabold text-[var(--text-primary)]">솔루션 메인 이미지</span>
-            </div>
-            <div className="p-4 flex flex-col items-center gap-3">
-              <div className="w-full aspect-video rounded-xl border-2 border-dashed border-[var(--border-default)] bg-[var(--bg-muted)] flex items-center justify-center overflow-hidden">
-                {data.companyPhoto ? (
-                  <img src={data.companyPhoto} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="text-center">
-                    <Image size={28} className="text-[var(--text-muted)] mx-auto mb-2" />
-                    <div className="text-[10px] text-[var(--text-muted)]">메인이미지가 없습니다</div>
-                  </div>
-                )}
-              </div>
-              <div className="flex gap-2 w-full">
-                <label className="flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-muted)] text-[10px] font-bold text-[var(--text-secondary)] cursor-pointer hover:border-primary-400 transition-colors">
-                  <Upload size={10}/> 업로드
-                  <input type="file" accept="image/*" className="hidden" onChange={e => toFile(e.target.files, url => upd({ companyPhoto: url }))} />
-                </label>
-                {data.companyPhoto && (
-                  <button onClick={() => upd({ companyPhoto: '' })} className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-500 text-[10px] font-bold cursor-pointer hover:bg-red-100 transition-colors">
                     <X size={10} />
                   </button>
                 )}
