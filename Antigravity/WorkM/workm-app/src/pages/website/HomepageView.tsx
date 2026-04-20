@@ -408,16 +408,34 @@ export function HomepageView() {
           </div>
         ) : (
           s.mcLines.map((line, i) => {
-            if (line.type === 'image') {
-              return <Carousel key={i} items={line.items || []} duration={line.duration || 5} />
-            }
+            /* 각 라인의 항목들을 타입별로 분류 */
+            const imgItems = (line.items || []).filter((it: any) => (it.type || 'image') === 'image')
+            const solItems = (line.items || []).filter((it: any) => it.type === 'solution')
+            const editorItems = (line.items || []).filter((it: any) => it.type === 'editor')
+
             return (
-              <div key={i} className="hp-solution-section hp-fade-in"
-                style={{ cursor: 'pointer' }}
-                onClick={() => { setActiveSolution(line.solution); setActiveSolName(null) }}
-              >
-                <h2>{SOLUTION_LABELS[line.solution] || line.solution || '솔루션'}</h2>
-                <p style={{ fontSize: 14, opacity: .6 }}>클릭하여 상세 페이지로 이동</p>
+              <div key={i}>
+                {/* 이미지형 항목 → 캐러셀 */}
+                {imgItems.length > 0 && (
+                  <Carousel items={imgItems} duration={line.duration || 5} />
+                )}
+                {/* 솔루션형 항목 */}
+                {solItems.map((sol: any, si: number) => (
+                  <div key={`sol-${si}`} className="hp-solution-section hp-fade-in"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => { setActiveSolution(sol.solution); setActiveSolName(null) }}
+                  >
+                    <h2>{SOLUTION_LABELS[sol.solution] || sol.solution || '솔루션'}</h2>
+                    <p style={{ fontSize: 14, opacity: .6 }}>클릭하여 상세 페이지로 이동</p>
+                  </div>
+                ))}
+                {/* 웹에디터형 항목 → HTML 렌더링 */}
+                {editorItems.map((ed: any, ei: number) => (
+                  <div key={`ed-${ei}`} className="hp-editor-section hp-fade-in"
+                    style={{ padding: '40px 5%', maxWidth: 1200, margin: '0 auto' }}
+                    dangerouslySetInnerHTML={{ __html: ed.editorHtml || '' }}
+                  />
+                ))}
               </div>
             )
           })
