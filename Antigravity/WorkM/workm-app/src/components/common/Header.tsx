@@ -103,7 +103,18 @@ export function Header() {
   const renderLeft = () => {
     if (isAcctMode) {
       /* ── 회계관리 모드: 배지 + 회계연도 탭 ── */
-      const years = [currentYear + 1, currentYear, currentYear - 1]
+      /* 예산설정에 등록된 년도 목록을 동적으로 가져옴 */
+      const budgetCats = JSON.parse(localStorage.getItem('acct_budget_cats') || '[]') as any[]
+      const budgetYears = Array.from(new Set(budgetCats.map((c: any) => {
+        if (c.year) return c.year
+        if (c.periodFrom) return parseInt(c.periodFrom.substring(0, 4))
+        return currentYear
+      }))).sort((a: number, b: number) => b - a) as number[]
+      const years = budgetYears.length > 0 ? budgetYears : [currentYear]
+
+      const activeTab = searchParams.get('tab') || 'overview'
+      const isOverview = activeTab === 'overview'
+
       return (
         <div className="flex items-center gap-2 min-w-0">
           {/* > 구분 아이콘 */}
@@ -121,13 +132,17 @@ export function Header() {
             {years.map(y => (
               <button
                 key={y}
-                onClick={() => setAcctYear(y)}
+                onClick={() => !isOverview && setAcctYear(y)}
                 className={cn(
-                  'px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer transition-all',
+                  'px-2.5 py-1 rounded-md text-[11px] font-bold transition-all',
+                  isOverview ? 'cursor-default' : 'cursor-pointer',
                   y === acctYear
                     ? 'bg-[var(--text-primary)] text-[var(--bg-surface)] shadow-sm'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
+                    : isOverview
+                      ? 'text-[var(--text-muted)] opacity-40'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
                 )}
+                title={isOverview ? '예산설정에서 년도를 변경하세요' : ''}
               >
                 {y}
               </button>

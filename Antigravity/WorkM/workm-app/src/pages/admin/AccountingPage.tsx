@@ -282,30 +282,46 @@ export function AccountingPage() {
   return (
     <div className="animate-fadeIn">
       {/* ── 모바일 연도 선택 (데스크탑은 헤더에 표시) ── */}
-      <div className="mb-4 md:hidden">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1">
-            <Clock size={12} /> 회계연도
-          </span>
-          {[currentYear + 1, currentYear, currentYear - 1].map(y => (
-            <button
-              key={y}
-              onClick={() => {
-                const tab = searchParams.get('tab') || 'overview'
-                setSearchParams({ tab, year: String(y) })
-              }}
-              className={cn(
-                'px-3 py-1 rounded-full text-[11px] font-bold cursor-pointer transition-all border',
-                y === year
-                  ? 'bg-primary-500 text-white border-primary-500'
-                  : 'bg-transparent text-[var(--text-muted)] border-[var(--border-default)] hover:border-primary-400',
-              )}
-            >
-              {y}
-            </button>
-          ))}
-        </div>
-      </div>
+      {(() => {
+        const budgetCatsAll = getItem<BudgetCat[]>('acct_budget_cats', [])
+        const budgetYrs = Array.from(new Set(budgetCatsAll.map(c => {
+          if (c.year) return c.year
+          if (c.periodFrom) return parseInt(c.periodFrom!.substring(0, 4))
+          return currentYear
+        }))).sort((a, b) => b - a)
+        const mobileYears = budgetYrs.length > 0 ? budgetYrs : [currentYear]
+        const isOverview = activeSub === 'overview'
+        return (
+          <div className="mb-4 md:hidden">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1">
+                <Clock size={12} /> 회계연도
+              </span>
+              {mobileYears.map(y => (
+                <button
+                  key={y}
+                  onClick={() => {
+                    if (isOverview) return
+                    const tab = searchParams.get('tab') || 'overview'
+                    setSearchParams({ tab, year: String(y) })
+                  }}
+                  className={cn(
+                    'px-3 py-1 rounded-full text-[11px] font-bold transition-all border',
+                    isOverview ? 'cursor-default' : 'cursor-pointer',
+                    y === year
+                      ? 'bg-primary-500 text-white border-primary-500'
+                      : isOverview
+                        ? 'bg-transparent text-[var(--text-muted)] border-[var(--border-default)] opacity-40'
+                        : 'bg-transparent text-[var(--text-muted)] border-[var(--border-default)] hover:border-primary-400',
+                  )}
+                >
+                  {y}
+                </button>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
 
 
 
