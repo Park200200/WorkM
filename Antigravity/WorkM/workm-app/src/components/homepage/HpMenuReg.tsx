@@ -4,16 +4,17 @@ import {
   Navigation, Plus, X, Save, Trash2, Edit3,
   ScrollText, ShieldCheck, LayoutPanelLeft, Image as ImageIcon,
   MessageSquare, Bell, Newspaper, HelpCircle, ClipboardList,
-  Store, TentTree, Building2, Monitor, FileCheck,
+  Store, TentTree, Building2, Monitor, FileCheck, Code,
 } from 'lucide-react'
 
 /* ── 타입 ── */
 interface SubRow { label: string; url: string; blank: boolean; hImg: string; vImg: string }
 interface SubSet {
   name: string
-  type: 'image' | 'solution'
+  type: 'image' | 'solution' | 'editor'
   rows: SubRow[]          // 이미지형일 때 사용
   solutions: string[]     // 솔루션형일 때 선택된 id 목록
+  editorHtml: string      // 웹에디터형 HTML
 }
 interface MenuDetail { sets: SubSet[] }
 interface MenuData {
@@ -92,7 +93,7 @@ export function HpMenuReg() {
 
   const addSet = (idx: number) => {
     updateDetail(idx, d => {
-      d.sets.push({ name: '', type: 'image', rows: [], solutions: [] })
+      d.sets.push({ name: '', type: 'image', rows: [], solutions: [], editorHtml: '' })
       return d
     })
   }
@@ -285,10 +286,11 @@ function SetCard({
         </div>
         <span className="text-[12px] font-bold text-[var(--text-primary)]">서브메뉴 {setIdx + 1}</span>
 
-        {/* ── 이미지형 / 솔루션형 스위치 ── */}
+        {/* ── 이미지형 / 솔루션형 / 웹에디터형 스위치 ── */}
         <div className="flex items-center border border-[var(--border-default)] rounded-lg overflow-hidden ml-2">
-          {(['image', 'solution'] as const).map(t => {
+          {(['image', 'solution', 'editor'] as const).map(t => {
             const active = set.type === t
+            const label = t === 'image' ? '이미지형' : t === 'solution' ? '솔루션형' : '웹에디터형'
             return (
               <button key={t} onClick={() => onUpdateSet({ type: t })}
                 className="px-3 py-1 text-[11px] border-none cursor-pointer transition-all whitespace-nowrap"
@@ -297,7 +299,7 @@ function SetCard({
                   background: active ? '#6366f1' : 'transparent',
                   color: active ? '#fff' : 'var(--text-secondary)',
                 }}>
-                {t === 'image' ? '이미지형' : '솔루션형'}
+                {label}
               </button>
             )
           })}
@@ -403,6 +405,75 @@ function SetCard({
                 )
               })}
             </div>
+          </div>
+        )}
+
+        {/* ── 웹에디터형 바디 ── */}
+        {set.type === 'editor' && (
+          <div>
+            <div className="flex items-center gap-1.5 mb-2">
+              <Code size={11} className="text-[var(--text-secondary)]" />
+              <span className="text-[11px] font-bold text-[var(--text-secondary)]">웹에디터 (HTML)</span>
+            </div>
+            {/* 툴바 */}
+            <div className="flex flex-wrap gap-1 mb-2 p-2 bg-[var(--bg-muted)] rounded-lg border border-[var(--border-default)]">
+              {[
+                { cmd: 'bold', label: 'B', style: 'font-bold' },
+                { cmd: 'italic', label: 'I', style: 'italic' },
+                { cmd: 'underline', label: 'U', style: 'underline' },
+                { cmd: 'strikeThrough', label: 'S', style: 'line-through' },
+              ].map(b => (
+                <button key={b.cmd} onClick={() => document.execCommand(b.cmd)}
+                  className={`w-7 h-7 rounded flex items-center justify-center text-[12px] ${b.style} cursor-pointer border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]`}
+                  title={b.cmd}>{b.label}</button>
+              ))}
+              <span className="w-px h-6 bg-[var(--border-default)] mx-1" />
+              {[
+                { cmd: 'justifyLeft', label: '⬅' },
+                { cmd: 'justifyCenter', label: '⬛' },
+                { cmd: 'justifyRight', label: '➡' },
+              ].map(b => (
+                <button key={b.cmd} onClick={() => document.execCommand(b.cmd)}
+                  className="w-7 h-7 rounded flex items-center justify-center text-[10px] cursor-pointer border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
+                  title={b.cmd}>{b.label}</button>
+              ))}
+              <span className="w-px h-6 bg-[var(--border-default)] mx-1" />
+              {[
+                { cmd: 'insertUnorderedList', label: '• 목록' },
+                { cmd: 'insertOrderedList', label: '1. 목록' },
+              ].map(b => (
+                <button key={b.cmd} onClick={() => document.execCommand(b.cmd)}
+                  className="px-2 h-7 rounded flex items-center justify-center text-[10px] cursor-pointer border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
+                  title={b.cmd}>{b.label}</button>
+              ))}
+              <span className="w-px h-6 bg-[var(--border-default)] mx-1" />
+              <select onChange={e => { document.execCommand('fontSize', false, e.target.value); e.target.value = '' }}
+                className="h-7 px-1 rounded text-[10px] border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] cursor-pointer outline-none">
+                <option value="">크기</option>
+                <option value="1">작게</option>
+                <option value="3">보통</option>
+                <option value="5">크게</option>
+                <option value="7">매우 크게</option>
+              </select>
+              <input type="color" defaultValue="#000000" onChange={e => document.execCommand('foreColor', false, e.target.value)}
+                className="w-7 h-7 rounded border border-[var(--border-default)] cursor-pointer p-0" title="글자색" />
+              <button onClick={() => { const url = prompt('이미지 URL을 입력하세요:'); if (url) document.execCommand('insertImage', false, url) }}
+                className="px-2 h-7 rounded flex items-center justify-center text-[10px] cursor-pointer border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
+                title="이미지 삽입">🖼</button>
+              <button onClick={() => { const url = prompt('링크 URL을 입력하세요:'); if (url) document.execCommand('createLink', false, url) }}
+                className="px-2 h-7 rounded flex items-center justify-center text-[10px] cursor-pointer border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
+                title="링크">🔗</button>
+            </div>
+            {/* 에디터 영역 */}
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              dangerouslySetInnerHTML={{ __html: set.editorHtml || '' }}
+              onBlur={e => onUpdateSet({ editorHtml: (e.target as HTMLDivElement).innerHTML })}
+              className="min-h-[200px] p-4 rounded-lg border border-[var(--border-default)] bg-white text-sm text-[#1e293b] leading-relaxed outline-none focus:border-[#6366f1] transition-colors"
+              style={{ overflowY: 'auto', maxHeight: 500 }}
+            />
+            <div className="text-[9px] text-[var(--text-muted)] mt-1.5">텍스트를 선택한 후 상단 툴바로 서식을 적용하세요</div>
           </div>
         )}
       </div>
