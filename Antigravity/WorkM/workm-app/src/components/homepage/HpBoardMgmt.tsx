@@ -22,11 +22,11 @@ interface BoardItem {
 const STORAGE_KEY = 'board_items'
 
 const ALL_CAT_MAP: Record<string,string> = {
-  notice:'📢 공지사항', news:'📰 뉴스', free:'💬 자유게시판',
-  qna:'❓ Q&A', faq:'📋 FAQ'
+  free:'📋 게시판', qna:'❓ Q&A', notice:'📢 공지사항',
+  news:'📰 News', faq:'💡 FAQ'
 }
 const CAT_COLOR: Record<string,string> = {
-  notice:'#ef4444', news:'#4f6ef7', free:'#f59e0b', qna:'#8b5cf6', faq:'#06b6d4'
+  free:'#f59e0b', qna:'#8b5cf6', notice:'#ef4444', news:'#4f6ef7', faq:'#06b6d4'
 }
 /* 솔루션 ID → 게시판 카테고리 매핑 (board→free) */
 const SOL_TO_CAT: Record<string,string> = {
@@ -291,7 +291,7 @@ export function HpBoardMgmt() {
               <div className="text-base font-extrabold text-[var(--text-primary)]">
                 {editId
                   ? `편집: ${(CAT_MAP[form.cat]||'').replace(/^[^\s]+ /,'')}`
-                  : ({notice:'📢 공지사항 작성', news:'📰 뉴스 작성', free:'💬 자유게시판 작성', qna:'❓ Q&A 작성', faq:'📋 FAQ 등록'} as any)[form.cat] || '게시글 작성'
+                  : ({free:'📋 게시판 작성', qna:'❓ Q&A 작성', notice:'📢 공지사항 작성', news:'📰 News 작성', faq:'💡 FAQ 등록'} as any)[form.cat] || '게시글 작성'
                 }
               </div>
               <button onClick={() => setShowModal(false)} className="text-xl text-[var(--text-muted)] cursor-pointer bg-transparent border-none">×</button>
