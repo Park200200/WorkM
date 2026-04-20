@@ -35,9 +35,12 @@ interface HqVendor {
   serverFee: number
   dbFee: number
   dbUsage: string
+  dbUnitPrice: number
   usageCount: number
   usageCountLabel: string
+  usageUnitPrice: number
   salesRate: number
+  periodSales: number
   /* 사업자등록증 */
   bizCertPhoto: string
   /* 수정이력 */
@@ -51,8 +54,9 @@ const EMPTY: HqVendor = {
   managerName: '', managerTitle: '', managerPhone: '', managerEmail: '',
   managerId: '', managerPw: '', managerPhoto: '',
   monthlyFee: 200000, vendorCode: '', serverFee: 0,
-  dbFee: 17500, dbUsage: '', usageCount: 0, usageCountLabel: '',
-  salesRate: 7, bizCertPhoto: '',
+  dbFee: 25000, dbUsage: '2,500MB', dbUnitPrice: 1000,
+  usageCount: 5400, usageCountLabel: '540,000건', usageUnitPrice: 10,
+  salesRate: 5, periodSales: 10000000, bizCertPhoto: '',
   history: [],
 }
 
@@ -88,11 +92,8 @@ export function AcctHqVendor() {
   }
 
   /* 솔루션 사용료 계산 */
-  const monthlyTotal = data.monthlyFee + data.serverFee
-  const dbTotal = data.dbFee
-  const usageTotal = data.usageCount
-  const salesAmount = Math.round((monthlyTotal + dbTotal + usageTotal) * (data.salesRate / 100))
-  const grandTotal = monthlyTotal + dbTotal + usageTotal + salesAmount
+  const salesAmount = Math.round(data.periodSales * (data.salesRate / 100))
+  const grandTotal = data.monthlyFee + data.dbFee + data.usageCount + salesAmount
 
   return (
     <div className="space-y-4 animate-fadeIn">
@@ -256,56 +257,38 @@ export function AcctHqVendor() {
               </div>
             </div>
             <div className="p-4">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                {/* 월관리비 */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {/* 월관리비(서버) */}
                 <div className="bg-[var(--bg-muted)] rounded-xl p-3 border border-[var(--border-default)]">
                   <div className="flex items-center gap-1 text-[9px] font-bold text-[var(--text-muted)] mb-1">
-                    <Server size={9}/> 월관리(서버)
+                    <Server size={9}/> 월관리비(서버)
                   </div>
                   <div className="text-[15px] font-extrabold text-[var(--text-primary)]">{formatNumber(data.monthlyFee)}원</div>
-                  <div className="text-[9px] text-[var(--text-muted)] mt-0.5">
-                    <input value={data.vendorCode} onChange={e => upd({ vendorCode: e.target.value })} placeholder="거래처코드" className="w-full bg-transparent border-none outline-none text-[9px] text-[var(--text-muted)]" />
-                  </div>
+                  <div className="text-[9px] text-[var(--text-muted)] mt-0.5">기본금액</div>
                 </div>
-                {/* DB 사용료 */}
+                {/* DB사용료 */}
                 <div className="bg-[var(--bg-muted)] rounded-xl p-3 border border-[var(--border-default)]">
                   <div className="flex items-center gap-1 text-[9px] font-bold text-[var(--text-muted)] mb-1">
-                    <Database size={9}/> DB사용료(용량)
+                    <Database size={9}/> DB사용료(단가:100M당 {formatNumber(data.dbUnitPrice)}원)
                   </div>
                   <div className="text-[15px] font-extrabold text-[var(--text-primary)]">{formatNumber(data.dbFee)}원</div>
-                  <div className="text-[9px] text-[var(--text-muted)] mt-0.5">
-                    <input value={data.dbUsage} onChange={e => upd({ dbUsage: e.target.value })} placeholder="2.5GB" className="w-full bg-transparent border-none outline-none text-[9px] text-[var(--text-muted)]" />
-                  </div>
+                  <div className="text-[9px] text-[var(--text-muted)] mt-0.5">{data.dbUsage || '0MB'}</div>
                 </div>
                 {/* 사용건수 */}
                 <div className="bg-[var(--bg-muted)] rounded-xl p-3 border border-[var(--border-default)]">
                   <div className="flex items-center gap-1 text-[9px] font-bold text-[var(--text-muted)] mb-1">
-                    <Hash size={9}/> 사용건수(건수)
+                    <Hash size={9}/> 사용건수(단가 건당:{formatNumber(data.usageUnitPrice)}건당 1원)
                   </div>
                   <div className="text-[15px] font-extrabold text-[var(--text-primary)]">{formatNumber(data.usageCount)}원</div>
-                  <div className="text-[9px] text-[var(--text-muted)] mt-0.5">
-                    <input value={data.usageCountLabel} onChange={e => upd({ usageCountLabel: e.target.value })} placeholder="856건" className="w-full bg-transparent border-none outline-none text-[9px] text-[var(--text-muted)]" />
-                  </div>
+                  <div className="text-[9px] text-[var(--text-muted)] mt-0.5">{data.usageCountLabel || '0건'}</div>
                 </div>
-                {/* 매출수수료 */}
+                {/* 수수료 */}
                 <div className="bg-[var(--bg-muted)] rounded-xl p-3 border border-[var(--border-default)]">
-                  <div className="flex items-center gap-1 text-[9px] font-bold text-[var(--text-muted)] mb-1">
+                  <div className="flex items-center gap-1 text-[9px] font-bold text-amber-600 dark:text-amber-400 mb-1">
                     <Percent size={9}/> 수수료({data.salesRate}%)
                   </div>
                   <div className="text-[15px] font-extrabold text-amber-600 dark:text-amber-400">{formatNumber(salesAmount)}원</div>
-                  <div className="text-[9px] text-[var(--text-muted)] mt-0.5">
-                    전체 합산 × {data.salesRate}%
-                  </div>
-                </div>
-                {/* 합계 */}
-                <div className="bg-gradient-to-br from-primary-50 to-violet-50 dark:from-primary-900/20 dark:to-violet-900/20 rounded-xl p-3 border border-primary-200 dark:border-primary-700">
-                  <div className="flex items-center gap-1 text-[9px] font-bold text-primary-600 dark:text-primary-400 mb-1">
-                    <Calculator size={9}/> 합계·총액 금액
-                  </div>
-                  <div className="text-[15px] font-extrabold text-primary-600 dark:text-primary-400">{formatNumber(grandTotal)}원</div>
-                  <div className="text-[9px] text-primary-500/60 mt-0.5">
-                    VAT 별도
-                  </div>
+                  <div className="text-[9px] text-[var(--text-muted)] mt-0.5">기간매출:{formatNumber(data.periodSales)}원</div>
                 </div>
               </div>
 
@@ -316,16 +299,16 @@ export function AcctHqVendor() {
                   <input value={formatNumber(data.monthlyFee)} onChange={e => upd({ monthlyFee: parseInt(e.target.value.replace(/,/g, '')) || 0 })} className={inputCls} />
                 </div>
                 <div>
-                  <label className={labelCls}><Server size={9}/> 서버요금</label>
-                  <input value={formatNumber(data.serverFee)} onChange={e => upd({ serverFee: parseInt(e.target.value.replace(/,/g, '')) || 0 })} className={inputCls} />
-                </div>
-                <div>
                   <label className={labelCls}><Database size={9}/> DB사용료</label>
                   <input value={formatNumber(data.dbFee)} onChange={e => upd({ dbFee: parseInt(e.target.value.replace(/,/g, '')) || 0 })} className={inputCls} />
                 </div>
                 <div>
                   <label className={labelCls}><Hash size={9}/> 사용건수금액</label>
                   <input value={formatNumber(data.usageCount)} onChange={e => upd({ usageCount: parseInt(e.target.value.replace(/,/g, '')) || 0 })} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}><Percent size={9}/> 기간매출</label>
+                  <input value={formatNumber(data.periodSales)} onChange={e => upd({ periodSales: parseInt(e.target.value.replace(/,/g, '')) || 0 })} className={inputCls} />
                 </div>
               </div>
 
