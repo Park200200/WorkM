@@ -647,22 +647,30 @@ export function HpBasicSettings() {
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
                                   <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Monitor size={9}/> 가로 이미지 (PC)</label>
-                                  <div className="flex gap-1">
-                                    <input value={item.imgH} onChange={e => updateMcItem(i, j, { imgH: e.target.value })} placeholder="URL 또는 파일 업로드" className={`flex-1 ${inputCls} !text-[10.5px]`} />
-                                    <label className="px-2 py-1 rounded-md bg-[var(--bg-muted)] border border-[var(--border-default)] text-[10px] text-[var(--text-muted)] cursor-pointer hover:bg-[var(--bg-surface)] flex items-center">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-20 h-12 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
+                                      {item.imgH ? <img src={item.imgH} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
+                                    </div>
+                                    <label className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
+                                      <Upload size={10}/> 선택
                                       <input type="file" accept="image/*" className="hidden" onChange={e => handleMcFileUpload(i, j, 'imgH', e.target.files)} />
-                                      📁
                                     </label>
+                                    {item.imgH && <button onClick={() => updateMcItem(i, j, { imgH: '' })}
+                                      className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
                                   </div>
                                 </div>
                                 <div>
                                   <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1">📱 세로 이미지 (모바일)</label>
-                                  <div className="flex gap-1">
-                                    <input value={item.imgV} onChange={e => updateMcItem(i, j, { imgV: e.target.value })} placeholder="URL 또는 파일 업로드" className={`flex-1 ${inputCls} !text-[10.5px]`} />
-                                    <label className="px-2 py-1 rounded-md bg-[var(--bg-muted)] border border-[var(--border-default)] text-[10px] text-[var(--text-muted)] cursor-pointer hover:bg-[var(--bg-surface)] flex items-center">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-12 h-16 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
+                                      {item.imgV ? <img src={item.imgV} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
+                                    </div>
+                                    <label className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
+                                      <Upload size={10}/> 선택
                                       <input type="file" accept="image/*" className="hidden" onChange={e => handleMcFileUpload(i, j, 'imgV', e.target.files)} />
-                                      📁
                                     </label>
+                                    {item.imgV && <button onClick={() => updateMcItem(i, j, { imgV: '' })}
+                                      className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
                                   </div>
                                 </div>
                               </div>
