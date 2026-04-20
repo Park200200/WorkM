@@ -112,15 +112,28 @@ function LineSlider({ items, duration, onSolution }: {
       ) : content
     }
 
-    /* 솔루션형 */
+    /* 솔루션형 - 이미지+텍스트, 클릭 시 솔루션 페이지 이동 */
     if (itemType === 'solution') {
+      const hasH = (item.imgH || '').length > 4
+      const hasV = (item.imgV || '').length > 4
+      const hasText = item.text1 || item.text2 || item.text3 || item.solution
       return (
-        <div style={{ width:'100%', height:'100%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', cursor:'pointer', background:'linear-gradient(135deg,#1a1a2e,#16213e)' }}
+        <div style={{ width:'100%', height:'100%', cursor:'pointer', position:'relative' }}
           onClick={() => onSolution(item.solution)}>
-          <h2 style={{ color:'#fff', fontSize:28, fontWeight:800, margin:0 }}>
-            {SOLUTION_LABELS[item.solution] || item.solution || '솔루션'}
-          </h2>
-          <p style={{ color:'rgba(255,255,255,.5)', fontSize:14, marginTop:8 }}>클릭하여 상세 페이지로 이동</p>
+          {hasH && <img className="hp-cs-img-h" src={item.imgH} alt="" loading="lazy" />}
+          {hasV && <img className="hp-cs-img-v" src={item.imgV} alt="" loading="lazy" />}
+          {!hasH && !hasV && (
+            <div style={{ width:'100%', height:'100%', background:'linear-gradient(135deg,#1a1a2e,#16213e)' }} />
+          )}
+          {hasText && (
+            <div className="hp-cs-overlay">
+              <div className="hp-cs-overlay-inner">
+                {item.text1 && <span className="hp-cs-tag">{item.text1}</span>}
+                <div className="hp-cs-title">{item.text2 || SOLUTION_LABELS[item.solution] || item.solution || '솔루션'}</div>
+                {item.text3 && <div className="hp-cs-desc">{item.text3}</div>}
+              </div>
+            </div>
+          )}
         </div>
       )
     }

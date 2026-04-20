@@ -704,14 +704,77 @@ export function HpBasicSettings() {
 
                       {/* ── 솔루션형 ── */}
                       {item.type === 'solution' && (
-                        <div className="p-3 flex flex-wrap gap-2">
-                          {SOLUTIONS.map(s => (
-                            <button key={s} onClick={() => updateMcItem(i, j, { solution: s })}
-                              className="px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all"
-                              style={{ border:`1.5px solid ${item.solution===s?'#4f6ef7':'var(--border-default)'}`, background:item.solution===s?'#4f6ef7':'var(--bg-surface)', color:item.solution===s?'#fff':'var(--text-secondary)' }}>
-                              {s}
-                            </button>
-                          ))}
+                        <div className="p-3 space-y-2">
+                          {/* 솔루션 선택 */}
+                          <div className="flex flex-wrap gap-2">
+                            {SOLUTIONS.map(s => (
+                              <button key={s} onClick={() => updateMcItem(i, j, { solution: s })}
+                                className="px-3 py-1.5 rounded-full text-[11px] font-semibold cursor-pointer transition-all"
+                                style={{ border:`1.5px solid ${item.solution===s?'#4f6ef7':'var(--border-default)'}`, background:item.solution===s?'#4f6ef7':'var(--bg-surface)', color:item.solution===s?'#fff':'var(--text-secondary)' }}>
+                                {s}
+                              </button>
+                            ))}
+                          </div>
+                          {/* 미리보기 */}
+                          <div className="relative w-full min-h-[140px] bg-[#0a0a12] flex items-center justify-center overflow-hidden rounded-lg">
+                            {(item.imgH || item.imgV) && (
+                              <img src={item.imgH || item.imgV} className="absolute inset-0 w-full h-full object-cover opacity-55" />
+                            )}
+                            <div className="relative z-[1] text-center px-6 py-4">
+                              {item.text1 && <div className="inline-block px-3 py-1 rounded-full bg-white/20 text-white text-[10px] font-bold mb-2">{item.text1}</div>}
+                              <div className="text-white text-[16px] font-extrabold">{item.text2 || item.solution || '제목을 입력하세요'}</div>
+                              {item.text3 && <div className="text-white/70 text-[11px] mt-1">{item.text3}</div>}
+                            </div>
+                          </div>
+                          {/* 이미지 업로드 */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Monitor size={9}/> 가로 이미지 (PC)</label>
+                              <div className="flex items-center gap-2">
+                                <div className="w-20 h-12 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
+                                  {item.imgH ? <img src={item.imgH} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
+                                </div>
+                                <label className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
+                                  <Upload size={10}/> 선택
+                                  <input type="file" accept="image/*" className="hidden" onChange={e => handleMcFileUpload(i, j, 'imgH', e.target.files)} />
+                                </label>
+                                {item.imgH && <button onClick={() => updateMcItem(i, j, { imgH: '' })}
+                                  className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1">📱 세로 이미지 (모바일)</label>
+                              <div className="flex items-center gap-2">
+                                <div className="w-12 h-16 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
+                                  {item.imgV ? <img src={item.imgV} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
+                                </div>
+                                <label className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
+                                  <Upload size={10}/> 선택
+                                  <input type="file" accept="image/*" className="hidden" onChange={e => handleMcFileUpload(i, j, 'imgV', e.target.files)} />
+                                </label>
+                                {item.imgV && <button onClick={() => updateMcItem(i, j, { imgV: '' })}
+                                  className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
+                              </div>
+                            </div>
+                          </div>
+                          {/* 텍스트 */}
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={9}/> 텍스트 1 (태그)</label>
+                              <input value={item.text1} onChange={e => updateMcItem(i, j, { text1: e.target.value })} placeholder="태그" className={`${inputCls} !text-[10.5px]`} />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={9}/> 텍스트 2 (제목)</label>
+                              <input value={item.text2} onChange={e => updateMcItem(i, j, { text2: e.target.value })} placeholder="제목" className={`${inputCls} !text-[10.5px]`} />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={9}/> 텍스트 3 (설명)</label>
+                              <input value={item.text3} onChange={e => updateMcItem(i, j, { text3: e.target.value })} placeholder="설명" className={`${inputCls} !text-[10.5px]`} />
+                            </div>
+                          </div>
+                          <div className="text-[9px] text-[var(--text-muted)] pt-1 border-t border-dashed border-[var(--border-default)]">
+                            💡 사이트에서 이미지를 클릭하면 선택한 솔루션 페이지로 이동합니다
+                          </div>
                         </div>
                       )}
 
