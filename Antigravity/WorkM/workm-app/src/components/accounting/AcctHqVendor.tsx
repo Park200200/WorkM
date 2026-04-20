@@ -84,6 +84,15 @@ const STORAGE_KEY = 'acct_hq_vendor'
 const inputCls = 'w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] outline-none focus:border-primary-500 transition-colors'
 const labelCls = 'text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1'
 
+/* 숫자+단위 포맷 헬퍼 */
+function fmtUnit(val: string | number, unit: string): string {
+  const num = typeof val === 'number' ? val : parseInt(String(val).replace(/[^\d]/g, '')) || 0
+  return num === 0 ? '' : `${formatNumber(num)} ${unit}`
+}
+function stripUnit(val: string): number {
+  return parseInt(val.replace(/[^\d]/g, '')) || 0
+}
+
 function toFile(files: FileList | null, cb: (url: string) => void) {
   if (!files?.[0]) return
   const reader = new FileReader()
@@ -108,11 +117,11 @@ export function AcctHqVendor() {
     setPriceForm({
       monthlyFee: formatNumber(data.monthlyFee),
       dbUnitPrice: formatNumber(data.dbUnitPrice),
-      dbUsage: data.dbUsage || '',
+      dbUsage: fmtUnit(stripUnit(data.dbUsage || '0'), 'MB'),
       usageUnitPrice: formatNumber(data.usageUnitPrice),
-      usageCount: data.usageCountLabel || '',
+      usageCount: fmtUnit(stripUnit(data.usageCountLabel || '0'), '건'),
       salesRate: String(data.salesRate),
-      periodSales: formatNumber(data.periodSales),
+      periodSales: fmtUnit(data.periodSales, '원'),
     })
     setPriceModal(true)
   }
@@ -122,11 +131,11 @@ export function AcctHqVendor() {
     const patch = {
       monthlyFee: parseInt(priceForm.monthlyFee.replace(/,/g, '')) || 0,
       dbUnitPrice: parseInt(priceForm.dbUnitPrice.replace(/,/g, '')) || 0,
-      dbUsage: priceForm.dbUsage,
+      dbUsage: `${formatNumber(stripUnit(priceForm.dbUsage))}MB`,
       usageUnitPrice: parseInt(priceForm.usageUnitPrice.replace(/,/g, '')) || 0,
-      usageCountLabel: priceForm.usageCount,
+      usageCountLabel: `${formatNumber(stripUnit(priceForm.usageCount))}건`,
       salesRate: parseFloat(priceForm.salesRate) || 0,
-      periodSales: parseInt(priceForm.periodSales.replace(/,/g, '')) || 0,
+      periodSales: stripUnit(priceForm.periodSales),
       history: [...(data.history || []), { date: now, desc: '단가 수정' }],
     }
     const updated = { ...data, ...patch }
@@ -544,7 +553,10 @@ export function AcctHqVendor() {
                   <label className={labelCls}>사용량</label>
                   <input
                     value={priceForm.dbUsage}
-                    onChange={e => setPriceForm(p => ({ ...p, dbUsage: e.target.value }))}
+                    onChange={e => {
+                      const num = stripUnit(e.target.value)
+                      setPriceForm(p => ({ ...p, dbUsage: num === 0 ? '' : fmtUnit(num, 'MB') }))
+                    }}
                     className={inputCls}
                     placeholder="25,000 MB"
                   />
@@ -568,7 +580,10 @@ export function AcctHqVendor() {
                   <label className={labelCls}>사용건수</label>
                   <input
                     value={priceForm.usageCount}
-                    onChange={e => setPriceForm(p => ({ ...p, usageCount: e.target.value }))}
+                    onChange={e => {
+                      const num = stripUnit(e.target.value)
+                      setPriceForm(p => ({ ...p, usageCount: num === 0 ? '' : fmtUnit(num, '건') }))
+                    }}
                     className={inputCls}
                     placeholder="135,321 건"
                   />
@@ -593,8 +608,8 @@ export function AcctHqVendor() {
                   <input
                     value={priceForm.periodSales}
                     onChange={e => {
-                      const raw = e.target.value.replace(/,/g, '')
-                      if (/^\d*$/.test(raw)) setPriceForm(p => ({ ...p, periodSales: formatNumber(parseInt(raw) || 0) }))
+                      const num = stripUnit(e.target.value)
+                      setPriceForm(p => ({ ...p, periodSales: num === 0 ? '' : fmtUnit(num, '원') }))
                     }}
                     className={inputCls}
                     placeholder="12,350,000 원"
