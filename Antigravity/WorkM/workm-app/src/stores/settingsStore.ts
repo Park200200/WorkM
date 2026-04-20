@@ -41,6 +41,7 @@ interface SettingsStore {
   detailTasks: OrgItem[]
   instrImportances: OrgItem[]
   taskStatuses: TaskStatus[]
+  bizCategories: OrgItem[]
 
   /* 부서별 상세업무 매핑 */
   deptDetailTasks: Record<number, number[]>
@@ -85,6 +86,11 @@ interface SettingsStore {
   updateImportance: (id: number, name: string, icon?: string, color?: string) => void
   deleteImportance: (id: number) => void
 
+  // 거래처구분
+  addBizCategory: (name: string) => void
+  updateBizCategory: (id: number, name: string) => void
+  deleteBizCategory: (id: number) => void
+
   // 부서별 상세업무
   setDeptDetailTasks: (deptId: number, taskIds: number[]) => void
   toggleDeptDetailTask: (deptId: number, taskId: number) => void
@@ -107,6 +113,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   detailTasks:      getItem('ws_detail_tasks', []),
   instrImportances: getItem('ws_instr_importances', []),
   taskStatuses:     getItem('ws_task_statuses', []),
+  bizCategories:    getItem('ws_biz_categories', []),
   deptDetailTasks:  getItem<Record<number, number[]>>('ws_dept_detail_tasks', {}),
 
   // ── 부서 ──
@@ -245,6 +252,23 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     return { instrImportances: updated }
   }),
 
+  // ── 거래처구분 ──
+  addBizCategory: (name) => set((s) => {
+    const updated = [...s.bizCategories, { id: Date.now(), name }]
+    setItem('ws_biz_categories', updated)
+    return { bizCategories: updated }
+  }),
+  updateBizCategory: (id, name) => set((s) => {
+    const updated = s.bizCategories.map(c => c.id === id ? { ...c, name } : c)
+    setItem('ws_biz_categories', updated)
+    return { bizCategories: updated }
+  }),
+  deleteBizCategory: (id) => set((s) => {
+    const updated = s.bizCategories.filter(c => c.id !== id)
+    setItem('ws_biz_categories', updated)
+    return { bizCategories: updated }
+  }),
+
   // ── 부서별 상세업무 ──
   setDeptDetailTasks: (deptId, taskIds) => set((s) => {
     const updated = { ...s.deptDetailTasks, [deptId]: taskIds }
@@ -272,6 +296,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
       detailTasks: { stateKey: 'detailTasks', storageKey: 'ws_detail_tasks' },
       instrImportances: { stateKey: 'instrImportances', storageKey: 'ws_instr_importances' },
       taskStatuses: { stateKey: 'taskStatuses', storageKey: 'ws_task_statuses' },
+      bizCategories: { stateKey: 'bizCategories', storageKey: 'ws_biz_categories' },
     }
     const cfg = keyMap[category]
     if (!cfg) return {}

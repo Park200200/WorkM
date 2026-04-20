@@ -12,7 +12,7 @@ import { getItem } from '../../utils/storage'
 import {
   Building2, Medal, Briefcase, ListChecks, FileText, Layers,
   Plus, Pencil, Trash2, GripVertical, Calculator, Wallet, CreditCard,
-  Palette, Sun, Moon, Check, X, RotateCcw, ChevronRight,
+  Palette, Sun, Moon, Check, X, RotateCcw, ChevronRight, ContactRound,
 } from 'lucide-react'
 import { ICON_MAP, renderIcon } from '../../utils/iconMap'
 import { Badge } from '../../components/ui/Badge'
@@ -50,6 +50,7 @@ const tabs: Tab[] = [
   { key: 'accounts',   label: '계정과목',             icon: Calculator, color: '#0ea5e9' },
   { key: 'budgetItems',label: '예산목',               icon: Wallet,     color: '#f97316' },
   { key: 'payMethods', label: '지출수단',             icon: CreditCard, color: '#ec4899' },
+  { key: 'bizCategory',label: '거래처구분',            icon: ContactRound, color: '#14b8a6' },
 ]
 
 export function SettingsPage() {
@@ -160,6 +161,7 @@ export function SettingsPage() {
       {activeTab === 'accounts' && <AccountPanel />}
       {activeTab === 'budgetItems' && <BudgetItemPanel />}
       {activeTab === 'payMethods' && <PaymentMethodPanel />}
+      {activeTab === 'bizCategory' && <BizCategoryPanel />}
     </div>
   )
 }
@@ -2048,6 +2050,25 @@ function SelectPreview() {
         placeholder="부서를 선택하세요"
       />
     </div>
+  )
+}
+
+/* ══════════════════════════════════════════════
+   거래처구분 패널
+   ══════════════════════════════════════════════ */
+function BizCategoryPanel() {
+  const { bizCategories, addBizCategory, updateBizCategory, deleteBizCategory, reorderItems } = useSettingsStore()
+  return (
+    <CrudListPanel
+      title="거래처구분"
+      items={bizCategories.map(c => ({ id: c.id, name: c.name }))}
+      onAdd={(name) => addBizCategory(name)}
+      onUpdate={(id, name) => updateBizCategory(id, name)}
+      onDelete={deleteBizCategory}
+      onReorder={(ids) => reorderItems('bizCategories', ids)}
+      placeholder="새 거래처구분 입력 (예: 일반거래처, 협력업체)"
+      color="#14b8a6"
+    />
   )
 }
 
