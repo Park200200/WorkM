@@ -116,9 +116,10 @@ export function AcctHqVendor() {
     const merged = { ...EMPTY, ...saved }
     /* old billingList 마이그레이션: ~11~ 형식 제거, ~ → - 변환 */
     if (merged.billingList) {
-      merged.billingList = merged.billingList
+      const migrated = merged.billingList
         .filter(b => !b.period.includes('.11~') && !b.period.includes('.11-'))
         .map(b => ({ ...b, period: b.period.replace(/~/g, '-') }))
+      merged.billingList = migrated.length > 0 ? migrated : EMPTY.billingList
     }
     return merged
   })
