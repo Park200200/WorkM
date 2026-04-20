@@ -234,9 +234,26 @@ export function AcctHqVendor() {
                 <CreditCard size={16} className="text-emerald-500" />
                 <span className="text-sm font-extrabold text-[var(--text-primary)]">결제 정보</span>
               </div>
-              <button className="px-3 py-1.5 rounded-lg bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 text-[10px] font-bold cursor-pointer border border-violet-200 dark:border-violet-700 hover:bg-violet-100 transition-colors flex items-center gap-1">
-                <Calculator size={10} /> 매출 고과 정보
-              </button>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 text-[10px]">
+                  <Clock size={10} className="text-[var(--text-muted)]" />
+                  <span className="font-bold text-[var(--text-muted)]">과금일자 :</span>
+                  <span className="font-extrabold text-[var(--text-primary)]">
+                    {new Date(new Date().getFullYear(), new Date().getMonth(), 11).toISOString().slice(0,10).replace(/-/g,'.')}
+                    {' - '}
+                    {new Date().toISOString().slice(0,10).replace(/-/g,'.')}
+                  </span>
+                </div>
+                <div className="h-4 w-px bg-[var(--border-default)]" />
+                <div className="flex items-center gap-1.5 text-[10px]">
+                  <Calculator size={10} className="text-primary-500" />
+                  <span className="font-bold text-[var(--text-muted)]">총금액 :</span>
+                  <span className="font-extrabold text-primary-600 dark:text-primary-400">{formatNumber(grandTotal)}원</span>
+                </div>
+                <button className="px-3 py-1.5 rounded-lg bg-[var(--bg-muted)] border border-[var(--border-default)] text-[10px] font-bold text-[var(--text-secondary)] cursor-pointer hover:border-primary-400 transition-colors flex items-center gap-1">
+                  <Save size={10} /> 단가수정
+                </button>
+              </div>
             </div>
             <div className="p-4">
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
