@@ -4,7 +4,7 @@ import { getItem, setItem } from '../../utils/storage'
 import { formatNumber } from '../../utils/format'
 import {
   Building2, User, Phone, Mail, IdCard, Lock, Upload, X, Save,
-  FileText, Clock, CreditCard, Server, Database, Hash, Percent, Calculator, Image, ScrollText,
+  FileText, Clock, CreditCard, Server, Database, Hash, Percent, Calculator, Image, ScrollText, Puzzle,
 } from 'lucide-react'
 
 /* ─── 타입 ─── */
@@ -30,6 +30,8 @@ interface HqVendor {
   managerId: string
   managerPw: string
   managerPhoto: string
+  /* 사용솔루션 */
+  solutions: { name: string; enabled: boolean; qty?: number }[]
   /* 솔루션 사용료 */
   monthlyFee: number
   vendorCode: string
@@ -66,6 +68,15 @@ const EMPTY: HqVendor = {
   bizType: '', bizCategory: '', taxEmail: '', companyPhoto: '',
   managerName: '', managerTitle: '', managerPhone: '', managerEmail: '',
   managerId: '', managerPw: '', managerPhoto: '',
+  solutions: [
+    { name: '워크엠', enabled: true },
+    { name: '홈페이지', enabled: true, qty: 1 },
+    { name: '원단공급사', enabled: true },
+    { name: '제조공급사', enabled: false },
+    { name: '유통관리사', enabled: false },
+    { name: '가맹대리점', enabled: false },
+    { name: '식재대리점', enabled: false },
+  ],
   monthlyFee: 200000, vendorCode: '', serverFee: 0,
   dbFee: 25000, dbUsage: '25,000MB', dbUnitPrice: 1000,
   usageCount: 5400, usageCountLabel: '523,221건', usageUnitPrice: 10,
@@ -298,6 +309,56 @@ export function AcctHqVendor() {
             </div>
           </div>
 
+          {/* ── 사용솔루션 ── */}
+          <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border-default)]">
+              <Puzzle size={16} className="text-violet-500" />
+              <span className="text-sm font-extrabold text-[var(--text-primary)]">사용 솔루션</span>
+              <span className="text-[9px] text-[var(--text-muted)] ml-auto">{(data.solutions || []).filter(s => s.enabled).length}개 사용중</span>
+            </div>
+            <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {(data.solutions || []).map((sol, idx) => (
+                <div key={idx} className={`rounded-xl p-3 border transition-all ${
+                  sol.enabled
+                    ? 'bg-primary-50/50 dark:bg-primary-900/10 border-primary-300 dark:border-primary-700'
+                    : 'bg-[var(--bg-muted)] border-[var(--border-default)] opacity-60'
+                }`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-[11px] font-bold ${sol.enabled ? 'text-primary-700 dark:text-primary-300' : 'text-[var(--text-muted)]'}`}>{sol.name}</span>
+                    <button
+                      onClick={() => {
+                        const next = [...data.solutions]
+                        next[idx] = { ...next[idx], enabled: !next[idx].enabled }
+                        upd({ solutions: next })
+                      }}
+                      className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${
+                        sol.enabled ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-600'
+                      }`}
+                    >
+                      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                        sol.enabled ? 'left-[18px]' : 'left-0.5'
+                      }`} />
+                    </button>
+                  </div>
+                  {sol.name === '홈페이지' && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className="text-[9px] text-[var(--text-muted)]">수량:</span>
+                      <input
+                        value={sol.qty ?? 1}
+                        onChange={e => {
+                          const next = [...data.solutions]
+                          next[idx] = { ...next[idx], qty: parseInt(e.target.value) || 0 }
+                          upd({ solutions: next })
+                        }}
+                        className="w-12 h-5 px-1 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[10px] text-center text-[var(--text-primary)] outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* ── 솔루션 사용료 ── */}
           <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-default)]">
@@ -305,7 +366,7 @@ export function AcctHqVendor() {
                 <CreditCard size={16} className="text-emerald-500" />
                 <span className="text-sm font-extrabold text-[var(--text-primary)]">결제 정보</span>
                 <span className="text-[9px] font-bold text-[var(--text-muted)] ml-1">사용솔루션 :</span>
-                <span className="text-[9px] font-bold text-primary-600 dark:text-primary-400">워크엠, 홈페이지, 원단공급사</span>
+                <span className="text-[9px] font-bold text-primary-600 dark:text-primary-400">{(data.solutions || []).filter(s => s.enabled).map(s => s.name).join(', ') || '없음'}</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5 text-[10px]">
