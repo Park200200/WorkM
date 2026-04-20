@@ -291,7 +291,7 @@ function VendorDetailModal({ vendor, onSave, onClose }: { vendor: HqVendor; onSa
   const fullBillingList = [...(data.billingList || []), currentBilling]
 
   return (
-    <div className="fixed inset-0 z-[9998] flex items-start justify-center bg-black/40 overflow-y-auto py-8" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+    <div className="fixed inset-0 z-[9998] flex items-start justify-center bg-[var(--bg-default)] overflow-y-auto py-8">
       <div className="bg-[var(--bg-default)] rounded-2xl shadow-2xl w-full max-w-5xl mx-4 animate-scaleIn">
         {/* 모달 헤더 */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-default)] bg-[var(--bg-surface)] rounded-t-2xl">
