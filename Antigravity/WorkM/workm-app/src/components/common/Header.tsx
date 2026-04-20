@@ -61,7 +61,8 @@ export function Header() {
   }, [])
 
   // ── 출퇴근 데이터 ──
-  const todayKey = `ws_attendance_${now.toISOString().slice(0, 10)}`
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+  const todayKey = `ws_attendance_${todayStr}`
   const attendance: AttendanceRecord = getItem(todayKey, { checkInRaw: null, checkOutRaw: null })
 
   // 최초 접속 시 자동 출근
