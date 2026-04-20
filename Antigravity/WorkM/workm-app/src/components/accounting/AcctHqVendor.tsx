@@ -67,9 +67,9 @@ const EMPTY: HqVendor = {
   managerName: '', managerTitle: '', managerPhone: '', managerEmail: '',
   managerId: '', managerPw: '', managerPhoto: '',
   monthlyFee: 200000, vendorCode: '', serverFee: 0,
-  dbFee: 25000, dbUsage: '2,500MB', dbUnitPrice: 1000,
-  usageCount: 5400, usageCountLabel: '540,000건', usageUnitPrice: 10,
-  salesRate: 5, periodSales: 10000000, bizCertPhoto: '',
+  dbFee: 25000, dbUsage: '25,000MB', dbUnitPrice: 1000,
+  usageCount: 5400, usageCountLabel: '523,221건', usageUnitPrice: 10,
+  salesRate: 5, periodSales: 12350000, bizCertPhoto: '',
   history: [],
   billingList: [
     { period: '2026.01.11~2026.02.10', monthlyFee: 200000, dbFee: 25000, dataFee: 5400, commission: 500000, total: 730400, status: '납부' },
@@ -327,7 +327,7 @@ export function AcctHqVendor() {
                 {/* 사용건수 */}
                 <div className="bg-[var(--bg-muted)] rounded-xl p-3 border border-[var(--border-default)]">
                   <div className="flex items-center gap-1 text-[9px] font-bold text-[var(--text-muted)] mb-1">
-                    <Hash size={9}/> 사용건수(단가 건당:{formatNumber(data.usageUnitPrice)}건당 1원)
+                    <Hash size={9}/> 사용건수(단가 : {formatNumber(data.usageUnitPrice)}건당 1원)
                   </div>
                   <div className="text-[15px] font-extrabold text-[var(--text-primary)]">{formatNumber(data.usageCount)}원</div>
                   <div className="text-[9px] text-[var(--text-muted)] mt-0.5">{data.usageCountLabel || '0건'}</div>
