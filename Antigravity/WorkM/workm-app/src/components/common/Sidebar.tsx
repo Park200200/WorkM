@@ -80,6 +80,7 @@ const acctNav: { tab: string; label: string; icon: React.ElementType }[] = [
   { tab: 'payment',    label: '전표장부',   icon: ScrollText },
   { tab: 'reports',    label: '회계현황',   icon: BarChart3 },
   { tab: 'vendors',    label: '거래처관리',   icon: ContactRound },
+  { tab: 'hq_vendor',  label: '본사거래처',   icon: Building2 },
 ]
 
 /* ═══════════════════════════════════════════

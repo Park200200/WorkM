@@ -8,12 +8,13 @@ import { getItem, setItem } from '../../utils/storage'
 import { formatNumber } from '../../utils/format'
 import { AcctBalance } from '../../components/accounting/AcctBalance'
 import { AcctReports } from '../../components/accounting/AcctReports'
+import { AcctHqVendor } from '../../components/accounting/AcctHqVendor'
 import { useStaffStore } from '../../stores/staffStore'
 import { CustomSelect } from '../../components/ui/CustomSelect'
 import { DatePicker } from '../../components/ui/DatePicker'
 import {
   LayoutDashboard, Wallet, FileCheck, ArrowDownCircle, ArrowUpCircle,
-  BookOpen, PieChart, ScrollText, Settings2, ContactRound,
+  BookOpen, PieChart, ScrollText, Settings2, ContactRound, Building2,
   TrendingDown, TrendingUp, Banknote, Clock,
   Plus, Edit3, Trash2, Save, X, Check, Ban,
 } from 'lucide-react'
@@ -260,6 +261,7 @@ const SUB_PAGES = [
   { key: 'payment',    label: '전표장부',   icon: BookOpen },
   { key: 'reports',    label: '회계현황',   icon: ScrollText },
   { key: 'vendors',    label: '거래처관리',   icon: ContactRound },
+  { key: 'hq_vendor',  label: '본사거래처',   icon: Building2 },
 ]
 
 /* ═══════════════════════════════════════════
@@ -337,7 +339,8 @@ export function AccountingPage() {
       {activeSub === 'payment' && <AcctPaymentLedger year={year} />}
       {activeSub === 'reports' && <AcctReports year={year} />}
       {activeSub === 'vendors' && <AcctVendors />}
-      {!['overview','budget','balance','approval','expense','income','withdrawal','payment','reports','vendors'].includes(activeSub) && (
+      {activeSub === 'hq_vendor' && <AcctHqVendor />}
+      {!['overview','budget','balance','approval','expense','income','withdrawal','payment','reports','vendors','hq_vendor'].includes(activeSub) && (
         <AcctSubPlaceholder
           pageKey={activeSub}
           label={SUB_PAGES.find(s => s.key === activeSub)?.label || ''}
