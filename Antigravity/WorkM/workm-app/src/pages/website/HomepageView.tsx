@@ -527,12 +527,15 @@ export function HomepageView() {
           setOpenPopups(prev => prev.filter(p => (p.mode || 'overlay') === 'overlay'))
         }
         if (overlays.length === 0) return null
+        const menuH = s.menuH || 64
+        const rivetH = s.rivetTags?.length > 0 ? 36 : 0
+        const topOffset = rivetH + menuH
         return createPortal(
           <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(4px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 99998, padding: 20, gap: 16, flexWrap: 'wrap',
+            position: 'fixed', top: topOffset, left: 0, right: 0,
+            display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap',
+            zIndex: 99998, padding: '16px 20px',
+            pointerEvents: 'none',
           }}>
             {overlays.map((pop: any) => {
               const img = pop.imgH || pop.imgV
@@ -540,9 +543,11 @@ export function HomepageView() {
               const h = pop.height || 400
               return (
                 <div key={pop.id} style={{
-                  position: 'relative', width: w, maxWidth: '95vw',
-                  borderRadius: 16, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,.4)',
+                  width: w, maxWidth: '95vw',
+                  borderRadius: 12, overflow: 'hidden',
+                  boxShadow: '0 8px 40px rgba(0,0,0,.25)',
                   animation: 'hp-fade-in .3s ease', background: '#fff',
+                  pointerEvents: 'auto',
                 }}>
                   {img ? (
                     <div style={{ width: '100%', height: h, overflow: 'hidden' }}>
@@ -559,7 +564,7 @@ export function HomepageView() {
                   )}
                   <div style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '10px 14px', background: '#fff', borderTop: '1px solid #e2e8f0',
+                    padding: '8px 14px', background: '#fff', borderTop: '1px solid #e2e8f0',
                   }}>
                     <button onClick={() => {
                       const dismissed = JSON.parse(localStorage.getItem('hp_popups_dismissed') || '{}')
