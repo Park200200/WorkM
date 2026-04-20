@@ -973,56 +973,49 @@ export function HpBasicSettings() {
                   </button>
                 </div>
 
-                {/* 이미지 가로 + 세로 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                  {/* 가로 이미지 */}
-                  <div>
-                    <label className={labelCls}><ImageIcon size={10} /> 이미지 (가로)</label>
-                    <div className="flex items-center gap-3">
-                      <div className="w-24 h-14 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
-                        {pop.imgH ? <img src={pop.imgH} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
-                      </div>
-                      <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
-                        <Upload size={11} /> 선택
-                        <input type="file" accept="image/*" className="hidden" onChange={e => {
-                          const f = e.target.files?.[0]; if (!f) return
-                          const reader = new FileReader()
-                          reader.onload = ev => { const arr = [...d.popups]; arr[i] = { ...arr[i], imgH: ev.target?.result as string }; up({ popups: arr }) }
-                          reader.readAsDataURL(f)
-                        }} />
-                      </label>
-                      {pop.imgH && <button onClick={() => { const arr = [...d.popups]; arr[i] = { ...arr[i], imgH: '' }; up({ popups: arr }) }}
-                        className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
+                {/* 팝업 이미지 */}
+                <div className="mb-3">
+                  <label className={labelCls}><ImageIcon size={10} /> 팝업 이미지</label>
+                  <div className="flex items-center gap-3">
+                    <div className="w-24 h-14 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
+                      {pop.imgH ? <img src={pop.imgH} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
                     </div>
-                  </div>
-                  {/* 세로 이미지 */}
-                  <div>
-                    <label className={labelCls}><ImageIcon size={10} /> 이미지 (세로)</label>
-                    <div className="flex items-center gap-3">
-                      <div className="w-14 h-20 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
-                        {pop.imgV ? <img src={pop.imgV} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
-                      </div>
-                      <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
-                        <Upload size={11} /> 선택
-                        <input type="file" accept="image/*" className="hidden" onChange={e => {
-                          const f = e.target.files?.[0]; if (!f) return
-                          const reader = new FileReader()
-                          reader.onload = ev => { const arr = [...d.popups]; arr[i] = { ...arr[i], imgV: ev.target?.result as string }; up({ popups: arr }) }
-                          reader.readAsDataURL(f)
-                        }} />
-                      </label>
-                      {pop.imgV && <button onClick={() => { const arr = [...d.popups]; arr[i] = { ...arr[i], imgV: '' }; up({ popups: arr }) }}
-                        className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
-                    </div>
+                    <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
+                      <Upload size={11} /> 선택
+                      <input type="file" accept="image/*" className="hidden" onChange={e => {
+                        const f = e.target.files?.[0]; if (!f) return
+                        const reader = new FileReader()
+                        reader.onload = ev => { const arr = [...d.popups]; arr[i] = { ...arr[i], imgH: ev.target?.result as string }; up({ popups: arr }) }
+                        reader.readAsDataURL(f)
+                      }} />
+                    </label>
+                    {pop.imgH && <button onClick={() => { const arr = [...d.popups]; arr[i] = { ...arr[i], imgH: '' }; up({ popups: arr }) }}
+                      className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
                   </div>
                 </div>
 
                 {/* 클릭 URL */}
-                <div>
+                <div className="mb-3">
                   <label className={labelCls}><Link size={10} /> 클릭 URL</label>
                   <input value={pop.url} onChange={e => { const arr = [...d.popups]; arr[i] = { ...arr[i], url: e.target.value }; up({ popups: arr }) }}
                     placeholder="클릭 시 이동할 URL (비워두면 링크 없음)" className={inputCls} />
                 </div>
+
+                {/* 실제 사이즈 미리보기 */}
+                {pop.imgH && (
+                  <div>
+                    <label className={labelCls}><Eye size={11} /> 실제 팝업 미리보기 (최대 480px)</label>
+                    <div className="flex justify-center p-4 rounded-xl bg-black/60">
+                      <div style={{ maxWidth: 480, width: '100%', borderRadius: 16, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,.4)' }}>
+                        <img src={pop.imgH} alt="" style={{ width: '100%', display: 'block' }} />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#fff' }}>
+                          <span style={{ color: '#94a3b8', fontSize: 12 }}>오늘 하루 안보기</span>
+                          <span style={{ color: '#1e293b', fontSize: 13, fontWeight: 700 }}>닫기 ✕</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
