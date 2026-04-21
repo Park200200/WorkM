@@ -3,7 +3,7 @@
    ══════════════════════════════════════════════ */
 import { getItem, setItem } from './storage'
 
-const SEED_VERSION = 'v4'
+const SEED_VERSION = 'v5'
 
 export function seedIfEmpty() {
   // 이미 시드된 경우 스킵
@@ -17,6 +17,7 @@ export function seedIfEmpty() {
       { id: 3, name: '디자인팀' },
       { id: 4, name: '영업팀' },
       { id: 5, name: '경영지원팀' },
+      { id: 6, name: '기획팀' },
     ])
   }
 
@@ -104,46 +105,60 @@ export function seedIfEmpty() {
   if (!getItem('ws_users', null)) {
     setItem('ws_users', [
       {
-        id: 1, name: '김지훈', role: '팀장', rank: '팀장', dept: '개발팀', avatar: 'KJ', color: '#4f6ef7',
-        email: 'kim@workm.kr', phone: '010-1234-5678', birthday: '1985-05-12',
-        hiredAt: '2020-01-01', resignedAt: null, address: '서울시 강남구 테헤란로 123',
-        loginId: 'admin', pw: '1234', status: '근무', note: '앱 개발 관리자', photo: '',
+        id: 1, name: '최대표', role: 'admin', rank: '대표', dept: '경영지원팀', avatar: 'CD', color: '#4f6ef7',
+        email: '최대표@workm.kr', phone: '010-1000-0001', birthday: '1975-03-15',
+        hiredAt: '2015-01-01', resignedAt: null, address: '서울시 강남구 테헤란로 100',
+        loginId: '최대표', pw: '1234', status: '근무', note: '대표이사', photo: '',
+        position: 'CEO', approverType: 'approver'
+      },
+      {
+        id: 2, name: '박팀장', role: 'admin', rank: '팀장', dept: '개발팀', avatar: 'PT', color: '#8b5cf6',
+        email: '박팀장@workm.kr', phone: '010-1000-0002', birthday: '1982-07-20',
+        hiredAt: '2018-03-01', resignedAt: null, address: '경기도 성남시 분당구 판교로 200',
+        loginId: '박팀장', pw: '1234', status: '근무', note: '개발팀 팀장', photo: '',
         position: '팀장', approverType: 'approver'
       },
       {
-        id: 2, name: '이수진', role: '선임', rank: '선임', dept: '개발팀', avatar: 'LS', color: '#9747ff',
-        email: 'lee@workm.kr', phone: '010-2345-6789', birthday: '1990-08-22',
-        hiredAt: '2021-03-15', resignedAt: null, address: '경기도 성남시 분당구 판교로 456',
-        loginId: 'lee01', pw: '1234', status: '근무', note: 'Frontend 개발팀 리드', photo: '',
-        position: '선임', approverType: 'requester'
-      },
-      {
-        id: 3, name: '박민수', role: '대리', rank: '대리', dept: '마케팅팀', avatar: 'PM', color: '#06b6d4',
-        email: 'park@workm.kr', phone: '010-3456-7890', birthday: '1992-11-05',
-        hiredAt: '2022-07-01', resignedAt: null, address: '서울시 마포구 월드컵로 789',
-        loginId: 'park02', pw: '1234', status: '근무', note: '일정 관리 및 마케팅 담당', photo: '',
+        id: 3, name: '하팀원', role: 'user', rank: '사원', dept: '개발팀', avatar: 'HT', color: '#06b6d4',
+        email: '하팀원@workm.kr', phone: '010-1000-0003', birthday: '1998-11-05',
+        hiredAt: '2024-03-01', resignedAt: null, address: '서울시 마포구 월드컵로 300',
+        loginId: '하팀원', pw: '1234', status: '근무', note: '개발팀 신입사원', photo: '',
         position: '팀원', approverType: 'requester'
       },
       {
-        id: 4, name: '최유리', role: '주임', rank: '주임', dept: '디자인팀', avatar: 'CY', color: '#f59e0b',
-        email: 'choi@workm.kr', phone: '010-4567-8901', birthday: '1991-02-14',
-        hiredAt: '2021-11-10', resignedAt: null, address: '서울시 서초구 서초대로 321',
-        loginId: 'choi03', pw: '1234', status: '근무', note: 'UI/UX 디자인 전담', photo: '',
+        id: 4, name: '최경리', role: 'user', rank: '대리', dept: '경영지원팀', avatar: 'CK', color: '#22c55e',
+        email: '최경리@workm.kr', phone: '010-1000-0004', birthday: '1992-04-18',
+        hiredAt: '2020-06-01', resignedAt: null, address: '서울시 서초구 서초대로 400',
+        loginId: '최경리', pw: '1234', status: '근무', note: '경리/회계 담당', photo: '',
         position: '팀원', approverType: 'requester'
       },
       {
-        id: 5, name: '정현수', role: '팀장', rank: '팀장', dept: '마케팅팀', avatar: 'JH', color: '#22c55e',
-        email: 'jung@workm.kr', phone: '010-5678-9012', birthday: '1986-09-30',
-        hiredAt: '2020-05-20', resignedAt: null, address: '인천시 연수구 컨벤시아대로 654',
-        loginId: 'jung04', pw: '1234', status: '휴직', note: '육아휴직 중 (복직 예정)', photo: '',
-        position: '팀장', approverType: 'approver'
+        id: 5, name: '강선임', role: 'user', rank: '선임', dept: '기획팀', avatar: 'KS', color: '#f59e0b',
+        email: '강선임@workm.kr', phone: '010-1000-0005', birthday: '1990-09-25',
+        hiredAt: '2019-09-01', resignedAt: null, address: '서울시 종로구 종로 500',
+        loginId: '강선임', pw: '1234', status: '근무', note: '기획팀 선임', photo: '',
+        position: '선임', approverType: 'requester'
       },
       {
-        id: 6, name: '한소희', role: '선임', rank: '선임', dept: '영업팀', avatar: 'HS', color: '#ef4444',
-        email: 'han@workm.kr', phone: '010-6789-0123', birthday: '1989-12-25',
-        hiredAt: '2021-06-01', resignedAt: null, address: '서울시 강남구 학동로 987',
-        loginId: 'han05', pw: '1234', status: '근무', note: '영업 실적 담당', photo: '',
-        position: '선임', approverType: 'requester'
+        id: 6, name: '조영업', role: 'user', rank: '과장', dept: '영업팀', avatar: 'JY', color: '#ef4444',
+        email: '조영업@workm.kr', phone: '010-1000-0006', birthday: '1987-12-10',
+        hiredAt: '2018-08-01', resignedAt: null, address: '서울시 강남구 학동로 600',
+        loginId: '조영업', pw: '1234', status: '근무', note: '영업팀 과장', photo: '',
+        position: '팀원', approverType: 'requester'
+      },
+      {
+        id: 7, name: '임기획', role: 'user', rank: '대리', dept: '기획팀', avatar: 'IK', color: '#ec4899',
+        email: '임기획@workm.kr', phone: '010-1000-0007', birthday: '1993-06-30',
+        hiredAt: '2021-02-01', resignedAt: null, address: '경기도 고양시 일산서구 700',
+        loginId: '임기획', pw: '1234', status: '근무', note: '기획팀 대리', photo: '',
+        position: '팀원', approverType: 'requester'
+      },
+      {
+        id: 8, name: '오개발', role: 'user', rank: '주임', dept: '개발팀', avatar: 'OG', color: '#14b8a6',
+        email: '오개발@workm.kr', phone: '010-1000-0008', birthday: '1995-01-22',
+        hiredAt: '2022-04-01', resignedAt: null, address: '서울시 송파구 올림픽로 800',
+        loginId: '오개발', pw: '1234', status: '근무', note: '개발팀 주임', photo: '',
+        position: '팀원', approverType: 'requester'
       },
     ])
   }
