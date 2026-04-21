@@ -1263,7 +1263,8 @@ function AcctApproval({ year }: { year: number }) {
   const [approvePw, setApprovePw] = useState('')
   const [approveForm, setApproveForm] = useState({ title: '', amount: '', accountCode: '', description: '' })
   const [resolveModal, setResolveModal] = useState<Approval | null>(null)
-  const [resolveForm, setResolveForm] = useState({ expenseDate: '', resolutionDate: new Date().toISOString().slice(0, 10), evidence: '' })
+  const [resolveForm, setResolveForm] = useState<{ expenseDate: string; resolutionDate: string; evidence: string; attachments: { name: string; data: string; desc: string }[] }>({ expenseDate: '', resolutionDate: new Date().toISOString().slice(0, 10), evidence: '', attachments: [] })
+  const resolveFileRef = useRef<HTMLInputElement>(null)
   const [confirmModal, setConfirmModal] = useState<Approval | null>(null)
   const [confirmPw, setConfirmPw] = useState('')
   const [previewModal, setPreviewModal] = useState<Approval | null>(null)
@@ -1418,7 +1419,15 @@ function AcctApproval({ year }: { year: number }) {
   /* 결의서 작성 (품의자) */
   const openResolveModal = (a: Approval) => {
     setResolveModal(a)
-    setResolveForm({ expenseDate: a.expenseDate || '', resolutionDate: new Date().toISOString().slice(0, 10), evidence: a.evidence || '' })
+    setResolveForm({ expenseDate: a.expenseDate || '', resolutionDate: new Date().toISOString().slice(0, 10), evidence: a.evidence || '', attachments: (a as any).attachments || [] })
+  }
+
+  const handleResolveFileAdd = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      setResolveForm(f => ({ ...f, attachments: [...f.attachments, { name: file.name, data: e.target?.result as string, desc: '' }] }))
+    }
+    reader.readAsDataURL(file)
   }
 
   const handleResolve = () => {
@@ -1429,6 +1438,7 @@ function AcctApproval({ year }: { year: number }) {
     const updated = all.map(a => String(a.id) === String(resolveModal.id) ? {
       ...a, status: 'resolved', expenseDate: resolveForm.expenseDate,
       resolutionDate: resolveForm.resolutionDate, evidence: resolveForm.evidence,
+      attachments: resolveForm.attachments,
     } : a)
     setItem('acct_approvals', updated)
     setResolveModal(null); setRefresh(r => r + 1)
@@ -1758,6 +1768,40 @@ function AcctApproval({ year }: { year: number }) {
               <div>
                 <label className={labelCls}>증빙자료 설명</label>
                 <textarea value={resolveForm.evidence} onChange={e => setResolveForm(f => ({ ...f, evidence: e.target.value }))} placeholder="영수증, 세금계산서 등 증빙자료를 기재하세요" rows={3} className={`${inputCls} resize-none`} />
+              </div>
+              {/* 첨부파일 */}
+              <div>
+                <label className={labelCls}><Upload size={10} className="inline mr-1" />첨부파일</label>
+                <div className="space-y-2">
+                  {resolveForm.attachments.map((att, idx) => (
+                    <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-[var(--bg-muted)] border border-[var(--border-default)]">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-md bg-[rgba(139,92,246,.1)] flex items-center justify-center">
+                        <FileText size={14} className="text-[#8b5cf6]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] font-bold text-[var(--text-primary)] truncate">{att.name}</div>
+                        <input
+                          value={att.desc}
+                          onChange={e => {
+                            const newAtts = [...resolveForm.attachments]
+                            newAtts[idx] = { ...newAtts[idx], desc: e.target.value }
+                            setResolveForm(f => ({ ...f, attachments: newAtts }))
+                          }}
+                          placeholder="파일 설명 입력"
+                          className="w-full text-[11px] mt-0.5 px-1.5 py-1 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-secondary)] outline-none focus:border-primary-500"
+                        />
+                      </div>
+                      <button onClick={() => setResolveForm(f => ({ ...f, attachments: f.attachments.filter((_, i) => i !== idx) }))} className="flex-shrink-0 p-1 rounded-md hover:bg-[rgba(239,68,68,.1)] text-[var(--text-muted)] hover:text-[#ef4444] cursor-pointer transition-colors"><X size={14} /></button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => resolveFileRef.current?.click()}
+                    className="w-full py-2 rounded-lg border-2 border-dashed border-[var(--border-default)] text-[11px] font-bold text-[var(--text-muted)] hover:border-primary-400 hover:text-primary-500 cursor-pointer transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Plus size={14} /> 파일 첨부하기
+                  </button>
+                  <input ref={resolveFileRef} type="file" accept="image/*,.pdf,.xlsx,.xls,.doc,.docx" className="hidden" onChange={e => { if (e.target.files?.[0]) { handleResolveFileAdd(e.target.files[0]); e.target.value = '' } }} />
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-[var(--border-default)]">
