@@ -11,6 +11,7 @@ import { getItem, setItem } from '../../utils/storage'
 
 import { Star, UserPlus, Settings2, Plus, Check, X, Pencil, Trash2, Users as UsersIcon } from 'lucide-react'
 import { DatePicker } from '../../components/ui/DatePicker'
+import { CustomSelect } from '../../components/ui/CustomSelect'
 
 /* ── 타입 ── */
 interface TaskItem {
@@ -457,15 +458,15 @@ export function TasksPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">지시자</label>
-                <select
-                  value={newAssignerId ?? ''}
-                  onChange={e => setNewAssignerId(e.target.value ? Number(e.target.value) : undefined)}
-                  className="w-full px-3 py-2.5 border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-400 transition-all"
-                  style={{ borderRadius: 'var(--radius-sm)' }}
-                >
-                  <option value="">선택</option>
-                  {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.dept || ''})</option>)}
-                </select>
+                <CustomSelect
+                  value={String(newAssignerId ?? '')}
+                  onChange={(v) => setNewAssignerId(v ? Number(v) : undefined)}
+                  options={[
+                    { value: '', label: '선택' },
+                    ...users.map(u => ({ value: String(u.id), label: `${u.name} (${u.dept || ''})` })),
+                  ]}
+                  className="h-[42px]"
+                />
               </div>
               <div>
                 <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">수신자 <span className="text-primary-500 font-normal">({newAssigneeIds.length}명)</span></label>
