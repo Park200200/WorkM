@@ -670,46 +670,48 @@ export function HQInfoPage() {
           </div>
 
           {/* 요약 카드 */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 p-3 sm:p-4">
             {[
-              { icon: '💻', label: '월관리비(서버)', value: payConfig.mgmtFee, sub: '기본금액' },
-              { icon: '🗄️', label: 'DB사용료(단가:100M당 1,000원)', value: payConfig.dbFee, sub: '25,000MB' },
-              { icon: '#', label: '자료단가(10건당 ' + payConfig.dataUnitPrice + '원)', value: billings[0]?.dataCnt || '0', sub: (billings[0]?.dataCnt || '0') + '건' },
-              { icon: '%', label: '수수료(' + payConfig.feeRate + '%)', value: billings[0]?.fee || '0', sub: '기간매출:12,350,000원', highlight: true },
+              { icon: '💻', label: '월관리비', labelFull: '월관리비(서버)', value: payConfig.mgmtFee, sub: '기본금액' },
+              { icon: '🗄️', label: 'DB사용료', labelFull: 'DB사용료(단가:100M당 1,000원)', value: payConfig.dbFee, sub: '25,000MB' },
+              { icon: '#', label: '자료단가', labelFull: '자료단가(10건당 ' + payConfig.dataUnitPrice + '원)', value: billings[0]?.dataCnt || '0', sub: (billings[0]?.dataCnt || '0') + '건' },
+              { icon: '%', label: '수수료', labelFull: '수수료(' + payConfig.feeRate + '%)', value: billings[0]?.fee || '0', sub: '기간매출:12,350,000원', highlight: true },
             ].map((c, i) => (
               <div key={i} className={cn(
-                'rounded-xl p-3.5 border',
+                'rounded-xl p-2.5 sm:p-3.5 border',
                 c.highlight
                   ? 'bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800'
                   : 'bg-[var(--bg-muted)] border-[var(--border-default)]',
               )}>
-                <div className="text-[10.5px] font-semibold text-[var(--text-muted)] mb-1 flex items-center gap-1">
-                  <span>{c.icon}</span> {c.label}
+                <div className="text-[9.5px] sm:text-[10.5px] font-semibold text-[var(--text-muted)] mb-0.5 sm:mb-1 flex items-center gap-1 truncate">
+                  <span>{c.icon}</span> <span className="hidden sm:inline">{c.labelFull}</span><span className="sm:hidden">{c.label}</span>
                 </div>
                 <div className={cn(
-                  'text-lg font-extrabold',
+                  'text-[15px] sm:text-lg font-extrabold',
                   c.highlight ? 'text-orange-500' : 'text-[var(--text-primary)]',
                 )}>
-                  {c.value}<span className="text-[13px] font-semibold text-[var(--text-secondary)]">원</span>
+                  {c.value}<span className="text-[11px] sm:text-[13px] font-semibold text-[var(--text-secondary)]">원</span>
                 </div>
-                <div className="text-[10px] text-[var(--text-muted)] mt-0.5">{c.sub}</div>
+                <div className="text-[9px] sm:text-[10px] text-[var(--text-muted)] mt-0.5 truncate">{c.sub}</div>
               </div>
             ))}
           </div>
 
-          {/* 청구 리스트 */}
-          <div className="px-4 pb-4">
+          {/* 청구 리스트 - PC: 테이블 / 모바일: 카드 */}
+          <div className="px-3 sm:px-4 pb-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[13px] font-bold text-[var(--text-primary)] flex items-center gap-1.5">
                 📋 청구 리스트
               </span>
               <span className="text-[11px] text-[var(--text-muted)]">{billings.length}건</span>
             </div>
-            <div className="overflow-x-auto rounded-xl border border-[var(--border-default)]">
+
+            {/* PC 테이블 */}
+            <div className="hidden sm:block overflow-x-auto rounded-xl border border-[var(--border-default)]">
               <table className="w-full text-[12px]">
                 <thead>
                   <tr className="bg-[var(--bg-muted)] border-b border-[var(--border-default)]">
-                    {['과금기간','월관리비(서버)','DB사용료','Data사용건수','수수료','총금액','상태'].map(h => (
+                    {['과금기간','월관리비','DB사용료','Data건수','수수료','총금액','상태'].map(h => (
                       <th key={h} className="px-3 py-2.5 text-left font-bold text-[var(--text-muted)] whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -737,6 +739,35 @@ export function HQInfoPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* 모바일 카드 */}
+            <div className="sm:hidden space-y-2.5">
+              {billings.map(row => (
+                <div key={row.id} className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-muted)] p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[12px] font-bold text-[var(--text-primary)]">{row.period}</span>
+                    <span className={cn(
+                      'px-2 py-0.5 rounded-full text-[10px] font-bold',
+                      row.status === '과금중' ? 'bg-red-100 text-red-500 dark:bg-red-900/20' :
+                      row.status === '청구' ? 'bg-blue-100 text-blue-500 dark:bg-blue-900/20' :
+                      'bg-green-100 text-green-600 dark:bg-green-900/20',
+                    )}>
+                      {row.status}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+                    <div className="flex justify-between"><span className="text-[var(--text-muted)]">월관리비</span><span className="font-semibold text-[var(--text-secondary)]">{row.mgmt}원</span></div>
+                    <div className="flex justify-between"><span className="text-[var(--text-muted)]">DB사용료</span><span className="font-semibold text-[var(--text-secondary)]">{row.db}원</span></div>
+                    <div className="flex justify-between"><span className="text-[var(--text-muted)]">Data건수</span><span className="font-semibold text-[var(--text-secondary)]">{row.dataCnt}원</span></div>
+                    <div className="flex justify-between"><span className="text-[var(--text-muted)]">수수료</span><span className="font-semibold text-[var(--text-secondary)]">{row.fee}원</span></div>
+                  </div>
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--border-default)]">
+                    <span className="text-[11px] font-bold text-[var(--text-muted)]">총금액</span>
+                    <span className="text-[14px] font-extrabold text-[var(--text-primary)]">{row.total}원</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </Card>
