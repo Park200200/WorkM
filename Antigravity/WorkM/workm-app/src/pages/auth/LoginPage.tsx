@@ -122,6 +122,51 @@ export function LoginPage() {
           </Button>
         </form>
 
+        {/* 개발용 샘플 로그인 */}
+        <div className="mt-5">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex-1 h-px bg-[var(--border-default)]" />
+            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Dev Quick Login</span>
+            <div className="flex-1 h-px bg-[var(--border-default)]" />
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { name: '최대표', dept: '경영지원팀', rank: '대표', color: '#4f6ef7', emoji: '👔' },
+              { name: '박팀장', dept: '개발팀', rank: '팀장', color: '#8b5cf6', emoji: '🧑‍💼' },
+              { name: '하팀원', dept: '개발팀', rank: '사원', color: '#06b6d4', emoji: '👨‍💻' },
+              { name: '최경리', dept: '경영지원팀', rank: '대리', color: '#22c55e', emoji: '📊' },
+              { name: '강선임', dept: '기획팀', rank: '선임', color: '#f59e0b', emoji: '📋' },
+              { name: '조영업', dept: '영업팀', rank: '과장', color: '#ef4444', emoji: '🤝' },
+              { name: '임기획', dept: '기획팀', rank: '대리', color: '#ec4899', emoji: '💡' },
+              { name: '오개발', dept: '개발팀', rank: '주임', color: '#14b8a6', emoji: '⚙️' },
+            ].map(u => (
+              <button
+                key={u.name}
+                type="button"
+                onClick={() => {
+                  login({
+                    id: u.name,
+                    name: u.name,
+                    email: `${u.name}@workm.kr`,
+                    dept: u.dept,
+                    rank: u.rank,
+                    color: u.color,
+                    status: '근무',
+                    role: u.rank === '대표' || u.rank === '팀장' ? 'admin' : 'user',
+                  })
+                  addToast('success', `${u.name}님으로 로그인! 👋`)
+                  navigate('/')
+                }}
+                className="flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-default)] hover:border-primary-400 hover:shadow-md transition-all cursor-pointer group"
+              >
+                <span className="text-lg group-hover:scale-110 transition-transform">{u.emoji}</span>
+                <span className="text-[11px] font-extrabold text-[var(--text-primary)]">{u.name}</span>
+                <span className="text-[9px] text-[var(--text-muted)]">{u.rank}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <p className="text-[11px] text-[var(--text-muted)] text-center mt-6">
           © 2026 WorkM. All rights reserved.
         </p>
