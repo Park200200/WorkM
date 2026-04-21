@@ -509,7 +509,7 @@ export function TasksPage() {
               <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">
                 세부업무 <span className="text-primary-500 font-normal">({selDetails.length}개 선택)</span>
               </label>
-              <div className="space-y-1 max-h-[150px] overflow-y-auto border border-[var(--border-default)] rounded-xl p-2">
+              <div className="space-y-1 max-h-[150px] overflow-y-auto border border-[var(--border-default)] p-2" style={{ borderRadius: 'var(--radius-sm)' }}>
                 {detailTasks.length > 0 ? detailTasks.map(d => {
                   const sel = selDetails.includes(d.id)
                   return (
@@ -539,7 +539,7 @@ export function TasksPage() {
               <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">
                 예상결과물 <span className="text-primary-500 font-normal">({selResults.length}개 선택)</span>
               </label>
-              <div className="space-y-1 max-h-[150px] overflow-y-auto border border-[var(--border-default)] rounded-xl p-2">
+              <div className="space-y-1 max-h-[150px] overflow-y-auto border border-[var(--border-default)] p-2" style={{ borderRadius: 'var(--radius-sm)' }}>
                 {taskResults.length > 0 ? taskResults.map(r => {
                   const sel = selResults.includes(r.id)
                   return (
@@ -593,7 +593,7 @@ export function TasksPage() {
                   })}
                 </div>
               )}
-              <div className="space-y-1 max-h-[150px] overflow-y-auto border border-[var(--border-default)] rounded-xl p-2">
+              <div className="space-y-1 max-h-[150px] overflow-y-auto border border-[var(--border-default)] p-2" style={{ borderRadius: 'var(--radius-sm)' }}>
                 {reportTypes.length > 0 ? reportTypes.map(r => {
                   const count = selSteps.filter(x => x === r.id).length
                   return (
