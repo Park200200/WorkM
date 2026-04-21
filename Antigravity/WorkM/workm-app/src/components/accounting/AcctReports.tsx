@@ -637,7 +637,7 @@ function GeneralLedger({ accounts, vouchers, balances, year }: { accounts: Accou
         <div className="flex-1 min-w-0">
           <label className="text-[10px] font-bold text-[var(--text-muted)] mb-1 block">계정과목</label>
           <select value={acctCode} onChange={e => { setSelectedCode(e.target.value); setFilterMonth(0) }}
-            className="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] outline-none focus:border-primary-500 cursor-pointer">
+            className="w-full h-10 px-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] outline-none focus:border-primary-500 cursor-pointer">
             {activeAccounts.map(a => (
               <option key={a.code} value={a.code}>[{a.code}] {a.name} ({TYPE_LABELS[a.type] || a.type})</option>
             ))}
@@ -646,7 +646,7 @@ function GeneralLedger({ accounts, vouchers, balances, year }: { accounts: Accou
         <div className="w-full sm:w-48 shrink-0">
           <label className="text-[10px] font-bold text-[var(--text-muted)] mb-1 block">조회 기간</label>
           <select value={filterMonth} onChange={e => setFilterMonth(Number(e.target.value))}
-            className="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] outline-none focus:border-primary-500 cursor-pointer">
+            className="w-full h-10 px-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[13px] text-[var(--text-primary)] outline-none focus:border-primary-500 cursor-pointer">
             <option value={0}>전체 (1~12월)</option>
             {monthsWithData.map(m => <option key={m} value={m}>{m}월</option>)}
           </select>
