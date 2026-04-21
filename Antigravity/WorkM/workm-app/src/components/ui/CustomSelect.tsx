@@ -42,8 +42,8 @@ export function CustomSelect({
       const goUp = spaceBelow < dropH && rect.top > dropH
 
       setPos({
-        top: goUp ? rect.top - dropH - 4 + window.scrollY : rect.bottom + 4 + window.scrollY,
-        left: rect.left + window.scrollX,
+        top: goUp ? rect.top - dropH - 4 : rect.bottom + 4,
+        left: rect.left,
         width: rect.width,
       })
     }
