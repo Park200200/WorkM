@@ -1798,28 +1798,30 @@ function AcctApproval({ year }: { year: number }) {
         const applicantStaff = staffList.find(s => s.name === previewModal.applicant)
         const approverStaff = staffList.find(s => s.name === previewModal.approver)
         const getSeal = (s: any) => s?.sealImg || s?.sealImage || ''
-        const si = statusInfo[previewModal.status] || statusInfo.pending
+        /* 공통 셀 스타일 */
+        const thS: React.CSSProperties = { border: '1px solid #bbb', padding: '9px 14px', background: '#edf1f8', fontSize: 13, fontWeight: 700, color: '#333', textAlign: 'center', verticalAlign: 'middle', letterSpacing: 2 }
+        const tdS: React.CSSProperties = { border: '1px solid #bbb', padding: '9px 14px', fontSize: 13, color: '#222', verticalAlign: 'middle' }
         return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) setPreviewModal(null) }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[600px] mx-4 max-h-[90vh] overflow-y-auto">
-            {/* 헤더 */}
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[620px] mx-4 max-h-[90vh] overflow-y-auto">
+            {/* 헤더 바 */}
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-200">
               <div className="flex items-center gap-2">
                 <Eye size={16} className="text-[#4f6ef7]" />
-                <span className="text-sm font-extrabold text-gray-900">품의서 미리보기</span>
+                <span className="text-sm font-extrabold text-gray-900">지출품의서 미리보기</span>
               </div>
               <div className="flex items-center gap-1">
                 <button onClick={() => {
                   const el = document.getElementById('approval-preview-content')
                   if (!el) return
-                  const w = window.open('', '_blank', 'width=700,height=900')
+                  const w = window.open('', '_blank', 'width=700,height=950')
                   if (!w) return
-                  w.document.write(`<html><head><title>품의서 - ${previewModal.title}</title><style>
+                  w.document.write(`<html><head><title>지출품의서 - ${previewModal.title}</title><style>
                     *{margin:0;padding:0;box-sizing:border-box}
-                    body{font-family:'Malgun Gothic','맑은 고딕',sans-serif;padding:50px;color:#111;font-size:13px;line-height:1.6}
+                    body{font-family:'Malgun Gothic','맑은 고딕',sans-serif;padding:50px;color:#111;font-size:13px;line-height:1.5}
                     table{width:100%;border-collapse:collapse}
-                    th,td{border:1px solid #333;padding:8px 12px}
-                    th{background:#f5f5f5;font-weight:700;color:#333}
+                    th,td{border:1px solid #bbb;padding:9px 14px}
+                    th{background:#edf1f8;font-weight:700;color:#333;letter-spacing:2px}
                     @media print{body{padding:20px}@page{margin:15mm}}
                   </style></head><body>${el.innerHTML}</body></html>`)
                   w.document.close()
@@ -1829,116 +1831,102 @@ function AcctApproval({ year }: { year: number }) {
               </div>
             </div>
 
-            {/* 품의서 본문 */}
-            <div id="approval-preview-content" style={{ padding: 32, background: '#fff' }}>
-              {/* 문서 제목 */}
-              <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                <div style={{ fontSize: 26, fontWeight: 800, letterSpacing: 12, color: '#111', marginBottom: 4 }}>품 의 서</div>
-                <div style={{ fontSize: 11, color: '#888' }}>APPROVAL DOCUMENT</div>
-              </div>
+            {/* === 지출품의서 본문 === */}
+            <div id="approval-preview-content" style={{ padding: '36px 32px', background: '#fff' }}>
 
-              {/* 우측 결재란 */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
-                <table style={{ width: 240, borderCollapse: 'collapse' }}>
+              {/* ── 결재란 (우측 상단) ── */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+                <table style={{ width: 220, borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      <th style={{ border: '1.5px solid #333', padding: '4px 8px', background: '#e8edf3', fontSize: 11, fontWeight: 800, textAlign: 'center', width: 120 }}>신 청</th>
-                      <th style={{ border: '1.5px solid #333', padding: '4px 8px', background: '#e8edf3', fontSize: 11, fontWeight: 800, textAlign: 'center', width: 120 }}>승 인</th>
+                      <th style={{ ...thS, width: 110, padding: '5px 8px', fontSize: 12 }}>담&nbsp;&nbsp;&nbsp;&nbsp;당</th>
+                      <th style={{ ...thS, width: 110, padding: '5px 8px', fontSize: 12 }}>상임이사</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td style={{ border: '1.5px solid #333', padding: 6, textAlign: 'center', height: 70, verticalAlign: 'middle' }}>
+                      <td style={{ border: '1px solid #bbb', padding: 6, textAlign: 'center', height: 80, verticalAlign: 'middle' }}>
                         {getSeal(applicantStaff) ? (
-                          <img src={getSeal(applicantStaff)} alt="도장" style={{ width: 52, height: 52, objectFit: 'contain', margin: '0 auto' }} />
+                          <img src={getSeal(applicantStaff)} alt="도장" style={{ width: 56, height: 56, objectFit: 'contain', margin: '0 auto' }} />
                         ) : (
-                          <div style={{ width: 52, height: 52, margin: '0 auto', border: '2px dashed #ccc', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#bbb' }}>(인)</div>
+                          <div style={{ width: 56, height: 56, margin: '0 auto' }}></div>
                         )}
                       </td>
-                      <td style={{ border: '1.5px solid #333', padding: 6, textAlign: 'center', height: 70, verticalAlign: 'middle' }}>
+                      <td style={{ border: '1px solid #bbb', padding: 6, textAlign: 'center', height: 80, verticalAlign: 'middle' }}>
                         {previewModal.status !== 'pending' && getSeal(approverStaff) ? (
-                          <img src={getSeal(approverStaff)} alt="도장" style={{ width: 52, height: 52, objectFit: 'contain', margin: '0 auto' }} />
+                          <img src={getSeal(approverStaff)} alt="도장" style={{ width: 56, height: 56, objectFit: 'contain', margin: '0 auto' }} />
                         ) : (
-                          <div style={{ width: 52, height: 52, margin: '0 auto', border: '2px dashed #ccc', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#bbb' }}>{previewModal.status === 'pending' ? '' : '(인)'}</div>
+                          <div style={{ width: 56, height: 56, margin: '0 auto' }}></div>
                         )}
                       </td>
-                    </tr>
-                    <tr>
-                      <td style={{ border: '1.5px solid #333', padding: '3px 8px', textAlign: 'center', fontSize: 12, fontWeight: 700 }}>{previewModal.applicant || '-'}</td>
-                      <td style={{ border: '1.5px solid #333', padding: '3px 8px', textAlign: 'center', fontSize: 12, fontWeight: 700 }}>{previewModal.approver || '-'}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
 
-              {/* 구분선 */}
-              <div style={{ borderTop: '2px solid #333', marginBottom: 0 }}></div>
+              {/* ── 문서 제목 ── */}
+              <div style={{ textAlign: 'center', marginBottom: 32, marginTop: 8 }}>
+                <div style={{ fontSize: 30, fontWeight: 900, letterSpacing: 24, color: '#222' }}>지 출 품 의 서</div>
+              </div>
 
-              {/* 본문 테이블 */}
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              {/* ── 본문 정보 테이블 ── */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
                 <tbody>
                   <tr>
-                    <th style={{ border: '1px solid #333', padding: '10px 14px', background: '#f5f5f5', fontSize: 12, fontWeight: 700, width: 100, textAlign: 'center', verticalAlign: 'middle' }}>문서번호</th>
-                    <td style={{ border: '1px solid #333', padding: '10px 14px', fontSize: 13 }}>AP-{String(previewModal.id).slice(-6)}</td>
-                    <th style={{ border: '1px solid #333', padding: '10px 14px', background: '#f5f5f5', fontSize: 12, fontWeight: 700, width: 100, textAlign: 'center', verticalAlign: 'middle' }}>품의일자</th>
-                    <td style={{ border: '1px solid #333', padding: '10px 14px', fontSize: 13 }}>{(previewModal.date || previewModal.createdAt || '').slice(0, 10)}</td>
+                    <th style={{ ...thS, width: 80 }}>품의일자</th>
+                    <td style={{ ...tdS, width: '28%' }}>{(previewModal.date || previewModal.createdAt || '').slice(0, 10)}</td>
+                    <th style={{ ...thS, width: 80 }}>계정과목</th>
+                    <td style={tdS}>{previewModal.accountCode || ''}</td>
                   </tr>
                   <tr>
-                    <th style={{ border: '1px solid #333', padding: '10px 14px', background: '#f5f5f5', fontSize: 12, fontWeight: 700, textAlign: 'center', verticalAlign: 'middle' }}>신청자</th>
-                    <td style={{ border: '1px solid #333', padding: '10px 14px', fontSize: 13 }}>{previewModal.applicant || '-'}</td>
-                    <th style={{ border: '1px solid #333', padding: '10px 14px', background: '#f5f5f5', fontSize: 12, fontWeight: 700, textAlign: 'center', verticalAlign: 'middle' }}>결재상태</th>
-                    <td style={{ border: '1px solid #333', padding: '10px 14px', fontSize: 13, fontWeight: 700, color: si.color }}>{si.label}</td>
+                    <th style={thS}>지출일자</th>
+                    <td style={tdS}>{previewModal.expenseDate || ''}</td>
+                    <th style={thS}>증빙구분</th>
+                    <td style={tdS}>{previewModal.evidence || ''}</td>
                   </tr>
                   <tr>
-                    <th style={{ border: '1px solid #333', padding: '10px 14px', background: '#f5f5f5', fontSize: 12, fontWeight: 700, textAlign: 'center', verticalAlign: 'middle' }}>품의명</th>
-                    <td colSpan={3} style={{ border: '1px solid #333', padding: '10px 14px', fontSize: 14, fontWeight: 800 }}>{previewModal.title || '-'}</td>
+                    <th style={thS}>결제일자</th>
+                    <td style={tdS}>{previewModal.resolutionDate || ''}</td>
+                    <th style={thS}>거 래 처</th>
+                    <td style={tdS}></td>
                   </tr>
                   <tr>
-                    <th style={{ border: '1px solid #333', padding: '10px 14px', background: '#f5f5f5', fontSize: 12, fontWeight: 700, textAlign: 'center', verticalAlign: 'middle' }}>예산과목</th>
-                    <td colSpan={3} style={{ border: '1px solid #333', padding: '10px 14px', fontSize: 13 }}>{previewModal.accountCode || '-'}</td>
+                    <th style={thS}>물 품 명</th>
+                    <td style={tdS}>{previewModal.title || ''}</td>
+                    <th style={thS}>용&nbsp;&nbsp;&nbsp;도</th>
+                    <td style={tdS}>{previewModal.description || ''}</td>
                   </tr>
-                  <tr>
-                    <th style={{ border: '1px solid #333', padding: '10px 14px', background: '#f5f5f5', fontSize: 12, fontWeight: 700, textAlign: 'center', verticalAlign: 'middle' }}>금 액</th>
-                    <td colSpan={3} style={{ border: '1px solid #333', padding: '10px 14px', fontSize: 18, fontWeight: 800, textAlign: 'right', letterSpacing: 1 }}>
-                      ₩ {formatNumber(previewModal.amount || 0)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <th style={{ border: '1px solid #333', padding: '10px 14px', background: '#f5f5f5', fontSize: 12, fontWeight: 700, textAlign: 'center', verticalAlign: 'top' }}>사유/메모</th>
-                    <td colSpan={3} style={{ border: '1px solid #333', padding: '10px 14px', fontSize: 13, minHeight: 80, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                      {previewModal.description || '-'}
-                    </td>
-                  </tr>
-                  {/* 결의 정보 */}
-                  {previewModal.expenseDate && (
-                    <tr>
-                      <th style={{ border: '1px solid #333', padding: '10px 14px', background: '#f5f5f5', fontSize: 12, fontWeight: 700, textAlign: 'center', verticalAlign: 'middle' }}>지출일</th>
-                      <td style={{ border: '1px solid #333', padding: '10px 14px', fontSize: 13 }}>{previewModal.expenseDate}</td>
-                      <th style={{ border: '1px solid #333', padding: '10px 14px', background: '#f5f5f5', fontSize: 12, fontWeight: 700, textAlign: 'center', verticalAlign: 'middle' }}>결의일</th>
-                      <td style={{ border: '1px solid #333', padding: '10px 14px', fontSize: 13 }}>{previewModal.resolutionDate || '-'}</td>
-                    </tr>
-                  )}
-                  {previewModal.evidence && (
-                    <tr>
-                      <th style={{ border: '1px solid #333', padding: '10px 14px', background: '#f5f5f5', fontSize: 12, fontWeight: 700, textAlign: 'center', verticalAlign: 'top' }}>증빙자료</th>
-                      <td colSpan={3} style={{ border: '1px solid #333', padding: '10px 14px', fontSize: 13, whiteSpace: 'pre-wrap' }}>{previewModal.evidence}</td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
 
-              {/* 하단 구분선 */}
-              <div style={{ borderTop: '2px solid #333', marginTop: 0 }}></div>
+              {/* ── 지출금액 (별도 블록) ── */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 4 }}>
+                <tbody>
+                  <tr>
+                    <th style={{ ...thS, width: 80 }}>지출금액</th>
+                    <td style={{ ...tdS, fontSize: 20, fontWeight: 900, letterSpacing: 1 }}>
+                      ₩ {formatNumber(previewModal.amount || 0)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
 
-              {/* 하단 날짜 및 기관명 */}
-              <div style={{ textAlign: 'center', marginTop: 32 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#333', marginBottom: 6 }}>
-                  {(previewModal.date || previewModal.createdAt || '').slice(0, 10).replace(/-/g, '년 ').replace(/-/g, '월 ')}일
-                </div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: '#111', letterSpacing: 3 }}>
-                  위 금액을 품의합니다.
-                </div>
+              {/* ── 결의 문구 ── */}
+              <div style={{ padding: '16px 12px 20px', fontSize: 15, color: '#333', lineHeight: 1.8 }}>
+                상기 금액을 용도에 따라 지출하였음을 결의합니다.
               </div>
+
+              {/* ── 비고 (별도 블록) ── */}
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <tbody>
+                  <tr>
+                    <th style={{ ...thS, width: 80, verticalAlign: 'top', paddingTop: 12 }}>비&nbsp;&nbsp;&nbsp;고</th>
+                    <td style={{ ...tdS, minHeight: 180, height: 180, whiteSpace: 'pre-wrap', verticalAlign: 'top' }}>
+                      {previewModal.description || ''}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
             {/* 하단 버튼 */}
