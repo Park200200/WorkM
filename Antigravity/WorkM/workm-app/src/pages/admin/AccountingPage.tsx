@@ -2339,9 +2339,9 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
           {/* 1. 지출내용(예산목록) */}
           <div>
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">
-              {type === 'income' ? '입금 내용' : '지출내용(예산목록)'} *
+              {type === 'income' ? '입금내용(예산목록)' : '지출내용(예산목록)'} *
             </label>
-            {type !== 'income' && budgetItemNames.length > 0 ? (
+            {budgetItemNames.length > 0 ? (
               <div className="relative">
                 {descMode === 'select' ? (
                   <>
