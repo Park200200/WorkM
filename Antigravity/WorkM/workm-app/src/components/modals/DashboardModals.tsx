@@ -17,7 +17,7 @@ interface TaskItem {
   id: number; title: string; status?: string; assigneeIds?: number[];
   assignerId?: number; dueDate: string; startDate?: string;
   isSchedule?: boolean; isImportant?: boolean; progress?: number;
-  desc?: string; stepIds?: number[];
+  desc?: string; stepIds?: number[]; collaboratorIds?: number[];
   [key: string]: unknown
 }
 interface UserItem { id: number; name: string; dept?: string; rank?: string; color?: string }
@@ -1061,6 +1061,7 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
   const currentUser = useAuthStore(s => s.user)
   const myId = currentUser?.id ? Number(currentUser.id) : null
   const tasks = getItem<TaskItem[]>('ws_tasks', [])
+  const users = getItem<UserItem[]>('ws_users', [])
   const taskResults = getItem<Array<{ id: number; name: string; icon?: string; color?: string }>>('ws_task_results', [])
   const reportTypes = getItem<Array<{ id: number; name?: string; label?: string }>>('ws_report_types', [])
   const importances = getItem<Array<{ id: number; name: string; icon?: string; color?: string }>>('ws_instr_importances', [])
@@ -1079,6 +1080,7 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
   const [selectedResults, setSelectedResults] = useState<string[]>([])
   const [selectedProcedure, setSelectedProcedure] = useState<string[]>([])
   const [selectedDetails, setSelectedDetails] = useState<number[]>([])
+  const [collaboratorIds, setCollaboratorIds] = useState<number[]>([])
   const [attachments, setAttachments] = useState<Array<{ name: string; size: number; type: string; dataUrl?: string }>>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -1175,6 +1177,7 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
           status: status || t.status,
           isSchedule: true,
           importance: selectedImportances.join(','),
+          collaboratorIds,
         }
       }))
     } else {
@@ -1195,6 +1198,7 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
         stepIds,
         detailIds: selectedDetails,
         resultIds,
+        collaboratorIds,
       }
       setItem('ws_tasks', [...allTasks, newTask])
     }
@@ -1436,6 +1440,26 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
                   {d.name}
                 </button>
               )) : <span className="text-[11px] text-[var(--text-muted)]">기타설정에서 상세업무를 등록하세요</span>}
+            </div>
+          </div>
+
+          {/* 업무협조자 */}
+          <div>
+            <label className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1.5">
+              <Users size={12} /> 업무협조자 <span className="text-primary-500 font-normal">({collaboratorIds.length}명)</span>
+            </label>
+            <div className="flex flex-wrap gap-1.5 px-3 py-2 min-h-[42px] border border-[var(--border-default)] rounded-[10px] bg-[var(--bg-muted)] items-center">
+              {users.length > 0 ? users.filter(u => u.id !== myId).map(u => {
+                const sel = collaboratorIds.includes(u.id)
+                return (
+                  <button key={u.id} onClick={() => setCollaboratorIds(sel ? collaboratorIds.filter(x => x !== u.id) : [...collaboratorIds, u.id])}
+                    className={cn('flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full cursor-pointer transition-all border',
+                      sel ? 'bg-teal-500 text-white border-teal-500' : 'text-[var(--text-secondary)] border-[var(--border-default)] bg-transparent')}>
+                    <Avatar name={u.name} color={u.color} size="xs" />
+                    {u.name}
+                  </button>
+                )
+              }) : <span className="text-[11px] text-[var(--text-muted)]">사원관리에서 직원을 등록하세요</span>}
             </div>
           </div>
 
