@@ -1523,7 +1523,7 @@ function AcctApproval({ year }: { year: number }) {
               <thead>
                 <tr className="bg-[var(--bg-muted)]">
                   {['날짜', '제목', '금액', '신청자', '승인자', '상태', '관리'].map(h => (
-                    <th key={h} className="py-2.5 px-3 text-[11px] font-bold text-[var(--text-muted)] text-left">{h}</th>
+                    <th key={h} className="py-2.5 px-3 text-[11px] font-bold text-[var(--text-muted)] text-center align-middle">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -1532,18 +1532,18 @@ function AcctApproval({ year }: { year: number }) {
                   const si = statusInfo[a.status] || statusInfo.pending
                   return (
                     <tr key={a.id} className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors">
-                      <td className="py-2.5 px-3 text-[12px] text-[var(--text-secondary)]">{(a.date || a.createdAt || '').slice(0, 10)}</td>
-                      <td className="py-2.5 px-3 text-[12px] font-bold text-[var(--text-primary)]">{a.title || '-'}</td>
-                      <td className="py-2.5 px-3 text-[12px] font-extrabold text-right text-[var(--text-primary)]">{formatNumber(a.amount || 0)}원</td>
-                      <td className="py-2.5 px-3 text-[11px] text-[var(--text-secondary)]">{a.applicant || '-'}</td>
-                      <td className="py-2.5 px-3 text-[11px] text-[var(--text-secondary)]">{a.approver || '-'}</td>
-                      <td className="py-2.5 px-3">
+                      <td className="py-2.5 px-3 text-[12px] text-[var(--text-secondary)] text-center align-middle">{(a.date || a.createdAt || '').slice(0, 10)}</td>
+                      <td className="py-2.5 px-3 text-[12px] font-bold text-[var(--text-primary)] text-center align-middle">{a.title || '-'}</td>
+                      <td className="py-2.5 px-3 text-[12px] font-extrabold text-center align-middle text-[var(--text-primary)]">{formatNumber(a.amount || 0)}원</td>
+                      <td className="py-2.5 px-3 text-[11px] text-[var(--text-secondary)] text-center align-middle">{a.applicant || '-'}</td>
+                      <td className="py-2.5 px-3 text-[11px] text-[var(--text-secondary)] text-center align-middle">{a.approver || '-'}</td>
+                      <td className="py-2.5 px-3 text-center align-middle">
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: si.bg, color: si.color }}>
                           {si.label}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3">
-                        <div className="flex items-center gap-1">
+                      <td className="py-2.5 px-3 text-center align-middle">
+                        <div className="flex items-center justify-center gap-1">
                           {renderActions(a)}
                         </div>
                       </td>
