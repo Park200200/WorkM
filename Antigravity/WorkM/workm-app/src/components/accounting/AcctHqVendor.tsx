@@ -69,12 +69,53 @@ function newVendor(id: number): HqVendor {
   }
 }
 
-/* ─── 샘플 데이터 ─── */
-const SAMPLE_VENDORS: HqVendor[] = [
-  { ...newVendor(1), companyName: '(주)한국솔루션', ceoName: '김대표', ceoPhone: '02-1234-5678', bizNo: '123-45-67890', managerName: '이지훈', managerPhone: '010-1111-2222', managerEmail: 'lee@ksol.co.kr' },
-  { ...newVendor(2), companyName: '대명테크(주)', ceoName: '박사장', ceoPhone: '02-9876-5432', bizNo: '234-56-78901', managerName: '최수민', managerPhone: '010-3333-4444', managerEmail: 'choi@dmtech.co.kr', monthlyFee: 150000, salesRate: 7, periodSales: 8500000, solutions: SOLUTIONS_DEFAULT.map((s, i) => i < 2 ? { ...s, enabled: true } : { ...s, enabled: false }) },
-  { ...newVendor(3), companyName: '서울유통(주)', ceoName: '정회장', ceoPhone: '02-5555-6666', bizNo: '345-67-89012', managerName: '강미영', managerPhone: '010-5555-6666', managerEmail: 'kang@seouldt.co.kr', monthlyFee: 300000, salesRate: 3, periodSales: 25000000, solutions: SOLUTIONS_DEFAULT.map((s, i) => i === 0 || i === 4 || i === 5 ? { ...s, enabled: true } : { ...s, enabled: false }) },
-]
+/* ─── 샘플 데이터 (본사정보 연동) ─── */
+function buildSampleVendors(): HqVendor[] {
+  const hq = getItem<Record<string, string>>('ws_hq_info', {})
+  const hqSolutions = getItem<{ key: string; label: string; enabled: boolean; qty?: number }[]>('ws_hq_solutions', null)
+  const hqBillings = getItem<{ id: number; period: string; mgmt: string; db: string; dataCnt: string; fee: string; total: string; status: string }[]>('ws_hq_billings', null)
+
+  // 본사정보 → (주)한국솔루션 연동
+  const hqVendor: HqVendor = {
+    ...newVendor(1),
+    companyName: hq.company || '(주)한국솔루션',
+    ceoName: hq.ceo || '김대표',
+    ceoPhone: hq.ceoPhone || '02-1234-5678',
+    bizNo: hq.bizNo || '123-45-67890',
+    bizPhone: hq.bizPhone || '',
+    bizType: hq.bizType || '',
+    bizCategory: hq.bizItem || '',
+    taxEmail: hq.taxEmail || '',
+    zipCode: hq.zip || '',
+    address1: hq.addr1 || '',
+    address2: hq.addr2 || '',
+    managerName: hq.mgrName || '이지훈',
+    managerTitle: hq.mgrTitle || '',
+    managerPhone: hq.mgrMobile || '010-1111-2222',
+    managerEmail: hq.mgrId ? hq.mgrId + '@workm.kr' : 'lee@ksol.co.kr',
+    managerId: hq.mgrId || '',
+    managerPw: hq.mgrPw || '',
+    managerPhoto: hq.mgrPhoto || '',
+    bizCertPhoto: hq.bizDocImg || '',
+    companyPhoto: hq.mainImg || '',
+    solutions: hqSolutions ? hqSolutions.map(s => ({ name: s.label, enabled: s.enabled, qty: s.qty })) : SOLUTIONS_DEFAULT.map(s => ({ ...s })),
+    billingList: hqBillings ? hqBillings.map(b => ({
+      period: b.period,
+      monthlyFee: parseInt(b.mgmt.replace(/,/g, '')) || 200000,
+      dbFee: parseInt(b.db.replace(/,/g, '')) || 250000,
+      dataFee: parseInt(b.dataCnt.replace(/,/g, '')) || 0,
+      commission: parseInt(b.fee.replace(/,/g, '')) || 0,
+      total: parseInt(b.total.replace(/,/g, '')) || 0,
+      status: b.status,
+    })) : BILLING_DEFAULT.map(b => ({ ...b })),
+  }
+
+  return [
+    hqVendor,
+    { ...newVendor(2), companyName: '대명테크(주)', ceoName: '박사장', ceoPhone: '02-9876-5432', bizNo: '234-56-78901', managerName: '최수민', managerPhone: '010-3333-4444', managerEmail: 'choi@dmtech.co.kr', monthlyFee: 150000, salesRate: 7, periodSales: 8500000, solutions: SOLUTIONS_DEFAULT.map((s, i) => i < 2 ? { ...s, enabled: true } : { ...s, enabled: false }) },
+    { ...newVendor(3), companyName: '서울유통(주)', ceoName: '정회장', ceoPhone: '02-5555-6666', bizNo: '345-67-89012', managerName: '강미영', managerPhone: '010-5555-6666', managerEmail: 'kang@seouldt.co.kr', monthlyFee: 300000, salesRate: 3, periodSales: 25000000, solutions: SOLUTIONS_DEFAULT.map((s, i) => i === 0 || i === 4 || i === 5 ? { ...s, enabled: true } : { ...s, enabled: false }) },
+  ]
+}
 
 const STORAGE_KEY = 'acct_hq_vendors'
 
@@ -103,7 +144,7 @@ function calcTotal(v: HqVendor) {
 
 /* ═══════════════════════════════════════════════════════════════ */
 export function AcctHqVendor() {
-  const [vendors, setVendors] = useState<HqVendor[]>(() => getItem(STORAGE_KEY, SAMPLE_VENDORS))
+  const [vendors, setVendors] = useState<HqVendor[]>(() => getItem(STORAGE_KEY, buildSampleVendors()))
   const [search, setSearch] = useState('')
   const [editVendor, setEditVendor] = useState<HqVendor | null>(null)
   const [showDetail, setShowDetail] = useState(false)
