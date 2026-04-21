@@ -2039,15 +2039,25 @@ function AcctApproval({ year }: { year: number }) {
 
               {/* 첨부파일 표시 (결의 상태일 때) */}
               {previewModal.status === 'resolved' && (previewModal as any).attachments?.length > 0 && (
-                <div style={{ marginTop: 8, padding: '10px 14px', border: '1px solid #bbb' }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#333', marginBottom: 6 }}>■ 첨부파일</div>
-                  {((previewModal as any).attachments as { name: string; data: string; desc: string }[]).map((att, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', borderBottom: i < (previewModal as any).attachments.length - 1 ? '1px dashed #ddd' : 'none' }}>
-                      <span style={{ fontSize: 12, color: '#4f6ef7', fontWeight: 700 }}>{i + 1}.</span>
-                      <span style={{ fontSize: 12, color: '#222', fontWeight: 600 }}>{att.name}</span>
-                      {att.desc && <span style={{ fontSize: 11, color: '#888' }}>- {att.desc}</span>}
-                    </div>
-                  ))}
+                <div style={{ marginTop: 8, border: '1px solid #bbb' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#333', padding: '8px 14px', background: '#edf1f8', borderBottom: '1px solid #bbb' }}>■ 첨부 증빙서류</div>
+                  {((previewModal as any).attachments as { name: string; data: string; desc: string }[]).map((att, i) => {
+                    const isImage = att.data?.startsWith('data:image')
+                    return (
+                      <div key={i} style={{ padding: '12px 14px', borderBottom: i < (previewModal as any).attachments.length - 1 ? '1px solid #ddd' : 'none' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: isImage ? 8 : 0 }}>
+                          <span style={{ fontSize: 11, color: '#4f6ef7', fontWeight: 700 }}>[{i + 1}]</span>
+                          <span style={{ fontSize: 12, color: '#222', fontWeight: 600 }}>{att.name}</span>
+                          {att.desc && <span style={{ fontSize: 11, color: '#888' }}>— {att.desc}</span>}
+                        </div>
+                        {isImage && (
+                          <div style={{ textAlign: 'center', background: '#fafafa', borderRadius: 4, padding: 8, border: '1px solid #eee' }}>
+                            <img src={att.data} alt={att.name} style={{ maxWidth: '100%', maxHeight: 360, objectFit: 'contain', borderRadius: 2 }} />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
