@@ -151,7 +151,56 @@ export function AcctHqVendor() {
   const [menuOpen, setMenuOpen] = useState<number | null>(null)
   const [expandedId, setExpandedId] = useState<number | null>(null)
 
-  const saveAll = (list: HqVendor[]) => { setVendors(list); setItem(STORAGE_KEY, list) }
+  const saveAll = (list: HqVendor[]) => {
+    setVendors(list)
+    setItem(STORAGE_KEY, list)
+
+    // ── id=1 (주)한국솔루션 → 본사정보 역동기화 ──
+    const hqV = list.find(v => v.id === 1)
+    if (hqV) {
+      try {
+        const hqInfo = getItem<Record<string, any>>('ws_hq_info', {})
+        hqInfo.company = hqV.companyName
+        hqInfo.ceo = hqV.ceoName
+        hqInfo.ceoPhone = hqV.ceoPhone
+        hqInfo.bizNo = hqV.bizNo
+        hqInfo.bizPhone = hqV.bizPhone
+        hqInfo.bizType = hqV.bizType
+        hqInfo.bizItem = hqV.bizCategory
+        hqInfo.taxEmail = hqV.taxEmail
+        hqInfo.zip = hqV.zipCode
+        hqInfo.addr1 = hqV.address1
+        hqInfo.addr2 = hqV.address2
+        hqInfo.mgrName = hqV.managerName
+        hqInfo.mgrTitle = hqV.managerTitle
+        hqInfo.mgrMobile = hqV.managerPhone
+        hqInfo.mgrId = hqV.managerId
+        hqInfo.mgrPw = hqV.managerPw
+        if (hqV.managerPhoto) hqInfo.mgrPhoto = hqV.managerPhoto
+        if (hqV.bizCertPhoto) hqInfo.bizDocImg = hqV.bizCertPhoto
+        if (hqV.companyPhoto) hqInfo.mainImg = hqV.companyPhoto
+        setItem('ws_hq_info', hqInfo)
+
+        // 솔루션 동기화
+        const solKeys = ['workm','homepage','fabric','mfg','dist','franchise','food']
+        setItem('ws_hq_solutions', hqV.solutions.map((s, i) => ({
+          key: solKeys[i] || `sol_${i}`, label: s.name, enabled: s.enabled, qty: s.qty,
+        })))
+
+        // 청구 동기화
+        setItem('ws_hq_billings', hqV.billingList.map((b, i) => ({
+          id: i + 1,
+          period: b.period,
+          mgmt: b.monthlyFee.toLocaleString(),
+          db: b.dbFee.toLocaleString(),
+          dataCnt: b.dataFee.toLocaleString(),
+          fee: b.commission.toLocaleString(),
+          total: b.total.toLocaleString(),
+          status: b.status,
+        })))
+      } catch { /* ignore */ }
+    }
+  }
 
   const filtered = vendors.filter(v =>
     !search || v.companyName.includes(search) || v.ceoName.includes(search) || v.bizNo.includes(search) || v.managerName.includes(search)

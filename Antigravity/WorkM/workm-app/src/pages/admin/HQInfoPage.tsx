@@ -132,7 +132,7 @@ export function HQInfoPage() {
     setDirty(true)
   }
 
-  // ── 저장 ──
+  // ── 저장 (본사정보 → 거래처 동기화) ──
   const save = () => {
     const now = new Date()
     const ds = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`
@@ -144,6 +144,49 @@ export function HQInfoPage() {
     setItem('ws_hq_info', saved)
     setData(saved)
     setDirty(false)
+
+    // ── 거래처 (주)한국솔루션 (id=1) 동기화 ──
+    try {
+      const vendors = getItem<any[]>('acct_hq_vendors', [])
+      const idx = vendors.findIndex((v: any) => v.id === 1)
+      if (idx >= 0) {
+        const v = vendors[idx]
+        v.companyName = saved.company || v.companyName
+        v.ceoName = saved.ceo || v.ceoName
+        v.ceoPhone = saved.ceoPhone || v.ceoPhone
+        v.bizNo = saved.bizNo || v.bizNo
+        v.bizPhone = saved.bizPhone || v.bizPhone
+        v.bizType = saved.bizType || v.bizType
+        v.bizCategory = saved.bizItem || v.bizCategory
+        v.taxEmail = saved.taxEmail || v.taxEmail
+        v.zipCode = saved.zip || v.zipCode
+        v.address1 = saved.addr1 || v.address1
+        v.address2 = saved.addr2 || v.address2
+        v.managerName = saved.mgrName || v.managerName
+        v.managerTitle = saved.mgrTitle || v.managerTitle
+        v.managerPhone = saved.mgrMobile || v.managerPhone
+        v.managerId = saved.mgrId || v.managerId
+        v.managerPw = saved.mgrPw || v.managerPw
+        if (saved.mgrPhoto) v.managerPhoto = saved.mgrPhoto
+        if (saved.bizDocImg) v.bizCertPhoto = saved.bizDocImg
+        if (saved.mainImg) v.companyPhoto = saved.mainImg
+        // 솔루션 동기화
+        v.solutions = solutions.map(s => ({ name: s.label, enabled: s.enabled, qty: s.qty }))
+        // 청구 동기화
+        v.billingList = billings.map(b => ({
+          period: b.period,
+          monthlyFee: parseInt(b.mgmt.replace(/,/g, '')) || 0,
+          dbFee: parseInt(b.db.replace(/,/g, '')) || 0,
+          dataFee: parseInt(b.dataCnt.replace(/,/g, '')) || 0,
+          commission: parseInt(b.fee.replace(/,/g, '')) || 0,
+          total: parseInt(b.total.replace(/,/g, '')) || 0,
+          status: b.status,
+        }))
+        vendors[idx] = v
+        setItem('acct_hq_vendors', vendors)
+      }
+    } catch { /* ignore */ }
+
     addToast('success', '본사정보가 저장되었습니다.')
   }
 
