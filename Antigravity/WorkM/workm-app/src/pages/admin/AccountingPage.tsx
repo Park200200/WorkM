@@ -2155,6 +2155,7 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
   const [showCounterList, setShowCounterList] = useState(false)
   const counterRef = useRef<HTMLDivElement>(null)
   const [descMode, setDescMode] = useState<'select' | 'input'>('select')
+  const [detailModal, setDetailModal] = useState<CashFlow | null>(null)
 
   /* 예산목 목록 (기타설정의 예산목 데이터) */
   const budgetItemNames = useMemo(() => {
@@ -2482,12 +2483,12 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
               </thead>
               <tbody>
                 {cashflows.map(c => (
-                  <tr key={c.id} className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors">
+                  <tr key={c.id} className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors cursor-pointer" onDoubleClick={() => setDetailModal(c)}>
                     <td className="py-2.5 px-3.5 text-[12px] text-[var(--text-secondary)]">{c.date || ''}</td>
                     <td className="py-2.5 px-3.5 text-[12px] font-bold text-[var(--text-primary)]">{c.description || '-'}</td>
                     <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-right" style={{ color: typeColors[type] }}>{formatNumber(c.amount || 0)}원</td>
                     <td className="py-2.5 px-3.5 text-center">
-                      <button onClick={() => deleteEntry(c.id)} className="p-1 rounded-md bg-[rgba(239,68,68,.08)] text-[#ef4444] hover:bg-[rgba(239,68,68,.15)] cursor-pointer"><Trash2 size={13} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); deleteEntry(c.id) }} className="p-1 rounded-md bg-[rgba(239,68,68,.08)] text-[#ef4444] hover:bg-[rgba(239,68,68,.15)] cursor-pointer"><Trash2 size={13} /></button>
                     </td>
                   </tr>
                 ))}
@@ -2496,6 +2497,38 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
           </div>
         )}
       </div>
+      {/* ── 상세 팝업 ── */}
+      {detailModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={() => setDetailModal(null)}>
+          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-[480px] mx-4 border border-[var(--border-default)]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-default)]">
+              <div className="flex items-center gap-2">
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-white text-sm bg-gradient-to-r ${typeGrads[type]}`}>{typeEmojis[type]}</div>
+                <span className="text-sm font-extrabold text-[var(--text-primary)]">{type === 'income' ? '입금' : '지출'} 상세내역</span>
+              </div>
+              <button onClick={() => setDetailModal(null)} className="text-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer">✕</button>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              {[
+                { label: '내용', value: detailModal.description || '-' },
+                { label: '금액', value: `${formatNumber(detailModal.amount || 0)}원`, color: typeColors[type], bold: true },
+                { label: '계정과목', value: (() => { const accts: { code: string; name: string }[] = getItem('acct_accounts', []); const a = accts.find(x => x.code === detailModal.accountCode); return a ? `${a.code} - ${a.name}` : detailModal.accountCode || '-' })() },
+                { label: '거래처', value: detailModal.counter || '-' },
+                { label: '실제거래일자', value: detailModal.date || '-' },
+                { label: '지출등록일자', value: detailModal.writeDate || '-' },
+              ].map((row, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-[11px] font-bold text-[var(--text-muted)] w-[90px] shrink-0">{row.label}</span>
+                  <span className={`text-[13px] ${row.bold ? 'font-extrabold' : 'font-semibold'} text-[var(--text-primary)]`} style={row.color ? { color: row.color } : undefined}>{row.value}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end px-5 py-3.5 border-t border-[var(--border-default)]">
+              <button onClick={() => setDetailModal(null)} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer">닫기</button>
+            </div>
+          </div>
+        </div>
+      , document.body)}
     </div>
   )
 }
