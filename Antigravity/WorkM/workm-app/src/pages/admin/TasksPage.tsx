@@ -9,7 +9,7 @@ import { EmptyState } from '../../components/common/EmptyState'
 import { cn } from '../../utils/cn'
 import { getItem, setItem } from '../../utils/storage'
 
-import { Star, UserPlus, Settings2, Plus, Check, X, Pencil, Trash2 } from 'lucide-react'
+import { Star, UserPlus, Settings2, Plus, Check, X, Pencil, Trash2, Users as UsersIcon } from 'lucide-react'
 import { DatePicker } from '../../components/ui/DatePicker'
 
 /* ── 타입 ── */
@@ -51,6 +51,13 @@ export function TasksPage() {
   const [newDesc, setNewDesc] = useState('')
   const [newStartDate, setNewStartDate] = useState('')
   const [newDueDate, setNewDueDate] = useState('')
+  const [newAssignerId, setNewAssignerId] = useState<number | undefined>(undefined)
+  const [newAssigneeIds, setNewAssigneeIds] = useState<number[]>([])
+  const [newStatus, setNewStatus] = useState('waiting')
+  const [newPriority, setNewPriority] = useState('medium')
+  const [newProgress, setNewProgress] = useState(0)
+  const [newTeam, setNewTeam] = useState('')
+  const [newIsImportant, setNewIsImportant] = useState(false)
   const [selDetails, setSelDetails] = useState<number[]>([])
   const [selResults, setSelResults] = useState<number[]>([])
   const [selSteps, setSelSteps] = useState<number[]>([])
@@ -59,10 +66,14 @@ export function TasksPage() {
   const detailTasks = getItem<{ id: number; name: string }[]>('ws_detail_tasks', [])
   const taskResults = getItem<{ id: number; name: string; icon?: string; color?: string }[]>('ws_task_results', [])
   const reportTypes = getItem<{ id: number; label: string; icon?: string; color?: string }[]>('ws_report_types', [])
+  const departments = getItem<{ id: number; name: string }[]>('ws_departments', [])
 
   const openNewTaskModal = () => {
     setEditTaskId(null)
     setNewTitle(''); setNewDesc(''); setNewStartDate(''); setNewDueDate('')
+    setNewAssignerId(undefined); setNewAssigneeIds([])
+    setNewStatus('waiting'); setNewPriority('medium'); setNewProgress(0)
+    setNewTeam(''); setNewIsImportant(false)
     setSelDetails([]); setSelResults([]); setSelSteps([])
     setShowNewTask(true)
   }
@@ -72,6 +83,9 @@ export function TasksPage() {
     setEditTaskId(taskId)
     setNewTitle(t.title); setNewDesc(t.desc || '')
     setNewStartDate(t.startDate || ''); setNewDueDate(t.dueDate || '')
+    setNewAssignerId(t.assignerId); setNewAssigneeIds(t.assigneeIds || (t.assigneeId ? [t.assigneeId] : []))
+    setNewStatus(t.status || 'waiting'); setNewPriority(t.priority || 'medium'); setNewProgress(t.progress || 0)
+    setNewTeam(t.team || ''); setNewIsImportant(!!t.isImportant)
     setSelDetails(t.detailIds || []); setSelResults(t.resultIds || []); setSelSteps(t.stepIds || [])
     setShowNewTask(true)
   }
@@ -81,13 +95,18 @@ export function TasksPage() {
       const newTasks = tasks.map(t => t.id !== editTaskId ? t : {
         ...t, title: newTitle.trim(), desc: newDesc,
         startDate: newStartDate, dueDate: newDueDate,
+        assignerId: newAssignerId, assigneeIds: newAssigneeIds,
+        status: newStatus, priority: newPriority, progress: newProgress,
+        team: newTeam, isImportant: newIsImportant,
         detailIds: selDetails, resultIds: selResults, stepIds: selSteps,
       })
       updateTasks(newTasks)
     } else {
       const newTask: TaskItem = {
-        id: Date.now(), title: newTitle.trim(), status: 'waiting', progress: 0,
-        startDate: newStartDate, dueDate: newDueDate, team: '', assigneeIds: [], desc: newDesc,
+        id: Date.now(), title: newTitle.trim(), status: newStatus, progress: newProgress,
+        priority: newPriority, startDate: newStartDate, dueDate: newDueDate,
+        team: newTeam, assignerId: newAssignerId, assigneeIds: newAssigneeIds,
+        isImportant: newIsImportant, desc: newDesc,
         detailIds: selDetails, resultIds: selResults, stepIds: selSteps,
       }
       updateTasks([...tasks, newTask])
@@ -432,8 +451,111 @@ export function TasksPage() {
               />
             </div>
 
-            {/* 업무시작일 / 계획완료일 */}
+            {/* 지시자 / 수신자 */}
             <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">지시자</label>
+                <select
+                  value={newAssignerId ?? ''}
+                  onChange={e => setNewAssignerId(e.target.value ? Number(e.target.value) : undefined)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-400 transition-all"
+                >
+                  <option value="">선택</option>
+                  {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.dept || ''})</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">수신자 <span className="text-primary-500 font-normal">({newAssigneeIds.length}명)</span></label>
+                <div className="max-h-[100px] overflow-y-auto border border-[var(--border-default)] rounded-xl p-1.5 space-y-0.5">
+                  {users.map(u => {
+                    const sel = newAssigneeIds.includes(u.id)
+                    return (
+                      <div
+                        key={u.id}
+                        onClick={() => setNewAssigneeIds(sel ? newAssigneeIds.filter(x => x !== u.id) : [...newAssigneeIds, u.id])}
+                        className={cn(
+                          'flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-all text-[11px]',
+                          sel ? 'bg-primary-50 dark:bg-primary-900/20 font-bold text-primary-600' : 'hover:bg-[var(--bg-muted)] text-[var(--text-secondary)]',
+                        )}
+                      >
+                        <div className={cn('w-4 h-4 rounded border flex items-center justify-center shrink-0', sel ? 'bg-primary-500 border-primary-500' : 'border-[var(--border-default)]')}>
+                          {sel && <Check size={10} className="text-white" />}
+                        </div>
+                        {u.name}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* 상태 / 중요도 / 진행률 */}
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">상태</label>
+                <select
+                  value={newStatus}
+                  onChange={e => setNewStatus(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-400 transition-all"
+                >
+                  <option value="waiting">대기</option>
+                  <option value="progress">진행중</option>
+                  <option value="delay">지연</option>
+                  <option value="done">완료</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">중요도</label>
+                <select
+                  value={newPriority}
+                  onChange={e => setNewPriority(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-400 transition-all"
+                >
+                  <option value="high">높음</option>
+                  <option value="medium">보통</option>
+                  <option value="low">낮음</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">진행률 ({newProgress}%)</label>
+                <input
+                  type="range" min={0} max={100} step={5}
+                  value={newProgress}
+                  onChange={e => setNewProgress(Number(e.target.value))}
+                  className="w-full accent-primary-500"
+                />
+              </div>
+            </div>
+
+            {/* 팀 / 중요★ / 업무시작일 / 계획완료일 */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">팀</label>
+                <select
+                  value={newTeam}
+                  onChange={e => setNewTeam(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-400 transition-all"
+                >
+                  <option value="">선택</option>
+                  {departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                </select>
+              </div>
+              <div className="flex flex-col">
+                <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">중요★</label>
+                <button
+                  type="button"
+                  onClick={() => setNewIsImportant(!newIsImportant)}
+                  className={cn(
+                    'flex items-center justify-center gap-1.5 h-[42px] rounded-xl border text-sm font-bold transition-all cursor-pointer',
+                    newIsImportant
+                      ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20 text-amber-600'
+                      : 'border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-muted)]',
+                  )}
+                >
+                  <Star size={14} className={newIsImportant ? 'fill-amber-500 text-amber-500' : ''} />
+                  {newIsImportant ? 'ON' : 'OFF'}
+                </button>
+              </div>
               <div>
                 <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">업무시작일</label>
                 <DatePicker value={newStartDate} onChange={setNewStartDate} placeholder="날짜를 선택하세요" />
