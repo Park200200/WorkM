@@ -5,7 +5,7 @@ import { formatNumber } from '../../utils/format'
 import { EmptyState } from '../common/EmptyState'
 import {
   Scale, TrendingUp, Table, Banknote, Building2,
-  Printer, CheckCircle, BookOpen,
+  Printer, CheckCircle, BookOpen, ChevronDown,
 } from 'lucide-react'
 
 interface Account {
@@ -561,6 +561,7 @@ function AccountLedger({ vouchers, year }: { vouchers: Voucher[]; year: number }
 function GeneralLedger({ accounts, vouchers, balances, year }: { accounts: Account[]; vouchers: Voucher[]; balances: OpeningBalance[]; year: number }) {
   const [selectedCode, setSelectedCode] = useState('')
   const [filterMonth, setFilterMonth] = useState(0)
+  const [monthDropOpen, setMonthDropOpen] = useState(false)
 
   const TYPE_LABELS: Record<string, string> = { asset: '자산', liability: '부채', equity: '자본', revenue: '수익', expense: '비용' }
   const TYPE_COLORS: Record<string, string> = { asset: '#4f6ef7', liability: '#ef4444', equity: '#8b5cf6', revenue: '#22c55e', expense: '#f59e0b' }
@@ -643,13 +644,30 @@ function GeneralLedger({ accounts, vouchers, balances, year }: { accounts: Accou
             ))}
           </select>
         </div>
-        <div className="w-full sm:w-48 shrink-0">
+        <div className="w-full sm:w-48 shrink-0 relative">
           <label className="text-[10px] font-bold text-[var(--text-muted)] mb-1 block">조회 기간</label>
-          <select value={filterMonth} onChange={e => setFilterMonth(Number(e.target.value))}
-            className="w-full h-10 px-3 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] text-[13px] text-[var(--text-primary)] outline-none focus:border-primary-500 cursor-pointer">
-            <option value={0}>전체 (1~12월)</option>
-            {monthsWithData.map(m => <option key={m} value={m}>{m}월</option>)}
-          </select>
+          <button type="button" onClick={() => setMonthDropOpen(!monthDropOpen)}
+            className="w-full h-10 px-3 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] text-[13px] text-[var(--text-primary)] outline-none cursor-pointer flex items-center justify-between hover:border-primary-400 transition-colors">
+            <span>{filterMonth === 0 ? '전체 (1~12월)' : `${filterMonth}월`}</span>
+            <ChevronDown size={14} className={`text-[var(--text-muted)] transition-transform ${monthDropOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {monthDropOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setMonthDropOpen(false)} />
+              <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl shadow-xl overflow-hidden animate-scaleIn">
+                <button onClick={() => { setFilterMonth(0); setMonthDropOpen(false) }}
+                  className={`w-full px-3 py-2.5 text-left text-[12px] cursor-pointer transition-colors ${filterMonth === 0 ? 'bg-primary-50 dark:bg-primary-900/10 text-primary-600 dark:text-primary-400 font-bold' : 'text-[var(--text-primary)] hover:bg-[var(--bg-muted)]'}`}>
+                  전체 (1~12월)
+                </button>
+                {monthsWithData.map(m => (
+                  <button key={m} onClick={() => { setFilterMonth(m); setMonthDropOpen(false) }}
+                    className={`w-full px-3 py-2.5 text-left text-[12px] cursor-pointer transition-colors ${filterMonth === m ? 'bg-primary-50 dark:bg-primary-900/10 text-primary-600 dark:text-primary-400 font-bold' : 'text-[var(--text-primary)] hover:bg-[var(--bg-muted)]'}`}>
+                    {m}월
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
