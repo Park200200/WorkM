@@ -1799,7 +1799,7 @@ function AcctApproval({ year }: { year: number }) {
         const approverStaff = staffList.find(s => s.name === previewModal.approver)
         const getSeal = (s: any) => s?.sealImg || s?.sealImage || ''
         /* 공통 셀 스타일 */
-        const thS: React.CSSProperties = { border: '1px solid #bbb', padding: '9px 14px', background: '#edf1f8', fontSize: 13, fontWeight: 700, color: '#333', textAlign: 'center', verticalAlign: 'middle', letterSpacing: 2 }
+        const thS: React.CSSProperties = { border: '1px solid #bbb', padding: '9px 14px', background: '#edf1f8', fontSize: 13, fontWeight: 700, color: '#333', textAlign: 'center', verticalAlign: 'middle', letterSpacing: 2, whiteSpace: 'nowrap' }
         const tdS: React.CSSProperties = { border: '1px solid #bbb', padding: '9px 14px', fontSize: 13, color: '#222', verticalAlign: 'middle' }
         return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) setPreviewModal(null) }}>
@@ -1818,11 +1818,11 @@ function AcctApproval({ year }: { year: number }) {
                   if (!w) return
                   w.document.write(`<html><head><title>지출품의서 - ${previewModal.title}</title><style>
                     *{margin:0;padding:0;box-sizing:border-box}
-                    body{font-family:'Malgun Gothic','맑은 고딕',sans-serif;padding:50px;color:#111;font-size:13px;line-height:1.5}
+                    body{font-family:'Malgun Gothic','맑은 고딕',sans-serif;padding:50px 60px;color:#111;font-size:13px;line-height:1.5}
                     table{width:100%;border-collapse:collapse}
                     th,td{border:1px solid #bbb;padding:9px 14px}
-                    th{background:#edf1f8;font-weight:700;color:#333;letter-spacing:2px}
-                    @media print{body{padding:20px}@page{margin:15mm}}
+                    th{background:#edf1f8;font-weight:700;color:#333;letter-spacing:2px;white-space:nowrap}
+                    @media print{body{padding:20px}@page{margin:15mm;size:A4 portrait}}
                   </style></head><body>${el.innerHTML}</body></html>`)
                   w.document.close()
                   w.print()
@@ -1834,9 +1834,14 @@ function AcctApproval({ year }: { year: number }) {
             {/* === 지출품의서 본문 === */}
             <div id="approval-preview-content" style={{ padding: '50px 60px', background: '#fff', minHeight: 'calc(100% - 52px)' }}>
 
-              {/* ── 결재란 (우측 상단) ── */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                <table style={{ width: 220, borderCollapse: 'collapse' }}>
+              {/* ── 상단: 제목(좌) + 결재란(우) 나란히 ── */}
+              <div style={{ display: 'flex', alignItems: 'flex-end', marginBottom: 24 }}>
+                {/* 좌측: 제목 */}
+                <div style={{ flex: 1, paddingBottom: 4 }}>
+                  <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: 16, color: '#222', whiteSpace: 'nowrap' }}>지 출 품 의 서</div>
+                </div>
+                {/* 우측: 결재란 */}
+                <table style={{ width: 220, borderCollapse: 'collapse', flexShrink: 0 }}>
                   <thead>
                     <tr>
                       <th style={{ ...thS, width: 110, padding: '5px 8px', fontSize: 12 }}>담&nbsp;&nbsp;&nbsp;&nbsp;당</th>
@@ -1862,11 +1867,6 @@ function AcctApproval({ year }: { year: number }) {
                     </tr>
                   </tbody>
                 </table>
-              </div>
-
-              {/* ── 문서 제목 ── */}
-              <div style={{ textAlign: 'center', marginBottom: 36, marginTop: 12 }}>
-                <div style={{ fontSize: 32, fontWeight: 900, letterSpacing: 20, color: '#222', whiteSpace: 'nowrap' }}>지 출 품 의 서</div>
               </div>
 
               {/* ── 본문 정보 테이블 ── */}
