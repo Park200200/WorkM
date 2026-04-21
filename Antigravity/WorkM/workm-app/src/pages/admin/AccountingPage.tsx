@@ -1834,8 +1834,8 @@ function AcctApproval({ year }: { year: number }) {
             {/* === 지출품의서 본문 === */}
             <div id="approval-preview-content" style={{ padding: '50px 60px', background: '#fff', minHeight: 'calc(100% - 52px)' }}>
 
-              {/* ── 상단: 제목(좌) + 결재란(우) 나란히 ── */}
-              <div style={{ display: 'flex', alignItems: 'flex-end', marginBottom: 24 }}>
+              {/* ── 상단: 제목(좌) + 결재란(우) ── */}
+              <div style={{ display: 'flex', alignItems: 'flex-end', marginBottom: 6 }}>
                 {/* 좌측: 제목 */}
                 <div style={{ flex: 1, paddingBottom: 4 }}>
                   <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: 16, color: '#222', whiteSpace: 'nowrap' }}>지 출 품 의 서</div>
@@ -1870,12 +1870,18 @@ function AcctApproval({ year }: { year: number }) {
               </div>
 
               {/* ── 본문 정보 테이블 ── */}
-              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20, tableLayout: 'fixed' }}>
+                <colgroup>
+                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '37%' }} />
+                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '37%' }} />
+                </colgroup>
                 <tbody>
                   <tr>
-                    <th style={{ ...thS, width: 80 }}>품의일자</th>
-                    <td style={{ ...tdS, width: '28%' }}>{(previewModal.date || previewModal.createdAt || '').slice(0, 10)}</td>
-                    <th style={{ ...thS, width: 80 }}>계정과목</th>
+                    <th style={thS}>품의일자</th>
+                    <td style={tdS}>{(previewModal.date || previewModal.createdAt || '').slice(0, 10)}</td>
+                    <th style={thS}>계정과목</th>
                     <td style={tdS}>{previewModal.accountCode || ''}</td>
                   </tr>
                   <tr>
@@ -1900,10 +1906,14 @@ function AcctApproval({ year }: { year: number }) {
               </table>
 
               {/* ── 지출금액 (별도 블록) ── */}
-              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 4 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 4, tableLayout: 'fixed' }}>
+                <colgroup>
+                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '87%' }} />
+                </colgroup>
                 <tbody>
                   <tr>
-                    <th style={{ ...thS, width: 80 }}>지출금액</th>
+                    <th style={thS}>지출금액</th>
                     <td style={{ ...tdS, fontSize: 20, fontWeight: 900, letterSpacing: 1 }}>
                       ₩ {formatNumber(previewModal.amount || 0)}
                     </td>
@@ -1911,16 +1921,23 @@ function AcctApproval({ year }: { year: number }) {
                 </tbody>
               </table>
 
-              {/* ── 결의 문구 ── */}
-              <div style={{ padding: '16px 12px 20px', fontSize: 15, color: '#333', lineHeight: 1.8 }}>
+              {/* ── 결의 문구 (테이블 내용 시작 위치와 정렬) ── */}
+              <div style={{ padding: '16px 0 16px', fontSize: 15, color: '#333', lineHeight: 1.8 }}>
                 상기 금액을 용도에 따라 지출하였음을 결의합니다.
               </div>
 
+              {/* ── 구분선 ── */}
+              <div style={{ borderTop: '1px solid #bbb', marginBottom: 0 }}></div>
+
               {/* ── 비고 (별도 블록) ── */}
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                <colgroup>
+                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '87%' }} />
+                </colgroup>
                 <tbody>
                   <tr>
-                    <th style={{ ...thS, width: 80, verticalAlign: 'top', paddingTop: 12 }}>비&nbsp;&nbsp;&nbsp;고</th>
+                    <th style={{ ...thS, verticalAlign: 'top', paddingTop: 12 }}>비&nbsp;&nbsp;&nbsp;고</th>
                     <td style={{ ...tdS, minHeight: 180, height: 180, whiteSpace: 'pre-wrap', verticalAlign: 'top' }}>
                       {previewModal.description || ''}
                     </td>
