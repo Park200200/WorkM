@@ -1907,7 +1907,7 @@ function AcctApproval({ year }: { year: number }) {
 
               {/* ── 지출금액 + 결의 문구 (하나의 박스) ── */}
               <div style={{ border: '1px solid #bbb', marginTop: 16, marginBottom: 16 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', borderBottom: '1px solid #bbb' }}>
                   <colgroup>
                     <col style={{ width: '13%' }} />
                     <col style={{ width: '87%' }} />
