@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+﻿import { useState, useMemo, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../../components/common/PageHeader'
@@ -246,6 +246,9 @@ interface Approval {
   description?: string
   applicant?: string
   approver?: string
+  expenseDate?: string
+  resolutionDate?: string
+  evidence?: string
 }
 
 interface Voucher {
@@ -1248,7 +1251,7 @@ function AcctBudget({ year }: { year: number }) {
 }
 
 /* ═══════════════════════════════════════════
-   품의 (Approval) — CRUD + 승인 워크플로우
+   품의 (Approval) — 역할별 워크플로우
    ═══════════════════════════════════════════ */
 function AcctApproval({ year }: { year: number }) {
   const [refresh, setRefresh] = useState(0)
@@ -1258,7 +1261,23 @@ function AcctApproval({ year }: { year: number }) {
   const [approveModal, setApproveModal] = useState<Approval | null>(null)
   const [approvePw, setApprovePw] = useState('')
   const [approveForm, setApproveForm] = useState({ title: '', amount: '', accountCode: '', description: '' })
+  const [resolveModal, setResolveModal] = useState<Approval | null>(null)
+  const [resolveForm, setResolveForm] = useState({ expenseDate: '', resolutionDate: new Date().toISOString().slice(0, 10), evidence: '' })
+  const [confirmModal, setConfirmModal] = useState<Approval | null>(null)
+  const [confirmPw, setConfirmPw] = useState('')
   const staffList = useStaffStore(s => s.staff).filter(s => !s.resignedAt)
+
+  /* 로그인 사용자 역할 확인 */
+  const currentUser = (() => {
+    try {
+      const raw = localStorage.getItem('auth_user')
+      if (raw) return JSON.parse(raw)
+    } catch { /* ignore */ }
+    return null
+  })()
+  const myName = currentUser?.name || ''
+  const myStaff = staffList.find(s => s.name === myName)
+  const myRole: string = (myStaff as any)?.approverType || 'requester'
 
   const budgetCats = useMemo(() => getItem<BudgetCat[]>('acct_budget_cats', []).filter(c => c.year === year), [year, refresh])
   const budgetItems = useMemo(() => getItem<BudgetItem[]>('acct_budgets', []).filter(b => b.year === year), [year, refresh])
@@ -1271,20 +1290,45 @@ function AcctApproval({ year }: { year: number }) {
     }).sort((a, b) => (b.createdAt || b.date || '').localeCompare(a.createdAt || a.date || ''))
   }, [year, refresh])
 
+  /* 상태 정의 */
   const statusInfo: Record<string, { label: string; color: string; bg: string }> = {
-    pending: { label: '대기', color: '#f59e0b', bg: 'rgba(245,158,11,.1)' },
+    pending: { label: myRole === 'approver' ? '요청' : '대기', color: '#f59e0b', bg: 'rgba(245,158,11,.1)' },
     approved: { label: '승인', color: '#22c55e', bg: 'rgba(34,197,94,.1)' },
     rejected: { label: '반려', color: '#ef4444', bg: 'rgba(239,68,68,.1)' },
-    expensed: { label: '지출완료', color: '#4f6ef7', bg: 'rgba(79,110,247,.1)' },
-    vouchered: { label: '전표완료', color: '#8b5cf6', bg: 'rgba(139,92,246,.1)' },
+    expensed: { label: '지출', color: '#4f6ef7', bg: 'rgba(79,110,247,.1)' },
+    resolved: { label: '결의', color: '#8b5cf6', bg: 'rgba(139,92,246,.1)' },
+    completed: { label: '완료', color: '#06b6d4', bg: 'rgba(6,182,212,.1)' },
   }
 
-  const counts = {
-    all: approvals.length,
-    pending: approvals.filter(a => a.status === 'pending').length,
-    approved: approvals.filter(a => a.status === 'approved').length,
-    rejected: approvals.filter(a => a.status === 'rejected').length,
-  }
+  /* 역할별 보이는 상태 필터 */
+  const visibleStatuses: string[] =
+    myRole === 'approver' ? ['pending', 'approved', 'rejected', 'expensed', 'resolved', 'completed']
+    : myRole === 'expense' ? ['approved', 'expensed', 'resolved', 'completed']
+    : ['pending', 'approved', 'rejected', 'expensed', 'resolved', 'completed']
+
+  const filteredApprovals = approvals.filter(a => visibleStatuses.includes(a.status))
+
+  /* 통계 카드 */
+  const statCards = myRole === 'approver'
+    ? [
+        { label: '요청', value: approvals.filter(a => a.status === 'pending').length, color: '#f59e0b' },
+        { label: '승인', value: approvals.filter(a => a.status === 'approved').length, color: '#22c55e' },
+        { label: '반려', value: approvals.filter(a => a.status === 'rejected').length, color: '#ef4444' },
+        { label: '전체', value: approvals.length, color: '#4f6ef7' },
+      ]
+    : myRole === 'expense'
+    ? [
+        { label: '승인', value: approvals.filter(a => a.status === 'approved').length, color: '#22c55e' },
+        { label: '지출', value: approvals.filter(a => a.status === 'expensed').length, color: '#4f6ef7' },
+        { label: '결의', value: approvals.filter(a => a.status === 'resolved').length, color: '#8b5cf6' },
+        { label: '완료', value: approvals.filter(a => a.status === 'completed').length, color: '#06b6d4' },
+      ]
+    : [
+        { label: '전체', value: approvals.length, color: '#4f6ef7' },
+        { label: '대기', value: approvals.filter(a => a.status === 'pending').length, color: '#f59e0b' },
+        { label: '승인', value: approvals.filter(a => a.status === 'approved').length, color: '#22c55e' },
+        { label: '반려', value: approvals.filter(a => a.status === 'rejected').length, color: '#ef4444' },
+      ]
 
   const handleAmtInput = (val: string, setter: (v: string) => void) => {
     const digits = val.replace(/[^\d]/g, '')
@@ -1292,7 +1336,7 @@ function AcctApproval({ year }: { year: number }) {
   }
 
   const resetForm = () => {
-    setForm({ title: '', amount: '', date: new Date().toISOString().slice(0, 10), accountCode: '', description: '', applicant: 'admin', approver: '' })
+    setForm({ title: '', amount: '', date: new Date().toISOString().slice(0, 10), accountCode: '', description: '', applicant: myName || 'admin', approver: '' })
     setEditId(null)
   }
 
@@ -1303,7 +1347,7 @@ function AcctApproval({ year }: { year: number }) {
     setForm({
       title: a.title || '', amount: a.amount ? Number(a.amount).toLocaleString('ko-KR') : '',
       date: a.date || new Date().toISOString().slice(0, 10), accountCode: a.accountCode || '',
-      description: a.description || '', applicant: a.applicant || 'admin', approver: a.approver || '',
+      description: a.description || '', applicant: a.applicant || myName || 'admin', approver: a.approver || '',
     })
     setModalOpen(true)
   }
@@ -1338,6 +1382,7 @@ function AcctApproval({ year }: { year: number }) {
     setRefresh(r => r + 1)
   }
 
+  /* 승인/반려 처리 (지출승인자) */
   const openApproveModal = (a: Approval) => {
     setApproveModal(a)
     setApproveForm({
@@ -1369,19 +1414,77 @@ function AcctApproval({ year }: { year: number }) {
     setApproveModal(null); setApprovePw(''); setRefresh(r => r + 1)
   }
 
+  /* 결의서 작성 (품의자) */
+  const openResolveModal = (a: Approval) => {
+    setResolveModal(a)
+    setResolveForm({ expenseDate: a.expenseDate || '', resolutionDate: new Date().toISOString().slice(0, 10), evidence: a.evidence || '' })
+  }
+
+  const handleResolve = () => {
+    if (!resolveModal) return
+    if (!resolveForm.expenseDate) return alert('지출일을 입력해주세요')
+    if (!resolveForm.resolutionDate) return alert('결의일을 입력해주세요')
+    const all = getItem<Approval[]>('acct_approvals', [])
+    const updated = all.map(a => String(a.id) === String(resolveModal.id) ? {
+      ...a, status: 'resolved', expenseDate: resolveForm.expenseDate,
+      resolutionDate: resolveForm.resolutionDate, evidence: resolveForm.evidence,
+    } : a)
+    setItem('acct_approvals', updated)
+    setResolveModal(null); setRefresh(r => r + 1)
+  }
+
+  /* 결의 확인 (지출담당) */
+  const openConfirmModal = (a: Approval) => {
+    setConfirmModal(a)
+    setConfirmPw('')
+  }
+
+  const handleConfirm = () => {
+    if (!confirmPw.trim()) return alert('비밀번호를 입력해주세요')
+    if (!confirmModal) return
+    const all = getItem<Approval[]>('acct_approvals', [])
+    const updated = all.map(a => String(a.id) === String(confirmModal.id) ? { ...a, status: 'completed' } : a)
+    setItem('acct_approvals', updated)
+    setConfirmModal(null); setConfirmPw(''); setRefresh(r => r + 1)
+  }
+
   const inputCls = "w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none"
   const labelCls = "text-[11px] font-bold text-[var(--text-muted)] mb-1 block"
+
+  /* 역할별 관리 아이콘 렌더 */
+  const renderActions = (a: Approval) => {
+    if (myRole === 'requester') {
+      if (a.status === 'pending') return (
+        <>
+          <button onClick={() => openEdit(a)} title="수정" className="p-1 rounded-md bg-primary-50 dark:bg-primary-900/10 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900/20 cursor-pointer transition-colors"><Edit3 size={12} /></button>
+          <button onClick={() => deleteApproval(a.id)} title="삭제" className="p-1 rounded-md bg-[rgba(239,68,68,.06)] text-[#ef4444] hover:bg-[rgba(239,68,68,.15)] cursor-pointer transition-colors"><Trash2 size={12} /></button>
+        </>
+      )
+      if (a.status === 'expensed') return (
+        <button onClick={() => openResolveModal(a)} title="결의서 작성" className="p-1 rounded-md bg-[rgba(139,92,246,.1)] text-[#8b5cf6] hover:bg-[rgba(139,92,246,.2)] cursor-pointer transition-colors"><FileText size={12} /></button>
+      )
+      return null
+    }
+    if (myRole === 'approver') {
+      if (a.status === 'pending') return (
+        <button onClick={() => openApproveModal(a)} title="승인처리" className="p-1 rounded-md bg-[rgba(34,197,94,.1)] text-[#22c55e] hover:bg-[rgba(34,197,94,.2)] cursor-pointer transition-colors"><ShieldCheck size={13} /></button>
+      )
+      return null
+    }
+    if (myRole === 'expense') {
+      if (a.status === 'resolved') return (
+        <button onClick={() => openConfirmModal(a)} title="결의확인" className="p-1 rounded-md bg-[rgba(6,182,212,.1)] text-[#06b6d4] hover:bg-[rgba(6,182,212,.2)] cursor-pointer transition-colors"><Check size={13} /></button>
+      )
+      return null
+    }
+    return null
+  }
 
   return (
     <div className="space-y-4">
       {/* 통계 카드 */}
       <div className="grid grid-cols-4 gap-3">
-        {[
-          { label: '전체', value: counts.all, color: '#4f6ef7' },
-          { label: '대기', value: counts.pending, color: '#f59e0b' },
-          { label: '승인', value: counts.approved, color: '#22c55e' },
-          { label: '반려', value: counts.rejected, color: '#ef4444' },
-        ].map(s => (
+        {statCards.map(s => (
           <div key={s.label} className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-3 text-center">
             <div className="text-xl font-extrabold" style={{ color: s.color }}>{s.value}</div>
             <div className="text-[10px] font-bold text-[var(--text-muted)]">{s.label}</div>
@@ -1395,13 +1498,18 @@ function AcctApproval({ year }: { year: number }) {
           <div className="flex items-center gap-2">
             <FileCheck size={14} className="text-primary-500" />
             <span className="text-sm font-extrabold text-[var(--text-primary)]">품의 목록</span>
+            <span className="text-[10px] font-bold text-[var(--text-muted)] bg-[var(--bg-muted)] px-2 py-0.5 rounded-full">
+              {myRole === 'requester' ? '품의자' : myRole === 'approver' ? '지출승인자' : '지출담당'}
+            </span>
           </div>
-          <button onClick={openAdd} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-500 text-white text-[12px] font-bold hover:bg-primary-600 transition-all cursor-pointer">
-            <Plus size={13} /> 품의 등록
-          </button>
+          {myRole === 'requester' && (
+            <button onClick={openAdd} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-500 text-white text-[12px] font-bold hover:bg-primary-600 transition-all cursor-pointer">
+              <Plus size={13} /> 품의 등록
+            </button>
+          )}
         </div>
-        {approvals.length === 0 ? (
-          <div className="p-6"><EmptyState emoji="📋" title="등록된 품의가 없습니다" /></div>
+        {filteredApprovals.length === 0 ? (
+          <div className="p-6"><EmptyState emoji="📋" title="해당 품의가 없습니다" /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px]">
@@ -1413,7 +1521,7 @@ function AcctApproval({ year }: { year: number }) {
                 </tr>
               </thead>
               <tbody>
-                {approvals.map(a => {
+                {filteredApprovals.map(a => {
                   const si = statusInfo[a.status] || statusInfo.pending
                   return (
                     <tr key={a.id} className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors">
@@ -1429,23 +1537,7 @@ function AcctApproval({ year }: { year: number }) {
                       </td>
                       <td className="py-2.5 px-3">
                         <div className="flex items-center gap-1">
-                          {/* 대기 상태: 수정 + 삭제 */}
-                          {a.status === 'pending' && (
-                            <>
-                              <button onClick={() => openEdit(a)} title="수정" className="p-1 rounded-md bg-primary-50 dark:bg-primary-900/10 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900/20 cursor-pointer transition-colors">
-                                <Edit3 size={12} />
-                              </button>
-                              <button onClick={() => deleteApproval(a.id)} title="삭제" className="p-1 rounded-md bg-[rgba(239,68,68,.06)] text-[#ef4444] hover:bg-[rgba(239,68,68,.15)] cursor-pointer transition-colors">
-                                <Trash2 size={12} />
-                              </button>
-                            </>
-                          )}
-                          {/* 승인자 영역: 승인 아이콘 (대기만) */}
-                          {a.status === 'pending' && (
-                            <button onClick={() => openApproveModal(a)} title="승인처리" className="p-1 rounded-md bg-[rgba(34,197,94,.1)] text-[#22c55e] hover:bg-[rgba(34,197,94,.2)] cursor-pointer transition-colors ml-1">
-                              <ShieldCheck size={13} />
-                            </button>
-                          )}
+                          {renderActions(a)}
                         </div>
                       </td>
                     </tr>
@@ -1506,7 +1598,7 @@ function AcctApproval({ year }: { year: number }) {
                     placeholder="— 선택 —"
                     options={[
                       { value: '', label: '— 선택 —' },
-                      ...staffList.map(s => ({
+                      ...staffList.filter(s => (s as any).approverType === 'approver').map(s => ({
                         value: s.name,
                         label: `${s.name}${s.rank ? ` (${s.rank})` : ''}${s.dept ? ` - ${s.dept}` : ''}`,
                       })),
@@ -1527,7 +1619,7 @@ function AcctApproval({ year }: { year: number }) {
         </div>
       , document.body)}
 
-      {/* 승인 처리 모달 */}
+      {/* 승인 처리 모달 (지출승인자) */}
       {approveModal && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) setApproveModal(null) }}>
           <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md mx-4">
@@ -1539,7 +1631,6 @@ function AcctApproval({ year }: { year: number }) {
               <button onClick={() => setApproveModal(null)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer"><X size={18} /></button>
             </div>
             <div className="p-5 space-y-4">
-              {/* 신청 정보 */}
               <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-muted)] border border-[var(--border-default)]">
                 <div className="flex-1">
                   <div className="text-[10px] text-[var(--text-muted)]">신청자</div>
@@ -1554,7 +1645,6 @@ function AcctApproval({ year }: { year: number }) {
                   <div className="text-[12px] font-bold text-[var(--text-primary)]">{(approveModal.date || '').slice(0, 10)}</div>
                 </div>
               </div>
-
               <div>
                 <label className={labelCls}>품의명</label>
                 <input value={approveForm.title} onChange={e => setApproveForm(f => ({ ...f, title: e.target.value }))} className={inputCls} />
@@ -1586,8 +1676,6 @@ function AcctApproval({ year }: { year: number }) {
                 <label className={labelCls}>사유/메모</label>
                 <textarea value={approveForm.description} onChange={e => setApproveForm(f => ({ ...f, description: e.target.value }))} rows={3} className={`${inputCls} resize-none`} />
               </div>
-
-              {/* 비밀번호 */}
               <div className="border-t border-[var(--border-default)] pt-4">
                 <label className={labelCls}><Lock size={10} className="inline mr-1" />승인 비밀번호 *</label>
                 <input type="password" value={approvePw} onChange={e => setApprovePw(e.target.value)} placeholder="비밀번호를 입력하세요" className={inputCls}
@@ -1598,6 +1686,92 @@ function AcctApproval({ year }: { year: number }) {
               <button onClick={() => setApproveModal(null)} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer">취소</button>
               <button onClick={handleReject} className="px-4 py-2 rounded-lg bg-[#ef4444] text-white text-sm font-bold hover:bg-[#dc2626] cursor-pointer">반려</button>
               <button onClick={handleApprove} className="px-4 py-2 rounded-lg bg-[#22c55e] text-white text-sm font-bold hover:bg-[#16a34a] cursor-pointer flex items-center gap-1"><ShieldCheck size={14} /> 승인</button>
+            </div>
+          </div>
+        </div>
+      , document.body)}
+
+      {/* 결의서 작성 모달 (품의자) */}
+      {resolveModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) setResolveModal(null) }}>
+          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border-default)]">
+              <div className="flex items-center gap-2">
+                <FileText size={16} className="text-[#8b5cf6]" />
+                <span className="text-sm font-extrabold text-[var(--text-primary)]">지출결의서 작성</span>
+              </div>
+              <button onClick={() => setResolveModal(null)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer"><X size={18} /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="p-3 rounded-xl bg-[var(--bg-muted)] border border-[var(--border-default)]">
+                <div className="text-[10px] text-[var(--text-muted)] mb-1">품의 정보</div>
+                <div className="text-[13px] font-bold text-[var(--text-primary)]">{resolveModal.title}</div>
+                <div className="text-[12px] text-primary-500 font-extrabold mt-1">{formatNumber(resolveModal.amount || 0)}원</div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>지출일 *</label>
+                  <DatePicker value={resolveForm.expenseDate} onChange={v => setResolveForm(f => ({ ...f, expenseDate: v }))} placeholder="지출일 선택" />
+                </div>
+                <div>
+                  <label className={labelCls}>결의일 *</label>
+                  <DatePicker value={resolveForm.resolutionDate} onChange={v => setResolveForm(f => ({ ...f, resolutionDate: v }))} placeholder="결의일 선택" />
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>증빙자료 설명</label>
+                <textarea value={resolveForm.evidence} onChange={e => setResolveForm(f => ({ ...f, evidence: e.target.value }))} placeholder="영수증, 세금계산서 등 증빙자료를 기재하세요" rows={3} className={`${inputCls} resize-none`} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-[var(--border-default)]">
+              <button onClick={() => setResolveModal(null)} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer">취소</button>
+              <button onClick={handleResolve} className="px-4 py-2 rounded-lg bg-[#8b5cf6] text-white text-sm font-bold hover:bg-[#7c3aed] cursor-pointer flex items-center gap-1"><FileText size={14} /> 결의서 작성 완료</button>
+            </div>
+          </div>
+        </div>
+      , document.body)}
+
+      {/* 결의 확인 모달 (지출담당) */}
+      {confirmModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) setConfirmModal(null) }}>
+          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border-default)]">
+              <div className="flex items-center gap-2">
+                <Check size={16} className="text-[#06b6d4]" />
+                <span className="text-sm font-extrabold text-[var(--text-primary)]">결의 확인</span>
+              </div>
+              <button onClick={() => setConfirmModal(null)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer"><X size={18} /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="p-3 rounded-xl bg-[var(--bg-muted)] border border-[var(--border-default)]">
+                <div className="text-[13px] font-bold text-[var(--text-primary)]">{confirmModal.title}</div>
+                <div className="text-[12px] text-primary-500 font-extrabold mt-1">{formatNumber(confirmModal.amount || 0)}원</div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-2.5 rounded-lg bg-[var(--bg-muted)]">
+                  <div className="text-[10px] text-[var(--text-muted)]">지출일</div>
+                  <div className="text-[12px] font-bold text-[var(--text-primary)]">{confirmModal.expenseDate || '-'}</div>
+                </div>
+                <div className="p-2.5 rounded-lg bg-[var(--bg-muted)]">
+                  <div className="text-[10px] text-[var(--text-muted)]">결의일</div>
+                  <div className="text-[12px] font-bold text-[var(--text-primary)]">{confirmModal.resolutionDate || '-'}</div>
+                </div>
+              </div>
+              {confirmModal.evidence && (
+                <div className="p-2.5 rounded-lg bg-[var(--bg-muted)]">
+                  <div className="text-[10px] text-[var(--text-muted)] mb-1">증빙자료</div>
+                  <div className="text-[12px] text-[var(--text-primary)]">{confirmModal.evidence}</div>
+                </div>
+              )}
+              <div className="border-t border-[var(--border-default)] pt-4">
+                <label className={labelCls}><Lock size={10} className="inline mr-1" />확인 비밀번호 *</label>
+                <input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="비밀번호를 입력하세요" className={inputCls}
+                  onKeyDown={e => { if (e.key === 'Enter') handleConfirm() }} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-[var(--border-default)]">
+              <button onClick={() => setConfirmModal(null)} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer">취소</button>
+              <button onClick={handleConfirm} className="px-4 py-2 rounded-lg bg-[#06b6d4] text-white text-sm font-bold hover:bg-[#0891b2] cursor-pointer flex items-center gap-1"><Check size={14} /> 확인 완료</button>
             </div>
           </div>
         </div>
