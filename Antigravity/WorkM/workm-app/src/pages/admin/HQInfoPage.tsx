@@ -9,8 +9,8 @@ import { useAuthStore } from '../../stores/authStore'
 import { useToastStore } from '../../stores/toastStore'
 import {
   MapPin, User, Phone, Mail, FileText,
-  Image as ImageIcon, Save, RotateCcw, Upload, X, Paperclip,
-  Clock, Pencil, Briefcase, Smartphone, Monitor, Trash2, Download,
+  Image as ImageIcon, Save, RotateCcw, Upload, X, Paperclip, CreditCard,
+  Clock, Pencil, Briefcase, Smartphone, Monitor, Trash2, Download, Settings,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
@@ -69,6 +69,31 @@ interface AttachmentItem {
   uploadedBy: string
 }
 
+interface SolutionItem {
+  key: string
+  label: string
+  enabled: boolean
+  qty?: number
+}
+
+interface BillingRow {
+  id: number
+  period: string
+  mgmt: string
+  db: string
+  dataCnt: string
+  fee: string
+  total: string
+  status: string
+}
+
+interface PaymentConfig {
+  mgmtFee: string
+  dbFee: string
+  dataUnitPrice: string
+  feeRate: string
+}
+
 function pad(n: number) { return String(n).padStart(2, '0') }
 
 export function HQInfoPage() {
@@ -77,6 +102,24 @@ export function HQInfoPage() {
 
   const [data, setData] = useState<HQData>(() => getItem('ws_hq_info', {}))
   const [attachments, setAttachments] = useState<AttachmentItem[]>(() => getItem('ws_hq_attachments', []))
+  const [solutions, setSolutions] = useState<SolutionItem[]>(() => getItem('ws_hq_solutions', [
+    { key: 'workm', label: '워크엠', enabled: true },
+    { key: 'homepage', label: '홈페이지', enabled: true, qty: 1 },
+    { key: 'fabric', label: '원단공급사', enabled: true },
+    { key: 'mfg', label: '제조공급사', enabled: false },
+    { key: 'dist', label: '유통관리사', enabled: false },
+    { key: 'franchise', label: '가맹대리점', enabled: false },
+    { key: 'food', label: '식재대리점', enabled: false },
+  ]))
+  const [billings, setBillings] = useState<BillingRow[]>(() => getItem('ws_hq_billings', [
+    { id: 1, period: '2026.04.01~', mgmt: '200,000', db: '250,000', dataCnt: '523,221', fee: '617,500', total: '1,590,721', status: '과금중' },
+    { id: 2, period: '2026.03.01-2026.03.31', mgmt: '200,000', db: '250,000', dataCnt: '49,800', fee: '480,000', total: '979,800', status: '청구' },
+    { id: 3, period: '2026.02.01-2026.02.28', mgmt: '200,000', db: '280,000', dataCnt: '52,100', fee: '520,000', total: '1,052,100', status: '납부' },
+    { id: 4, period: '2026.01.01-2026.01.31', mgmt: '200,000', db: '250,000', dataCnt: '48,200', fee: '500,000', total: '998,200', status: '납부' },
+  ]))
+  const [payConfig, setPayConfig] = useState<PaymentConfig>(() => getItem('ws_hq_payconfig', {
+    mgmtFee: '200,000', dbFee: '250,000', dataUnitPrice: '1', feeRate: '5',
+  }))
   const [dirty, setDirty] = useState(false)
   const attachRef = useRef<HTMLInputElement>(null)
 
@@ -526,6 +569,179 @@ export function HQInfoPage() {
         </div>
       </div>
 
+      {/* ── 사용 솔루션 ── */}
+      <div className="mt-4">
+        <Card>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-default)]">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                <Settings size={14} className="text-indigo-500" />
+              </div>
+              <span className="text-sm font-bold text-[var(--text-primary)]">사용 솔루션</span>
+            </div>
+            <span className="text-[12px] font-semibold text-[var(--text-muted)]">
+              {solutions.filter(s => s.enabled).length}개 사용중
+            </span>
+          </div>
+          <div className="p-4">
+            <div className="flex flex-wrap gap-3">
+              {solutions.map(sol => (
+                <div
+                  key={sol.key}
+                  className={cn(
+                    'flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 transition-all min-w-[150px]',
+                    sol.enabled
+                      ? 'border-primary-300 bg-primary-50 dark:bg-primary-900/10'
+                      : 'border-[var(--border-default)] bg-[var(--bg-muted)] opacity-60',
+                  )}
+                >
+                  <span className="text-[13px] font-bold text-[var(--text-primary)] flex-1">{sol.label}</span>
+                  <button
+                    onClick={() => {
+                      const updated = solutions.map(s => s.key === sol.key ? { ...s, enabled: !s.enabled } : s)
+                      setSolutions(updated)
+                      setItem('ws_hq_solutions', updated)
+                    }}
+                    className={cn(
+                      'relative w-11 h-6 rounded-full transition-colors cursor-pointer',
+                      sol.enabled ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-600',
+                    )}
+                  >
+                    <span className={cn(
+                      'absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform',
+                      sol.enabled ? 'left-[22px]' : 'left-0.5',
+                    )} />
+                  </button>
+                  {sol.key === 'homepage' && sol.enabled && (
+                    <div className="flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
+                      <span>수량:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={sol.qty || 1}
+                        onChange={e => {
+                          const updated = solutions.map(s => s.key === 'homepage' ? { ...s, qty: parseInt(e.target.value) || 1 } : s)
+                          setSolutions(updated)
+                          setItem('ws_hq_solutions', updated)
+                        }}
+                        className="w-12 px-1.5 py-0.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-center text-[12px] font-bold text-[var(--text-primary)]"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* ── 결제 정보 + 청구 리스트 ── */}
+      <div className="mt-4">
+        <Card>
+          {/* 헤더 */}
+          <div className="flex items-center justify-between flex-wrap gap-2 px-4 py-3 border-b border-[var(--border-default)]">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <CreditCard size={14} className="text-blue-500" />
+              </div>
+              <span className="text-sm font-bold text-[var(--text-primary)]">결제 정보</span>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap text-[11px] text-[var(--text-muted)]">
+              <span>사용솔루션: <b className="text-primary-500">{solutions.filter(s => s.enabled).map(s => s.label).join(', ')}</b></span>
+              <span>⏳ 과금일자: <b>{billings[0]?.period || '-'}</b></span>
+              <span>📅 총금액: <b className="text-primary-500">{billings[0]?.total || '0'}원</b></span>
+              <button
+                onClick={() => {
+                  const newConfig = prompt('단가수정 (JSON):\n' + JSON.stringify(payConfig, null, 2))
+                  if (newConfig) {
+                    try {
+                      const parsed = JSON.parse(newConfig)
+                      setPayConfig(parsed)
+                      setItem('ws_hq_payconfig', parsed)
+                      addToast('success', '단가가 수정되었습니다.')
+                    } catch { addToast('error', 'JSON 형식 오류') }
+                  }
+                }}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[var(--border-default)] text-[11px] font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer"
+              >
+                <Pencil size={10} /> 단가수정
+              </button>
+            </div>
+          </div>
+
+          {/* 요약 카드 */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4">
+            {[
+              { icon: '💻', label: '월관리비(서버)', value: payConfig.mgmtFee, sub: '기본금액' },
+              { icon: '🗄️', label: 'DB사용료(단가:100M당 1,000원)', value: payConfig.dbFee, sub: '25,000MB' },
+              { icon: '#', label: '자료단가(10건당 ' + payConfig.dataUnitPrice + '원)', value: billings[0]?.dataCnt || '0', sub: (billings[0]?.dataCnt || '0') + '건' },
+              { icon: '%', label: '수수료(' + payConfig.feeRate + '%)', value: billings[0]?.fee || '0', sub: '기간매출:12,350,000원', highlight: true },
+            ].map((c, i) => (
+              <div key={i} className={cn(
+                'rounded-xl p-3.5 border',
+                c.highlight
+                  ? 'bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800'
+                  : 'bg-[var(--bg-muted)] border-[var(--border-default)]',
+              )}>
+                <div className="text-[10.5px] font-semibold text-[var(--text-muted)] mb-1 flex items-center gap-1">
+                  <span>{c.icon}</span> {c.label}
+                </div>
+                <div className={cn(
+                  'text-lg font-extrabold',
+                  c.highlight ? 'text-orange-500' : 'text-[var(--text-primary)]',
+                )}>
+                  {c.value}<span className="text-[13px] font-semibold text-[var(--text-secondary)]">원</span>
+                </div>
+                <div className="text-[10px] text-[var(--text-muted)] mt-0.5">{c.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* 청구 리스트 */}
+          <div className="px-4 pb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[13px] font-bold text-[var(--text-primary)] flex items-center gap-1.5">
+                📋 청구 리스트
+              </span>
+              <span className="text-[11px] text-[var(--text-muted)]">{billings.length}건</span>
+            </div>
+            <div className="overflow-x-auto rounded-xl border border-[var(--border-default)]">
+              <table className="w-full text-[12px]">
+                <thead>
+                  <tr className="bg-[var(--bg-muted)] border-b border-[var(--border-default)]">
+                    {['과금기간','월관리비(서버)','DB사용료','Data사용건수','수수료','총금액','상태'].map(h => (
+                      <th key={h} className="px-3 py-2.5 text-left font-bold text-[var(--text-muted)] whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {billings.map(row => (
+                    <tr key={row.id} className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors">
+                      <td className="px-3 py-2.5 font-semibold text-[var(--text-primary)] whitespace-nowrap">{row.period}</td>
+                      <td className="px-3 py-2.5 text-[var(--text-secondary)]">{row.mgmt}원</td>
+                      <td className="px-3 py-2.5 text-[var(--text-secondary)]">{row.db}원</td>
+                      <td className="px-3 py-2.5 text-[var(--text-secondary)]">{row.dataCnt}원</td>
+                      <td className="px-3 py-2.5 text-[var(--text-secondary)]">{row.fee}원</td>
+                      <td className="px-3 py-2.5 font-extrabold text-[var(--text-primary)]">{row.total}원</td>
+                      <td className="px-3 py-2.5">
+                        <span className={cn(
+                          'px-2 py-0.5 rounded-full text-[10px] font-bold',
+                          row.status === '과금중' ? 'bg-red-100 text-red-500 dark:bg-red-900/20' :
+                          row.status === '청구' ? 'bg-blue-100 text-blue-500 dark:bg-blue-900/20' :
+                          'bg-green-100 text-green-600 dark:bg-green-900/20',
+                        )}>
+                          {row.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </Card>
+      </div>
+
       {/* ── 첨부파일 ── */}
       <div className="mt-4">
         <Card>
@@ -545,54 +761,29 @@ export function HQInfoPage() {
             >
               <Upload size={12} /> 파일 추가
             </button>
-            <input
-              ref={attachRef}
-              type="file"
-              multiple
-              className="hidden"
-              onChange={e => handleAttach(e.target.files)}
-            />
+            <input ref={attachRef} type="file" multiple className="hidden" onChange={e => handleAttach(e.target.files)} />
           </div>
-
           <div className="p-4">
             {attachments.length === 0 ? (
               <div
                 onClick={() => attachRef.current?.click()}
-                className="flex flex-col items-center justify-center py-10 border-2 border-dashed border-[var(--border-default)] rounded-xl cursor-pointer hover:border-emerald-400 transition-colors"
+                className="flex flex-col items-center justify-center py-8 border-2 border-dashed border-[var(--border-default)] rounded-xl cursor-pointer hover:border-emerald-400 transition-colors"
               >
-                <Paperclip size={32} className="text-[var(--text-muted)] mb-2" />
-                <span className="text-[13px] font-semibold text-[var(--text-muted)]">클릭하여 파일을 첨부하세요</span>
-                <span className="text-[11px] text-[var(--text-muted)] mt-1">이미지, PDF, 문서 등 모든 파일 형식 지원</span>
+                <Paperclip size={28} className="text-[var(--text-muted)] mb-2" />
+                <span className="text-[12px] font-semibold text-[var(--text-muted)]">클릭하여 파일을 첨부하세요</span>
               </div>
             ) : (
               <div className="space-y-2">
                 {attachments.map(item => (
-                  <div
-                    key={item.id}
-                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-muted)] hover:border-emerald-300 transition-colors group"
-                  >
+                  <div key={item.id} className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-muted)] hover:border-emerald-300 transition-colors group">
                     <span className="text-lg shrink-0">{getFileIcon(item.type)}</span>
                     <div className="flex-1 min-w-0">
                       <div className="text-[12.5px] font-bold text-[var(--text-primary)] truncate">{item.name}</div>
-                      <div className="text-[10px] text-[var(--text-muted)]">
-                        {item.size} · {item.uploadedAt} · {item.uploadedBy}
-                      </div>
+                      <div className="text-[10px] text-[var(--text-muted)]">{item.size} · {item.uploadedAt} · {item.uploadedBy}</div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => downloadAttach(item)}
-                        className="p-1.5 rounded-lg hover:bg-[var(--bg-surface)] text-[var(--text-muted)] hover:text-emerald-500 transition-colors cursor-pointer"
-                        title="다운로드"
-                      >
-                        <Download size={13} />
-                      </button>
-                      <button
-                        onClick={() => removeAttach(item.id)}
-                        className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-[var(--text-muted)] hover:text-red-500 transition-colors cursor-pointer"
-                        title="삭제"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                      <button onClick={() => downloadAttach(item)} className="p-1.5 rounded-lg hover:bg-[var(--bg-surface)] text-[var(--text-muted)] hover:text-emerald-500 transition-colors cursor-pointer" title="다운로드"><Download size={13} /></button>
+                      <button onClick={() => removeAttach(item.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-[var(--text-muted)] hover:text-red-500 transition-colors cursor-pointer" title="삭제"><Trash2 size={13} /></button>
                     </div>
                   </div>
                 ))}
