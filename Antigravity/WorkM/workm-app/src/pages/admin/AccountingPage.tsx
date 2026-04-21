@@ -1869,84 +1869,78 @@ function AcctApproval({ year }: { year: number }) {
                 </table>
               </div>
 
-              {/* ── 본문 정보 테이블 (좌우 테두리 포함) ── */}
-              <div style={{ border: '1px solid #bbb', borderBottom: 'none', marginBottom: 0 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-                  <colgroup>
-                    <col style={{ width: '13%' }} />
-                    <col style={{ width: '37%' }} />
-                    <col style={{ width: '13%' }} />
-                    <col style={{ width: '37%' }} />
-                  </colgroup>
-                  <tbody>
-                    <tr>
-                      <th style={{ ...thS, borderLeft: 'none', borderTop: 'none' }}>품의일자</th>
-                      <td style={{ ...tdS, borderTop: 'none' }}>{(previewModal.date || previewModal.createdAt || '').slice(0, 10)}</td>
-                      <th style={{ ...thS, borderTop: 'none' }}>계정과목</th>
-                      <td style={{ ...tdS, borderTop: 'none', borderRight: 'none' }}>{previewModal.accountCode || ''}</td>
-                    </tr>
-                    <tr>
-                      <th style={{ ...thS, borderLeft: 'none' }}>지출일자</th>
-                      <td style={tdS}>{previewModal.expenseDate || ''}</td>
-                      <th style={thS}>증빙구분</th>
-                      <td style={{ ...tdS, borderRight: 'none' }}>{previewModal.evidence || ''}</td>
-                    </tr>
-                    <tr>
-                      <th style={{ ...thS, borderLeft: 'none' }}>결제일자</th>
-                      <td style={tdS}>{previewModal.resolutionDate || ''}</td>
-                      <th style={thS}>거 래 처</th>
-                      <td style={{ ...tdS, borderRight: 'none' }}></td>
-                    </tr>
-                    <tr>
-                      <th style={{ ...thS, borderLeft: 'none', borderBottom: 'none' }}>물 품 명</th>
-                      <td style={{ ...tdS, borderBottom: 'none' }}>{previewModal.title || ''}</td>
-                      <th style={{ ...thS, borderBottom: 'none' }}>용&nbsp;&nbsp;&nbsp;도</th>
-                      <td style={{ ...tdS, borderBottom: 'none', borderRight: 'none' }}>{previewModal.description || ''}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              {/* ── 본문 정보 테이블 ── */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', marginBottom: 0 }}>
+                <colgroup>
+                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '37%' }} />
+                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '37%' }} />
+                </colgroup>
+                <tbody>
+                  <tr>
+                    <th style={thS}>품의일자</th>
+                    <td style={tdS}>{(previewModal.date || previewModal.createdAt || '').slice(0, 10)}</td>
+                    <th style={thS}>계정과목</th>
+                    <td style={tdS}>{previewModal.accountCode || ''}</td>
+                  </tr>
+                  <tr>
+                    <th style={thS}>지출일자</th>
+                    <td style={tdS}>{previewModal.expenseDate || ''}</td>
+                    <th style={thS}>증빙구분</th>
+                    <td style={tdS}>{previewModal.evidence || ''}</td>
+                  </tr>
+                  <tr>
+                    <th style={thS}>결제일자</th>
+                    <td style={tdS}>{previewModal.resolutionDate || ''}</td>
+                    <th style={thS}>거 래 처</th>
+                    <td style={tdS}></td>
+                  </tr>
+                  <tr>
+                    <th style={thS}>물 품 명</th>
+                    <td style={tdS}>{previewModal.title || ''}</td>
+                    <th style={thS}>용&nbsp;&nbsp;&nbsp;도</th>
+                    <td style={tdS}>{previewModal.description || ''}</td>
+                  </tr>
+                </tbody>
+              </table>
 
-              {/* ── 지출금액 (별도 블록) ── */}
-              <div style={{ border: '1px solid #bbb', marginTop: 16, marginBottom: 0 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-                  <colgroup>
-                    <col style={{ width: '13%' }} />
-                    <col style={{ width: '87%' }} />
-                  </colgroup>
-                  <tbody>
-                    <tr>
-                      <th style={{ ...thS, borderLeft: 'none', borderTop: 'none', borderBottom: 'none' }}>지출금액</th>
-                      <td style={{ ...tdS, borderTop: 'none', borderBottom: 'none', borderRight: 'none', fontSize: 20, fontWeight: 900, letterSpacing: 1 }}>
-                        ₩ {formatNumber(previewModal.amount || 0)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              {/* ── 지출금액 ── */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', marginTop: 16, marginBottom: 0 }}>
+                <colgroup>
+                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '87%' }} />
+                </colgroup>
+                <tbody>
+                  <tr>
+                    <th style={thS}>지출금액</th>
+                    <td style={{ ...tdS, fontSize: 20, fontWeight: 900, letterSpacing: 1 }}>
+                      ₩ {formatNumber(previewModal.amount || 0)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
 
-              {/* ── 결의 문구 ("용도에 따라"의 용 위치에서 시작 ≒ 50% 지점) ── */}
+              {/* ── 결의 문구 ── */}
               <div style={{ padding: '16px 0 16px', fontSize: 14, color: '#333', lineHeight: 1.8, marginLeft: '13%' }}>
                 상기 금액을 용도에 따라 지출하였음을 결의합니다.
               </div>
 
               {/* ── 비고 (맨 아래까지 확장) ── */}
-              <div style={{ border: '1px solid #bbb', flex: 1, minHeight: 180 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', height: '100%' }}>
-                  <colgroup>
-                    <col style={{ width: '13%' }} />
-                    <col style={{ width: '87%' }} />
-                  </colgroup>
-                  <tbody>
-                    <tr>
-                      <th style={{ ...thS, verticalAlign: 'top', paddingTop: 12, borderLeft: 'none', borderTop: 'none', borderBottom: 'none', height: '100%' }}>비&nbsp;&nbsp;&nbsp;고</th>
-                      <td style={{ ...tdS, whiteSpace: 'pre-wrap', verticalAlign: 'top', borderTop: 'none', borderBottom: 'none', borderRight: 'none', height: '100%' }}>
-                        {previewModal.description || ''}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', flex: 1 }}>
+                <colgroup>
+                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '87%' }} />
+                </colgroup>
+                <tbody>
+                  <tr>
+                    <th style={{ ...thS, verticalAlign: 'top', paddingTop: 12, height: '100%' }}>비&nbsp;&nbsp;&nbsp;고</th>
+                    <td style={{ ...tdS, whiteSpace: 'pre-wrap', verticalAlign: 'top', height: '100%', minHeight: 180 }}>
+                      {previewModal.description || ''}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
             {/* 하단 버튼 */}
