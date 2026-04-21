@@ -608,7 +608,7 @@ export function HQInfoPage() {
                     )}
                   >
                     <span className={cn(
-                      'absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform',
+                      'absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white rounded-full shadow transition-transform',
                       sol.enabled ? 'left-[22px]' : 'left-0.5',
                     )} />
                   </button>
