@@ -742,56 +742,6 @@ export function HQInfoPage() {
         </Card>
       </div>
 
-      {/* ── 첨부파일 ── */}
-      <div className="mt-4">
-        <Card>
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-default)]">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <Paperclip size={14} className="text-emerald-500" />
-              </div>
-              <span className="text-sm font-bold text-[var(--text-primary)]">첨부파일</span>
-              <span className="text-[11px] font-bold text-[var(--text-muted)] bg-[var(--bg-muted)] px-2 py-0.5 rounded-full">
-                {attachments.length}개
-              </span>
-            </div>
-            <button
-              onClick={() => attachRef.current?.click()}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500 text-white text-[12px] font-bold hover:bg-emerald-600 transition-colors cursor-pointer"
-            >
-              <Upload size={12} /> 파일 추가
-            </button>
-            <input ref={attachRef} type="file" multiple className="hidden" onChange={e => handleAttach(e.target.files)} />
-          </div>
-          <div className="p-4">
-            {attachments.length === 0 ? (
-              <div
-                onClick={() => attachRef.current?.click()}
-                className="flex flex-col items-center justify-center py-8 border-2 border-dashed border-[var(--border-default)] rounded-xl cursor-pointer hover:border-emerald-400 transition-colors"
-              >
-                <Paperclip size={28} className="text-[var(--text-muted)] mb-2" />
-                <span className="text-[12px] font-semibold text-[var(--text-muted)]">클릭하여 파일을 첨부하세요</span>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {attachments.map(item => (
-                  <div key={item.id} className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-muted)] hover:border-emerald-300 transition-colors group">
-                    <span className="text-lg shrink-0">{getFileIcon(item.type)}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[12.5px] font-bold text-[var(--text-primary)] truncate">{item.name}</div>
-                      <div className="text-[10px] text-[var(--text-muted)]">{item.size} · {item.uploadedAt} · {item.uploadedBy}</div>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => downloadAttach(item)} className="p-1.5 rounded-lg hover:bg-[var(--bg-surface)] text-[var(--text-muted)] hover:text-emerald-500 transition-colors cursor-pointer" title="다운로드"><Download size={13} /></button>
-                      <button onClick={() => removeAttach(item.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-[var(--text-muted)] hover:text-red-500 transition-colors cursor-pointer" title="삭제"><Trash2 size={13} /></button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </Card>
-      </div>
     </div>
   )
 }
