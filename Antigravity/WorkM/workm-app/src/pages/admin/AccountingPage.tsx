@@ -2334,6 +2334,7 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
 
       <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* 1. 지출내용(예산목록) */}
           <div>
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">
               {type === 'income' ? '입금 내용' : '지출내용(예산목록)'} *
@@ -2383,10 +2384,28 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
               <input value={form.desc} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))} placeholder="예) 4월 매출" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
             )}
           </div>
+          {/* 2. 계정과목 */}
+          <div>
+            <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">계정과목</label>
+            <CustomSelect
+              value={form.accountCode}
+              onChange={v => setForm(f => ({ ...f, accountCode: v }))}
+              placeholder="— 계정과목 선택 —"
+              options={[
+                { value: '', label: '— 계정과목 선택 —' },
+                ...(() => {
+                  const accts: { code: string; name: string; type: string }[] = getItem('acct_accounts', [])
+                  return accts.filter(a => type === 'income' ? a.type === 'revenue' : a.type === 'expense').map(a => ({ value: a.code, label: `${a.code} - ${a.name}` }))
+                })()
+              ]}
+            />
+          </div>
+          {/* 3. 금액 */}
           <div>
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">금액 (원) *</label>
             <input value={form.amount} onChange={e => handleAmtInput(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm font-bold text-right focus:border-primary-500 outline-none" style={{ color: typeColors[type] }} />
           </div>
+          {/* 4. 거래처 */}
           <div ref={counterRef} className="relative">
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">거래처</label>
             <input
@@ -2412,6 +2431,7 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
               </div>
             )}
           </div>
+          {/* 5. 지출수단 */}
           <div>
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'income' ? '입금' : '지출'}수단</label>
             <CustomSelect
@@ -2420,30 +2440,15 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
               options={methods.map(m => ({ value: m, label: m }))}
             />
           </div>
-          <div>
-            <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">계정과목</label>
-            <CustomSelect
-              value={form.accountCode}
-              onChange={v => setForm(f => ({ ...f, accountCode: v }))}
-              placeholder="— 계정과목 선택 —"
-              options={[
-                { value: '', label: '— 계정과목 선택 —' },
-                ...(() => {
-                  const accts: { code: string; name: string; type: string }[] = getItem('acct_accounts', [])
-                  return accts.filter(a => type === 'income' ? a.type === 'revenue' : a.type === 'expense').map(a => ({ value: a.code, label: `${a.code} - ${a.name}` }))
-                })()
-              ]}
-            />
-          </div>
-          {type !== 'expense' && (
-          <div>
-            <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">전표작성일자</label>
-            <DatePicker value={form.writeDate} onChange={v => setForm(f => ({ ...f, writeDate: v }))} />
-          </div>
-          )}
+          {/* 6. 실제거래일자 */}
           <div>
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">실제거래일자</label>
             <DatePicker value={form.tradeDate} onChange={v => setForm(f => ({ ...f, tradeDate: v }))} />
+          </div>
+          {/* 7. 지출등록일자 (전표작성일자) */}
+          <div>
+            <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">지출등록일자</label>
+            <DatePicker value={form.writeDate} onChange={v => setForm(f => ({ ...f, writeDate: v }))} />
           </div>
         </div>
         <div className="flex justify-end">
