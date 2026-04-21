@@ -1305,6 +1305,10 @@ function AcctApproval({ year }: { year: number }) {
 
   const filteredApprovals = approvals.filter(a => {
     if (!visibleStatuses.includes(a.status)) return false
+    // 지출담당: 본인 품의 + 결의 상태(resolved) 전체 표시
+    if (myRole === 'expense' && myName) {
+      return a.applicant === myName || ['resolved'].includes(a.status)
+    }
     // 모든 역할: 본인이 신청자 또는 승인자인 품의만 표시
     if (myName) return a.approver === myName || a.applicant === myName
     return true
@@ -1451,12 +1455,27 @@ function AcctApproval({ year }: { year: number }) {
   }
 
   const handleConfirm = () => {
-    if (!confirmPw.trim()) return alert('비밀번호를 입력해주세요')
     if (!confirmModal) return
     const all = getItem<Approval[]>('acct_approvals', [])
     const updated = all.map(a => String(a.id) === String(confirmModal.id) ? { ...a, status: 'completed' } : a)
     setItem('acct_approvals', updated)
     setConfirmModal(null); setConfirmPw(''); setRefresh(r => r + 1)
+  }
+
+  /* 다시작성 (지출담당 → resolved를 expensed로 되돌리기) */
+  const handleRewrite = (id: string | number) => {
+    const all = getItem<Approval[]>('acct_approvals', [])
+    const updated = all.map(a => String(a.id) === String(id) ? { ...a, status: 'expensed', attachments: [], evidence: '' } : a)
+    setItem('acct_approvals', updated)
+    setPreviewModal(null); setRefresh(r => r + 1)
+  }
+
+  /* 확인완료 (지출담당 → resolved를 completed로) */
+  const handleComplete = (id: string | number) => {
+    const all = getItem<Approval[]>('acct_approvals', [])
+    const updated = all.map(a => String(a.id) === String(id) ? { ...a, status: 'completed' } : a)
+    setItem('acct_approvals', updated)
+    setPreviewModal(null); setRefresh(r => r + 1)
   }
 
   const inputCls = "w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none"
@@ -1507,13 +1526,10 @@ function AcctApproval({ year }: { year: number }) {
       )
       return previewBtn(a)
     }
-    /* 지출담당: resolved이면 결의확인, 그 외 미리보기 */
+    /* 지출담당: resolved이면 미리보기(지출결의서), 그 외 미리보기 */
     if (myRole === 'expense') {
       if (a.status === 'resolved') return (
-        <>
-          {previewBtn(a)}
-          <button onClick={() => openConfirmModal(a)} title="결의확인" className="p-1 rounded-md bg-[rgba(6,182,212,.1)] text-[#06b6d4] hover:bg-[rgba(6,182,212,.2)] cursor-pointer transition-colors"><Check size={13} /></button>
-        </>
+        <button onClick={() => setPreviewModal(a)} title="지출결의서 보기" className="p-1.5 rounded-md bg-[rgba(100,116,139,.08)] text-[#64748b] hover:bg-[rgba(100,116,139,.18)] cursor-pointer transition-colors"><Settings2 size={14} /></button>
       )
       return previewBtn(a)
     }
@@ -1881,7 +1897,7 @@ function AcctApproval({ year }: { year: number }) {
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-200">
               <div className="flex items-center gap-2">
                 <Eye size={16} className="text-[#4f6ef7]" />
-                <span className="text-sm font-extrabold text-gray-900">지출품의서 미리보기</span>
+                <span className="text-sm font-extrabold text-gray-900">{previewModal.status === 'resolved' ? '지출결의서 미리보기' : '지출품의서 미리보기'}</span>
               </div>
               <div className="flex items-center gap-1">
                 <button onClick={() => {
@@ -1917,7 +1933,7 @@ function AcctApproval({ year }: { year: number }) {
               <div style={{ display: 'flex', alignItems: 'center', marginBottom: 0 }}>
                 {/* 좌측: 제목 */}
                 <div style={{ flex: 1, textAlign: 'center' }}>
-                  <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: 16, color: '#222', whiteSpace: 'nowrap', display: 'inline-block' }}>지 출 품 의 서</div>
+                  <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: 16, color: '#222', whiteSpace: 'nowrap', display: 'inline-block' }}>{previewModal.status === 'resolved' ? '지 출 결 의 서' : '지 출 품 의 서'}</div>
                 </div>
                 {/* 우측: 결재란 */}
                 <table style={{ width: 220, borderCollapse: 'collapse', flexShrink: 0 }}>
@@ -2020,11 +2036,35 @@ function AcctApproval({ year }: { year: number }) {
                   </tr>
                 </tbody>
               </table>
+
+              {/* 첨부파일 표시 (결의 상태일 때) */}
+              {previewModal.status === 'resolved' && (previewModal as any).attachments?.length > 0 && (
+                <div style={{ marginTop: 8, padding: '10px 14px', border: '1px solid #bbb' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#333', marginBottom: 6 }}>■ 첨부파일</div>
+                  {((previewModal as any).attachments as { name: string; data: string; desc: string }[]).map((att, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', borderBottom: i < (previewModal as any).attachments.length - 1 ? '1px dashed #ddd' : 'none' }}>
+                      <span style={{ fontSize: 12, color: '#4f6ef7', fontWeight: 700 }}>{i + 1}.</span>
+                      <span style={{ fontSize: 12, color: '#222', fontWeight: 600 }}>{att.name}</span>
+                      {att.desc && <span style={{ fontSize: 11, color: '#888' }}>- {att.desc}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* 하단 버튼 */}
-            <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-gray-200" style={{ flexShrink: 0 }}>
-              <button onClick={() => setPreviewModal(null)} className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-50 cursor-pointer">닫기</button>
+            <div className="flex justify-between px-5 py-3.5 border-t border-gray-200" style={{ flexShrink: 0 }}>
+              <div>
+                {previewModal.status === 'resolved' && myRole === 'expense' && (
+                  <button onClick={() => handleRewrite(previewModal.id)} className="px-4 py-2 rounded-lg bg-[#f59e0b] text-white text-sm font-bold hover:bg-[#d97706] cursor-pointer">다시작성</button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setPreviewModal(null)} className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-50 cursor-pointer">취소</button>
+                {previewModal.status === 'resolved' && myRole === 'expense' && (
+                  <button onClick={() => handleComplete(previewModal.id)} className="px-4 py-2 rounded-lg bg-[#22c55e] text-white text-sm font-bold hover:bg-[#16a34a] cursor-pointer flex items-center gap-1"><Check size={14} /> 확인완료</button>
+                )}
+              </div>
             </div>
           </div>
         </div>
