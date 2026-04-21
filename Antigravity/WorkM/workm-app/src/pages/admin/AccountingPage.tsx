@@ -18,7 +18,7 @@ import {
   BookOpen, PieChart, ScrollText, Settings2, ContactRound, Building2,
   TrendingDown, TrendingUp, Banknote, Clock,
   Plus, Edit3, Trash2, Save, X, Check, Ban,
-  Search, MoreVertical, Upload, User, Phone, Mail, IdCard, FileText, Lock, ShieldCheck,
+  Search, MoreVertical, Upload, User, Phone, Mail, IdCard, FileText, Lock, ShieldCheck, Eye, Printer,
 } from 'lucide-react'
 
 /* ─── 회계 시드 데이터 초기화 ── */
@@ -1266,6 +1266,7 @@ function AcctApproval({ year }: { year: number }) {
   const [resolveForm, setResolveForm] = useState({ expenseDate: '', resolutionDate: new Date().toISOString().slice(0, 10), evidence: '' })
   const [confirmModal, setConfirmModal] = useState<Approval | null>(null)
   const [confirmPw, setConfirmPw] = useState('')
+  const [previewModal, setPreviewModal] = useState<Approval | null>(null)
   const staffList = useStaffStore(s => s.staff).filter(s => !s.resignedAt)
 
   /* 로그인 사용자 역할 확인 */
@@ -1451,33 +1452,48 @@ function AcctApproval({ year }: { year: number }) {
   const inputCls = "w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none"
   const labelCls = "text-[11px] font-bold text-[var(--text-muted)] mb-1 block"
 
+  /* 미리보기 버튼 (공통) */
+  const previewBtn = (a: Approval) => (
+    <button onClick={() => setPreviewModal(a)} title="미리보기" className="p-1 rounded-md bg-[rgba(79,110,247,.08)] text-[#4f6ef7] hover:bg-[rgba(79,110,247,.18)] cursor-pointer transition-colors"><Eye size={12} /></button>
+  )
+
   /* 역할별 관리 아이콘 렌더 */
   const renderActions = (a: Approval) => {
     if (myRole === 'requester') {
       if (a.status === 'pending') return (
         <>
+          {previewBtn(a)}
           <button onClick={() => openEdit(a)} title="수정" className="p-1 rounded-md bg-primary-50 dark:bg-primary-900/10 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900/20 cursor-pointer transition-colors"><Edit3 size={12} /></button>
           <button onClick={() => deleteApproval(a.id)} title="삭제" className="p-1 rounded-md bg-[rgba(239,68,68,.06)] text-[#ef4444] hover:bg-[rgba(239,68,68,.15)] cursor-pointer transition-colors"><Trash2 size={12} /></button>
         </>
       )
       if (a.status === 'expensed') return (
-        <button onClick={() => openResolveModal(a)} title="결의서 작성" className="p-1 rounded-md bg-[rgba(139,92,246,.1)] text-[#8b5cf6] hover:bg-[rgba(139,92,246,.2)] cursor-pointer transition-colors"><FileText size={12} /></button>
+        <>
+          {previewBtn(a)}
+          <button onClick={() => openResolveModal(a)} title="결의서 작성" className="p-1 rounded-md bg-[rgba(139,92,246,.1)] text-[#8b5cf6] hover:bg-[rgba(139,92,246,.2)] cursor-pointer transition-colors"><FileText size={12} /></button>
+        </>
       )
-      return null
+      return previewBtn(a)
     }
     if (myRole === 'approver') {
       if (a.status === 'pending') return (
-        <button onClick={() => openApproveModal(a)} title="승인처리" className="p-1 rounded-md bg-[rgba(34,197,94,.1)] text-[#22c55e] hover:bg-[rgba(34,197,94,.2)] cursor-pointer transition-colors"><ShieldCheck size={13} /></button>
+        <>
+          {previewBtn(a)}
+          <button onClick={() => openApproveModal(a)} title="승인처리" className="p-1 rounded-md bg-[rgba(34,197,94,.1)] text-[#22c55e] hover:bg-[rgba(34,197,94,.2)] cursor-pointer transition-colors"><ShieldCheck size={13} /></button>
+        </>
       )
-      return null
+      return previewBtn(a)
     }
     if (myRole === 'expense') {
       if (a.status === 'resolved') return (
-        <button onClick={() => openConfirmModal(a)} title="결의확인" className="p-1 rounded-md bg-[rgba(6,182,212,.1)] text-[#06b6d4] hover:bg-[rgba(6,182,212,.2)] cursor-pointer transition-colors"><Check size={13} /></button>
+        <>
+          {previewBtn(a)}
+          <button onClick={() => openConfirmModal(a)} title="결의확인" className="p-1 rounded-md bg-[rgba(6,182,212,.1)] text-[#06b6d4] hover:bg-[rgba(6,182,212,.2)] cursor-pointer transition-colors"><Check size={13} /></button>
+        </>
       )
-      return null
+      return previewBtn(a)
     }
-    return null
+    return previewBtn(a)
   }
 
   return (
@@ -1772,6 +1788,141 @@ function AcctApproval({ year }: { year: number }) {
             <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-[var(--border-default)]">
               <button onClick={() => setConfirmModal(null)} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer">취소</button>
               <button onClick={handleConfirm} className="px-4 py-2 rounded-lg bg-[#06b6d4] text-white text-sm font-bold hover:bg-[#0891b2] cursor-pointer flex items-center gap-1"><Check size={14} /> 확인 완료</button>
+            </div>
+          </div>
+        </div>
+      , document.body)}
+
+      {/* 품의서 미리보기 모달 */}
+      {previewModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) setPreviewModal(null) }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            {/* 헤더 */}
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <Eye size={16} className="text-[#4f6ef7]" />
+                <span className="text-sm font-extrabold text-gray-900">품의서 미리보기</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button onClick={() => {
+                  const el = document.getElementById('approval-preview-content')
+                  if (!el) return
+                  const w = window.open('', '_blank', 'width=700,height=900')
+                  if (!w) return
+                  w.document.write(`<html><head><title>품의서</title><style>
+                    body{font-family:'Malgun Gothic',sans-serif;padding:40px;color:#111;font-size:13px}
+                    .title{text-align:center;font-size:22px;font-weight:800;margin-bottom:24px;letter-spacing:4px}
+                    table{width:100%;border-collapse:collapse;margin-bottom:16px}
+                    th,td{border:1px solid #999;padding:8px 12px;text-align:left}
+                    th{background:#f3f4f6;font-weight:700;width:90px;font-size:12px;color:#555}
+                    td{font-size:13px}
+                    .amount{text-align:right;font-weight:800;font-size:15px}
+                    .status-bar{display:flex;gap:6px;margin-top:8px}
+                    .badge{padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700}
+                    .footer{margin-top:40px;display:flex;justify-content:space-between}
+                    .sign-box{text-align:center;width:120px}
+                    .sign-box .label{font-size:11px;color:#888;margin-bottom:4px}
+                    .sign-box .name{font-size:14px;font-weight:700;border-top:1px solid #333;padding-top:8px;margin-top:30px}
+                    @media print{body{padding:20px}}
+                  </style></head><body>${el.innerHTML}</body></html>`)
+                  w.document.close()
+                  w.print()
+                }} title="인쇄" className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500 cursor-pointer transition-colors"><Printer size={15} /></button>
+                <button onClick={() => setPreviewModal(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer"><X size={18} /></button>
+              </div>
+            </div>
+
+            {/* 품의서 본문 */}
+            <div id="approval-preview-content" className="p-6">
+              <div style={{ textAlign: 'center', fontSize: 22, fontWeight: 800, letterSpacing: 4, marginBottom: 20, color: '#111' }}>
+                품 의 서
+              </div>
+
+              {/* 결재란 */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16 }}>
+                <tbody>
+                  <tr>
+                    <th style={{ border: '1px solid #ccc', padding: '6px 10px', background: '#f3f4f6', fontSize: 11, fontWeight: 700, color: '#555', width: 70, textAlign: 'center' }}>신청자</th>
+                    <td style={{ border: '1px solid #ccc', padding: '6px 10px', fontSize: 13, textAlign: 'center', width: 100 }}>{previewModal.applicant || '-'}</td>
+                    <th style={{ border: '1px solid #ccc', padding: '6px 10px', background: '#f3f4f6', fontSize: 11, fontWeight: 700, color: '#555', width: 70, textAlign: 'center' }}>승인자</th>
+                    <td style={{ border: '1px solid #ccc', padding: '6px 10px', fontSize: 13, textAlign: 'center', width: 100 }}>{previewModal.approver || '-'}</td>
+                    <th style={{ border: '1px solid #ccc', padding: '6px 10px', background: '#f3f4f6', fontSize: 11, fontWeight: 700, color: '#555', width: 70, textAlign: 'center' }}>상태</th>
+                    <td style={{ border: '1px solid #ccc', padding: '6px 10px', fontSize: 12, textAlign: 'center', fontWeight: 700, color: (statusInfo[previewModal.status] || statusInfo.pending).color }}>
+                      {(statusInfo[previewModal.status] || statusInfo.pending).label}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* 상세 정보 */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16 }}>
+                <tbody>
+                  <tr>
+                    <th style={{ border: '1px solid #ccc', padding: '8px 12px', background: '#f3f4f6', fontSize: 11, fontWeight: 700, color: '#555', width: 90 }}>품의명</th>
+                    <td colSpan={3} style={{ border: '1px solid #ccc', padding: '8px 12px', fontSize: 13, fontWeight: 700 }}>{previewModal.title || '-'}</td>
+                  </tr>
+                  <tr>
+                    <th style={{ border: '1px solid #ccc', padding: '8px 12px', background: '#f3f4f6', fontSize: 11, fontWeight: 700, color: '#555', width: 90 }}>품의일자</th>
+                    <td style={{ border: '1px solid #ccc', padding: '8px 12px', fontSize: 13 }}>{(previewModal.date || previewModal.createdAt || '').slice(0, 10)}</td>
+                    <th style={{ border: '1px solid #ccc', padding: '8px 12px', background: '#f3f4f6', fontSize: 11, fontWeight: 700, color: '#555', width: 90 }}>예산과목</th>
+                    <td style={{ border: '1px solid #ccc', padding: '8px 12px', fontSize: 13 }}>{previewModal.accountCode || '-'}</td>
+                  </tr>
+                  <tr>
+                    <th style={{ border: '1px solid #ccc', padding: '8px 12px', background: '#f3f4f6', fontSize: 11, fontWeight: 700, color: '#555', width: 90 }}>금액</th>
+                    <td colSpan={3} style={{ border: '1px solid #ccc', padding: '8px 12px', fontSize: 16, fontWeight: 800, textAlign: 'right', color: '#4f6ef7' }}>
+                      {formatNumber(previewModal.amount || 0)}원
+                    </td>
+                  </tr>
+                  <tr>
+                    <th style={{ border: '1px solid #ccc', padding: '8px 12px', background: '#f3f4f6', fontSize: 11, fontWeight: 700, color: '#555', width: 90, verticalAlign: 'top' }}>사유/메모</th>
+                    <td colSpan={3} style={{ border: '1px solid #ccc', padding: '8px 12px', fontSize: 13, minHeight: 60, whiteSpace: 'pre-wrap' }}>
+                      {previewModal.description || '-'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* 결의 정보 (있을 경우) */}
+              {(previewModal.expenseDate || previewModal.resolutionDate || previewModal.evidence) && (
+                <>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#555', marginBottom: 8, marginTop: 16 }}>▶ 지출결의 정보</div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16 }}>
+                    <tbody>
+                      <tr>
+                        <th style={{ border: '1px solid #ccc', padding: '8px 12px', background: '#f3f4f6', fontSize: 11, fontWeight: 700, color: '#555', width: 90 }}>지출일</th>
+                        <td style={{ border: '1px solid #ccc', padding: '8px 12px', fontSize: 13 }}>{previewModal.expenseDate || '-'}</td>
+                        <th style={{ border: '1px solid #ccc', padding: '8px 12px', background: '#f3f4f6', fontSize: 11, fontWeight: 700, color: '#555', width: 90 }}>결의일</th>
+                        <td style={{ border: '1px solid #ccc', padding: '8px 12px', fontSize: 13 }}>{previewModal.resolutionDate || '-'}</td>
+                      </tr>
+                      {previewModal.evidence && (
+                        <tr>
+                          <th style={{ border: '1px solid #ccc', padding: '8px 12px', background: '#f3f4f6', fontSize: 11, fontWeight: 700, color: '#555', width: 90, verticalAlign: 'top' }}>증빙자료</th>
+                          <td colSpan={3} style={{ border: '1px solid #ccc', padding: '8px 12px', fontSize: 13, whiteSpace: 'pre-wrap' }}>{previewModal.evidence}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </>
+              )}
+
+              {/* 서명란 */}
+              <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: 40, paddingTop: 16 }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>신 청 자</div>
+                  <div style={{ width: 100, height: 40, border: '1px solid #ddd', borderRadius: 4, marginBottom: 4 }}></div>
+                  <div style={{ fontSize: 13, fontWeight: 700, borderTop: '1px solid #333', paddingTop: 6, width: 100 }}>{previewModal.applicant || '-'}</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>승 인 자</div>
+                  <div style={{ width: 100, height: 40, border: '1px solid #ddd', borderRadius: 4, marginBottom: 4 }}></div>
+                  <div style={{ fontSize: 13, fontWeight: 700, borderTop: '1px solid #333', paddingTop: 6, width: 100 }}>{previewModal.approver || '-'}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* 하단 버튼 */}
+            <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-gray-200">
+              <button onClick={() => setPreviewModal(null)} className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-50 cursor-pointer">닫기</button>
             </div>
           </div>
         </div>
