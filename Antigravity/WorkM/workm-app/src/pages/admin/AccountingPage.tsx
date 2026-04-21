@@ -1500,10 +1500,10 @@ function AcctApproval({ year }: { year: number }) {
           </button>
         )
       }
-      if (a.status === 'expensed') {
-        /* 지출: 설정 아이콘 → 지출결의 UI */
+      if (a.status === 'expensed' || a.status === 'resolved') {
+        /* 지출/결의: 설정 아이콘 → 지출결의 수정 UI */
         return (
-          <button onClick={() => openResolveModal(a)} title="지출결의 작성" className="p-1.5 rounded-md bg-[rgba(100,116,139,.08)] text-[#64748b] hover:bg-[rgba(100,116,139,.18)] cursor-pointer transition-colors">
+          <button onClick={() => openResolveModal(a)} title="지출결의 작성/수정" className="p-1.5 rounded-md bg-[rgba(100,116,139,.08)] text-[#64748b] hover:bg-[rgba(100,116,139,.18)] cursor-pointer transition-colors">
             <Settings2 size={14} />
           </button>
         )
