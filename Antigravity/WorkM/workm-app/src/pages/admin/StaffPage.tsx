@@ -370,9 +370,9 @@ export function StaffPage() {
             </div>
           </div>
 
-          {/* ── 섹션: 품의서 결재 설정 ── */}
+          {/* ── 섹션: 지출담당 설정 ── */}
           <div>
-            <div className="text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">품의서 결재 설정</div>
+            <div className="text-[12px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2">지출담당 설정</div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1.5">승인자 구분</label>
@@ -383,7 +383,7 @@ export function StaffPage() {
                     className={`flex-1 h-[38px] border text-[12px] font-bold transition-all cursor-pointer ${form.approverType === 'requester' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600' : 'border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-secondary)]'}`}
                     style={{ borderRadius: 'var(--radius-sm)' }}
                   >
-                    품의자
+                    지출담당
                   </button>
                   <button
                     type="button"
@@ -391,7 +391,7 @@ export function StaffPage() {
                     className={`flex-1 h-[38px] border text-[12px] font-bold transition-all cursor-pointer ${form.approverType === 'approver' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600' : 'border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-secondary)]'}`}
                     style={{ borderRadius: 'var(--radius-sm)' }}
                   >
-                    승인자
+                    지출승인
                   </button>
                 </div>
               </div>

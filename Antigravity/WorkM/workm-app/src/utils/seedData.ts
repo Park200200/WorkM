@@ -3,17 +3,18 @@
    ══════════════════════════════════════════════ */
 import { getItem, setItem } from './storage'
 
-const SEED_VERSION = 'v5'
+const SEED_VERSION = 'v6'
 
 export function seedIfEmpty() {
   const prevVersion = getItem<string>('ws_seed_version', '')
   // 이미 시드된 경우 스킵
   if (prevVersion === SEED_VERSION) return
 
-  // 버전 업그레이드 시 사원·부서 데이터 강제 갱신
+  // 버전 업그레이드 시 사원·부서·업무 데이터 강제 갱신
   if (prevVersion && prevVersion !== SEED_VERSION) {
     localStorage.removeItem('ws_users')
     localStorage.removeItem('ws_departments')
+    localStorage.removeItem('ws_tasks')
   }
 
   // ── 부서 ──
@@ -196,6 +197,13 @@ export function seedIfEmpty() {
       { id: 4003, title: '고객사 견적서 발송', assignerId: 5, assigneeIds: [1], status: 'waiting', priority: 'high', progress: 0, dueDate: today, createdAt: dOff(-2), team: '마케팅팀', importance: 'high' },
       { id: 4004, title: 'CI/CD 파이프라인 테스트', assignerId: 1, assigneeIds: [3], status: 'progress', priority: 'medium', progress: 90, dueDate: today, createdAt: dOff(-5), startedAt: dOff(-3), team: '개발팀', importance: 'medium' },
       { id: 4005, title: '월간 KPI 데이터 수집', status: 'progress', priority: 'low', progress: 60, dueDate: today, createdAt: dOff(-3), startedAt: dOff(-1), isSchedule: true, importance: 'low' },
+      { id: 4006, title: '거래처 계약서 검토', assignerId: 6, assigneeIds: [1], status: 'progress', priority: 'high', progress: 40, dueDate: today, createdAt: dOff(-3), startedAt: dOff(-1), team: '영업팀', importance: 'high' },
+      { id: 4007, title: '사내 교육자료 업데이트', status: 'waiting', priority: 'medium', progress: 0, dueDate: today, createdAt: dOff(-2), isSchedule: true, importance: 'medium' },
+      { id: 1006, title: '신규 기능 QA 테스트', assignerId: 1, assigneeIds: [8], status: 'progress', priority: 'high', progress: 55, dueDate: dOff(6), createdAt: dOff(-4), startedAt: dOff(-2), isImportant: true, team: '개발팀', importance: 'high' },
+      { id: 1007, title: '홈페이지 리뉴얼 기획', assignerId: 1, assigneeIds: [7], status: 'waiting', priority: 'medium', progress: 0, dueDate: dOff(14), createdAt: dOff(-1), team: '기획팀', importance: 'medium' },
+      { id: 2006, title: '프로모션 이벤트 기획안 작성', assignerId: 6, assigneeIds: [1], status: 'progress', priority: 'medium', progress: 35, dueDate: dOff(4), createdAt: dOff(-5), startedAt: dOff(-3), team: '영업팀', importance: 'medium' },
+      { id: 2007, title: '분기 매출 보고서 작성', assignerId: 4, assigneeIds: [1], status: 'waiting', priority: 'high', progress: 0, dueDate: dOff(9), createdAt: dOff(-2), team: '경영지원팀', importance: 'high' },
+      { id: 3006, title: '신기술 트렌드 리서치', status: 'progress', priority: 'medium', progress: 30, dueDate: dOff(12), createdAt: dOff(-6), startedAt: dOff(-4), isSchedule: true, importance: 'medium' },
     ])
   }
 
