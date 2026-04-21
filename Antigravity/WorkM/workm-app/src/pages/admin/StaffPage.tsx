@@ -376,23 +376,22 @@ export function StaffPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] block mb-1.5">승인자 구분</label>
-                <div className="flex gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setForm({ ...form, approverType: 'requester' })}
-                    className={`flex-1 h-[38px] border text-[12px] font-bold transition-all cursor-pointer ${form.approverType === 'requester' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600' : 'border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-secondary)]'}`}
-                    style={{ borderRadius: 'var(--radius-sm)' }}
-                  >
-                    지출담당
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setForm({ ...form, approverType: 'approver' })}
-                    className={`flex-1 h-[38px] border text-[12px] font-bold transition-all cursor-pointer ${form.approverType === 'approver' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600' : 'border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-secondary)]'}`}
-                    style={{ borderRadius: 'var(--radius-sm)' }}
-                  >
-                    지출승인
-                  </button>
+                <div className="flex gap-1">
+                  {[
+                    { value: 'requester', label: '품의담당' },
+                    { value: 'expense', label: '지출담당' },
+                    { value: 'approver', label: '지출승인' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setForm({ ...form, approverType: opt.value })}
+                      className={`flex-1 h-[38px] border text-[11px] font-bold transition-all cursor-pointer ${form.approverType === opt.value ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600' : 'border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-secondary)]'}`}
+                      style={{ borderRadius: 'var(--radius-sm)' }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
               </div>
               <div>
