@@ -1573,11 +1573,9 @@ function AcctApproval({ year }: { year: number }) {
               {myRole === 'requester' ? '품의자' : myRole === 'approver' ? '지출승인자' : '지출담당'}
             </span>
           </div>
-          {myRole === 'requester' && (
-            <button onClick={openAdd} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-500 text-white text-[12px] font-bold hover:bg-primary-600 transition-all cursor-pointer">
+          <button onClick={openAdd} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-500 text-white text-[12px] font-bold hover:bg-primary-600 transition-all cursor-pointer">
               <Plus size={13} /> 품의 등록
             </button>
-          )}
         </div>
         {filteredApprovals.length === 0 ? (
           <div className="p-6"><EmptyState emoji="📋" title="해당 품의가 없습니다" /></div>
