@@ -38,6 +38,7 @@ interface TaskItem {
   isSchedule?: boolean
   team?: string
   importance?: string
+  collaboratorIds?: number[]
   history?: Array<{ date: string; event: string; detail: string; icon?: string; color?: string }>
 }
 
@@ -830,7 +831,7 @@ function TaskTable({
   const headers =
     type === 'byMe'
       ? ['업무명', '담당(수신)자', '상태', '진행률', '마감일', '중요도']
-      : ['업무명', '지시(기획)자', '상태', '진행률', '마감일', '업무중요도']
+      : ['업무명', '업무협조자', '상태', '진행률', '마감일', '업무중요도']
 
   return (
     <>
@@ -841,7 +842,7 @@ function TaskTable({
           const barColor = t.status === 'done' ? '#22c55e' : t.status === 'delay' ? '#ef4444' : '#4f6ef7'
           const ids = type === 'byMe'
             ? (Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []))
-            : [t.assignerId || 0]
+            : (Array.isArray(t.collaboratorIds) && t.collaboratorIds.length > 0 ? t.collaboratorIds : [t.assignerId || 0])
           const personUser = getUser(ids[0])
           const instrRecord = instrList.find((i: Record<string, unknown>) =>
             i.id === t.id || i.id === Number(t.id) || i.taskId === String(t.id)
@@ -952,7 +953,7 @@ function TaskTable({
             // 지시/수신자
             const ids = type === 'byMe'
               ? (Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : []))
-              : [t.assignerId || 0]
+              : (Array.isArray(t.collaboratorIds) && t.collaboratorIds.length > 0 ? t.collaboratorIds : [t.assignerId || 0])
             const personUser = getUser(ids[0])
 
             // 중요도
