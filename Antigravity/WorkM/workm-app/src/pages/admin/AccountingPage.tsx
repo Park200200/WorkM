@@ -1263,7 +1263,7 @@ function AcctApproval({ year }: { year: number }) {
   const [approvePw, setApprovePw] = useState('')
   const [approveForm, setApproveForm] = useState({ title: '', amount: '', accountCode: '', description: '' })
   const [resolveModal, setResolveModal] = useState<Approval | null>(null)
-  const [resolveForm, setResolveForm] = useState<{ expenseDate: string; resolutionDate: string; evidence: string; attachments: { name: string; data: string; desc: string }[] }>({ expenseDate: '', resolutionDate: new Date().toISOString().slice(0, 10), evidence: '', attachments: [] })
+  const [resolveForm, setResolveForm] = useState<{ expenseDate: string; resolutionDate: string; evidence: string; attachments: { name: string; data: string; desc: string; width?: number }[] }>({ expenseDate: '', resolutionDate: new Date().toISOString().slice(0, 10), evidence: '', attachments: [] })
   const resolveFileRef = useRef<HTMLInputElement>(null)
   const [confirmModal, setConfirmModal] = useState<Approval | null>(null)
   const [confirmPw, setConfirmPw] = useState('')
@@ -1429,7 +1429,7 @@ function AcctApproval({ year }: { year: number }) {
   const handleResolveFileAdd = (file: File) => {
     const reader = new FileReader()
     reader.onload = (e) => {
-      setResolveForm(f => ({ ...f, attachments: [...f.attachments, { name: file.name, data: e.target?.result as string, desc: '' }] }))
+      setResolveForm(f => ({ ...f, attachments: [...f.attachments, { name: file.name, data: e.target?.result as string, desc: '', width: 50 }] }))
     }
     reader.readAsDataURL(file)
   }
@@ -1796,16 +1796,31 @@ function AcctApproval({ year }: { year: number }) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[11px] font-bold text-[var(--text-primary)] truncate">{att.name}</div>
-                        <input
-                          value={att.desc}
-                          onChange={e => {
-                            const newAtts = [...resolveForm.attachments]
-                            newAtts[idx] = { ...newAtts[idx], desc: e.target.value }
-                            setResolveForm(f => ({ ...f, attachments: newAtts }))
-                          }}
-                          placeholder="파일 설명 입력"
-                          className="w-full text-[11px] mt-0.5 px-1.5 py-1 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-secondary)] outline-none focus:border-primary-500"
-                        />
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <input
+                            value={att.desc}
+                            onChange={e => {
+                              const newAtts = [...resolveForm.attachments]
+                              newAtts[idx] = { ...newAtts[idx], desc: e.target.value }
+                              setResolveForm(f => ({ ...f, attachments: newAtts }))
+                            }}
+                            placeholder="파일 설명 입력"
+                            className="flex-1 text-[11px] px-1.5 py-1 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-secondary)] outline-none focus:border-primary-500"
+                          />
+                          <div className="flex items-center gap-0.5 flex-shrink-0">
+                            <input
+                              type="number" min={10} max={100} step={10}
+                              value={att.width || 50}
+                              onChange={e => {
+                                const newAtts = [...resolveForm.attachments]
+                                newAtts[idx] = { ...newAtts[idx], width: Math.min(100, Math.max(10, parseInt(e.target.value) || 50)) }
+                                setResolveForm(f => ({ ...f, attachments: newAtts }))
+                              }}
+                              className="w-[42px] text-[11px] px-1 py-1 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-center text-[var(--text-secondary)] outline-none focus:border-primary-500"
+                            />
+                            <span className="text-[10px] text-[var(--text-muted)] font-bold">%</span>
+                          </div>
+                        </div>
                       </div>
                       <button onClick={() => setResolveForm(f => ({ ...f, attachments: f.attachments.filter((_, i) => i !== idx) }))} className="flex-shrink-0 p-1 rounded-md hover:bg-[rgba(239,68,68,.1)] text-[var(--text-muted)] hover:text-[#ef4444] cursor-pointer transition-colors"><X size={14} /></button>
                     </div>
@@ -1914,9 +1929,12 @@ function AcctApproval({ year }: { year: number }) {
                     th,td{border:1px solid #bbb;padding:9px 14px}
                     th{background:#edf1f8;font-weight:700;color:#333;letter-spacing:2px;white-space:nowrap}
                     table[data-role="note"]{flex:1}
+                    img{page-break-inside:avoid}
+                    div[style*="pageBreakInside"]{page-break-inside:avoid;break-inside:avoid}
                     @media print{
-                      .a4-wrap{min-height:100vh;padding:15mm}
+                      .a4-wrap{min-height:auto;padding:15mm}
                       @page{margin:0;size:A4 portrait}
+                      img{page-break-inside:avoid;break-inside:avoid}
                     }
                   </style></head><body><div class="a4-wrap">${el.innerHTML}</div></body></html>`)
                   w.document.close()
@@ -2041,10 +2059,11 @@ function AcctApproval({ year }: { year: number }) {
               {['resolved','completed'].includes(previewModal.status) && (previewModal as any).attachments?.length > 0 && (
                 <div style={{ marginTop: 8, border: '1px solid #bbb' }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: '#333', padding: '8px 14px', background: '#edf1f8', borderBottom: '1px solid #bbb' }}>■ 첨부 증빙서류</div>
-                  {((previewModal as any).attachments as { name: string; data: string; desc: string }[]).map((att, i) => {
+                  {((previewModal as any).attachments as { name: string; data: string; desc: string; width?: number }[]).map((att, i) => {
                     const isImage = att.data?.startsWith('data:image')
+                    const w = att.width || 50
                     return (
-                      <div key={i} style={{ padding: '12px 14px', borderBottom: i < (previewModal as any).attachments.length - 1 ? '1px solid #ddd' : 'none' }}>
+                      <div key={i} style={{ padding: '12px 14px', borderBottom: i < (previewModal as any).attachments.length - 1 ? '1px solid #ddd' : 'none', pageBreakInside: 'avoid' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: isImage ? 8 : 0 }}>
                           <span style={{ fontSize: 11, color: '#4f6ef7', fontWeight: 700 }}>[{i + 1}]</span>
                           <span style={{ fontSize: 12, color: '#222', fontWeight: 600 }}>{att.name}</span>
@@ -2052,7 +2071,7 @@ function AcctApproval({ year }: { year: number }) {
                         </div>
                         {isImage && (
                           <div style={{ textAlign: 'center', background: '#fafafa', borderRadius: 4, padding: 8, border: '1px solid #eee' }}>
-                            <img src={att.data} alt={att.name} style={{ maxWidth: '100%', maxHeight: 360, objectFit: 'contain', borderRadius: 2 }} />
+                            <img src={att.data} alt={att.name} style={{ width: `${w}%`, maxWidth: '100%', objectFit: 'contain', borderRadius: 2 }} />
                           </div>
                         )}
                       </div>
