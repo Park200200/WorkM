@@ -664,14 +664,9 @@ export function HQInfoPage() {
                   )}
                 >
                   <span className="text-[13px] font-bold text-[var(--text-primary)] flex-1">{sol.label}</span>
-                  <button
-                    onClick={() => {
-                      const updated = solutions.map(s => s.key === sol.key ? { ...s, enabled: !s.enabled } : s)
-                      setSolutions(updated)
-                      setItem('ws_hq_solutions', updated)
-                    }}
+                  <div
                     className={cn(
-                      'relative w-11 h-6 rounded-full transition-colors cursor-pointer',
+                      'relative w-11 h-6 rounded-full transition-colors',
                       sol.enabled ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-600',
                     )}
                   >
@@ -679,21 +674,13 @@ export function HQInfoPage() {
                       'absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white rounded-full shadow transition-transform',
                       sol.enabled ? 'left-[22px]' : 'left-0.5',
                     )} />
-                  </button>
+                  </div>
                   {sol.key === 'homepage' && sol.enabled && (
                     <div className="flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
                       <span>수량:</span>
-                      <input
-                        type="number"
-                        min={1}
-                        value={sol.qty || 1}
-                        onChange={e => {
-                          const updated = solutions.map(s => s.key === 'homepage' ? { ...s, qty: parseInt(e.target.value) || 1 } : s)
-                          setSolutions(updated)
-                          setItem('ws_hq_solutions', updated)
-                        }}
-                        className="w-12 px-1.5 py-0.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-center text-[12px] font-bold text-[var(--text-primary)]"
-                      />
+                      <span className="w-12 px-1.5 py-0.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-center text-[12px] font-bold text-[var(--text-primary)]">
+                        {sol.qty || 1}
+                      </span>
                     </div>
                   )}
                 </div>
