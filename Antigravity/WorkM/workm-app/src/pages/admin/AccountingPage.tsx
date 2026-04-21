@@ -1803,7 +1803,7 @@ function AcctApproval({ year }: { year: number }) {
         const tdS: React.CSSProperties = { border: '1px solid #bbb', padding: '9px 14px', fontSize: 13, color: '#222', verticalAlign: 'middle' }
         return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) setPreviewModal(null) }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[620px] mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[794px] mx-4 max-h-[90vh] overflow-y-auto" style={{ aspectRatio: '210/297' }}>
             {/* 헤더 바 */}
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-200">
               <div className="flex items-center gap-2">
@@ -1814,7 +1814,7 @@ function AcctApproval({ year }: { year: number }) {
                 <button onClick={() => {
                   const el = document.getElementById('approval-preview-content')
                   if (!el) return
-                  const w = window.open('', '_blank', 'width=700,height=950')
+                  const w = window.open('', '_blank', 'width=794,height=1123')
                   if (!w) return
                   w.document.write(`<html><head><title>지출품의서 - ${previewModal.title}</title><style>
                     *{margin:0;padding:0;box-sizing:border-box}
@@ -1832,7 +1832,7 @@ function AcctApproval({ year }: { year: number }) {
             </div>
 
             {/* === 지출품의서 본문 === */}
-            <div id="approval-preview-content" style={{ padding: '36px 32px', background: '#fff' }}>
+            <div id="approval-preview-content" style={{ padding: '50px 60px', background: '#fff', minHeight: 'calc(100% - 52px)' }}>
 
               {/* ── 결재란 (우측 상단) ── */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
@@ -1865,8 +1865,8 @@ function AcctApproval({ year }: { year: number }) {
               </div>
 
               {/* ── 문서 제목 ── */}
-              <div style={{ textAlign: 'center', marginBottom: 32, marginTop: 8 }}>
-                <div style={{ fontSize: 30, fontWeight: 900, letterSpacing: 24, color: '#222' }}>지 출 품 의 서</div>
+              <div style={{ textAlign: 'center', marginBottom: 36, marginTop: 12 }}>
+                <div style={{ fontSize: 32, fontWeight: 900, letterSpacing: 20, color: '#222', whiteSpace: 'nowrap' }}>지 출 품 의 서</div>
               </div>
 
               {/* ── 본문 정보 테이블 ── */}
