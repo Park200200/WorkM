@@ -1897,7 +1897,7 @@ function AcctApproval({ year }: { year: number }) {
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-200">
               <div className="flex items-center gap-2">
                 <Eye size={16} className="text-[#4f6ef7]" />
-                <span className="text-sm font-extrabold text-gray-900">{previewModal.status === 'resolved' ? '지출결의서 미리보기' : '지출품의서 미리보기'}</span>
+                <span className="text-sm font-extrabold text-gray-900">{['resolved','completed'].includes(previewModal.status) ? '지출결의서 미리보기' : '지출품의서 미리보기'}</span>
               </div>
               <div className="flex items-center gap-1">
                 <button onClick={() => {
@@ -1933,7 +1933,7 @@ function AcctApproval({ year }: { year: number }) {
               <div style={{ display: 'flex', alignItems: 'center', marginBottom: 0 }}>
                 {/* 좌측: 제목 */}
                 <div style={{ flex: 1, textAlign: 'center' }}>
-                  <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: 16, color: '#222', whiteSpace: 'nowrap', display: 'inline-block' }}>{previewModal.status === 'resolved' ? '지 출 결 의 서' : '지 출 품 의 서'}</div>
+                  <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: 16, color: '#222', whiteSpace: 'nowrap', display: 'inline-block' }}>{['resolved','completed'].includes(previewModal.status) ? '지 출 결 의 서' : '지 출 품 의 서'}</div>
                 </div>
                 {/* 우측: 결재란 */}
                 <table style={{ width: 220, borderCollapse: 'collapse', flexShrink: 0 }}>
@@ -2038,7 +2038,7 @@ function AcctApproval({ year }: { year: number }) {
               </table>
 
               {/* 첨부파일 표시 (결의 상태일 때) */}
-              {previewModal.status === 'resolved' && (previewModal as any).attachments?.length > 0 && (
+              {['resolved','completed'].includes(previewModal.status) && (previewModal as any).attachments?.length > 0 && (
                 <div style={{ marginTop: 8, border: '1px solid #bbb' }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: '#333', padding: '8px 14px', background: '#edf1f8', borderBottom: '1px solid #bbb' }}>■ 첨부 증빙서류</div>
                   {((previewModal as any).attachments as { name: string; data: string; desc: string }[]).map((att, i) => {
