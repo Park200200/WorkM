@@ -234,6 +234,7 @@ interface CashFlow {
   accountCode?: string
   counter?: string
   writeDate?: string
+  memo?: string
 }
 
 interface Approval {
@@ -2150,7 +2151,7 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
   const typeGrads = { expense: 'from-[#ef4444] to-[#dc2626]', income: 'from-[#22c55e] to-[#16a34a]', withdrawal: 'from-[#f59e0b] to-[#d97706]' }
 
   const today = new Date().toISOString().slice(0, 10)
-  const [form, setForm] = useState({ desc: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, accountCode: '' })
+  const [form, setForm] = useState({ desc: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, accountCode: '', memo: '' })
   const [counterSearch, setCounterSearch] = useState('')
   const [showCounterList, setShowCounterList] = useState(false)
   const counterRef = useRef<HTMLDivElement>(null)
@@ -2235,11 +2236,11 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
     cfs.push({
       id: cfId, date: form.tradeDate, type: type === 'withdrawal' ? 'expense' : type,
       amount: amt, description: form.desc, accountCode: form.accountCode || (type === 'income' ? '4030' : '5110'),
-      counter: form.counter, writeDate: form.writeDate,
+      counter: form.counter, writeDate: form.writeDate, memo: form.memo,
     })
     setItem('acct_cashflows', cfs)
 
-    setForm({ desc: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, accountCode: '' })
+    setForm({ desc: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, accountCode: '', memo: '' })
     setCounterSearch('')
     setRefresh(r => r + 1)
   }
@@ -2395,8 +2396,10 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
               options={[
                 { value: '', label: '— 계정과목 선택 —' },
                 ...(() => {
+                  const budgetItems: { accountCode?: string }[] = getItem('acct_budgets', [])
+                  const budgetCodes = Array.from(new Set(budgetItems.map(b => b.accountCode).filter(Boolean))) as string[]
                   const accts: { code: string; name: string; type: string }[] = getItem('acct_accounts', [])
-                  return accts.filter(a => type === 'income' ? a.type === 'revenue' : a.type === 'expense').map(a => ({ value: a.code, label: `${a.code} - ${a.name}` }))
+                  return accts.filter(a => budgetCodes.includes(a.code)).map(a => ({ value: a.code, label: `${a.code} - ${a.name}` }))
                 })()
               ]}
             />
@@ -2450,6 +2453,11 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
           <div>
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">지출등록일자</label>
             <DatePicker value={form.writeDate} onChange={v => setForm(f => ({ ...f, writeDate: v }))} />
+          </div>
+          {/* 8. 비고 */}
+          <div className="md:col-span-2">
+            <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">비고</label>
+            <input value={form.memo} onChange={e => setForm(f => ({ ...f, memo: e.target.value }))} placeholder="참고 사항을 입력하세요" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
           </div>
         </div>
         <div className="flex justify-end">
@@ -2516,6 +2524,7 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
                 { label: '거래처', value: detailModal.counter || '-' },
                 { label: '실제거래일자', value: detailModal.date || '-' },
                 { label: '지출등록일자', value: detailModal.writeDate || '-' },
+                { label: '비고', value: (detailModal as any).memo || '-' },
               ].map((row, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <span className="text-[11px] font-bold text-[var(--text-muted)] w-[90px] shrink-0">{row.label}</span>
