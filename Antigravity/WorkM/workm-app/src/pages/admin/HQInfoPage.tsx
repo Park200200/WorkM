@@ -100,7 +100,32 @@ export function HQInfoPage() {
   const user = useAuthStore(s => s.user)
   const addToast = useToastStore(s => s.add)
 
-  const [data, setData] = useState<HQData>(() => getItem('ws_hq_info', {}))
+  // ── 본사정보 초기 로드 (거래처 연동) ──
+  const [data, setData] = useState<HQData>(() => {
+    const stored = getItem<HQData>('ws_hq_info', {})
+    // ws_hq_info가 비어있으면 거래처 id=1에서 가져오기
+    if (!stored.company) {
+      try {
+        const vendors = getItem<any[]>('acct_hq_vendors', [])
+        const hqV = vendors.find((v: any) => v.id === 1)
+        if (hqV?.companyName) {
+          const synced: HQData = {
+            company: hqV.companyName, ceo: hqV.ceoName, ceoPhone: hqV.ceoPhone,
+            bizNo: hqV.bizNo, bizPhone: hqV.bizPhone, bizType: hqV.bizType,
+            bizItem: hqV.bizCategory, taxEmail: hqV.taxEmail,
+            zip: hqV.zipCode, addr1: hqV.address1, addr2: hqV.address2,
+            mgrName: hqV.managerName, mgrTitle: hqV.managerTitle,
+            mgrMobile: hqV.managerPhone, mgrId: hqV.managerId,
+            mgrPw: hqV.managerPw, mgrPhoto: hqV.managerPhoto,
+            bizDocImg: hqV.bizCertPhoto, mainImg: hqV.companyPhoto,
+          }
+          setItem('ws_hq_info', synced)
+          return synced
+        }
+      } catch { /* ignore */ }
+    }
+    return stored
+  })
   const [attachments, setAttachments] = useState<AttachmentItem[]>(() => getItem('ws_hq_attachments', []))
   const [solutions, setSolutions] = useState<SolutionItem[]>(() => getItem('ws_hq_solutions', [
     { key: 'workm', label: '워크엠', enabled: true },
