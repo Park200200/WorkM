@@ -2056,29 +2056,31 @@ function AcctApproval({ year }: { year: number }) {
               </table>
 
               {/* 첨부파일 표시 (결의 상태일 때) */}
-              {['resolved','completed'].includes(previewModal.status) && (previewModal as any).attachments?.length > 0 && (
-                <div style={{ marginTop: 8, border: '1px solid #bbb' }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#333', padding: '8px 14px', background: '#edf1f8', borderBottom: '1px solid #bbb' }}>■ 첨부 증빙서류</div>
-                  {((previewModal as any).attachments as { name: string; data: string; desc: string; width?: number }[]).map((att, i) => {
-                    const isImage = att.data?.startsWith('data:image')
-                    const w = att.width || 50
-                    return (
-                      <div key={i} style={{ padding: '12px 14px', borderBottom: i < (previewModal as any).attachments.length - 1 ? '1px solid #ddd' : 'none', pageBreakInside: 'avoid' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: isImage ? 8 : 0 }}>
-                          <span style={{ fontSize: 11, color: '#4f6ef7', fontWeight: 700 }}>[{i + 1}]</span>
-                          <span style={{ fontSize: 12, color: '#222', fontWeight: 600 }}>{att.name}</span>
-                          {att.desc && <span style={{ fontSize: 11, color: '#888' }}>— {att.desc}</span>}
-                        </div>
-                        {isImage && (
-                          <div style={{ textAlign: 'center', background: '#fafafa', borderRadius: 4, padding: 8, border: '1px solid #eee' }}>
-                            <img src={att.data} alt={att.name} style={{ width: `${w}%`, maxWidth: '100%', objectFit: 'contain', borderRadius: 2 }} />
+              {['resolved','completed'].includes(previewModal.status) && (previewModal as any).attachments?.length > 0 && (() => {
+                const atts = (previewModal as any).attachments as { name: string; data: string; desc: string; width?: number }[]
+                return (
+                  <div style={{ marginTop: 8, border: '1px solid #bbb', pageBreakInside: 'auto' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#333', padding: '8px 14px', background: '#edf1f8', borderBottom: '1px solid #bbb' }}>■ 첨부 증빙서류</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', padding: '8px 10px', gap: 8, alignItems: 'flex-start' }}>
+                      {atts.map((att, i) => {
+                        const isImage = att.data?.startsWith('data:image')
+                        const w = att.width || 50
+                        return (
+                          <div key={i} style={{ width: `calc(${w}% - 8px)`, minWidth: 60, pageBreakInside: 'avoid', breakInside: 'avoid' as any }}>
+                            <div style={{ fontSize: 10, color: '#4f6ef7', fontWeight: 700, marginBottom: 2 }}>[{i + 1}] <span style={{ color: '#222', fontWeight: 600 }}>{att.name}</span></div>
+                            {att.desc && <div style={{ fontSize: 10, color: '#888', marginBottom: 4 }}>{att.desc}</div>}
+                            {isImage && (
+                              <div style={{ background: '#fafafa', borderRadius: 4, padding: 4, border: '1px solid #eee', textAlign: 'center' }}>
+                                <img src={att.data} alt={att.name} style={{ width: '100%', objectFit: 'contain', borderRadius: 2 }} />
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
 
             {/* 하단 버튼 */}
