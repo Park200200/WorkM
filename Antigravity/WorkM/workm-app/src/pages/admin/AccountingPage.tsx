@@ -1308,10 +1308,8 @@ function AcctApproval({ year }: { year: number }) {
 
   const filteredApprovals = approvals.filter(a => {
     if (!visibleStatuses.includes(a.status)) return false
-    if (myRole === 'approver') {
-      // 본인이 승인자로 지정된 품의 OR 본인이 신청한 품의만 표시
-      return a.approver === myName || a.applicant === myName
-    }
+    // 모든 역할: 본인이 신청자 또는 승인자인 품의만 표시
+    if (myName) return a.approver === myName || a.applicant === myName
     return true
   })
 
@@ -1325,16 +1323,16 @@ function AcctApproval({ year }: { year: number }) {
       ]
     : myRole === 'expense'
     ? [
-        { label: '승인', value: approvals.filter(a => a.status === 'approved').length, color: '#22c55e' },
-        { label: '지출', value: approvals.filter(a => a.status === 'expensed').length, color: '#4f6ef7' },
-        { label: '결의', value: approvals.filter(a => a.status === 'resolved').length, color: '#8b5cf6' },
-        { label: '완료', value: approvals.filter(a => a.status === 'completed').length, color: '#06b6d4' },
+        { label: '승인', value: filteredApprovals.filter(a => a.status === 'approved').length, color: '#22c55e' },
+        { label: '지출', value: filteredApprovals.filter(a => a.status === 'expensed').length, color: '#4f6ef7' },
+        { label: '결의', value: filteredApprovals.filter(a => a.status === 'resolved').length, color: '#8b5cf6' },
+        { label: '완료', value: filteredApprovals.filter(a => a.status === 'completed').length, color: '#06b6d4' },
       ]
     : [
-        { label: '전체', value: approvals.length, color: '#4f6ef7' },
-        { label: '대기', value: approvals.filter(a => a.status === 'pending').length, color: '#f59e0b' },
-        { label: '승인', value: approvals.filter(a => a.status === 'approved').length, color: '#22c55e' },
-        { label: '반려', value: approvals.filter(a => a.status === 'rejected').length, color: '#ef4444' },
+        { label: '전체', value: filteredApprovals.length, color: '#4f6ef7' },
+        { label: '대기', value: filteredApprovals.filter(a => a.status === 'pending').length, color: '#f59e0b' },
+        { label: '승인', value: filteredApprovals.filter(a => a.status === 'approved').length, color: '#22c55e' },
+        { label: '반려', value: filteredApprovals.filter(a => a.status === 'rejected').length, color: '#ef4444' },
       ]
 
   const handleAmtInput = (val: string, setter: (v: string) => void) => {
