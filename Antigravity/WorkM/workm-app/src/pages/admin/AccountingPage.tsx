@@ -924,6 +924,21 @@ function AcctBudget({ year }: { year: number }) {
                       <span className="text-[var(--text-secondary)]">{catBudgets.length}건</span>
                       <span className="font-bold">{formatNumber(amt)}원</span>
                     </div>
+                    {/* 계정과목별 예산 요약 */}
+                    {isActive && catBudgets.length > 0 && (
+                      <div className="mb-2 space-y-0.5">
+                        {catBudgets.slice(0, 5).map((cb, ci) => {
+                          const acct = accounts.find(a => a.code === cb.accountCode)
+                          return (
+                            <div key={ci} className="flex items-center justify-between text-[10px]">
+                              <span className="text-[var(--text-muted)] truncate">{acct ? `${acct.code} ${acct.name}` : cb.accountCode || cb.itemName}</span>
+                              <span className="font-bold text-[var(--text-primary)] ml-1 whitespace-nowrap">{formatNumber(cb.amount)}원</span>
+                            </div>
+                          )
+                        })}
+                        {catBudgets.length > 5 && <div className="text-[9px] text-[var(--text-muted)]">+{catBudgets.length - 5}건 더</div>}
+                      </div>
+                    )}
                     <div className="h-1.5 rounded-full bg-[var(--bg-subtle)] overflow-hidden">
                       <div className="h-full rounded-full" style={{ width: `${Math.min(100, pct)}%`, background: pct > 100 ? '#ef4444' : cc }} />
                     </div>
@@ -2116,7 +2131,11 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
   const typeGrads = { expense: 'from-[#ef4444] to-[#dc2626]', income: 'from-[#22c55e] to-[#16a34a]', withdrawal: 'from-[#f59e0b] to-[#d97706]' }
 
   const today = new Date().toISOString().slice(0, 10)
-  const [form, setForm] = useState({ desc: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today })
+  const [form, setForm] = useState({ desc: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, accountCode: '' })
+  const expenseAccounts2 = useMemo(() => {
+    const accts: { code: string; name: string; type: string }[] = getItem('acct_accounts', [])
+    return accts.filter(a => a.type === 'expense')
+  }, [refresh])
   const [counterSearch, setCounterSearch] = useState('')
   const [showCounterList, setShowCounterList] = useState(false)
   const counterRef = useRef<HTMLDivElement>(null)
@@ -2199,12 +2218,12 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
     const cfs = getItem<CashFlow[]>('acct_cashflows', [])
     cfs.push({
       id: cfId, date: form.tradeDate, type: type === 'withdrawal' ? 'expense' : type,
-      amount: amt, description: form.desc, accountCode: type === 'income' ? '4030' : '5110',
+      amount: amt, description: form.desc, accountCode: type === 'income' ? '4030' : (form.accountCode || '5110'),
       counter: form.counter, writeDate: form.writeDate,
     })
     setItem('acct_cashflows', cfs)
 
-    setForm({ desc: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today })
+    setForm({ desc: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, accountCode: '' })
     setCounterSearch('')
     setRefresh(r => r + 1)
   }
@@ -2386,6 +2405,20 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
               options={methods.map(m => ({ value: m, label: m }))}
             />
           </div>
+          {type === 'expense' && (
+          <div>
+            <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">계정과목</label>
+            <CustomSelect
+              value={form.accountCode}
+              onChange={v => setForm(f => ({ ...f, accountCode: v }))}
+              placeholder="— 계정과목 선택 —"
+              options={[
+                { value: '', label: '— 계정과목 선택 —' },
+                ...expenseAccounts2.map(a => ({ value: a.code, label: `${a.code} ${a.name}` })),
+              ]}
+            />
+          </div>
+          )}
           {type !== 'expense' && (
           <div>
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">전표작성일자</label>
