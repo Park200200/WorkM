@@ -1803,7 +1803,7 @@ function AcctApproval({ year }: { year: number }) {
         const tdS: React.CSSProperties = { border: '1px solid #bbb', padding: '9px 14px', fontSize: 13, color: '#222', verticalAlign: 'middle' }
         return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) setPreviewModal(null) }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[794px] mx-4 max-h-[90vh] overflow-y-auto" style={{ aspectRatio: '210/297' }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[794px] mx-4 overflow-y-auto" style={{ height: '90vh', maxHeight: 1123, display: 'flex', flexDirection: 'column' }}>
             {/* 헤더 바 */}
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-200">
               <div className="flex items-center gap-2">
@@ -1818,11 +1818,12 @@ function AcctApproval({ year }: { year: number }) {
                   if (!w) return
                   w.document.write(`<html><head><title>지출품의서 - ${previewModal.title}</title><style>
                     *{margin:0;padding:0;box-sizing:border-box}
-                    body{font-family:'Malgun Gothic','맑은 고딕',sans-serif;padding:50px 60px;color:#111;font-size:13px;line-height:1.5}
+                    html,body{height:100%;font-family:'Malgun Gothic','맑은 고딕',sans-serif;color:#111;font-size:13px;line-height:1.5}
+                    body{padding:40px 50px;display:flex;flex-direction:column}
                     table{width:100%;border-collapse:collapse}
                     th,td{border:1px solid #bbb;padding:9px 14px}
                     th{background:#edf1f8;font-weight:700;color:#333;letter-spacing:2px;white-space:nowrap}
-                    @media print{body{padding:20px}@page{margin:15mm;size:A4 portrait}}
+                    @media print{body{padding:15mm;height:auto}@page{margin:0;size:A4 portrait}}
                   </style></head><body>${el.innerHTML}</body></html>`)
                   w.document.close()
                   w.print()
@@ -1832,7 +1833,7 @@ function AcctApproval({ year }: { year: number }) {
             </div>
 
             {/* === 지출품의서 본문 === */}
-            <div id="approval-preview-content" style={{ padding: '50px 60px', background: '#fff', minHeight: 'calc(100% - 52px)', display: 'flex', flexDirection: 'column' }}>
+            <div id="approval-preview-content" style={{ padding: '50px 60px', background: '#fff', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
               {/* ── 상단: 제목(좌) + 결재란(우) ── */}
               <div style={{ display: 'flex', alignItems: 'center', marginBottom: 0 }}>
