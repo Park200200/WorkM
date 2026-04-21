@@ -130,22 +130,16 @@ export function LoginPage() {
             <div className="flex-1 h-px bg-[var(--border-default)]" />
           </div>
           <div className="grid grid-cols-4 gap-2">
-            {[
-              { name: '최대표', dept: '경영지원팀', rank: '대표', color: '#4f6ef7', emoji: '👔' },
-              { name: '박팀장', dept: '개발팀', rank: '팀장', color: '#8b5cf6', emoji: '🧑‍💼' },
-              { name: '하팀원', dept: '개발팀', rank: '사원', color: '#06b6d4', emoji: '👨‍💻' },
-              { name: '최경리', dept: '경영지원팀', rank: '대리', color: '#22c55e', emoji: '📊' },
-              { name: '강선임', dept: '기획팀', rank: '선임', color: '#f59e0b', emoji: '📋' },
-              { name: '조영업', dept: '영업팀', rank: '과장', color: '#ef4444', emoji: '🤝' },
-              { name: '임기획', dept: '기획팀', rank: '대리', color: '#ec4899', emoji: '💡' },
-              { name: '오개발', dept: '개발팀', rank: '주임', color: '#14b8a6', emoji: '⚙️' },
-            ].map(u => (
+            {(() => {
+              const emojis = ['👔','🧑‍💼','👨‍💻','📊','📋','🤝','💡','⚙️','🎯','📌']
+              const users = getItem<{ id: number; name: string; dept?: string; rank?: string; role?: string; color?: string }[]>('ws_users', [])
+              return users.map((u, i) => (
               <button
-                key={u.name}
+                key={u.id}
                 type="button"
                 onClick={() => {
                   login({
-                    id: u.name,
+                    id: String(u.id),
                     name: u.name,
                     email: `${u.name}@workm.kr`,
                     dept: u.dept,
@@ -159,11 +153,12 @@ export function LoginPage() {
                 }}
                 className="flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-default)] hover:border-primary-400 hover:shadow-md transition-all cursor-pointer group"
               >
-                <span className="text-lg group-hover:scale-110 transition-transform">{u.emoji}</span>
+                <span className="text-lg group-hover:scale-110 transition-transform">{emojis[i % emojis.length]}</span>
                 <span className="text-[11px] font-extrabold text-[var(--text-primary)]">{u.name}</span>
-                <span className="text-[9px] text-[var(--text-muted)]">{u.rank}</span>
+                <span className="text-[9px] text-[var(--text-muted)]">{u.rank || u.role || '-'}</span>
               </button>
-            ))}
+              ))
+            })()}
           </div>
         </div>
 
