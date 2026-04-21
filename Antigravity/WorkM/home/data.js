@@ -105,6 +105,12 @@ const WS = {
     if (item) { item.name = name.trim(); this.saveDetailTasks(); }
   },
 
+  // 도장 SVG 생성 헬퍼
+  _mkSeal: function(ch) {
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="%23c33" stroke-width="4"/><circle cx="50" cy="50" r="37" fill="none" stroke="%23c33" stroke-width="1.5"/><text x="50" y="58" text-anchor="middle" font-size="36" font-weight="bold" fill="%23c33" font-family="serif">' + ch + '</text></svg>';
+    return 'data:image/svg+xml,' + svg;
+  },
+
   // 사용자 목록
   users: JSON.parse(localStorage.getItem('ws_users')) || [
     { id:1001, name:'최대표', role:'대표', dept:'경영지원팀', pos:'CEO', avatar:'최대', color:'#4f6ef7',

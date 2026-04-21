@@ -1797,7 +1797,15 @@ function AcctApproval({ year }: { year: number }) {
       {previewModal && (() => {
         const applicantStaff = staffList.find(s => s.name === previewModal.applicant)
         const approverStaff = staffList.find(s => s.name === previewModal.approver)
-        const getSeal = (s: any) => s?.sealImg || s?.sealImage || ''
+        const getSeal = (s: any) => {
+          if (s?.sealImg) return s.sealImg
+          if (s?.sealImage) return s.sealImage
+          if (s?.name) {
+            const ch = s.name.charAt(0)
+            return `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="%23c33" stroke-width="4"/><circle cx="50" cy="50" r="37" fill="none" stroke="%23c33" stroke-width="1.5"/><text x="50" y="58" text-anchor="middle" font-size="36" font-weight="bold" fill="%23c33" font-family="serif">${encodeURIComponent(ch)}</text></svg>`
+          }
+          return ''
+        }
         /* 공통 셀 스타일 */
         const thS: React.CSSProperties = { border: '1px solid #bbb', padding: '9px 14px', background: '#edf1f8', fontSize: 13, fontWeight: 700, color: '#333', textAlign: 'center', verticalAlign: 'middle', letterSpacing: 2, whiteSpace: 'nowrap' }
         const tdS: React.CSSProperties = { border: '1px solid #bbb', padding: '9px 14px', fontSize: 13, color: '#222', verticalAlign: 'middle' }
