@@ -6,8 +6,15 @@ import { getItem, setItem } from './storage'
 const SEED_VERSION = 'v5'
 
 export function seedIfEmpty() {
+  const prevVersion = getItem<string>('ws_seed_version', '')
   // 이미 시드된 경우 스킵
-  if (getItem<string>('ws_seed_version', '') === SEED_VERSION) return
+  if (prevVersion === SEED_VERSION) return
+
+  // 버전 업그레이드 시 사원·부서 데이터 강제 갱신
+  if (prevVersion && prevVersion !== SEED_VERSION) {
+    localStorage.removeItem('ws_users')
+    localStorage.removeItem('ws_departments')
+  }
 
   // ── 부서 ──
   if (!getItem('ws_departments', null)) {
