@@ -229,6 +229,8 @@ interface CashFlow {
   date: string
   description?: string
   accountCode?: string
+  counter?: string
+  writeDate?: string
 }
 
 interface Approval {

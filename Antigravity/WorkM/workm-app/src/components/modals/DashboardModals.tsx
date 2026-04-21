@@ -1520,7 +1520,7 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
    ═══════════════════════════════════════════ */
 interface ProgressReportProps {
   open: boolean
-  task: { id: number | string; title: string; progress: number; status?: string; dueDate?: string; startDate?: string; stepIds?: number[]; desc?: string; assigneeIds?: number[]; assignerId?: number; [key: string]: unknown } | null
+  task: { id: number | string; title: string; progress?: number; status?: string; dueDate?: string; startDate?: string; stepIds?: number[]; desc?: string; assigneeIds?: number[]; assignerId?: number; resultIds?: number[]; detailIds?: number[]; [key: string]: unknown } | null
   onClose: () => void
   mode?: 'report' | 'view'
 }

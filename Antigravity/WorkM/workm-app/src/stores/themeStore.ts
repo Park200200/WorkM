@@ -434,8 +434,8 @@ export const useThemeStore = create<ThemeStore>((set, get) => {
     typography: loadTypography(),
 
     toggle: () => {
-      const next = get().theme === 'light' ? 'dark' : 'light'
-      const s = { ...getSaved(), mode: next }
+      const next: ThemeMode = get().theme === 'light' ? 'dark' : 'light'
+      const s: SavedTheme = { ...getSaved(), mode: next }
       saveTheme(s); applyToDOM(s)
       set({ theme: next })
     },

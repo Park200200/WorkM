@@ -13,7 +13,7 @@ export type StatusPreset = 'waiting' | 'progress' | 'complete' | 'delay'
 export type CategoryPreset = 'news' | 'youtube' | 'blog' | 'website'
 
 interface BadgeProps {
-  children: React.ReactNode
+  children?: React.ReactNode
   variant?: BadgeVariant
   status?: StatusPreset
   category?: CategoryPreset

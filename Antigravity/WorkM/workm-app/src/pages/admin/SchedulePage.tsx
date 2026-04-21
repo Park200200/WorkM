@@ -24,6 +24,7 @@ interface TaskItem {
   taskNature?: string
   assignerId?: number
   assigneeIds?: number[]
+  [key: string]: unknown
 }
 
 interface UserItem {

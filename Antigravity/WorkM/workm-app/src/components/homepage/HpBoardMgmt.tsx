@@ -126,7 +126,7 @@ export function HpBoardMgmt() {
   const [form, setForm] = useState({
     cat:'notice', title:'', content:'', author:'관리자',
     img:'', imgCap:'', pwd:'', featured:false,
-    ans:'', ansImg:'', ansImgCap:'',
+    ans:'', ansImg:'', ansImgCap:'', views:'0',
   })
   const [replyInput, setReplyInput] = useState('')
 
