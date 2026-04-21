@@ -1838,7 +1838,7 @@ function AcctApproval({ year }: { year: number }) {
             </div>
 
             {/* === 지출품의서 본문 === */}
-            <div id="approval-preview-content" style={{ padding: '50px 60px', background: '#fff', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div id="approval-preview-content" style={{ padding: '50px 60px', background: '#fff', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
 
               {/* ── 상단: 제목(좌) + 결재란(우) ── */}
               <div style={{ display: 'flex', alignItems: 'center', marginBottom: 0 }}>
@@ -1950,7 +1950,7 @@ function AcctApproval({ year }: { year: number }) {
             </div>
 
             {/* 하단 버튼 */}
-            <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-gray-200">
+            <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-gray-200" style={{ flexShrink: 0 }}>
               <button onClick={() => setPreviewModal(null)} className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-50 cursor-pointer">닫기</button>
             </div>
           </div>
