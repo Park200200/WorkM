@@ -1835,9 +1835,9 @@ function AcctApproval({ year }: { year: number }) {
             <div id="approval-preview-content" style={{ padding: '50px 60px', background: '#fff', minHeight: 'calc(100% - 52px)', display: 'flex', flexDirection: 'column' }}>
 
               {/* ── 상단: 제목(좌) + 결재란(우) ── */}
-              <div style={{ display: 'flex', alignItems: 'flex-end', marginBottom: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: 0 }}>
                 {/* 좌측: 제목 */}
-                <div style={{ flex: 1, paddingBottom: 4, textAlign: 'center' }}>
+                <div style={{ flex: 1, textAlign: 'center' }}>
                   <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: 16, color: '#222', whiteSpace: 'nowrap', display: 'inline-block' }}>지 출 품 의 서</div>
                 </div>
                 {/* 우측: 결재란 */}
