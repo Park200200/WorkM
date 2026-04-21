@@ -435,7 +435,8 @@ export function TasksPage() {
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
                 placeholder="업무 제목을 입력하세요"
-                className="w-full px-3 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-200 transition-all"
+                className="w-full px-3 py-2.5 border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-200 transition-all"
+                style={{ borderRadius: 'var(--radius-sm)' }}
               />
             </div>
 
@@ -447,7 +448,8 @@ export function TasksPage() {
                 onChange={e => setNewDesc(e.target.value)}
                 placeholder="업무 설명을 입력하세요"
                 rows={3}
-                className="w-full px-3 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-200 transition-all resize-none"
+                className="w-full px-3 py-2.5 border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-200 transition-all resize-none"
+                style={{ borderRadius: 'var(--radius-sm)' }}
               />
             </div>
 
@@ -458,7 +460,8 @@ export function TasksPage() {
                 <select
                   value={newAssignerId ?? ''}
                   onChange={e => setNewAssignerId(e.target.value ? Number(e.target.value) : undefined)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-400 transition-all"
+                  className="w-full px-3 py-2.5 border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-400 transition-all"
+                  style={{ borderRadius: 'var(--radius-sm)' }}
                 >
                   <option value="">선택</option>
                   {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.dept || ''})</option>)}
@@ -466,7 +469,7 @@ export function TasksPage() {
               </div>
               <div>
                 <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">수신자 <span className="text-primary-500 font-normal">({newAssigneeIds.length}명)</span></label>
-                <div className="max-h-[100px] overflow-y-auto border border-[var(--border-default)] rounded-xl p-1.5 space-y-0.5">
+                <div className="max-h-[100px] overflow-y-auto border border-[var(--border-default)] p-1.5 space-y-0.5" style={{ borderRadius: 'var(--radius-sm)' }}>
                   {users.map(u => {
                     const sel = newAssigneeIds.includes(u.id)
                     return (
@@ -489,73 +492,8 @@ export function TasksPage() {
               </div>
             </div>
 
-            {/* 상태 / 중요도 / 진행률 */}
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">상태</label>
-                <select
-                  value={newStatus}
-                  onChange={e => setNewStatus(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-400 transition-all"
-                >
-                  <option value="waiting">대기</option>
-                  <option value="progress">진행중</option>
-                  <option value="delay">지연</option>
-                  <option value="done">완료</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">중요도</label>
-                <select
-                  value={newPriority}
-                  onChange={e => setNewPriority(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-400 transition-all"
-                >
-                  <option value="high">높음</option>
-                  <option value="medium">보통</option>
-                  <option value="low">낮음</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">진행률 ({newProgress}%)</label>
-                <input
-                  type="range" min={0} max={100} step={5}
-                  value={newProgress}
-                  onChange={e => setNewProgress(Number(e.target.value))}
-                  className="w-full accent-primary-500"
-                />
-              </div>
-            </div>
-
-            {/* 팀 / 중요★ / 업무시작일 / 계획완료일 */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div>
-                <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">팀</label>
-                <select
-                  value={newTeam}
-                  onChange={e => setNewTeam(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-400 transition-all"
-                >
-                  <option value="">선택</option>
-                  {departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
-                </select>
-              </div>
-              <div className="flex flex-col">
-                <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">중요★</label>
-                <button
-                  type="button"
-                  onClick={() => setNewIsImportant(!newIsImportant)}
-                  className={cn(
-                    'flex items-center justify-center gap-1.5 h-[42px] rounded-xl border text-sm font-bold transition-all cursor-pointer',
-                    newIsImportant
-                      ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20 text-amber-600'
-                      : 'border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-muted)]',
-                  )}
-                >
-                  <Star size={14} className={newIsImportant ? 'fill-amber-500 text-amber-500' : ''} />
-                  {newIsImportant ? 'ON' : 'OFF'}
-                </button>
-              </div>
+            {/* 업무시작일 / 계획완료일 */}
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[11px] font-bold text-[var(--text-muted)] block mb-1.5">업무시작일</label>
                 <DatePicker value={newStartDate} onChange={setNewStartDate} placeholder="날짜를 선택하세요" />
