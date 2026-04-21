@@ -1905,25 +1905,25 @@ function AcctApproval({ year }: { year: number }) {
                 </tbody>
               </table>
 
-              {/* ── 지출금액 ── */}
-              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', marginTop: 16, marginBottom: 0 }}>
-                <colgroup>
-                  <col style={{ width: '13%' }} />
-                  <col style={{ width: '87%' }} />
-                </colgroup>
-                <tbody>
-                  <tr>
-                    <th style={thS}>지출금액</th>
-                    <td style={{ ...tdS, fontSize: 20, fontWeight: 900, letterSpacing: 1 }}>
-                      ₩ {formatNumber(previewModal.amount || 0)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-              {/* ── 결의 문구 ── */}
-              <div style={{ padding: '16px 0 16px', fontSize: 14, color: '#333', lineHeight: 1.8, marginLeft: '13%' }}>
-                상기 금액을 용도에 따라 지출하였음을 결의합니다.
+              {/* ── 지출금액 + 결의 문구 (하나의 박스) ── */}
+              <div style={{ border: '1px solid #bbb', marginTop: 16, marginBottom: 16 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                  <colgroup>
+                    <col style={{ width: '13%' }} />
+                    <col style={{ width: '87%' }} />
+                  </colgroup>
+                  <tbody>
+                    <tr>
+                      <th style={{ ...thS, border: 'none', borderRight: '1px solid #bbb' }}>지출금액</th>
+                      <td style={{ ...tdS, border: 'none', fontSize: 20, fontWeight: 900, letterSpacing: 1 }}>
+                        ₩ {formatNumber(previewModal.amount || 0)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div style={{ padding: '12px 14px 14px', fontSize: 14, color: '#333', lineHeight: 1.8, marginLeft: '13%' }}>
+                  상기 금액을 용도에 따라 지출하였음을 결의합니다.
+                </div>
               </div>
 
               {/* ── 비고 (맨 아래까지 확장) ── */}
