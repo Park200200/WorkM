@@ -42,8 +42,8 @@ export function DatePicker({ value, onChange, placeholder = '날짜를 선택하
       const spaceBelow = window.innerHeight - rect.bottom
       const goUp = spaceBelow < calH && rect.top > calH
       setPos({
-        top: goUp ? rect.top - calH - 4 + window.scrollY : rect.bottom + 4 + window.scrollY,
-        left: Math.min(rect.left + window.scrollX, window.innerWidth - 300),
+        top: goUp ? rect.top - calH - 4 : rect.bottom + 4,
+        left: Math.min(rect.left, window.innerWidth - 300),
       })
     }
   }, [open])
