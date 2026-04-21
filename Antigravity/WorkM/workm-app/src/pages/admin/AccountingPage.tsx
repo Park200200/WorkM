@@ -22,7 +22,7 @@ import {
 
 /* ─── 회계 시드 데이터 초기화 ── */
 function initAccountingSeed() {
-  if (localStorage.getItem('_acct_react_seed_v2')) return
+  if (localStorage.getItem('_acct_react_seed_v3')) return
 
   const uid = () => Date.now().toString(36) + Math.random().toString(36).substring(2, 7)
   const year = new Date().getFullYear()
@@ -101,20 +101,22 @@ function initAccountingSeed() {
     setItem('acct_vendors', vendors)
   }
 
-  /* ── 품의 샘플 10건 ── */
-  if (getItem<any[]>('acct_approvals', []).length === 0) {
+  /* ── 품의 샘플 10건 (시드 갱신 시 재생성) ── */
+  {
     const mm = (m: number) => String(m).padStart(2, '0')
+    const staffList = getItem<Array<{ id: number; name: string }>>('ws_users', [])
+    const sn = (idx: number) => staffList[idx % staffList.length]?.name || 'admin'
     const approvals = [
-      { id: 2001, title: 'Q1 사무용품 일괄 구매', amount: 1500000, date: `${year}-01-15`, status: 'approved', accountCode: '5190', description: '1분기 사무용품 일괄 구매 품의', applicant: 'admin', approver: '김지훈', createdAt: `${year}-01-14T09:00:00Z` },
-      { id: 2002, title: '문화재 현장 안전장비 구입', amount: 3200000, date: `${year}-02-05`, status: 'approved', accountCode: '5140', description: '현장 안전모, 안전벨트 등 구입', applicant: 'admin', approver: '김지훈', createdAt: `${year}-02-04T10:00:00Z` },
-      { id: 2003, title: '발굴조사 장비 임대', amount: 8500000, date: `${year}-02-20`, status: 'approved', accountCode: '5120', description: '3월 발굴조사 장비 임대 비용', applicant: 'admin', approver: '이수진', createdAt: `${year}-02-19T14:00:00Z` },
-      { id: 2004, title: '보고서 인쇄비', amount: 2800000, date: `${year}-03-10`, status: 'pending', accountCode: '5190', description: '2025년도 연간보고서 인쇄', applicant: 'admin', approver: '박민수', createdAt: `${year}-03-09T11:00:00Z` },
-      { id: 2005, title: '직원 역량강화 교육비', amount: 4500000, date: `${year}-03-25`, status: 'pending', accountCode: '5350', description: '문화재 복원기술 교육 수강료', applicant: 'admin', approver: '김지훈', createdAt: `${year}-03-24T09:30:00Z` },
-      { id: 2006, title: '법인차량 정기정비', amount: 780000, date: `${year}-${mm(new Date().getMonth())}-05`, status: 'approved', accountCode: '5310', description: '법인차량 3대 정기정비', applicant: 'admin', approver: '정현수', createdAt: `${year}-${mm(new Date().getMonth())}-04T08:00:00Z` },
-      { id: 2007, title: '유적지 조경공사', amount: 12000000, date: `${year}-${mm(new Date().getMonth())}-12`, status: 'pending', accountCode: '5120', description: '경주 유적지 봄 조경정비', applicant: 'admin', approver: '이수진', createdAt: `${year}-${mm(new Date().getMonth())}-11T10:00:00Z` },
-      { id: 2008, title: '사무실 통신비 연간계약', amount: 3600000, date: `${year}-${mm(new Date().getMonth() + 1)}-01`, status: 'rejected', accountCode: '5340', description: '인터넷/전화 연간계약 갱신', applicant: 'admin', approver: '박민수', createdAt: `${year}-${mm(new Date().getMonth())}-28T15:00:00Z` },
-      { id: 2009, title: '현장 드론 구입', amount: 5500000, date: `${year}-${mm(new Date().getMonth() + 1)}-10`, status: 'pending', accountCode: '5130', description: '항공촬영용 고성능 드론 2대', applicant: 'admin', approver: '최유리', createdAt: `${year}-${mm(new Date().getMonth() + 1)}-09T09:00:00Z` },
-      { id: 2010, title: '행사장 케이터링', amount: 2200000, date: `${year}-${mm(new Date().getMonth() + 1)}-20`, status: 'pending', accountCode: '5310', description: '문화유산의 날 행사 케이터링', applicant: 'admin', approver: '한소희', createdAt: `${year}-${mm(new Date().getMonth() + 1)}-19T13:00:00Z` },
+      { id: 2001, title: 'Q1 사무용품 일괄 구매', amount: 1500000, date: `${year}-01-15`, status: 'approved', accountCode: '5190', description: '1분기 사무용품 일괄 구매 품의', applicant: sn(0), approver: sn(1), createdAt: `${year}-01-14T09:00:00Z` },
+      { id: 2002, title: '문화재 현장 안전장비 구입', amount: 3200000, date: `${year}-02-05`, status: 'approved', accountCode: '5140', description: '현장 안전모, 안전벨트 등 구입', applicant: sn(2), approver: sn(0), createdAt: `${year}-02-04T10:00:00Z` },
+      { id: 2003, title: '발굴조사 장비 임대', amount: 8500000, date: `${year}-02-20`, status: 'approved', accountCode: '5120', description: '3월 발굴조사 장비 임대 비용', applicant: sn(3), approver: sn(0), createdAt: `${year}-02-19T14:00:00Z` },
+      { id: 2004, title: '보고서 인쇄비', amount: 2800000, date: `${year}-03-10`, status: 'pending', accountCode: '5190', description: '2025년도 연간보고서 인쇄', applicant: sn(4), approver: sn(1), createdAt: `${year}-03-09T11:00:00Z` },
+      { id: 2005, title: '직원 역량강화 교육비', amount: 4500000, date: `${year}-03-25`, status: 'pending', accountCode: '5350', description: '문화재 복원기술 교육 수강료', applicant: sn(1), approver: sn(0), createdAt: `${year}-03-24T09:30:00Z` },
+      { id: 2006, title: '법인차량 정기정비', amount: 780000, date: `${year}-${mm(new Date().getMonth())}-05`, status: 'approved', accountCode: '5310', description: '법인차량 3대 정기정비', applicant: sn(5), approver: sn(0), createdAt: `${year}-${mm(new Date().getMonth())}-04T08:00:00Z` },
+      { id: 2007, title: '유적지 조경공사', amount: 12000000, date: `${year}-${mm(new Date().getMonth())}-12`, status: 'pending', accountCode: '5120', description: '경주 유적지 봄 조경정비', applicant: sn(2), approver: sn(0), createdAt: `${year}-${mm(new Date().getMonth())}-11T10:00:00Z` },
+      { id: 2008, title: '사무실 통신비 연간계약', amount: 3600000, date: `${year}-${mm(new Date().getMonth() + 1)}-01`, status: 'rejected', accountCode: '5340', description: '인터넷/전화 연간계약 갱신', applicant: sn(6), approver: sn(1), createdAt: `${year}-${mm(new Date().getMonth())}-28T15:00:00Z` },
+      { id: 2009, title: '현장 드론 구입', amount: 5500000, date: `${year}-${mm(new Date().getMonth() + 1)}-10`, status: 'pending', accountCode: '5130', description: '항공촬영용 고성능 드론 2대', applicant: sn(3), approver: sn(0), createdAt: `${year}-${mm(new Date().getMonth() + 1)}-09T09:00:00Z` },
+      { id: 2010, title: '행사장 케이터링', amount: 2200000, date: `${year}-${mm(new Date().getMonth() + 1)}-20`, status: 'pending', accountCode: '5310', description: '문화유산의 날 행사 케이터링', applicant: sn(4), approver: sn(0), createdAt: `${year}-${mm(new Date().getMonth() + 1)}-19T13:00:00Z` },
     ]
     setItem('acct_approvals', approvals)
   }
@@ -195,7 +197,7 @@ function initAccountingSeed() {
     setItem('acct_vouchers', vs)
   }
 
-  localStorage.setItem('_acct_react_seed_v2', '1')
+  localStorage.setItem('_acct_react_seed_v3', '1')
 }
 
 /* ─────────────────────────────────────────────
