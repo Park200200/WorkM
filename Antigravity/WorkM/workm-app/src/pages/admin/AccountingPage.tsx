@@ -10,6 +10,7 @@ import { AcctBalance } from '../../components/accounting/AcctBalance'
 import { AcctReports } from '../../components/accounting/AcctReports'
 import { AcctHqVendor } from '../../components/accounting/AcctHqVendor'
 import { useStaffStore } from '../../stores/staffStore'
+import { useAuthStore } from '../../stores/authStore'
 import { CustomSelect } from '../../components/ui/CustomSelect'
 import { DatePicker } from '../../components/ui/DatePicker'
 import {
@@ -1268,13 +1269,7 @@ function AcctApproval({ year }: { year: number }) {
   const staffList = useStaffStore(s => s.staff).filter(s => !s.resignedAt)
 
   /* 로그인 사용자 역할 확인 */
-  const currentUser = (() => {
-    try {
-      const raw = localStorage.getItem('auth_user')
-      if (raw) return JSON.parse(raw)
-    } catch { /* ignore */ }
-    return null
-  })()
+  const currentUser = useAuthStore(s => s.user)
   const myName = currentUser?.name || ''
   const myStaff = staffList.find(s => s.name === myName)
   const myRole: string = (myStaff as any)?.approverType || 'requester'
