@@ -650,22 +650,6 @@ export function HQInfoPage() {
               <span>사용솔루션: <b className="text-primary-500">{solutions.filter(s => s.enabled).map(s => s.label).join(', ')}</b></span>
               <span>⏳ 과금일자: <b>{billings[0]?.period || '-'}</b></span>
               <span>📅 총금액: <b className="text-primary-500">{billings[0]?.total || '0'}원</b></span>
-              <button
-                onClick={() => {
-                  const newConfig = prompt('단가수정 (JSON):\n' + JSON.stringify(payConfig, null, 2))
-                  if (newConfig) {
-                    try {
-                      const parsed = JSON.parse(newConfig)
-                      setPayConfig(parsed)
-                      setItem('ws_hq_payconfig', parsed)
-                      addToast('success', '단가가 수정되었습니다.')
-                    } catch { addToast('error', 'JSON 형식 오류') }
-                  }
-                }}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[var(--border-default)] text-[11px] font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer"
-              >
-                <Pencil size={10} /> 단가수정
-              </button>
             </div>
           </div>
 
