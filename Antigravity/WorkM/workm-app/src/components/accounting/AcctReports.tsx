@@ -5,7 +5,7 @@ import { formatNumber } from '../../utils/format'
 import { EmptyState } from '../common/EmptyState'
 import {
   Scale, TrendingUp, Table, Banknote, Building2,
-  Printer, CheckCircle,
+  Printer, CheckCircle, BookOpen,
 } from 'lucide-react'
 
 interface Account {
@@ -24,6 +24,7 @@ const REPORT_TABS = [
   { key: 'bs', label: '대차대조표', icon: Scale },
   { key: 'is', label: '손익계산서', icon: TrendingUp },
   { key: 'tb', label: '합계잔액시산표', icon: Table },
+  { key: 'gl', label: '총계정원장', icon: BookOpen },
   { key: 'cb', label: '현금출납장', icon: Banknote },
   { key: 'al', label: '거래처원장', icon: Building2 },
 ]
@@ -93,6 +94,7 @@ export function AcctReports({ year }: { year: number }) {
       {activeTab === 'bs' && <BalanceSheet accounts={accounts} vouchers={vouchers} balances={balances} year={year} />}
       {activeTab === 'is' && <IncomeStatement accounts={accounts} vouchers={vouchers} year={year} />}
       {activeTab === 'tb' && <TrialBalance accounts={accounts} vouchers={vouchers} balances={balances} year={year} />}
+      {activeTab === 'gl' && <GeneralLedger accounts={accounts} vouchers={vouchers} balances={balances} year={year} />}
       {activeTab === 'cb' && <CashBook vouchers={vouchers} balances={balances} year={year} />}
       {activeTab === 'al' && <AccountLedger vouchers={vouchers} year={year} />}
     </div>
@@ -548,6 +550,185 @@ function AccountLedger({ vouchers, year }: { vouchers: Voucher[]; year: number }
             </div>
           )
         })
+      )}
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════
+   6. 총계정원장
+   ═══════════════════════════════════════════ */
+function GeneralLedger({ accounts, vouchers, balances, year }: { accounts: Account[]; vouchers: Voucher[]; balances: OpeningBalance[]; year: number }) {
+  const [selectedCode, setSelectedCode] = useState('')
+  const [filterMonth, setFilterMonth] = useState(0)
+
+  const TYPE_LABELS: Record<string, string> = { asset: '자산', liability: '부채', equity: '자본', revenue: '수익', expense: '비용' }
+  const TYPE_COLORS: Record<string, string> = { asset: '#4f6ef7', liability: '#ef4444', equity: '#8b5cf6', revenue: '#22c55e', expense: '#f59e0b' }
+
+  const acctCodesUsed = useMemo(() => {
+    const codes = new Set<string>()
+    vouchers.forEach(v => (v.entries || []).forEach(e => codes.add(e.accountCode)))
+    balances.forEach(b => codes.add(b.accountCode))
+    return codes
+  }, [vouchers, balances])
+
+  const activeAccounts = useMemo(() =>
+    accounts.filter(a => acctCodesUsed.has(a.code)).sort((a, b) => a.code.localeCompare(b.code)),
+    [accounts, acctCodesUsed]
+  )
+
+  const acct = activeAccounts.find(a => a.code === selectedCode) || activeAccounts[0]
+  const acctCode = acct?.code || ''
+  const acctType = acct?.type || 'asset'
+  const isDebitNature = acctType === 'asset' || acctType === 'expense'
+
+  const ob = balances.find(b => b.accountCode === acctCode)
+  const openingBal = ob ? ob.amount || 0 : 0
+
+  const txns = useMemo(() => {
+    const list: { date: string; desc: string; counterpart: string; debit: number; credit: number }[] = []
+    vouchers.forEach(v => {
+      (v.entries || []).forEach(e => {
+        if (e.accountCode === acctCode) {
+          list.push({
+            date: v.date || '', desc: v.description || '', counterpart: v.counterpart || '',
+            debit: e.side === 'debit' ? e.amount : 0, credit: e.side === 'credit' ? e.amount : 0,
+          })
+        }
+      })
+    })
+    list.sort((a, b) => a.date.localeCompare(b.date))
+    return list
+  }, [vouchers, acctCode])
+
+  const filteredTxns = filterMonth === 0 ? txns : txns.filter(t => parseInt(t.date.substring(5, 7)) === filterMonth)
+
+  let runBal = openingBal
+  const rows = filteredTxns.map(t => {
+    if (isDebitNature) runBal += t.debit - t.credit
+    else runBal += t.credit - t.debit
+    return { ...t, balance: runBal }
+  })
+
+  const totalDebit = filteredTxns.reduce((s, t) => s + t.debit, 0)
+  const totalCredit = filteredTxns.reduce((s, t) => s + t.credit, 0)
+
+  const monthsWithData = useMemo(() => {
+    const ms = new Set<number>()
+    txns.forEach(t => { if (t.date) ms.add(parseInt(t.date.substring(5, 7))) })
+    return Array.from(ms).sort((a, b) => a - b)
+  }, [txns])
+
+  return (
+    <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <BookOpen size={16} className="text-primary-500" />
+          <span className="text-sm font-extrabold">총계정원장</span>
+          <span className="text-[12px] text-[var(--text-muted)]">{year}년도</span>
+        </div>
+        <button onClick={() => window.print()} className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[var(--border-default)] text-[11px] font-bold text-[var(--text-muted)] cursor-pointer">
+          <Printer size={12} /> 인쇄
+        </button>
+      </div>
+
+      {/* 필터 */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex-1 min-w-0">
+          <label className="text-[10px] font-bold text-[var(--text-muted)] mb-1 block">계정과목</label>
+          <select value={acctCode} onChange={e => { setSelectedCode(e.target.value); setFilterMonth(0) }}
+            className="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] outline-none focus:border-primary-500 cursor-pointer">
+            {activeAccounts.map(a => (
+              <option key={a.code} value={a.code}>[{a.code}] {a.name} ({TYPE_LABELS[a.type] || a.type})</option>
+            ))}
+          </select>
+        </div>
+        <div className="w-full sm:w-40 shrink-0">
+          <label className="text-[10px] font-bold text-[var(--text-muted)] mb-1 block">조회 기간</label>
+          <select value={filterMonth} onChange={e => setFilterMonth(Number(e.target.value))}
+            className="w-full h-9 px-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] outline-none focus:border-primary-500 cursor-pointer">
+            <option value={0}>전체 (1~12월)</option>
+            {monthsWithData.map(m => <option key={m} value={m}>{m}월</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* 계정 요약 */}
+      {acct && (
+        <div className="flex items-center gap-3 p-3 rounded-xl border border-[var(--border-default)] bg-[var(--bg-muted)]">
+          <span className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-extrabold" style={{ background: TYPE_COLORS[acctType] || '#64748b' }}>
+            {acct.name.charAt(0)}
+          </span>
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-extrabold text-[var(--text-primary)]">{acct.name}</div>
+            <div className="text-[10px] text-[var(--text-muted)]">코드: {acct.code} · {TYPE_LABELS[acctType] || acctType} · {isDebitNature ? '차변 성격' : '대변 성격'}</div>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="text-[10px] text-[var(--text-muted)]">기초잔액</div>
+            <div className="text-[14px] font-extrabold" style={{ color: TYPE_COLORS[acctType] }}>{formatNumber(openingBal)}원</div>
+          </div>
+        </div>
+      )}
+
+      {/* 테이블 */}
+      {!acct ? (
+        <EmptyState emoji="📖" title="조회할 계정이 없습니다" />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[650px]">
+            <thead>
+              <tr className="bg-[var(--bg-muted)] border-b-2 border-[var(--border-default)]">
+                {['날짜', '적요', '거래처', '차변', '대변', '잔액'].map((h, i) => (
+                  <th key={h} className={cn('py-2.5 px-2.5 text-[11px] font-semibold text-[var(--text-muted)]', i <= 2 ? 'text-left' : 'text-right')}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-[var(--border-default)] bg-gradient-to-r from-primary-50/30 to-transparent dark:from-primary-900/5">
+                <td className="py-2 px-2.5 text-[12px] font-bold text-[var(--text-muted)]">{year}-01-01</td>
+                <td className="py-2 px-2.5 text-[12px] font-bold text-primary-600 dark:text-primary-400">전기이월</td>
+                <td></td>
+                <td className="py-2 px-2.5 text-right text-[12px] font-semibold text-[#4f6ef7]">{isDebitNature && openingBal ? formatNumber(openingBal) + '원' : ''}</td>
+                <td className="py-2 px-2.5 text-right text-[12px] font-semibold text-[#ef4444]">{!isDebitNature && openingBal ? formatNumber(openingBal) + '원' : ''}</td>
+                <td className="py-2 px-2.5 text-right text-[13px] font-bold">{formatNumber(openingBal)}원</td>
+              </tr>
+              {rows.length === 0 ? (
+                <tr><td colSpan={6} className="py-8 text-center text-[12px] text-[var(--text-muted)]">해당 기간 거래 내역이 없습니다</td></tr>
+              ) : rows.map((r, i) => (
+                <tr key={i} className="border-b border-[var(--border-default)] hover:bg-[var(--bg-muted)] transition-colors">
+                  <td className="py-2 px-2.5 text-[12px] text-[var(--text-muted)] tabular-nums">{r.date}</td>
+                  <td className="py-2 px-2.5 text-[12px] text-[var(--text-primary)]">{r.desc || '-'}</td>
+                  <td className="py-2 px-2.5 text-[11px] text-[var(--text-muted)]">{r.counterpart || ''}</td>
+                  <td className="py-2 px-2.5 text-right text-[12px] font-semibold text-[#4f6ef7] tabular-nums whitespace-nowrap">{r.debit ? formatNumber(r.debit) + '원' : ''}</td>
+                  <td className="py-2 px-2.5 text-right text-[12px] font-semibold text-[#ef4444] tabular-nums whitespace-nowrap">{r.credit ? formatNumber(r.credit) + '원' : ''}</td>
+                  <td className="py-2 px-2.5 text-right text-[12.5px] font-bold tabular-nums whitespace-nowrap">{formatNumber(r.balance)}원</td>
+                </tr>
+              ))}
+              <tr className="border-t-2 border-[var(--text-primary)] bg-[var(--bg-muted)]">
+                <td colSpan={3} className="py-2.5 px-2.5 text-right text-[13px] font-extrabold">합 계</td>
+                <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold text-[#4f6ef7] whitespace-nowrap">{formatNumber(totalDebit + (isDebitNature ? openingBal : 0))}원</td>
+                <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold text-[#ef4444] whitespace-nowrap">{formatNumber(totalCredit + (!isDebitNature ? openingBal : 0))}원</td>
+                <td className="py-2.5 px-2.5 text-right text-[14px] font-extrabold whitespace-nowrap" style={{ color: TYPE_COLORS[acctType] }}>{formatNumber(rows.length > 0 ? rows[rows.length - 1].balance : openingBal)}원</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* 요약 카드 */}
+      {acct && filteredTxns.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: '차변 합계', value: totalDebit, color: '#4f6ef7' },
+            { label: '대변 합계', value: totalCredit, color: '#ef4444' },
+            { label: '기말잔액', value: rows.length > 0 ? rows[rows.length - 1].balance : openingBal, color: TYPE_COLORS[acctType] || '#64748b' },
+          ].map((s, i) => (
+            <div key={i} className="p-3 rounded-xl border border-[var(--border-default)] bg-[var(--bg-muted)] text-center">
+              <div className="text-[10px] font-bold text-[var(--text-muted)] mb-1">{s.label}</div>
+              <div className="text-[15px] font-extrabold" style={{ color: s.color }}>{formatNumber(s.value)}원</div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )
