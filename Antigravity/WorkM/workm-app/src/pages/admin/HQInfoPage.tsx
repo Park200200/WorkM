@@ -9,8 +9,8 @@ import { useAuthStore } from '../../stores/authStore'
 import { useToastStore } from '../../stores/toastStore'
 import {
   MapPin, User, Phone, Mail, FileText,
-  Image as ImageIcon, Save, RotateCcw, Upload, X, CreditCard,
-  Clock, Pencil, Briefcase, Smartphone, Monitor,
+  Image as ImageIcon, Save, RotateCcw, Upload, X, Paperclip,
+  Clock, Pencil, Briefcase, Smartphone, Monitor, Trash2, Download,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
@@ -59,16 +59,14 @@ interface HQData {
   history?: Array<{ date: string; text: string; by: string }>
 }
 
-interface PaymentData {
-  dbMgmt?: string
-  dbMgmtCnt?: string
-  dbUse?: string
-  dbUseCnt?: string
-  ai?: string
-  aiCnt?: string
-  fee?: string
-  feeRate?: string
-  total?: string
+interface AttachmentItem {
+  id: number
+  name: string
+  size: string
+  type: string
+  data: string
+  uploadedAt: string
+  uploadedBy: string
 }
 
 function pad(n: number) { return String(n).padStart(2, '0') }
@@ -78,9 +76,9 @@ export function HQInfoPage() {
   const addToast = useToastStore(s => s.add)
 
   const [data, setData] = useState<HQData>(() => getItem('ws_hq_info', {}))
-  const [payment, setPayment] = useState<PaymentData>(() => getItem('ws_hq_payment', {}))
-  const [payModalOpen, setPayModalOpen] = useState(false)
+  const [attachments, setAttachments] = useState<AttachmentItem[]>(() => getItem('ws_hq_attachments', []))
   const [dirty, setDirty] = useState(false)
+  const attachRef = useRef<HTMLInputElement>(null)
 
   const bizDocRef = useRef<HTMLInputElement>(null)
   const mainImgRef = useRef<HTMLInputElement>(null)
@@ -136,26 +134,65 @@ export function HQInfoPage() {
     setData(updated)
   }
 
-  // ── 결제 모달 ──
-  const [payForm, setPayForm] = useState<PaymentData>({})
-  const openPayModal = () => {
-    setPayForm({ ...payment })
-    setPayModalOpen(true)
-  }
-  const savePayment = () => {
-    setItem('ws_hq_payment', payForm)
-    setPayment(payForm)
-    setPayModalOpen(false)
-    addToast('success', '결제 정보가 저장되었습니다.')
+  // ── 첨부파일 ──
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + 'B'
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB'
+    return (bytes / (1024 * 1024)).toFixed(1) + 'MB'
   }
 
-  const payCards = [
-    { label: 'DB관리요금', value: payment.dbMgmt || '200,000', sub: payment.dbMgmtCnt || '123,901', unit: '원', subUnit: '건' },
-    { label: 'DB사용요금', value: payment.dbUse || '17,500', sub: payment.dbUseCnt || '35,001', unit: '원', subUnit: '건' },
-    { label: 'AI사용요금', value: payment.ai || '103,000', sub: payment.aiCnt || '206', unit: '원', subUnit: '건' },
-    { label: '수수료비용', value: payment.fee || '1,930,200', sub: payment.feeRate || '7', unit: '원', subUnit: '%' },
-    { label: '결제 예정 금액', value: payment.total || '2,250,700', sub: 'VAT 별도', unit: '원', subUnit: '', highlight: true },
-  ]
+  const handleAttach = (files: FileList | null) => {
+    if (!files) return
+    const now = new Date()
+    const ds = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`
+    const newItems: AttachmentItem[] = []
+    let processed = 0
+    Array.from(files).forEach(file => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        newItems.push({
+          id: Date.now() + processed,
+          name: file.name,
+          size: formatFileSize(file.size),
+          type: file.type || 'file',
+          data: e.target?.result as string,
+          uploadedAt: ds,
+          uploadedBy: user?.name || '관리자',
+        })
+        processed++
+        if (processed === files.length) {
+          const updated = [...attachments, ...newItems]
+          setAttachments(updated)
+          setItem('ws_hq_attachments', updated)
+          addToast('success', `${files.length}개 파일이 첨부되었습니다.`)
+        }
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const removeAttach = (id: number) => {
+    const updated = attachments.filter(a => a.id !== id)
+    setAttachments(updated)
+    setItem('ws_hq_attachments', updated)
+    addToast('info', '첨부파일이 삭제되었습니다.')
+  }
+
+  const downloadAttach = (item: AttachmentItem) => {
+    const link = document.createElement('a')
+    link.href = item.data
+    link.download = item.name
+    link.click()
+  }
+
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) return '🖼️'
+    if (type.includes('pdf')) return '📄'
+    if (type.includes('word') || type.includes('document')) return '📝'
+    if (type.includes('sheet') || type.includes('excel')) return '📊'
+    if (type.includes('zip') || type.includes('rar')) return '📦'
+    return '📎'
+  }
 
   return (
     <div className="animate-fadeIn">
@@ -489,93 +526,81 @@ export function HQInfoPage() {
         </div>
       </div>
 
-      {/* ── 결제 정보 ── */}
+      {/* ── 첨부파일 ── */}
       <div className="mt-4">
         <Card>
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-default)]">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <CreditCard size={14} className="text-blue-500" />
+              <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                <Paperclip size={14} className="text-emerald-500" />
               </div>
-              <span className="text-sm font-bold text-[var(--text-primary)]">결제 정보</span>
+              <span className="text-sm font-bold text-[var(--text-primary)]">첨부파일</span>
+              <span className="text-[11px] font-bold text-[var(--text-muted)] bg-[var(--bg-muted)] px-2 py-0.5 rounded-full">
+                {attachments.length}개
+              </span>
             </div>
-            <span className="text-[12px] font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 px-3 py-1 rounded-full">
-              📅 매월 25일 결제
-            </span>
+            <button
+              onClick={() => attachRef.current?.click()}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500 text-white text-[12px] font-bold hover:bg-emerald-600 transition-colors cursor-pointer"
+            >
+              <Upload size={12} /> 파일 추가
+            </button>
+            <input
+              ref={attachRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={e => handleAttach(e.target.files)}
+            />
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-4">
-            {payCards.map((c, i) => (
+          <div className="p-4">
+            {attachments.length === 0 ? (
               <div
-                key={i}
-                className={cn(
-                  'rounded-xl p-3.5 border',
-                  c.highlight
-                    ? 'bg-purple-50 dark:bg-purple-900/10 border-purple-200 dark:border-purple-800'
-                    : 'bg-[var(--bg-muted)] border-[var(--border-default)]',
-                )}
+                onClick={() => attachRef.current?.click()}
+                className="flex flex-col items-center justify-center py-10 border-2 border-dashed border-[var(--border-default)] rounded-xl cursor-pointer hover:border-emerald-400 transition-colors"
               >
-                <div className={cn(
-                  'text-[11.5px] font-semibold mb-1.5',
-                  c.highlight ? 'text-purple-600 dark:text-purple-400' : 'text-[var(--text-secondary)]',
-                )}>
-                  {c.label}
-                </div>
-                <div className={cn(
-                  'text-lg font-extrabold flex items-baseline gap-0.5',
-                  c.highlight ? 'text-purple-600 dark:text-purple-400' : 'text-[var(--text-primary)]',
-                )}>
-                  {c.value}
-                  <span className={cn(
-                    'text-[13px] font-semibold',
-                    c.highlight ? 'text-purple-500/80' : 'text-[var(--text-secondary)]',
-                  )}>
-                    {c.unit}
-                  </span>
-                </div>
-                <div className="text-[11px] text-[var(--text-muted)] mt-1">
-                  {c.sub} {c.subUnit}
-                </div>
+                <Paperclip size={32} className="text-[var(--text-muted)] mb-2" />
+                <span className="text-[13px] font-semibold text-[var(--text-muted)]">클릭하여 파일을 첨부하세요</span>
+                <span className="text-[11px] text-[var(--text-muted)] mt-1">이미지, PDF, 문서 등 모든 파일 형식 지원</span>
               </div>
-            ))}
-          </div>
-
-          <div className="flex justify-end px-4 pb-3">
-            <Button variant="secondary" size="sm" onClick={openPayModal}>
-              <Pencil size={12} /> 금액 수정
-            </Button>
+            ) : (
+              <div className="space-y-2">
+                {attachments.map(item => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-muted)] hover:border-emerald-300 transition-colors group"
+                  >
+                    <span className="text-lg shrink-0">{getFileIcon(item.type)}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12.5px] font-bold text-[var(--text-primary)] truncate">{item.name}</div>
+                      <div className="text-[10px] text-[var(--text-muted)]">
+                        {item.size} · {item.uploadedAt} · {item.uploadedBy}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => downloadAttach(item)}
+                        className="p-1.5 rounded-lg hover:bg-[var(--bg-surface)] text-[var(--text-muted)] hover:text-emerald-500 transition-colors cursor-pointer"
+                        title="다운로드"
+                      >
+                        <Download size={13} />
+                      </button>
+                      <button
+                        onClick={() => removeAttach(item.id)}
+                        className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-[var(--text-muted)] hover:text-red-500 transition-colors cursor-pointer"
+                        title="삭제"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </Card>
       </div>
-
-      {/* ── 결제 수정 모달 ── */}
-      <Modal open={payModalOpen} onClose={() => setPayModalOpen(false)} title="결제 정보 수정">
-        <div className="grid grid-cols-2 gap-3 px-6 py-4">
-          {[
-            { key: 'dbMgmt', label: 'DB관리요금 (원)' },
-            { key: 'dbMgmtCnt', label: 'DB관리요금 (건수)' },
-            { key: 'dbUse', label: 'DB사용요금 (원)' },
-            { key: 'dbUseCnt', label: 'DB사용요금 (건수)' },
-            { key: 'ai', label: 'AI사용요금 (원)' },
-            { key: 'aiCnt', label: 'AI사용요금 (건수)' },
-            { key: 'fee', label: '수수료비용 (원)' },
-            { key: 'feeRate', label: '수수료율 (%)' },
-            { key: 'total', label: '결제 예정 금액 (원)' },
-          ].map(f => (
-            <div key={f.key}>
-              <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">{f.label}</label>
-              <Input
-                value={(payForm as Record<string, string>)[f.key] || ''}
-                onChange={e => setPayForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-              />
-            </div>
-          ))}
-        </div>
-        <div className="flex justify-end gap-2 px-6 py-3 border-t border-[var(--border-default)]">
-          <Button variant="ghost" onClick={() => setPayModalOpen(false)}>취소</Button>
-          <Button onClick={savePayment}>저장</Button>
-        </div>
-      </Modal>
     </div>
   )
 }
