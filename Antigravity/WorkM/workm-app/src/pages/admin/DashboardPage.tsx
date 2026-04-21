@@ -112,9 +112,9 @@ export function DashboardPage() {
 
   const myId = user?.id ? Number(user.id) : null
 
-  // 내가 지시한 업무 (스케줄 제외)
+  // 내가 지시한 업무 (지시자가 나인 모든 업무)
   const assignedByMe = useMemo(() =>
-    tasks.filter(t => t.assignerId === myId && !t.isSchedule),
+    tasks.filter(t => t.assignerId === myId),
     [tasks, myId]
   )
 
@@ -130,9 +130,9 @@ export function DashboardPage() {
     [tasks, myId]
   )
 
-  // 내가 기획한 내업무 (스케줄)
+  // 내가 기획한 내업무 (스케줄 중 지시자가 없는 순수 자기업무)
   const scheduleByMe = useMemo(() =>
-    tasks.filter(t => t.isSchedule || (!t.assignerId && !t.assigneeId && !(t.assigneeIds?.length))),
+    tasks.filter(t => (t.isSchedule && !t.assignerId) || (!t.assignerId && !t.assigneeId && !(t.assigneeIds?.length))),
     [tasks]
   )
 
