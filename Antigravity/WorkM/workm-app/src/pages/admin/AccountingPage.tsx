@@ -1459,22 +1459,35 @@ function AcctApproval({ year }: { year: number }) {
 
   /* 역할별 관리 아이콘 렌더 */
   const renderActions = (a: Approval) => {
-    if (myRole === 'requester') {
-      if (a.status === 'pending') return (
-        <>
-          {previewBtn(a)}
-          <button onClick={() => openEdit(a)} title="수정" className="p-1 rounded-md bg-primary-50 dark:bg-primary-900/10 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900/20 cursor-pointer transition-colors"><Edit3 size={12} /></button>
-          <button onClick={() => deleteApproval(a.id)} title="삭제" className="p-1 rounded-md bg-[rgba(239,68,68,.06)] text-[#ef4444] hover:bg-[rgba(239,68,68,.15)] cursor-pointer transition-colors"><Trash2 size={12} /></button>
-        </>
+    const isMyApplicant = a.applicant === myName
+
+    /* 본인이 신청자인 경우 */
+    if (isMyApplicant) {
+      if (a.status === 'pending') {
+        /* 대기: 설정 아이콘 → 수정/삭제/취소 */
+        return (
+          <button onClick={() => openEdit(a)} title="품의 관리" className="p-1.5 rounded-md bg-[rgba(100,116,139,.08)] text-[#64748b] hover:bg-[rgba(100,116,139,.18)] cursor-pointer transition-colors">
+            <Settings2 size={14} />
+          </button>
+        )
+      }
+      if (a.status === 'expensed') {
+        /* 지출: 설정 아이콘 → 지출결의 UI */
+        return (
+          <button onClick={() => openResolveModal(a)} title="지출결의 작성" className="p-1.5 rounded-md bg-[rgba(100,116,139,.08)] text-[#64748b] hover:bg-[rgba(100,116,139,.18)] cursor-pointer transition-colors">
+            <Settings2 size={14} />
+          </button>
+        )
+      }
+      /* 반려/승인/완료 등: 설정 아이콘 → 미리보기 */
+      return (
+        <button onClick={() => setPreviewModal(a)} title="품의서 보기" className="p-1.5 rounded-md bg-[rgba(100,116,139,.08)] text-[#64748b] hover:bg-[rgba(100,116,139,.18)] cursor-pointer transition-colors">
+          <Settings2 size={14} />
+        </button>
       )
-      if (a.status === 'expensed') return (
-        <>
-          {previewBtn(a)}
-          <button onClick={() => openResolveModal(a)} title="결의서 작성" className="p-1 rounded-md bg-[rgba(139,92,246,.1)] text-[#8b5cf6] hover:bg-[rgba(139,92,246,.2)] cursor-pointer transition-colors"><FileText size={12} /></button>
-        </>
-      )
-      return previewBtn(a)
     }
+
+    /* 승인자: pending이면 승인처리, 그 외 미리보기 */
     if (myRole === 'approver') {
       if (a.status === 'pending') return (
         <>
@@ -1484,6 +1497,7 @@ function AcctApproval({ year }: { year: number }) {
       )
       return previewBtn(a)
     }
+    /* 지출담당: resolved이면 결의확인, 그 외 미리보기 */
     if (myRole === 'expense') {
       if (a.status === 'resolved') return (
         <>
@@ -1627,9 +1641,16 @@ function AcctApproval({ year }: { year: number }) {
                 <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="품의 사유를 입력해주세요" rows={3} className={`${inputCls} resize-none`} />
               </div>
             </div>
-            <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-[var(--border-default)]">
-              <button onClick={() => { setModalOpen(false); resetForm() }} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer">취소</button>
-              <button onClick={saveApproval} className="px-4 py-2 rounded-lg bg-[#22c55e] text-white text-sm font-bold hover:bg-[#16a34a] cursor-pointer">{editId ? '수정' : '등록'}</button>
+            <div className="flex justify-between px-5 py-3.5 border-t border-[var(--border-default)]">
+              <div>
+                {editId && (
+                  <button onClick={() => { deleteApproval(editId); setModalOpen(false); resetForm() }} className="px-4 py-2 rounded-lg bg-[#ef4444] text-white text-sm font-bold hover:bg-[#dc2626] cursor-pointer flex items-center gap-1"><Trash2 size={13} /> 삭제</button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => { setModalOpen(false); resetForm() }} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer">취소</button>
+                <button onClick={saveApproval} className="px-4 py-2 rounded-lg bg-[#22c55e] text-white text-sm font-bold hover:bg-[#16a34a] cursor-pointer">{editId ? '수정' : '등록'}</button>
+              </div>
             </div>
           </div>
         </div>
