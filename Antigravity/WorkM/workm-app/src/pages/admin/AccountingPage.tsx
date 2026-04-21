@@ -17,7 +17,7 @@ import {
   BookOpen, PieChart, ScrollText, Settings2, ContactRound, Building2,
   TrendingDown, TrendingUp, Banknote, Clock,
   Plus, Edit3, Trash2, Save, X, Check, Ban,
-  Search, MoreVertical, Upload, User, Phone, Mail, IdCard, FileText, Lock,
+  Search, MoreVertical, Upload, User, Phone, Mail, IdCard, FileText, Lock, ShieldCheck,
 } from 'lucide-react'
 
 /* ─── 회계 시드 데이터 초기화 ── */
@@ -239,6 +239,9 @@ interface Approval {
   accountCode?: string
   amount?: number
   title?: string
+  description?: string
+  applicant?: string
+  approver?: string
 }
 
 interface Voucher {
@@ -1241,15 +1244,18 @@ function AcctBudget({ year }: { year: number }) {
 }
 
 /* ═══════════════════════════════════════════
-   품의 (Approval) — CRUD
+   품의 (Approval) — CRUD + 승인 워크플로우
    ═══════════════════════════════════════════ */
 function AcctApproval({ year }: { year: number }) {
   const [refresh, setRefresh] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
+  const [editId, setEditId] = useState<string | number | null>(null)
   const [form, setForm] = useState({ title: '', amount: '', date: new Date().toISOString().slice(0, 10), accountCode: '', description: '', applicant: 'admin', approver: '' })
+  const [approveModal, setApproveModal] = useState<Approval | null>(null)
+  const [approvePw, setApprovePw] = useState('')
+  const [approveForm, setApproveForm] = useState({ title: '', amount: '', accountCode: '', description: '' })
   const staffList = useStaffStore(s => s.staff).filter(s => !s.resignedAt)
 
-  /* 예산과목 목록 (예산구분 > 항목) */
   const budgetCats = useMemo(() => getItem<BudgetCat[]>('acct_budget_cats', []).filter(c => c.year === year), [year, refresh])
   const budgetItems = useMemo(() => getItem<BudgetItem[]>('acct_budgets', []).filter(b => b.year === year), [year, refresh])
 
@@ -1276,9 +1282,26 @@ function AcctApproval({ year }: { year: number }) {
     rejected: approvals.filter(a => a.status === 'rejected').length,
   }
 
-  const handleAmtInput = (val: string) => {
+  const handleAmtInput = (val: string, setter: (v: string) => void) => {
     const digits = val.replace(/[^\d]/g, '')
-    setForm(f => ({ ...f, amount: digits ? Number(digits).toLocaleString('ko-KR') : '' }))
+    setter(digits ? Number(digits).toLocaleString('ko-KR') : '')
+  }
+
+  const resetForm = () => {
+    setForm({ title: '', amount: '', date: new Date().toISOString().slice(0, 10), accountCode: '', description: '', applicant: 'admin', approver: '' })
+    setEditId(null)
+  }
+
+  const openAdd = () => { resetForm(); setModalOpen(true) }
+
+  const openEdit = (a: Approval) => {
+    setEditId(a.id)
+    setForm({
+      title: a.title || '', amount: a.amount ? Number(a.amount).toLocaleString('ko-KR') : '',
+      date: a.date || new Date().toISOString().slice(0, 10), accountCode: a.accountCode || '',
+      description: a.description || '', applicant: a.applicant || 'admin', approver: a.approver || '',
+    })
+    setModalOpen(true)
   }
 
   const saveApproval = () => {
@@ -1287,29 +1310,21 @@ function AcctApproval({ year }: { year: number }) {
     if (amt <= 0) return alert('금액을 입력해주세요')
     if (!form.approver) return alert('승인자를 선택해주세요')
     const all = getItem<Approval[]>('acct_approvals', [])
-    all.push({
-      id: Date.now() + Math.floor(Math.random() * 1000),
-      title: form.title.trim(),
-      amount: amt,
-      date: form.date,
-      status: 'pending',
-      accountCode: form.accountCode,
-      description: form.description,
-      applicant: form.applicant,
-      approver: form.approver,
-      createdAt: new Date().toISOString(),
-    })
+    if (editId) {
+      const idx = all.findIndex(a => String(a.id) === String(editId))
+      if (idx >= 0) {
+        all[idx] = { ...all[idx], title: form.title.trim(), amount: amt, date: form.date, accountCode: form.accountCode, description: form.description, applicant: form.applicant, approver: form.approver }
+      }
+    } else {
+      all.push({
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        title: form.title.trim(), amount: amt, date: form.date, status: 'pending',
+        accountCode: form.accountCode, description: form.description,
+        applicant: form.applicant, approver: form.approver, createdAt: new Date().toISOString(),
+      })
+    }
     setItem('acct_approvals', all)
-    setModalOpen(false)
-    setForm({ title: '', amount: '', date: new Date().toISOString().slice(0, 10), accountCode: '', description: '', applicant: 'admin', approver: '' })
-    setRefresh(r => r + 1)
-  }
-
-  const updateStatus = (id: string | number, status: string) => {
-    const all = getItem<Approval[]>('acct_approvals', [])
-    const updated = all.map(a => String(a.id) === String(id) ? { ...a, status } : a)
-    setItem('acct_approvals', updated)
-    setRefresh(r => r + 1)
+    setModalOpen(false); resetForm(); setRefresh(r => r + 1)
   }
 
   const deleteApproval = (id: string | number) => {
@@ -1318,6 +1333,40 @@ function AcctApproval({ year }: { year: number }) {
     setItem('acct_approvals', all)
     setRefresh(r => r + 1)
   }
+
+  const openApproveModal = (a: Approval) => {
+    setApproveModal(a)
+    setApproveForm({
+      title: a.title || '', amount: a.amount ? Number(a.amount).toLocaleString('ko-KR') : '',
+      accountCode: a.accountCode || '', description: a.description || '',
+    })
+    setApprovePw('')
+  }
+
+  const handleApprove = () => {
+    if (!approvePw.trim()) return alert('비밀번호를 입력해주세요')
+    if (!approveModal) return
+    const amt = parseInt(approveForm.amount.replace(/,/g, '')) || 0
+    const all = getItem<Approval[]>('acct_approvals', [])
+    const updated = all.map(a => String(a.id) === String(approveModal.id) ? {
+      ...a, status: 'approved', title: approveForm.title, amount: amt,
+      accountCode: approveForm.accountCode, description: approveForm.description,
+    } : a)
+    setItem('acct_approvals', updated)
+    setApproveModal(null); setApprovePw(''); setRefresh(r => r + 1)
+  }
+
+  const handleReject = () => {
+    if (!approvePw.trim()) return alert('비밀번호를 입력해주세요')
+    if (!approveModal) return
+    const all = getItem<Approval[]>('acct_approvals', [])
+    const updated = all.map(a => String(a.id) === String(approveModal.id) ? { ...a, status: 'rejected' } : a)
+    setItem('acct_approvals', updated)
+    setApproveModal(null); setApprovePw(''); setRefresh(r => r + 1)
+  }
+
+  const inputCls = "w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none"
+  const labelCls = "text-[11px] font-bold text-[var(--text-muted)] mb-1 block"
 
   return (
     <div className="space-y-4">
@@ -1343,10 +1392,7 @@ function AcctApproval({ year }: { year: number }) {
             <FileCheck size={14} className="text-primary-500" />
             <span className="text-sm font-extrabold text-[var(--text-primary)]">품의 목록</span>
           </div>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-500 text-white text-[12px] font-bold hover:bg-primary-600 transition-all cursor-pointer"
-          >
+          <button onClick={openAdd} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-500 text-white text-[12px] font-bold hover:bg-primary-600 transition-all cursor-pointer">
             <Plus size={13} /> 품의 등록
           </button>
         </div>
@@ -1354,11 +1400,11 @@ function AcctApproval({ year }: { year: number }) {
           <div className="p-6"><EmptyState emoji="📋" title="등록된 품의가 없습니다" /></div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px]">
+            <table className="w-full min-w-[700px]">
               <thead>
                 <tr className="bg-[var(--bg-muted)]">
-                  {['날짜', '제목', '금액', '상태', '관리'].map(h => (
-                    <th key={h} className="py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)] text-left">{h}</th>
+                  {['날짜', '제목', '금액', '신청자', '승인자', '상태', '관리'].map(h => (
+                    <th key={h} className="py-2.5 px-3 text-[11px] font-bold text-[var(--text-muted)] text-left">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -1367,29 +1413,35 @@ function AcctApproval({ year }: { year: number }) {
                   const si = statusInfo[a.status] || statusInfo.pending
                   return (
                     <tr key={a.id} className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors">
-                      <td className="py-2.5 px-3.5 text-[12px] text-[var(--text-secondary)]">{a.date || a.createdAt || ''}</td>
-                      <td className="py-2.5 px-3.5 text-[12px] font-bold text-[var(--text-primary)]">{a.title || '-'}</td>
-                      <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-right text-[var(--text-primary)]">{formatNumber(a.amount || 0)}원</td>
-                      <td className="py-2.5 px-3.5">
+                      <td className="py-2.5 px-3 text-[12px] text-[var(--text-secondary)]">{(a.date || a.createdAt || '').slice(0, 10)}</td>
+                      <td className="py-2.5 px-3 text-[12px] font-bold text-[var(--text-primary)]">{a.title || '-'}</td>
+                      <td className="py-2.5 px-3 text-[12px] font-extrabold text-right text-[var(--text-primary)]">{formatNumber(a.amount || 0)}원</td>
+                      <td className="py-2.5 px-3 text-[11px] text-[var(--text-secondary)]">{a.applicant || '-'}</td>
+                      <td className="py-2.5 px-3 text-[11px] text-[var(--text-secondary)]">{a.approver || '-'}</td>
+                      <td className="py-2.5 px-3">
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: si.bg, color: si.color }}>
                           {si.label}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3.5">
+                      <td className="py-2.5 px-3">
                         <div className="flex items-center gap-1">
+                          {/* 대기 상태: 수정 + 삭제 */}
                           {a.status === 'pending' && (
                             <>
-                              <button onClick={() => updateStatus(a.id, 'approved')} title="승인" className="p-1 rounded-md bg-[rgba(34,197,94,.1)] text-[#22c55e] hover:bg-[rgba(34,197,94,.2)] cursor-pointer transition-colors">
-                                <Check size={12} />
+                              <button onClick={() => openEdit(a)} title="수정" className="p-1 rounded-md bg-primary-50 dark:bg-primary-900/10 text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-900/20 cursor-pointer transition-colors">
+                                <Edit3 size={12} />
                               </button>
-                              <button onClick={() => updateStatus(a.id, 'rejected')} title="반려" className="p-1 rounded-md bg-[rgba(239,68,68,.1)] text-[#ef4444] hover:bg-[rgba(239,68,68,.2)] cursor-pointer transition-colors">
-                                <Ban size={12} />
+                              <button onClick={() => deleteApproval(a.id)} title="삭제" className="p-1 rounded-md bg-[rgba(239,68,68,.06)] text-[#ef4444] hover:bg-[rgba(239,68,68,.15)] cursor-pointer transition-colors">
+                                <Trash2 size={12} />
                               </button>
                             </>
                           )}
-                          <button onClick={() => deleteApproval(a.id)} title="삭제" className="p-1 rounded-md bg-[rgba(239,68,68,.06)] text-[#ef4444] hover:bg-[rgba(239,68,68,.15)] cursor-pointer transition-colors">
-                            <Trash2 size={12} />
-                          </button>
+                          {/* 승인자 영역: 승인 아이콘 (대기만) */}
+                          {a.status === 'pending' && (
+                            <button onClick={() => openApproveModal(a)} title="승인처리" className="p-1 rounded-md bg-[rgba(34,197,94,.1)] text-[#22c55e] hover:bg-[rgba(34,197,94,.2)] cursor-pointer transition-colors ml-1">
+                              <ShieldCheck size={13} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1401,24 +1453,22 @@ function AcctApproval({ year }: { year: number }) {
         )}
       </div>
 
-      {/* 품의 등록 모달 */}
+      {/* 품의 등록/수정 모달 */}
       {modalOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) setModalOpen(false) }}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) { setModalOpen(false); resetForm() } }}>
           <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md mx-4">
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border-default)]">
-              <span className="text-sm font-extrabold text-[var(--text-primary)]">품의 등록</span>
-              <button onClick={() => setModalOpen(false)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer"><X size={18} /></button>
+              <span className="text-sm font-extrabold text-[var(--text-primary)]">{editId ? '품의 수정' : '품의 등록'}</span>
+              <button onClick={() => { setModalOpen(false); resetForm() }} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer"><X size={18} /></button>
             </div>
             <div className="p-5 space-y-4">
-              {/* 품의명 */}
               <div>
-                <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">품의명 *</label>
-                <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="예) 사무용품 구매" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+                <label className={labelCls}>품의명 *</label>
+                <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="예) 사무용품 구매" className={inputCls} />
               </div>
-              {/* 예산과목 + 금액 */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">예산과목 *</label>
+                  <label className={labelCls}>예산과목 *</label>
                   <CustomSelect
                     value={form.accountCode}
                     onChange={v => setForm(f => ({ ...f, accountCode: v }))}
@@ -1435,18 +1485,17 @@ function AcctApproval({ year }: { year: number }) {
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">금액 (원) *</label>
-                  <input value={form.amount} onChange={e => handleAmtInput(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none text-right font-bold" />
+                  <label className={labelCls}>금액 (원) *</label>
+                  <input value={form.amount} onChange={e => handleAmtInput(e.target.value, v => setForm(f => ({ ...f, amount: v })))} placeholder="0" className={`${inputCls} text-right font-bold`} />
                 </div>
               </div>
-              {/* 신청자 + 승인자 */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">신청자</label>
-                  <input value={form.applicant} onChange={e => setForm(f => ({ ...f, applicant: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] outline-none" readOnly />
+                  <label className={labelCls}>신청자</label>
+                  <input value={form.applicant} readOnly className={`${inputCls} bg-[var(--bg-muted)]`} />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">승인자 *</label>
+                  <label className={labelCls}>승인자 *</label>
                   <CustomSelect
                     value={form.approver}
                     onChange={v => setForm(f => ({ ...f, approver: v }))}
@@ -1461,15 +1510,90 @@ function AcctApproval({ year }: { year: number }) {
                   />
                 </div>
               </div>
-              {/* 사유/메모 */}
               <div>
-                <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">사유/메모</label>
-                <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="품의 사유를 입력해주세요" rows={3} className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none resize-none" />
+                <label className={labelCls}>사유/메모</label>
+                <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="품의 사유를 입력해주세요" rows={3} className={`${inputCls} resize-none`} />
               </div>
             </div>
             <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-[var(--border-default)]">
-              <button onClick={() => setModalOpen(false)} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer">취소</button>
-              <button onClick={saveApproval} className="px-4 py-2 rounded-lg bg-[#22c55e] text-white text-sm font-bold hover:bg-[#16a34a] cursor-pointer">등록</button>
+              <button onClick={() => { setModalOpen(false); resetForm() }} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer">취소</button>
+              <button onClick={saveApproval} className="px-4 py-2 rounded-lg bg-[#22c55e] text-white text-sm font-bold hover:bg-[#16a34a] cursor-pointer">{editId ? '수정' : '등록'}</button>
+            </div>
+          </div>
+        </div>
+      , document.body)}
+
+      {/* 승인 처리 모달 */}
+      {approveModal && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) setApproveModal(null) }}>
+          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border-default)]">
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={16} className="text-[#22c55e]" />
+                <span className="text-sm font-extrabold text-[var(--text-primary)]">품의 승인</span>
+              </div>
+              <button onClick={() => setApproveModal(null)} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer"><X size={18} /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              {/* 신청 정보 */}
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-muted)] border border-[var(--border-default)]">
+                <div className="flex-1">
+                  <div className="text-[10px] text-[var(--text-muted)]">신청자</div>
+                  <div className="text-[13px] font-bold text-[var(--text-primary)]">{approveModal.applicant || '-'}</div>
+                </div>
+                <div className="flex-1">
+                  <div className="text-[10px] text-[var(--text-muted)]">승인자</div>
+                  <div className="text-[13px] font-bold text-[var(--text-primary)]">{approveModal.approver || '-'}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] text-[var(--text-muted)]">날짜</div>
+                  <div className="text-[12px] font-bold text-[var(--text-primary)]">{(approveModal.date || '').slice(0, 10)}</div>
+                </div>
+              </div>
+
+              <div>
+                <label className={labelCls}>품의명</label>
+                <input value={approveForm.title} onChange={e => setApproveForm(f => ({ ...f, title: e.target.value }))} className={inputCls} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>예산과목</label>
+                  <CustomSelect
+                    value={approveForm.accountCode}
+                    onChange={v => setApproveForm(f => ({ ...f, accountCode: v }))}
+                    placeholder="— 선택 —"
+                    options={[
+                      { value: '', label: '— 선택 —' },
+                      ...budgetCats.flatMap(cat =>
+                        budgetItems.filter(b => b.catId === cat.id).map(b => ({
+                          value: b.accountCode || b.itemName,
+                          label: `${cat.name} > ${b.itemName}`,
+                        }))
+                      ),
+                    ]}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>금액 (원)</label>
+                  <input value={approveForm.amount} onChange={e => handleAmtInput(e.target.value, v => setApproveForm(f => ({ ...f, amount: v })))} className={`${inputCls} text-right font-bold`} />
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>사유/메모</label>
+                <textarea value={approveForm.description} onChange={e => setApproveForm(f => ({ ...f, description: e.target.value }))} rows={3} className={`${inputCls} resize-none`} />
+              </div>
+
+              {/* 비밀번호 */}
+              <div className="border-t border-[var(--border-default)] pt-4">
+                <label className={labelCls}><Lock size={10} className="inline mr-1" />승인 비밀번호 *</label>
+                <input type="password" value={approvePw} onChange={e => setApprovePw(e.target.value)} placeholder="비밀번호를 입력하세요" className={inputCls}
+                  onKeyDown={e => { if (e.key === 'Enter') handleApprove() }} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-[var(--border-default)]">
+              <button onClick={() => setApproveModal(null)} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer">취소</button>
+              <button onClick={handleReject} className="px-4 py-2 rounded-lg bg-[#ef4444] text-white text-sm font-bold hover:bg-[#dc2626] cursor-pointer">반려</button>
+              <button onClick={handleApprove} className="px-4 py-2 rounded-lg bg-[#22c55e] text-white text-sm font-bold hover:bg-[#16a34a] cursor-pointer flex items-center gap-1"><ShieldCheck size={14} /> 승인</button>
             </div>
           </div>
         </div>
@@ -1594,8 +1718,72 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
     return stored.length > 0 ? stored : ['계좌이체', '현금', '카드', '법인카드', '기타']
   }, [refresh])
 
+  /* 승인된 품의 목록 (지출하기 전용) */
+  const approvedApprovals = useMemo(() => {
+    if (type !== 'expense') return []
+    return getItem<Approval[]>('acct_approvals', []).filter(a => a.status === 'approved' && a.date && parseInt(String(a.date).substring(0, 4)) === year)
+  }, [type, year, refresh])
+
+  const executeApproval = (appr: Approval) => {
+    if (!confirm(`"${appr.title}" 품의를 지출 처리하시겠습니까?`)) return
+    const amt = appr.amount || 0
+    const cfId = Date.now() + Math.floor(Math.random() * 1000)
+    const vId = cfId + 1
+
+    // 전표 자동 생성
+    const vouchers = getItem<any[]>('acct_vouchers', [])
+    vouchers.push({
+      id: vId, date: new Date().toISOString().slice(0, 10), type: 'expense',
+      description: appr.title, entries: [
+        { side: 'debit', accountCode: '5110', amount: amt },
+        { side: 'credit', accountCode: '1020', amount: amt },
+      ],
+      createdAt: new Date().toISOString(),
+    })
+    setItem('acct_vouchers', vouchers)
+
+    // 캐시플로 등록
+    const cfs = getItem<CashFlow[]>('acct_cashflows', [])
+    cfs.push({
+      id: cfId, date: new Date().toISOString().slice(0, 10), type: 'expense',
+      amount: amt, description: appr.title, accountCode: appr.accountCode || '5110',
+      counter: '', writeDate: new Date().toISOString().slice(0, 10),
+    })
+    setItem('acct_cashflows', cfs)
+
+    // 품의 상태 → 지출완료
+    const allAppr = getItem<Approval[]>('acct_approvals', [])
+    setItem('acct_approvals', allAppr.map(a => String(a.id) === String(appr.id) ? { ...a, status: 'expensed' } : a))
+    setRefresh(r => r + 1)
+  }
+
   return (
     <div className="space-y-4">
+      {/* ── 승인된 품의 (지출 타입 전용) ── */}
+      {type === 'expense' && approvedApprovals.length > 0 && (
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border-default)]">
+            <ShieldCheck size={14} className="text-[#22c55e]" />
+            <span className="text-[12px] font-extrabold text-[var(--text-primary)]">승인된 품의</span>
+            <span className="text-[10px] text-[var(--text-muted)] ml-1">{approvedApprovals.length}건</span>
+          </div>
+          <div className="p-3 space-y-2">
+            {approvedApprovals.map(ap => (
+              <div key={ap.id} className="flex items-center gap-3 p-3 rounded-xl border border-[rgba(34,197,94,.2)] bg-[rgba(34,197,94,.04)] hover:bg-[rgba(34,197,94,.08)] transition-colors">
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12px] font-bold text-[var(--text-primary)] truncate">{ap.title}</div>
+                  <div className="text-[10px] text-[var(--text-muted)]">{(ap.date || '').slice(0, 10)} · {ap.applicant || '-'}</div>
+                </div>
+                <div className="text-[13px] font-extrabold text-[#22c55e] shrink-0">{formatNumber(ap.amount || 0)}원</div>
+                <button onClick={() => executeApproval(ap)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#ef4444] to-[#dc2626] text-white text-[11px] font-bold cursor-pointer hover:shadow-lg transition-all shrink-0">
+                  💸 지출처리
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── 등록 폼 ── */}
       <div className={`bg-gradient-to-r ${typeGrads[type]} rounded-2xl p-4 text-white`}>
         <div className="flex items-center gap-2.5 mb-3">
