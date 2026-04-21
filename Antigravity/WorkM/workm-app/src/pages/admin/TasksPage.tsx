@@ -1034,10 +1034,23 @@ function TaskListView({ tasks, getUser, detailTasks, taskResults, reportTypes, o
                 <button onClick={() => { if (confirm('이 업무를 삭제하시겠습니까?')) onDelete(t.id) }} className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-[var(--text-muted)] hover:text-red-500 cursor-pointer transition-colors" title="삭제"><Trash2 size={13} /></button>
               </div>
             </div>
-            <div className="flex items-center gap-3 mb-2.5">
+            <div className="flex items-center gap-3 mb-2.5 flex-wrap">
+              {t.assignerId && (() => {
+                const assigner = getUser(t.assignerId)
+                return assigner ? (
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] font-bold text-[var(--text-muted)]">지시자</span>
+                    <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-full pl-0.5 pr-2 py-0.5">
+                      <Avatar name={assigner.name} color={assigner.color} size="xs" />
+                      <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400">{assigner.name}</span>
+                    </div>
+                  </div>
+                ) : null
+              })()}
               {t.team && <span className="text-[10px] font-semibold bg-[var(--bg-muted)] text-[var(--text-muted)] px-2 py-0.5 rounded-md">{t.team}</span>}
               {assignees.length > 0 && (
                 <div className="flex items-center gap-1">
+                  <span className="text-[9px] font-bold text-[var(--text-muted)]">수신자</span>
                   {assignees.map(u => (
                     <div key={u.id} className="flex items-center gap-1 bg-[var(--bg-muted)] rounded-full pl-0.5 pr-2 py-0.5">
                       <Avatar name={u.name} color={u.color} size="xs" />
