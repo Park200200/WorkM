@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../../components/common/PageHeader'
@@ -1306,15 +1306,22 @@ function AcctApproval({ year }: { year: number }) {
     : myRole === 'expense' ? ['approved', 'expensed', 'resolved', 'completed']
     : ['pending', 'approved', 'rejected', 'expensed', 'resolved', 'completed']
 
-  const filteredApprovals = approvals.filter(a => visibleStatuses.includes(a.status))
+  const filteredApprovals = approvals.filter(a => {
+    if (!visibleStatuses.includes(a.status)) return false
+    if (myRole === 'approver') {
+      // 본인이 승인자로 지정된 품의 OR 본인이 신청한 품의만 표시
+      return a.approver === myName || a.applicant === myName
+    }
+    return true
+  })
 
-  /* 통계 카드 */
+  /* 통계 카드 (역할별 필터된 범위 기준) */
   const statCards = myRole === 'approver'
     ? [
-        { label: '요청', value: approvals.filter(a => a.status === 'pending').length, color: '#f59e0b' },
-        { label: '승인', value: approvals.filter(a => a.status === 'approved').length, color: '#22c55e' },
-        { label: '반려', value: approvals.filter(a => a.status === 'rejected').length, color: '#ef4444' },
-        { label: '전체', value: approvals.length, color: '#4f6ef7' },
+        { label: '요청', value: filteredApprovals.filter(a => a.status === 'pending').length, color: '#f59e0b' },
+        { label: '승인', value: filteredApprovals.filter(a => a.status === 'approved').length, color: '#22c55e' },
+        { label: '반려', value: filteredApprovals.filter(a => a.status === 'rejected').length, color: '#ef4444' },
+        { label: '전체', value: filteredApprovals.length, color: '#4f6ef7' },
       ]
     : myRole === 'expense'
     ? [
