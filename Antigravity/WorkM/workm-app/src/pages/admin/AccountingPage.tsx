@@ -1819,12 +1819,17 @@ function AcctApproval({ year }: { year: number }) {
                   w.document.write(`<html><head><title>지출품의서 - ${previewModal.title}</title><style>
                     *{margin:0;padding:0;box-sizing:border-box}
                     html,body{height:100%;font-family:'Malgun Gothic','맑은 고딕',sans-serif;color:#111;font-size:13px;line-height:1.5}
-                    body{padding:40px 50px;display:flex;flex-direction:column}
+                    body{padding:0}
+                    .a4-wrap{padding:40px 50px;min-height:100vh;display:flex;flex-direction:column}
                     table{width:100%;border-collapse:collapse}
                     th,td{border:1px solid #bbb;padding:9px 14px}
                     th{background:#edf1f8;font-weight:700;color:#333;letter-spacing:2px;white-space:nowrap}
-                    @media print{body{padding:15mm;height:auto}@page{margin:0;size:A4 portrait}}
-                  </style></head><body>${el.innerHTML}</body></html>`)
+                    table[data-role="note"]{flex:1}
+                    @media print{
+                      .a4-wrap{min-height:100vh;padding:15mm}
+                      @page{margin:0;size:A4 portrait}
+                    }
+                  </style></head><body><div class="a4-wrap">${el.innerHTML}</div></body></html>`)
                   w.document.close()
                   w.print()
                 }} title="인쇄" className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500 cursor-pointer transition-colors"><Printer size={15} /></button>
@@ -1928,7 +1933,7 @@ function AcctApproval({ year }: { year: number }) {
               </div>
 
               {/* ── 비고 (맨 아래까지 확장) ── */}
-              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', flex: 1 }}>
+              <table data-role="note" style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', flex: 1 }}>
                 <colgroup>
                   <col style={{ width: '13%' }} />
                   <col style={{ width: '87%' }} />
