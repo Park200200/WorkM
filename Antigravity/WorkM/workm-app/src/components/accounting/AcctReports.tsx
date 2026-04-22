@@ -25,7 +25,7 @@ const REPORT_TABS = [
   { key: 'is', label: '손익계산서', icon: TrendingUp },
   { key: 'tb', label: '합계잔액시산표', icon: Table },
   { key: 'gl', label: '총계정원장', icon: BookOpen },
-  { key: 'cb', label: '현금출납장', icon: Banknote },
+  { key: 'cb', label: '자금출납장', icon: Banknote },
   { key: 'al', label: '거래처원장', icon: Building2 },
 ]
 
@@ -382,44 +382,102 @@ function TrialBalance({ accounts, vouchers, balances, year }: { accounts: Accoun
 }
 
 /* ═══════════════════════════════════════════
-   4. 현금출납장
+   4. 자금출납장 (현금 + 보통예금 통합)
    ═══════════════════════════════════════════ */
+const FUND_FILTERS: { key: string; label: string; codes: string[] }[] = [
+  { key: 'all', label: '전체 (현금+예금)', codes: ['1010', '1020'] },
+  { key: '1010', label: '현금 (1010)', codes: ['1010'] },
+  { key: '1020', label: '보통예금 (1020)', codes: ['1020'] },
+]
+
 function CashBook({ vouchers, balances, year }: { vouchers: Voucher[]; balances: OpeningBalance[]; year: number }) {
-  const ob = balances.find(b => b.accountCode === '1010')
-  const openBal = ob ? ob.amount : 0
+  const [filter, setFilter] = useState<string>('all')
+
+  const activeFilter = FUND_FILTERS.find(f => f.key === filter) || FUND_FILTERS[0]
+  const activeCodes = activeFilter.codes
+
+  // 기초잔액: 선택 계정들의 합
+  const openBal = activeCodes.reduce((sum, code) => {
+    const ob = balances.find(b => b.accountCode === code)
+    return sum + (ob ? ob.amount || 0 : 0)
+  }, 0)
+
   let runBal = openBal
 
-  const cashTxns: { date: string; desc: string; side: string; amount: number }[] = []
+  const fundTxns: { date: string; desc: string; counterpart: string; side: string; amount: number; acctCode: string }[] = []
   vouchers.forEach(v => {
     ;(v.entries || []).forEach(e => {
-      if (e.accountCode === '1010') {
-        cashTxns.push({ date: v.date || '', desc: v.description || '', side: e.side, amount: e.amount })
+      if (activeCodes.includes(e.accountCode)) {
+        fundTxns.push({
+          date: v.date || '', desc: v.description || '',
+          counterpart: v.counterpart || '',
+          side: e.side, amount: e.amount, acctCode: e.accountCode,
+        })
       }
     })
   })
-  cashTxns.sort((a, b) => a.date.localeCompare(b.date))
+  fundTxns.sort((a, b) => a.date.localeCompare(b.date))
 
   let totalIn = 0, totalOut = 0
 
   return (
     <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4 space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Banknote size={16} className="text-primary-500" />
-          <span className="text-sm font-extrabold">현금출납장</span>
+          <span className="text-sm font-extrabold">자금출납장</span>
           <span className="text-[12px] text-[var(--text-muted)]">{year}년도</span>
         </div>
-        <button onClick={() => window.print()} className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[var(--border-default)] text-[11px] font-bold text-[var(--text-muted)] cursor-pointer">
-          <Printer size={12} /> 인쇄
-        </button>
+        <div className="flex items-center gap-2">
+          {/* 계정 필터 */}
+          <div className="flex items-center gap-0.5 bg-[var(--bg-muted)] rounded-lg p-0.5 border border-[var(--border-default)]">
+            {FUND_FILTERS.map(f => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={cn(
+                  'px-2.5 py-1.5 rounded-md text-[10px] font-bold transition-all cursor-pointer whitespace-nowrap',
+                  filter === f.key
+                    ? 'bg-primary-500 text-white shadow-sm'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <button onClick={() => window.print()} className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[var(--border-default)] text-[11px] font-bold text-[var(--text-muted)] cursor-pointer">
+            <Printer size={12} /> 인쇄
+          </button>
+        </div>
+      </div>
+
+      {/* 기초잔액 요약 카드 */}
+      <div className="flex items-center gap-3 p-3 rounded-xl border border-[var(--border-default)] bg-[var(--bg-muted)]">
+        <span className="w-8 h-8 rounded-lg bg-primary-500 text-white text-sm font-extrabold flex items-center justify-center">₩</span>
+        <div className="flex-1">
+          <div className="text-[13px] font-extrabold text-[var(--text-primary)]">
+            {activeFilter.label}
+          </div>
+          <div className="text-[10px] text-[var(--text-muted)]">
+            {activeCodes.length > 1 ? '현금 + 보통예금 통합 출납장' : `계정코드: ${activeCodes[0]}`}
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-[10px] text-[var(--text-muted)]">기초잔액</div>
+          <div className="text-[14px] font-extrabold text-primary-500">{formatNumber(openBal)}원</div>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[550px]">
+        <table className="w-full min-w-[700px]">
           <thead>
             <tr className="bg-[var(--bg-muted)] border-b-2 border-[var(--border-default)]">
-              {['날짜', '적요', '입금', '출금', '잔액'].map(h => (
-                <th key={h} className={cn('py-2.5 px-2.5 text-[12px] font-semibold text-[var(--text-muted)]', h === '날짜' || h === '적요' ? 'text-left' : 'text-right')}>
+              {['날짜', '적요', '거래처', ...(filter === 'all' ? ['구분'] : []), '입금', '출금', '잔액'].map(h => (
+                <th key={h} className={cn(
+                  'py-2.5 px-2.5 text-[12px] font-semibold text-[var(--text-muted)]',
+                  h === '날짜' || h === '적요' || h === '거래처' || h === '구분' ? 'text-left' : 'text-right',
+                )}>
                   {h}
                 </th>
               ))}
@@ -429,27 +487,42 @@ function CashBook({ vouchers, balances, year }: { vouchers: Voucher[]; balances:
             {/* 기초잔액 행 */}
             <tr className="border-b border-[var(--border-default)] bg-[var(--bg-muted)]">
               <td className="py-2 px-2.5 text-[12.5px] font-bold">{year}-01-01</td>
-              <td className="py-2 px-2.5 text-[12.5px] font-bold text-[var(--text-muted)]">기초잔액</td>
+              <td className="py-2 px-2.5 text-[12.5px] font-bold text-primary-500">기초잔액</td>
+              <td></td>
+              {filter === 'all' && <td></td>}
               <td></td><td></td>
               <td className="py-2 px-2.5 text-right text-[12.5px] font-bold">{formatNumber(openBal)}원</td>
             </tr>
-            {cashTxns.map((tx, i) => {
+            {fundTxns.map((tx, i) => {
               const inAmt = tx.side === 'debit' ? tx.amount : 0
               const outAmt = tx.side === 'credit' ? tx.amount : 0
               totalIn += inAmt; totalOut += outAmt
               runBal += inAmt - outAmt
               return (
-                <tr key={i} className="border-b border-[var(--border-default)]">
-                  <td className="py-2 px-2.5 text-[12px] text-[var(--text-muted)]">{tx.date}</td>
-                  <td className="py-2 px-2.5 text-[12.5px]">{tx.desc}</td>
-                  <td className="py-2 px-2.5 text-right text-[12.5px] text-[#22c55e] font-semibold">{inAmt ? formatNumber(inAmt) + '원' : ''}</td>
+                <tr key={i} className="border-b border-[var(--border-default)] hover:bg-[var(--bg-muted)] transition-colors">
+                  <td className="py-2 px-2.5 text-[12px] text-[var(--text-muted)] whitespace-nowrap">{tx.date}</td>
+                  <td className="py-2 px-2.5 text-[12.5px] text-[var(--text-primary)]">{tx.desc}</td>
+                  <td className="py-2 px-2.5 text-[11px] text-[var(--text-muted)]">{tx.counterpart}</td>
+                  {filter === 'all' && (
+                    <td className="py-2 px-2.5">
+                      <span className={cn(
+                        'text-[9px] font-bold px-1.5 py-0.5 rounded-full',
+                        tx.acctCode === '1010'
+                          ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-600'
+                          : 'bg-blue-100 dark:bg-blue-900/20 text-blue-600',
+                      )}>
+                        {tx.acctCode === '1010' ? '현금' : '예금'}
+                      </span>
+                    </td>
+                  )}
+                  <td className="py-2 px-2.5 text-right text-[12.5px] text-[#22c55e] font-semibold whitespace-nowrap">{inAmt ? formatNumber(inAmt) + '원' : ''}</td>
                   <td className="py-2 px-2.5 text-right text-[12.5px] text-[#ef4444] font-semibold whitespace-nowrap">{outAmt ? formatNumber(outAmt) + '원' : ''}</td>
-                  <td className="py-2 px-2.5 text-right text-[12.5px] font-bold">{formatNumber(runBal)}원</td>
+                  <td className="py-2 px-2.5 text-right text-[12.5px] font-bold whitespace-nowrap">{formatNumber(runBal)}원</td>
                 </tr>
               )
             })}
             <tr className="border-t-2 border-[var(--text-primary)] bg-[var(--bg-muted)]">
-              <td colSpan={2} className="py-2.5 px-2.5 text-center text-[13px] font-extrabold">합계</td>
+              <td colSpan={filter === 'all' ? 4 : 3} className="py-2.5 px-2.5 text-center text-[13px] font-extrabold">합계</td>
               <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold text-[#22c55e]">{formatNumber(totalIn)}원</td>
               <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold text-[#ef4444]">{formatNumber(totalOut)}원</td>
               <td className="py-2.5 px-2.5 text-right text-[14px] font-extrabold">{formatNumber(runBal)}원</td>
@@ -458,8 +531,24 @@ function CashBook({ vouchers, balances, year }: { vouchers: Voucher[]; balances:
         </table>
       </div>
 
-      {cashTxns.length === 0 && (
-        <EmptyState emoji="💰" title="현금 거래 내역이 없습니다" />
+      {/* 하단 요약 카드 */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="text-center py-2.5 rounded-xl bg-[rgba(34,197,94,.06)] border border-[rgba(34,197,94,.15)]">
+          <div className="text-[10px] text-[var(--text-muted)]">입금 합계</div>
+          <div className="text-[14px] font-extrabold text-[#22c55e]">{formatNumber(totalIn)}원</div>
+        </div>
+        <div className="text-center py-2.5 rounded-xl bg-[rgba(239,68,68,.06)] border border-[rgba(239,68,68,.15)]">
+          <div className="text-[10px] text-[var(--text-muted)]">출금 합계</div>
+          <div className="text-[14px] font-extrabold text-[#ef4444]">{formatNumber(totalOut)}원</div>
+        </div>
+        <div className="text-center py-2.5 rounded-xl bg-[rgba(79,110,247,.06)] border border-[rgba(79,110,247,.15)]">
+          <div className="text-[10px] text-[var(--text-muted)]">기말잔액</div>
+          <div className="text-[14px] font-extrabold text-primary-500">{formatNumber(runBal)}원</div>
+        </div>
+      </div>
+
+      {fundTxns.length === 0 && (
+        <EmptyState emoji="💰" title="해당 자금 거래 내역이 없습니다" />
       )}
     </div>
   )
