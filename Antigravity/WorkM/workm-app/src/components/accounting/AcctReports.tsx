@@ -514,7 +514,8 @@ function AccountLedger({ vouchers, year }: { vouchers: Voucher[]; year: number }
 
               {/* 테이블 */}
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[500px]">
+                <table className="w-full min-w-[500px] table-fixed">
+                  <colgroup><col className="w-[130px]" /><col /><col className="w-[150px]" /><col className="w-[150px]" /></colgroup>
                   <thead>
                     <tr className="bg-[var(--bg-muted)] border-b border-[var(--border-default)]">
                       {['날짜', '적요', '차변', '대변'].map(h => (
