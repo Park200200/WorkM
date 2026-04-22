@@ -2303,7 +2303,7 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
   const typeGrads = { expense: 'from-[#ef4444] to-[#dc2626]', income: 'from-[#22c55e] to-[#16a34a]', withdrawal: 'from-[#f59e0b] to-[#d97706]' }
 
   const today = new Date().toISOString().slice(0, 10)
-  const [form, setForm] = useState({ desc: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, accountCode: '', memo: '' })
+  const [form, setForm] = useState({ desc: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, accountCode: '', memo: '', budgetCatId: '' as string | number, budgetItemName: '', budgetSubName: '' })
   const [counterSearch, setCounterSearch] = useState('')
   const [showCounterList, setShowCounterList] = useState(false)
   const counterRef = useRef<HTMLDivElement>(null)
@@ -2393,7 +2393,7 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
     })
     setItem('acct_cashflows', cfs)
 
-    setForm({ desc: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, accountCode: '', memo: '' })
+    setForm({ desc: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, accountCode: '', memo: '', budgetCatId: '', budgetItemName: '', budgetSubName: '' })
     setCounterSearch('')
     setRefresh(r => r + 1)
   }
@@ -2489,72 +2489,65 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
 
       <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* 1. 지출내용(예산항목) */}
+          {/* 1. 입금/지출내용 */}
           <div>
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">
-              {type === 'income' ? '입금내용(예산항목)' : '지출내용(예산항목)'} *
+              {type === 'income' ? '입금내용' : '지출내용'} *
             </label>
-            {budgetItemNames.length > 0 ? (
-              <div className="relative">
-                {descMode === 'select' ? (
-                  <>
-                    <CustomSelect
-                      value={form.desc}
-                      onChange={v => {
-                        if (v === '__direct__') {
-                          setDescMode('input')
-                          setForm(f => ({ ...f, desc: '' }))
-                        } else {
-                          setForm(f => ({ ...f, desc: v }))
-                        }
-                      }}
-                      placeholder="— 예산항목 선택 —"
-                      options={[
-                        { value: '', label: '— 예산항목 선택 —' },
-                        ...budgetItemNames.map(name => ({ value: name, label: name })),
-                        { value: '__direct__', label: '✏️ 직접 입력' },
-                      ]}
-                    />
-                  </>
-                ) : (
-                  <div className="flex gap-1.5">
-                    <input
-                      value={form.desc}
-                      onChange={e => setForm(f => ({ ...f, desc: e.target.value }))}
-                      placeholder="지출 내용을 직접 입력"
-                      className="flex-1 px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none"
-                      autoFocus
-                    />
-                    <button
-                      type="button"
-                      onClick={() => { setDescMode('select'); setForm(f => ({ ...f, desc: '' })) }}
-                      className="px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-[10.5px] font-bold text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer whitespace-nowrap"
-                    >
-                      목록
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <input value={form.desc} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))} placeholder="예) 4월 매출" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
-            )}
+            <input value={form.desc} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))} placeholder={type === 'income' ? '예) 4월 보조금 입금' : '예) 사무용품 구매'} className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
           </div>
-          {/* 2. 계정과목 */}
+          {/* 2. 예산선택 (3단계 캐스케이딩) */}
+          <div>
+            <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">예산선택</label>
+            {(() => {
+              const vBudgetCats: { id: number | string; name: string; year: number }[] = getItem('acct_budget_cats', [])
+              const yCats = vBudgetCats.filter(c => c.year === year)
+              const vBudgetItems: { catId: number | string; itemName: string; subName?: string; accountCode?: string }[] = getItem('acct_budgets', [])
+              return (
+                <>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <CustomSelect
+                      value={String(form.budgetCatId || '')}
+                      onChange={v => setForm(f => ({ ...f, budgetCatId: v, budgetItemName: '', budgetSubName: '', accountCode: '' }))}
+                      placeholder="예산구분"
+                      options={[{ value: '', label: '예산구분' }, ...yCats.map(c => ({ value: String(c.id), label: c.name }))]}
+                    />
+                    <CustomSelect
+                      value={form.budgetItemName}
+                      onChange={v => setForm(f => ({ ...f, budgetItemName: v, budgetSubName: '', accountCode: '' }))}
+                      placeholder="예산항목"
+                      options={[{ value: '', label: '예산항목' }, ...(form.budgetCatId ? Array.from(new Set(vBudgetItems.filter(b => String(b.catId) === String(form.budgetCatId)).map(b => b.itemName).filter(Boolean))).map(n => ({ value: n, label: n })) : [])]}
+                    />
+                    <CustomSelect
+                      value={form.budgetSubName}
+                      onChange={v => {
+                        const matched = vBudgetItems.find(b => String(b.catId) === String(form.budgetCatId) && b.itemName === form.budgetItemName && b.subName === v)
+                        const accts: { code: string; name: string }[] = getItem('acct_accounts', [])
+                        const acct = matched?.accountCode ? accts.find(a => a.code === matched.accountCode) : null
+                        setForm(f => ({ ...f, budgetSubName: v, accountCode: matched?.accountCode || '' }))
+                      }}
+                      placeholder="예산세목"
+                      options={[{ value: '', label: '예산세목' }, ...(form.budgetItemName ? Array.from(new Set(vBudgetItems.filter(b => String(b.catId) === String(form.budgetCatId) && b.itemName === form.budgetItemName).map(b => b.subName).filter(Boolean) as string[])).map(n => ({ value: n, label: n })) : [])]}
+                    />
+                  </div>
+                  {(form.budgetCatId || form.budgetItemName || form.budgetSubName) && (
+                    <div className="mt-1 text-[10px] text-primary-500 font-semibold">
+                      {yCats.find(c => String(c.id) === String(form.budgetCatId))?.name || ''}
+                      {form.budgetItemName && ` ${String.fromCharCode(8250)} ${form.budgetItemName}`}
+                      {form.budgetSubName && ` ${String.fromCharCode(8250)} ${form.budgetSubName}`}
+                    </div>
+                  )}
+                </>
+              )
+            })()}
+          </div>
+          {/* 2-1. 계정과목 (자동) */}
           <div>
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">계정과목</label>
-            <CustomSelect
-              value={form.accountCode}
-              onChange={v => setForm(f => ({ ...f, accountCode: v }))}
-              placeholder="— 계정과목 선택 —"
-              options={[
-                { value: '', label: '— 계정과목 선택 —' },
-                ...(() => {
-                  const budgetItems: { accountCode?: string }[] = getItem('acct_budgets', [])
-                  const budgetCodes = Array.from(new Set(budgetItems.map(b => b.accountCode).filter(Boolean))) as string[]
-                  const accts: { code: string; name: string; type: string }[] = getItem('acct_accounts', [])
-                  return accts.filter(a => budgetCodes.includes(a.code)).map(a => ({ value: a.code, label: `${a.code} - ${a.name}` }))
-                })()
-              ]}
+            <input
+              value={(() => { const accts: { code: string; name: string }[] = getItem('acct_accounts', []); const a = accts.find(x => x.code === form.accountCode); return a ? `${a.code} - ${a.name}` : form.accountCode || '예산세목 선택 시 자동 설정' })()}
+              readOnly
+              className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-secondary)] outline-none cursor-default"
             />
           </div>
           {/* 3. 금액 */}
