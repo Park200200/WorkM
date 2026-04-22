@@ -717,7 +717,7 @@ function AcctBudget({ year }: { year: number }) {
   const expenseAccounts = accounts.filter(a => a.type === 'expense')
   const itemNameHistory = useMemo(() => getItem<string[]>('acct_itemName_history', []), [refresh])
 
-  // 기타설정의 예산목과 동일: 히스토리 + 기존 예산 데이터의 itemName 합산
+  // 기타설정의 예산항목과 동일: 히스토리 + 기존 예산 데이터의 itemName 합산
   const allItemNames = useMemo(() => {
     return Array.from(new Set([
       ...budgets.map(b => b.itemName).filter(Boolean),
@@ -725,7 +725,7 @@ function AcctBudget({ year }: { year: number }) {
     ])).sort()
   }, [budgets, itemNameHistory])
 
-  // 필터링된 예산목 리스트
+  // 필터링된 예산항목 리스트
   const filteredItemNames = useMemo(() => {
     if (!itemNameSearch.trim()) return allItemNames
     const q = itemNameSearch.toLowerCase()
@@ -846,7 +846,7 @@ function AcctBudget({ year }: { year: number }) {
       })
       localStorage.setItem('acct_budgets', JSON.stringify(all))
     }
-    // 새 예산목이면 히스토리에 자동 추가
+    // 새 예산항목이면 히스토리에 자동 추가
     const trimName = budgetForm.itemName.trim()
     const hist = getItem<string[]>('acct_itemName_history', [])
     if (!hist.includes(trimName)) {
@@ -1141,10 +1141,10 @@ function AcctBudget({ year }: { year: number }) {
               <button onClick={() => setBudgetModalOpen(false)} className="text-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer">✕</button>
             </div>
             <div className="px-5 py-4 space-y-3">
-              {/* 예산목 - 검색 콤보박스 */}
+              {/* 예산항목 - 검색 콤보박스 */}
               <div className="relative">
                 <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 flex items-center gap-1">
-                  예산목 *
+                  예산항목 *
                   {isNewItemName && <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">+ 새 항목</span>}
                 </label>
                 <input
@@ -1167,7 +1167,7 @@ function AcctBudget({ year }: { year: number }) {
                       setItemNamePopup(false)
                     }
                   }}
-                  placeholder="예산목을 검색하거나 새로 입력하세요"
+                  placeholder="예산항목을 검색하거나 새로 입력하세요"
                   className={cn(
                     'w-full px-3 py-2.5 rounded-lg border bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors',
                     isNewItemName ? 'border-emerald-400' : 'border-[var(--border-default)]'
@@ -1193,11 +1193,11 @@ function AcctBudget({ year }: { year: number }) {
                       {filteredItemNames.length === 0 && budgetForm.itemName.trim() && (
                         <div className="text-center text-xs py-3 space-y-1">
                           <div className="text-emerald-500 font-bold">✨ "{budgetForm.itemName.trim()}"</div>
-                          <div className="text-[var(--text-muted)]">새 예산목으로 등록됩니다</div>
+                          <div className="text-[var(--text-muted)]">새 예산항목으로 등록됩니다</div>
                         </div>
                       )}
                       {filteredItemNames.length === 0 && !budgetForm.itemName.trim() && (
-                        <div className="text-center text-xs text-[var(--text-muted)] py-3">등록된 예산목이 없습니다</div>
+                        <div className="text-center text-xs text-[var(--text-muted)] py-3">등록된 예산항목이 없습니다</div>
                       )}
                     </div>
                   </div>
@@ -2158,7 +2158,7 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
   const [descMode, setDescMode] = useState<'select' | 'input'>('select')
   const [detailModal, setDetailModal] = useState<CashFlow | null>(null)
 
-  /* 예산목 목록 (기타설정의 예산목 데이터) */
+  /* 예산항목 목록 (기타설정의 예산항목 데이터) */
   const budgetItemNames = useMemo(() => {
     const budgets: { itemName: string }[] = getItem('acct_budgets', [])
     const hist: string[] = getItem('acct_itemName_history', [])
@@ -2336,10 +2336,10 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
 
       <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* 1. 지출내용(예산목록) */}
+          {/* 1. 지출내용(예산항목) */}
           <div>
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">
-              {type === 'income' ? '입금내용(예산목록)' : '지출내용(예산목록)'} *
+              {type === 'income' ? '입금내용(예산항목)' : '지출내용(예산항목)'} *
             </label>
             {budgetItemNames.length > 0 ? (
               <div className="relative">
@@ -2355,9 +2355,9 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
                           setForm(f => ({ ...f, desc: v }))
                         }
                       }}
-                      placeholder="— 예산목 선택 —"
+                      placeholder="— 예산항목 선택 —"
                       options={[
-                        { value: '', label: '— 예산목 선택 —' },
+                        { value: '', label: '— 예산항목 선택 —' },
                         ...budgetItemNames.map(name => ({ value: name, label: name })),
                         { value: '__direct__', label: '✏️ 직접 입력' },
                       ]}

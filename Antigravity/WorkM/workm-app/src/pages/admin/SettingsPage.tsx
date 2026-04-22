@@ -48,7 +48,7 @@ const tabs: Tab[] = [
   { key: 'importance', label: '중요도',          icon: Building2,  color: '#ef4444' },
   { key: 'taskStatus', label: '진행상태',             icon: Layers,     color: '#06b6d4' },
   { key: 'accounts',   label: '계정과목',             icon: Calculator, color: '#0ea5e9' },
-  { key: 'budgetItems',label: '예산목',               icon: Wallet,     color: '#f97316' },
+  { key: 'budgetItems',label: '예산항목',               icon: Wallet,     color: '#f97316' },
   { key: 'payMethods', label: '지출수단',             icon: CreditCard, color: '#ec4899' },
   { key: 'bizCategory',label: '거래처구분',            icon: ContactRound, color: '#14b8a6' },
 ]
@@ -1002,7 +1002,7 @@ function AccountPanel() {
 }
 
 /* ══════════════════════════════════════════════
-   예산목 관리 패널
+   예산항목 관리 패널
    ══════════════════════════════════════════════ */
 function BudgetItemPanel() {
   const [refresh, setRefresh] = useState(0)
@@ -1010,7 +1010,7 @@ function BudgetItemPanel() {
   const addToast = useToastStore((s) => s.add)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // 예산 데이터에서 사용된 예산목 + 히스토리
+  // 예산 데이터에서 사용된 예산항목 + 히스토리
   const budgets: { itemName: string }[] = getItem('acct_budgets', [])
   const hist: string[] = getItem('acct_itemName_history', [])
   void refresh
@@ -1023,23 +1023,23 @@ function BudgetItemPanel() {
   const handleAdd = () => {
     if (!newName.trim()) return
     if (allNames.includes(newName.trim())) {
-      addToast('error', '이미 존재하는 예산목입니다')
+      addToast('error', '이미 존재하는 예산항목입니다')
       return
     }
     const updated = [...hist, newName.trim()]
     localStorage.setItem('acct_itemName_history', JSON.stringify(updated))
-    addToast('success', `예산목 "${newName.trim()}" 추가 완료`)
+    addToast('success', `예산항목 "${newName.trim()}" 추가 완료`)
     setNewName('')
     setRefresh(r => r + 1)
     inputRef.current?.focus()
   }
 
   const handleDelete = (name: string) => {
-    if (!confirm(`"${name}" 예산목을 삭제하시겠습니까?`)) return
-    // hist에서만 삭제 (실제 예산 데이터의 예산목은 유지)
+    if (!confirm(`"${name}" 예산항목을 삭제하시겠습니까?`)) return
+    // hist에서만 삭제 (실제 예산 데이터의 예산항목은 유지)
     const updated = hist.filter(h => h !== name)
     localStorage.setItem('acct_itemName_history', JSON.stringify(updated))
-    addToast('warning', `예산목 "${name}" 삭제 완료`)
+    addToast('warning', `예산항목 "${name}" 삭제 완료`)
     setRefresh(r => r + 1)
   }
 
@@ -1047,8 +1047,8 @@ function BudgetItemPanel() {
     <Card>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <div className="text-sm font-extrabold text-[var(--text-primary)]">예산목 관리</div>
-          <div className="text-[11px] text-[var(--text-muted)]">예산 등록 시 자동완성에 표시되는 예산목 목록입니다</div>
+          <div className="text-sm font-extrabold text-[var(--text-primary)]">예산항목 관리</div>
+          <div className="text-[11px] text-[var(--text-muted)]">예산 등록 시 자동완성에 표시되는 예산항목 목록입니다</div>
         </div>
       </div>
 
@@ -1057,7 +1057,7 @@ function BudgetItemPanel() {
         <div className="flex-1">
           <Input
             ref={inputRef}
-            placeholder="새 예산목 입력 (예: 인건비, 소모품비)"
+            placeholder="새 예산항목 입력 (예: 인건비, 소모품비)"
             value={newName}
             onChange={e => setNewName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAdd()}
@@ -1070,12 +1070,12 @@ function BudgetItemPanel() {
 
       {/* 헤더 */}
       <div className="flex items-center justify-between pb-2 mb-2 border-b border-[var(--border-default)]">
-        <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">예산목 목록</span>
+        <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">예산항목 목록</span>
         <span className="text-[11px] font-bold text-[#f97316]">{allNames.length}건</span>
       </div>
 
       {allNames.length === 0 ? (
-        <div className="py-10 text-center text-sm text-[var(--text-muted)]">등록된 예산목이 없습니다</div>
+        <div className="py-10 text-center text-sm text-[var(--text-muted)]">등록된 예산항목이 없습니다</div>
       ) : (
         <div className="space-y-0.5">
           {allNames.map((name, idx) => {
