@@ -219,11 +219,13 @@ interface BudgetItem {
   catId: string | number
   year?: number
   itemName: string
+  subName?: string
   accountCode?: string
   amount: number
   spent: number
   memo?: string
 }
+
 
 interface CashFlow {
   id: string | number
@@ -697,7 +699,7 @@ function AcctBudget({ year }: { year: number }) {
 
   const [budgetModalOpen, setBudgetModalOpen] = useState(false)
   const [budgetEditId, setBudgetEditId] = useState<number | null>(null)
-  const [budgetForm, setBudgetForm] = useState({ itemName: '', accountCode: '', amount: '', memo: '' })
+  const [budgetForm, setBudgetForm] = useState({ itemName: '', subName: '', accountCode: '', amount: '', memo: '' })
   const [itemNameSearch, setItemNameSearch] = useState('')
   const [itemNamePopup, setItemNamePopup] = useState(false)
   const [acctSearch, setAcctSearch] = useState('')
@@ -808,11 +810,11 @@ function AcctBudget({ year }: { year: number }) {
       const b = budgets.find(x => x.id === editId)
       if (b) {
         setBudgetEditId(editId)
-        setBudgetForm({ itemName: b.itemName || '', accountCode: b.accountCode || '', amount: formatNumber(b.amount), memo: b.memo || '' })
+        setBudgetForm({ itemName: b.itemName || '', subName: b.subName || '', accountCode: b.accountCode || '', amount: formatNumber(b.amount), memo: b.memo || '' })
       }
     } else {
       setBudgetEditId(null)
-      setBudgetForm({ itemName: '', accountCode: '', amount: '', memo: '' })
+      setBudgetForm({ itemName: '', subName: '', accountCode: '', amount: '', memo: '' })
     }
     setBudgetModalOpen(true)
     setItemNameSearch('')
@@ -830,7 +832,7 @@ function AcctBudget({ year }: { year: number }) {
     if (budgetEditId) {
       const updated = all.map(b => {
         if (b.id !== budgetEditId) return b
-        return { ...b, itemName: budgetForm.itemName.trim(), accountCode: budgetForm.accountCode, amount: amt, memo: budgetForm.memo }
+        return { ...b, itemName: budgetForm.itemName.trim(), subName: budgetForm.subName.trim(), accountCode: budgetForm.accountCode, amount: amt, memo: budgetForm.memo }
       })
       localStorage.setItem('acct_budgets', JSON.stringify(updated))
     } else {
@@ -839,6 +841,7 @@ function AcctBudget({ year }: { year: number }) {
         catId: selCat!.id,
         year,
         itemName: budgetForm.itemName.trim(),
+        subName: budgetForm.subName.trim(),
         accountCode: budgetForm.accountCode,
         amount: amt,
         spent: 0,
@@ -980,58 +983,94 @@ function AcctBudget({ year }: { year: number }) {
               <table className="w-full min-w-[700px]">
                 <thead>
                   <tr className="bg-[var(--bg-muted)]">
-                    {['예산항목', '계정코드', '편성액', '집행액', '잔여', '소진율', '관리'].map(h => (
+                    {['예산항목 / 세부항목', '계정코드', '편성액', '집행액', '잔여', '소진율', '관리'].map(h => (
                       <th key={h} className={cn("py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)]", h === '관리' ? 'text-center w-[80px]' : 'text-left')}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                {filtered.map(b => {
-                  const pct = b.amount > 0 ? Math.round((b.spent || 0) / b.amount * 100) : 0
-                  const color = pct > 100 ? '#ef4444' : pct > 80 ? '#f59e0b' : '#4f6ef7'
-                  const acctName = accounts.find(a => a.code === b.accountCode)?.name || ''
-                  return (
-                    <tr key={b.id} className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors">
-                      <td className="py-2.5 px-3.5 text-[12px] font-bold text-[var(--text-primary)]">{b.itemName}</td>
-                      <td className="py-2.5 px-3.5 text-[11px] text-[var(--text-muted)]">
-                        <span className="font-mono">{b.accountCode || '-'}</span>
-                        {acctName && <span className="ml-1 text-[10px] text-[var(--text-secondary)]">({acctName})</span>}
-                      </td>
-                      <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-[var(--text-primary)] text-right">{formatNumber(b.amount)}원</td>
-                      <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-danger text-right">{formatNumber(b.spent || 0)}원</td>
-                      <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-right" style={{ color: (b.amount - (b.spent || 0)) < 0 ? '#ef4444' : '#22c55e' }}>
-                        {formatNumber(b.amount - (b.spent || 0))}원
-                      </td>
-                      <td className="py-2.5 px-3.5">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-subtle)] overflow-hidden max-w-[80px]">
-                            <div className="h-full rounded-full" style={{ width: `${Math.min(100, pct)}%`, background: color }} />
-                          </div>
-                          <span className="text-[11px] font-extrabold" style={{ color }}>{pct}%</span>
-                          {pct > 100 && <span className="text-[10px] text-danger font-bold">⚠️</span>}
-                        </div>
-                      </td>
-                      <td className="py-2.5 px-3.5 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => openBudgetModal(b.id as number)}
-                            className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--text-muted)] hover:bg-primary-100 hover:text-primary-500 transition-all cursor-pointer"
-                            title="수정"
-                          >
-                            <Edit3 size={12} />
-                          </button>
-                          <button
-                            onClick={() => deleteBudgetItem(b.id as number)}
-                            className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--text-muted)] hover:bg-red-100 hover:text-danger transition-all cursor-pointer"
-                            title="삭제"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
+                {(() => {
+                  /* 예산항목(itemName)별 그룹핑 */
+                  const groups: Record<string, typeof filtered> = {}
+                  const groupOrder: string[] = []
+                  filtered.forEach(b => {
+                    const key = b.itemName || '미분류'
+                    if (!groups[key]) { groups[key] = []; groupOrder.push(key) }
+                    groups[key].push(b)
+                  })
+                  return groupOrder.map(gk => {
+                    const items = groups[gk]
+                    const gAmt = items.reduce((a, b) => a + (b.amount || 0), 0)
+                    const gSpent = items.reduce((a, b) => a + (b.spent || 0), 0)
+                    const gBal = gAmt - gSpent
+                    const gPct = gAmt > 0 ? Math.round(gSpent / gAmt * 100) : 0
+                    return (
+                      <>
+                        {/* 예산항목 소계 헤더 */}
+                        <tr className="bg-[rgba(79,110,247,.05)] border-b border-[var(--border-default)]">
+                          <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-primary-600">
+                            📋 {gk}
+                            <span className="text-[10px] text-[var(--text-muted)] ml-2 font-bold">{items.length}건</span>
+                          </td>
+                          <td className="py-2.5 px-3.5" />
+                          <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-primary-600 text-right">{formatNumber(gAmt)}원</td>
+                          <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-danger text-right">{formatNumber(gSpent)}원</td>
+                          <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-right" style={{ color: gBal < 0 ? '#ef4444' : '#22c55e' }}>{formatNumber(gBal)}원</td>
+                          <td className="py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)]">{gPct}%</td>
+                          <td />
+                        </tr>
+                        {/* 세부 항목(계정과목별) */}
+                        {items.map(b => {
+                          const pct = b.amount > 0 ? Math.round((b.spent || 0) / b.amount * 100) : 0
+                          const color = pct > 100 ? '#ef4444' : pct > 80 ? '#f59e0b' : '#4f6ef7'
+                          const acctName = accounts.find(a => a.code === b.accountCode)?.name || ''
+                          const displayName = b.subName || acctName || b.accountCode || '-'
+                          return (
+                            <tr key={b.id} className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors">
+                              <td className="py-2.5 px-3.5 text-[12px] font-bold text-[var(--text-primary)] pl-10">{displayName}</td>
+                              <td className="py-2.5 px-3.5 text-[11px] text-[var(--text-muted)]">
+                                <span className="font-mono">{b.accountCode || '-'}</span>
+                                {acctName && <span className="ml-1 text-[10px] text-[var(--text-secondary)]">({acctName})</span>}
+                              </td>
+                              <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-[var(--text-primary)] text-right">{formatNumber(b.amount)}원</td>
+                              <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-danger text-right">{formatNumber(b.spent || 0)}원</td>
+                              <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-right" style={{ color: (b.amount - (b.spent || 0)) < 0 ? '#ef4444' : '#22c55e' }}>
+                                {formatNumber(b.amount - (b.spent || 0))}원
+                              </td>
+                              <td className="py-2.5 px-3.5">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-subtle)] overflow-hidden max-w-[80px]">
+                                    <div className="h-full rounded-full" style={{ width: `${Math.min(100, pct)}%`, background: color }} />
+                                  </div>
+                                  <span className="text-[11px] font-extrabold" style={{ color }}>{pct}%</span>
+                                  {pct > 100 && <span className="text-[10px] text-danger font-bold">⚠️</span>}
+                                </div>
+                              </td>
+                              <td className="py-2.5 px-3.5 text-center">
+                                <div className="flex items-center justify-center gap-1">
+                                  <button
+                                    onClick={() => openBudgetModal(b.id as number)}
+                                    className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--text-muted)] hover:bg-primary-100 hover:text-primary-500 transition-all cursor-pointer"
+                                    title="수정"
+                                  >
+                                    <Edit3 size={12} />
+                                  </button>
+                                  <button
+                                    onClick={() => deleteBudgetItem(b.id as number)}
+                                    className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--text-muted)] hover:bg-red-100 hover:text-danger transition-all cursor-pointer"
+                                    title="삭제"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </>
+                    )
+                  })
+                })()}
                 </tbody>
                 <tfoot>
                   <tr className="bg-[var(--bg-muted)]">
@@ -1172,6 +1211,17 @@ function AcctBudget({ year }: { year: number }) {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* 세부항목명 */}
+              <div>
+                <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">세부항목명 *</label>
+                <input
+                  value={budgetForm.subName}
+                  onChange={e => setBudgetForm(f => ({ ...f, subName: e.target.value }))}
+                  placeholder="예) 보수비, 도자기수리비, 수납함수선비"
+                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors"
+                />
               </div>
 
               {/* 계정과목 - 검색 콤보박스 */}
