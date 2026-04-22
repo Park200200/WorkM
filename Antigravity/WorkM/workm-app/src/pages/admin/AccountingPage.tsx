@@ -980,12 +980,25 @@ function AcctBudget({ year }: { year: number }) {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[700px]">
+              <table className="w-full min-w-[700px]" style={{ tableLayout: 'fixed' }}>
+                <colgroup>
+                  <col style={{ width: '25%' }} />
+                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '8%' }} />
+                </colgroup>
                 <thead>
                   <tr className="bg-[var(--bg-muted)]">
-                    {['예산항목 / 세부항목', '계정코드', '편성액', '집행액', '잔여', '소진율', '관리'].map(h => (
-                      <th key={h} className={cn("py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)]", h === '관리' ? 'text-center w-[80px]' : 'text-left')}>{h}</th>
-                    ))}
+                    <th className="py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)] text-left">예산항목 / 세부항목</th>
+                    <th className="py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)] text-left">계정코드</th>
+                    <th className="py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)] text-right">편성액</th>
+                    <th className="py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)] text-right">집행액</th>
+                    <th className="py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)] text-right">잔여</th>
+                    <th className="py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)] text-left">소진율</th>
+                    <th className="py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)] text-center">관리</th>
                   </tr>
                 </thead>
                 <tbody>
