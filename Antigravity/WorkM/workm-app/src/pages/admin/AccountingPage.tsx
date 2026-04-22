@@ -2730,7 +2730,7 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
       {/* ── 상세/수정 팝업 ── */}
       {detailModal && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={() => { setDetailModal(null); setEditMode(false) }}>
-          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-[520px] mx-4 border border-[var(--border-default)] max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-[580px] mx-4 border border-[var(--border-default)] max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-default)]">
               <div className="flex items-center gap-2">
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-white text-sm bg-gradient-to-r ${typeGrads[type]}`}>{typeEmojis[type]}</div>
@@ -2738,33 +2738,76 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
               </div>
               <button onClick={() => { setDetailModal(null); setEditMode(false) }} className="text-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer">{'\u2715'}</button>
             </div>
-            {editMode ? (
-              /* === 수정 모드 === */
-              <div className="px-5 py-4 space-y-3">
-                {[
-                  { label: '내용', key: 'description' },
-                  { label: '금액', key: 'amount', isAmt: true },
-                  { label: '거래처', key: 'counter' },
-                  { label: '비고', key: 'memo' },
-                ].map(f => (
-                  <div key={f.key} className="flex items-center gap-3">
-                    <span className="text-[11px] font-bold text-[var(--text-muted)] w-[90px] shrink-0">{f.label}</span>
-                    <input
-                      value={f.isAmt ? (typeof (editForm as any)[f.key] === 'number' ? Number((editForm as any)[f.key]).toLocaleString('ko-KR') : (editForm as any)[f.key] || '') : ((editForm as any)[f.key] || '')}
-                      onChange={e => {
-                        if (f.isAmt) {
-                          const digits = e.target.value.replace(/[^\d]/g, '')
-                          setEditForm((p: any) => ({ ...p, [f.key]: digits ? Number(digits) : '' }))
-                        } else {
-                          setEditForm((p: any) => ({ ...p, [f.key]: e.target.value }))
-                        }
-                      }}
-                      className={`flex-1 px-2.5 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[13px] text-[var(--text-primary)] focus:border-primary-500 outline-none ${f.isAmt ? 'text-right font-bold' : ''}`}
-                    />
+            {editMode ? (() => {
+              /* === 수정 모드 — 전체 입력 필드 === */
+              const eBudgetCats: { id: number | string; name: string; year: number }[] = getItem('acct_budget_cats', [])
+              const eyCats = eBudgetCats.filter(c => c.year === year)
+              const eBudgetItems: { catId: number | string; itemName: string; subName?: string; accountCode?: string }[] = getItem('acct_budgets', [])
+              const eAccts: { code: string; name: string }[] = getItem('acct_accounts', [])
+              const eAutoAcct = eAccts.find(a => a.code === editForm.accountCode)
+              return (
+                <div className="px-5 py-4 space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {/* 내용 */}
+                    <div>
+                      <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'income' ? '입금내용' : '지출내용'} *</label>
+                      <input value={editForm.description || ''} onChange={e => setEditForm((p: any) => ({ ...p, description: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+                    </div>
+                    {/* 예산선택 */}
+                    <div>
+                      <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">예산선택</label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <CustomSelect value={String(editForm.budgetCatId || '')} onChange={v => setEditForm((p: any) => ({ ...p, budgetCatId: v, budgetItemName: '', budgetSubName: '', accountCode: '' }))} placeholder="예산구분" options={[{ value: '', label: '예산구분' }, ...eyCats.map(c => ({ value: String(c.id), label: c.name }))]} />
+                        <CustomSelect value={editForm.budgetItemName || ''} onChange={v => setEditForm((p: any) => ({ ...p, budgetItemName: v, budgetSubName: '', accountCode: '' }))} placeholder="예산항목" options={[{ value: '', label: '예산항목' }, ...(editForm.budgetCatId ? Array.from(new Set(eBudgetItems.filter(b => String(b.catId) === String(editForm.budgetCatId)).map(b => b.itemName).filter(Boolean))).map(n => ({ value: n, label: n })) : [])]} />
+                        <CustomSelect value={editForm.budgetSubName || ''} onChange={v => { const matched = eBudgetItems.find(b => String(b.catId) === String(editForm.budgetCatId) && b.itemName === editForm.budgetItemName && b.subName === v); setEditForm((p: any) => ({ ...p, budgetSubName: v, accountCode: matched?.accountCode || p.accountCode })) }} placeholder="예산세목" options={[{ value: '', label: '예산세목' }, ...(editForm.budgetItemName ? Array.from(new Set(eBudgetItems.filter(b => String(b.catId) === String(editForm.budgetCatId) && b.itemName === editForm.budgetItemName).map(b => b.subName).filter(Boolean) as string[])).map(n => ({ value: n, label: n })) : [])]} />
+                      </div>
+                      {(editForm.budgetCatId || editForm.budgetItemName || editForm.budgetSubName) && (
+                        <div className="mt-1 text-[10px] text-primary-500 font-semibold">
+                          {eyCats.find(c => String(c.id) === String(editForm.budgetCatId))?.name || ''}
+                          {editForm.budgetItemName && ` ${String.fromCharCode(8250)} ${editForm.budgetItemName}`}
+                          {editForm.budgetSubName && ` ${String.fromCharCode(8250)} ${editForm.budgetSubName}`}
+                        </div>
+                      )}
+                    </div>
+                    {/* 계정과목 (자동) */}
+                    <div>
+                      <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">계정과목</label>
+                      <input value={eAutoAcct ? `${eAutoAcct.code} - ${eAutoAcct.name}` : editForm.accountCode || '예산세목 선택 시 자동 설정'} readOnly className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-secondary)] outline-none cursor-default" />
+                    </div>
+                    {/* 금액 */}
+                    <div>
+                      <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">금액 (원) *</label>
+                      <input value={typeof editForm.amount === 'number' ? editForm.amount.toLocaleString('ko-KR') : editForm.amount || ''} onChange={e => { const digits = e.target.value.replace(/[^\d]/g, ''); setEditForm((p: any) => ({ ...p, amount: digits ? Number(digits) : '' })) }} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm font-bold text-right focus:border-primary-500 outline-none" style={{ color: typeColors[type] }} />
+                    </div>
+                    {/* 거래처 */}
+                    <div>
+                      <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">거래처</label>
+                      <input value={editForm.counter || ''} onChange={e => setEditForm((p: any) => ({ ...p, counter: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+                    </div>
+                    {/* 수단 */}
+                    <div>
+                      <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'income' ? '입금' : '지출'}수단</label>
+                      <CustomSelect value={editForm.method || '계좌이체'} onChange={v => setEditForm((p: any) => ({ ...p, method: v }))} options={methods.map(m => ({ value: m, label: m }))} />
+                    </div>
+                    {/* 실제거래일자 */}
+                    <div>
+                      <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">실제거래일자</label>
+                      <DatePicker value={editForm.tradeDate || editForm.date || ''} onChange={v => setEditForm((p: any) => ({ ...p, tradeDate: v, date: v }))} />
+                    </div>
+                    {/* 등록일자 */}
+                    <div>
+                      <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'income' ? '입금' : '지출'}등록일자</label>
+                      <DatePicker value={editForm.writeDate || ''} onChange={v => setEditForm((p: any) => ({ ...p, writeDate: v }))} />
+                    </div>
+                    {/* 비고 */}
+                    <div className="md:col-span-2">
+                      <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">비고</label>
+                      <input value={editForm.memo || ''} onChange={e => setEditForm((p: any) => ({ ...p, memo: e.target.value }))} placeholder="참고 사항을 입력하세요" className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+                    </div>
                   </div>
-                ))}
-              </div>
-            ) : (
+                </div>
+              )
+            })() : (
               /* === 보기 모드 === */
               <div className="px-5 py-4 space-y-3">
                 {[
@@ -2772,8 +2815,9 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
                   { label: '금액', value: `${formatNumber(detailModal.amount || 0)}원`, color: typeColors[type], bold: true },
                   { label: '계정과목', value: (() => { const accts: { code: string; name: string }[] = getItem('acct_accounts', []); const a = accts.find(x => x.code === detailModal.accountCode); return a ? `${a.code} - ${a.name}` : detailModal.accountCode || '-' })() },
                   { label: '거래처', value: detailModal.counter || '-' },
+                  { label: type === 'income' ? '입금수단' : '지출수단', value: (detailModal as any).method || '-' },
                   { label: '실제거래일자', value: detailModal.date || '-' },
-                  { label: '지출등록일자', value: detailModal.writeDate || '-' },
+                  { label: type === 'income' ? '입금등록일자' : '지출등록일자', value: detailModal.writeDate || '-' },
                   { label: '비고', value: (detailModal as any).memo || '-' },
                 ].map((row, i) => (
                   <div key={i} className="flex items-center gap-3">
@@ -2805,16 +2849,20 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
                     const cfs = getItem<CashFlow[]>('acct_cashflows', [])
                     const idx = cfs.findIndex(c => String(c.id) === String(detailModal.id))
                     if (idx >= 0) {
-                      const old = cfs[idx]
+                      const old = cfs[idx] as any
                       const changes: string[] = []
-                      if (editForm.description !== old.description) changes.push(`내용: ${old.description} → ${editForm.description}`)
-                      if (Number(editForm.amount) !== Number(old.amount)) changes.push(`금액: ${formatNumber(old.amount || 0)} → ${formatNumber(Number(editForm.amount) || 0)}`)
-                      if (editForm.counter !== (old.counter || '')) changes.push(`거래처: ${old.counter || '-'} → ${editForm.counter || '-'}`)
-                      if (editForm.memo !== ((old as any).memo || '')) changes.push(`비고: ${(old as any).memo || '-'} → ${editForm.memo || '-'}`)
+                      if (editForm.description !== (old.description || '')) changes.push(`내용: ${old.description || '-'} → ${editForm.description}`)
+                      if (Number(editForm.amount) !== Number(old.amount || 0)) changes.push(`금액: ${formatNumber(old.amount || 0)} → ${formatNumber(Number(editForm.amount) || 0)}`)
+                      if ((editForm.counter || '') !== (old.counter || '')) changes.push(`거래처: ${old.counter || '-'} → ${editForm.counter || '-'}`)
+                      if ((editForm.method || '') !== (old.method || '')) changes.push(`수단: ${old.method || '-'} → ${editForm.method || '-'}`)
+                      if ((editForm.accountCode || '') !== (old.accountCode || '')) changes.push(`계정과목: ${old.accountCode || '-'} → ${editForm.accountCode || '-'}`)
+                      if ((editForm.date || editForm.tradeDate || '') !== (old.date || '')) changes.push(`거래일: ${old.date || '-'} → ${editForm.date || editForm.tradeDate || '-'}`)
+                      if ((editForm.writeDate || '') !== (old.writeDate || '')) changes.push(`등록일: ${old.writeDate || '-'} → ${editForm.writeDate || '-'}`)
+                      if ((editForm.memo || '') !== (old.memo || '')) changes.push(`비고: ${old.memo || '-'} → ${editForm.memo || '-'}`)
                       if (changes.length === 0) { setEditMode(false); return }
-                      const history = ((old as any).editHistory || []) as { date: string; changes: string }[]
+                      const history = (old.editHistory || []) as { date: string; changes: string }[]
                       history.push({ date: new Date().toISOString(), changes: changes.join(', ') })
-                      cfs[idx] = { ...old, description: editForm.description, amount: Number(editForm.amount) || old.amount, counter: editForm.counter, ...(editForm.memo ? { memo: editForm.memo } : {}), editHistory: history } as any
+                      cfs[idx] = { ...old, description: editForm.description, amount: Number(editForm.amount) || old.amount, counter: editForm.counter || old.counter, method: editForm.method, accountCode: editForm.accountCode || old.accountCode, date: editForm.date || editForm.tradeDate || old.date, writeDate: editForm.writeDate || old.writeDate, memo: editForm.memo, editHistory: history } as any
                       setItem('acct_cashflows', cfs)
                       setDetailModal(cfs[idx])
                       setEditMode(false)
@@ -2828,7 +2876,8 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
                 <>
                   <button onClick={() => {
                     setEditMode(true)
-                    setEditForm({ description: detailModal.description || '', amount: detailModal.amount || 0, counter: detailModal.counter || '', memo: (detailModal as any).memo || '' })
+                    const d = detailModal as any
+                    setEditForm({ description: d.description || '', amount: d.amount || 0, counter: d.counter || '', memo: d.memo || '', method: d.method || '계좌이체', accountCode: d.accountCode || '', date: d.date || '', tradeDate: d.date || '', writeDate: d.writeDate || '', budgetCatId: d.budgetCatId || '', budgetItemName: d.budgetItemName || '', budgetSubName: d.budgetSubName || '' })
                   }} className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-primary-400 text-primary-600 dark:text-primary-400 text-sm font-bold hover:bg-primary-50 dark:hover:bg-primary-900/10 cursor-pointer">
                     <Edit3 size={13} /> 수정
                   </button>
