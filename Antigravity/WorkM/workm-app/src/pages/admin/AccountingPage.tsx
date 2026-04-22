@@ -992,7 +992,7 @@ function AcctBudget({ year }: { year: number }) {
                 </colgroup>
                 <thead>
                   <tr className="bg-[var(--bg-muted)]">
-                    <th className="py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)] text-left">예산항목 / 세부항목</th>
+                    <th className="py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)] text-left">예산항목 / 예산세목</th>
                     <th className="py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)] text-left">계정코드</th>
                     <th className="py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)] text-right">편성액</th>
                     <th className="py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)] text-right">집행액</th>
@@ -1226,9 +1226,9 @@ function AcctBudget({ year }: { year: number }) {
                 )}
               </div>
 
-              {/* 세부항목명 */}
+              {/* 예산세목 */}
               <div>
-                <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">세부항목명 *</label>
+                <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">예산세목 *</label>
                 <input
                   value={budgetForm.subName}
                   onChange={e => setBudgetForm(f => ({ ...f, subName: e.target.value }))}
