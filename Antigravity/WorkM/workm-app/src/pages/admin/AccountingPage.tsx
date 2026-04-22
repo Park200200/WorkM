@@ -2309,6 +2309,7 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
   const counterRef = useRef<HTMLDivElement>(null)
   const [descMode, setDescMode] = useState<'select' | 'input'>('select')
   const [detailModal, setDetailModal] = useState<CashFlow | null>(null)
+  const [groupByVendor, setGroupByVendor] = useState(false)
 
   /* 예산항목 목록 (기타설정의 예산항목 데이터) */
   const budgetItemNames = useMemo(() => {
@@ -2627,11 +2628,85 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
             <span className="text-sm font-extrabold text-[var(--text-primary)]">{type === 'income' ? '입금' : '지출'} 내역</span>
             <span className="text-[10px] text-[var(--text-muted)] bg-[var(--bg-muted)] px-2 py-0.5 rounded-full">{cashflows.length}건</span>
           </div>
-          <span className="text-[13px] font-extrabold" style={{ color: typeColors[type] }}>{formatNumber(totalAmount)}원</span>
+          <div className="flex items-center gap-3">
+            {/* 거래처별 그룹 토글 */}
+            <button
+              onClick={() => setGroupByVendor(g => !g)}
+              className={cn(
+                'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer transition-all border',
+                groupByVendor
+                  ? 'bg-primary-500 text-white border-primary-500 shadow-sm'
+                  : 'text-[var(--text-muted)] border-[var(--border-default)] hover:border-primary-400',
+              )}
+            >
+              <Building2 size={12} />
+              거래처별
+            </button>
+            <span className="text-[13px] font-extrabold" style={{ color: typeColors[type] }}>{formatNumber(totalAmount)}원</span>
+          </div>
         </div>
         {cashflows.length === 0 ? (
           <div className="p-6"><EmptyState emoji={typeEmojis[type]} title={`등록된 ${type === 'income' ? '입금' : '지출'}이 없습니다`} /></div>
+        ) : groupByVendor ? (
+          /* === 거래처별 그룹 뷰 === */
+          <div className="p-3 space-y-3">
+            {(() => {
+              const byVendor: Record<string, CashFlow[]> = {}
+              cashflows.forEach(c => {
+                const cp = c.counter || '(미지정)'
+                if (!byVendor[cp]) byVendor[cp] = []
+                byVendor[cp].push(c)
+              })
+              return Object.entries(byVendor).sort(([a],[b]) => a.localeCompare(b)).map(([vendor, items]) => {
+                const vendorTotal = items.reduce((s, c) => s + (c.amount || 0), 0)
+                return (
+                  <div key={vendor} className="border border-[var(--border-default)] rounded-xl overflow-hidden">
+                    <div className="bg-gradient-to-r from-primary-50/50 to-transparent dark:from-primary-900/10 px-4 py-2.5 flex items-center gap-2.5">
+                      <span className="w-7 h-7 rounded-lg bg-primary-500 text-white text-[11px] font-extrabold flex items-center justify-center">
+                        {vendor.charAt(0)}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-extrabold text-[var(--text-primary)]">{vendor}</div>
+                        <div className="text-[10px] text-[var(--text-muted)]">{items.length}건 거래</div>
+                      </div>
+                      <span className="text-[13px] font-extrabold" style={{ color: typeColors[type] }}>{formatNumber(vendorTotal)}원</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[500px] table-fixed">
+                        <colgroup><col className="w-[130px]" /><col /><col className="w-[150px]" /><col className="w-[60px]" /></colgroup>
+                        <thead>
+                          <tr className="bg-[var(--bg-muted)] border-b border-[var(--border-default)]">
+                            {['날짜', '내용', '금액', '삭제'].map(h => (
+                              <th key={h} className={cn('py-2 px-2.5 text-[11px] font-semibold text-[var(--text-muted)]', h === '금액' ? 'text-right' : h === '삭제' ? 'text-center' : 'text-left')}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {items.sort((a, b) => (a.date || '').localeCompare(b.date || '')).map(c => (
+                            <tr key={c.id} className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors cursor-pointer" onDoubleClick={() => setDetailModal(c)}>
+                              <td className="py-2 px-2.5 text-[12px] text-[var(--text-muted)]">{c.date || ''}</td>
+                              <td className="py-2 px-2.5 text-[12px] font-bold text-[var(--text-primary)] truncate">{c.description || '-'}</td>
+                              <td className="py-2 px-2.5 text-[12px] font-extrabold text-right" style={{ color: typeColors[type] }}>{formatNumber(c.amount || 0)}원</td>
+                              <td className="py-2 px-2.5 text-center">
+                                <button onClick={(e) => { e.stopPropagation(); deleteEntry(c.id) }} className="p-1 rounded-md bg-[rgba(239,68,68,.08)] text-[#ef4444] hover:bg-[rgba(239,68,68,.15)] cursor-pointer"><Trash2 size={13} /></button>
+                              </td>
+                            </tr>
+                          ))}
+                          <tr className="border-t-2 border-[var(--text-primary)] bg-[var(--bg-muted)]">
+                            <td colSpan={2} className="py-2 px-2.5 text-right text-[12px] font-bold">소계</td>
+                            <td className="py-2 px-2.5 text-right text-[12px] font-bold" style={{ color: typeColors[type] }}>{formatNumber(vendorTotal)}원</td>
+                            <td></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )
+              })
+            })()}
+          </div>
         ) : (
+          /* === 기존 플랫 리스트 === */
           <div className="overflow-x-auto">
             <table className="w-full min-w-[500px]">
               <thead>
