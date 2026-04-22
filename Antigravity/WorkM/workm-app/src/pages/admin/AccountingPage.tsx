@@ -704,6 +704,8 @@ function AcctBudget({ year }: { year: number }) {
   const [itemNamePopup, setItemNamePopup] = useState(false)
   const [acctSearch, setAcctSearch] = useState('')
   const [acctPopup, setAcctPopup] = useState(false)
+  const [subNameSearch, setSubNameSearch] = useState('')
+  const [subNamePopup, setSubNamePopup] = useState(false)
 
   /* ── 데이터 ── */
   const budgetCats = useMemo(() => {
@@ -734,6 +736,23 @@ function AcctBudget({ year }: { year: number }) {
     return allItemNames.filter(n => n.toLowerCase().includes(q))
   }, [allItemNames, itemNameSearch])
   const isNewItemName = itemNameSearch.trim() && !allItemNames.includes(itemNameSearch.trim())
+
+  // 기타설정의 예산세목과 동일: 히스토리 + 기존 예산 데이터의 subName 합산
+  const subNameHistory = useMemo(() => getItem<string[]>('acct_subName_history', []), [refresh])
+  const allSubNames = useMemo(() => {
+    return Array.from(new Set([
+      ...budgets.map(b => b.subName).filter(Boolean) as string[],
+      ...subNameHistory.filter(Boolean),
+    ])).sort()
+  }, [budgets, subNameHistory])
+
+  // 필터링된 예산세목 리스트
+  const filteredSubNames = useMemo(() => {
+    if (!subNameSearch.trim()) return allSubNames
+    const q = subNameSearch.toLowerCase()
+    return allSubNames.filter(n => n.toLowerCase().includes(q))
+  }, [allSubNames, subNameSearch])
+  const isNewSubName = subNameSearch.trim() && !allSubNames.includes(subNameSearch.trim())
 
   // 필터링된 계정과목 리스트
   const filteredAccounts = useMemo(() => {
@@ -854,6 +873,14 @@ function AcctBudget({ year }: { year: number }) {
     const hist = getItem<string[]>('acct_itemName_history', [])
     if (!hist.includes(trimName)) {
       setItem('acct_itemName_history', [...hist, trimName])
+    }
+    // 새 예산세목이면 히스토리에 자동 추가
+    const trimSub = budgetForm.subName.trim()
+    if (trimSub) {
+      const subHist = getItem<string[]>('acct_subName_history', [])
+      if (!subHist.includes(trimSub)) {
+        setItem('acct_subName_history', [...subHist, trimSub])
+      }
     }
 
     setBudgetModalOpen(false)
@@ -1226,15 +1253,67 @@ function AcctBudget({ year }: { year: number }) {
                 )}
               </div>
 
-              {/* 예산세목 */}
-              <div>
-                <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">예산세목 *</label>
+              {/* 예산세목 - 검색 콤보박스 */}
+              <div className="relative">
+                <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 flex items-center gap-1">
+                  예산세목 *
+                  {isNewSubName && <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">+ 새 세목</span>}
+                </label>
                 <input
                   value={budgetForm.subName}
-                  onChange={e => setBudgetForm(f => ({ ...f, subName: e.target.value }))}
-                  placeholder="예) 보수비, 도자기수리비, 수납함수선비"
-                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors"
+                  onChange={e => {
+                    setBudgetForm(f => ({ ...f, subName: e.target.value }))
+                    setSubNameSearch(e.target.value)
+                    setSubNamePopup(true)
+                    setItemNamePopup(false)
+                    setAcctPopup(false)
+                  }}
+                  onFocus={() => { setSubNamePopup(true); setItemNamePopup(false); setAcctPopup(false); setSubNameSearch(budgetForm.subName) }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      if (filteredSubNames.length > 0) {
+                        const first = filteredSubNames[0]
+                        setBudgetForm(f => ({ ...f, subName: first }))
+                        setSubNameSearch(first)
+                      }
+                      setSubNamePopup(false)
+                    }
+                  }}
+                  placeholder="예산세목을 검색하거나 새로 입력하세요"
+                  className={cn(
+                    'w-full px-3 py-2.5 rounded-lg border bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors',
+                    isNewSubName ? 'border-emerald-400' : 'border-[var(--border-default)]'
+                  )}
                 />
+                {subNamePopup && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl shadow-xl z-50 max-h-[220px] overflow-hidden">
+                    <div className="max-h-[200px] overflow-y-auto p-1.5">
+                      {filteredSubNames.map(name => (
+                        <button key={name}
+                          onClick={() => {
+                            setBudgetForm(f => ({ ...f, subName: name }))
+                            setSubNameSearch(name)
+                            setSubNamePopup(false)
+                          }}
+                          className={cn('w-full text-left text-[12px] px-3 py-2 rounded-lg cursor-pointer transition-colors',
+                            budgetForm.subName === name ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 font-bold' : 'hover:bg-[var(--bg-muted)] text-[var(--text-secondary)]')}
+                        >
+                          {name}
+                        </button>
+                      ))}
+                      {filteredSubNames.length === 0 && budgetForm.subName.trim() && (
+                        <div className="text-center text-xs py-3 space-y-1">
+                          <div className="text-emerald-500 font-bold">✨ "{budgetForm.subName.trim()}"</div>
+                          <div className="text-[var(--text-muted)]">새 예산세목으로 등록됩니다</div>
+                        </div>
+                      )}
+                      {filteredSubNames.length === 0 && !budgetForm.subName.trim() && (
+                        <div className="text-center text-xs text-[var(--text-muted)] py-3">등록된 예산세목이 없습니다</div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* 계정과목 - 검색 콤보박스 */}
