@@ -2312,6 +2312,7 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
   const [groupByVendor, setGroupByVendor] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [editForm, setEditForm] = useState<any>({ description: '', amount: 0, counter: '', memo: '' })
+  const [linkedApprovalId, setLinkedApprovalId] = useState<string | number | null>(null)
 
   /* 예산항목 목록 (기타설정의 예산항목 데이터) */
   const budgetItemNames = useMemo(() => {
@@ -2395,6 +2396,13 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
     })
     setItem('acct_cashflows', cfs)
 
+    // 연결된 품의가 있으면 지출완료 처리
+    if (linkedApprovalId) {
+      const allAppr = getItem<Approval[]>('acct_approvals', [])
+      setItem('acct_approvals', allAppr.map(a => String(a.id) === String(linkedApprovalId) ? { ...a, status: 'expensed' } : a))
+      setLinkedApprovalId(null)
+    }
+
     setForm({ desc: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, accountCode: '', memo: '', budgetCatId: '', budgetItemName: '', budgetSubName: '' })
     setCounterSearch('')
     setRefresh(r => r + 1)
@@ -2418,37 +2426,22 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
     return getItem<Approval[]>('acct_approvals', []).filter(a => a.status === 'approved' && a.date && parseInt(String(a.date).substring(0, 4)) === year)
   }, [type, year, refresh])
 
-  const executeApproval = (appr: Approval) => {
-    if (!confirm(`"${appr.title}" 품의를 지출 처리하시겠습니까?`)) return
+  /* 품의 → 지출준비: 폼에 자동 채우기 */
+  const prepareApproval = (appr: Approval) => {
     const amt = appr.amount || 0
-    const cfId = Date.now() + Math.floor(Math.random() * 1000)
-    const vId = cfId + 1
-
-    // 전표 자동 생성
-    const vouchers = getItem<any[]>('acct_vouchers', [])
-    vouchers.push({
-      id: vId, date: new Date().toISOString().slice(0, 10), type: 'expense',
-      description: appr.title, entries: [
-        { side: 'debit', accountCode: '5110', amount: amt },
-        { side: 'credit', accountCode: '1020', amount: amt },
-      ],
-      createdAt: new Date().toISOString(),
-    })
-    setItem('acct_vouchers', vouchers)
-
-    // 캐시플로 등록
-    const cfs = getItem<CashFlow[]>('acct_cashflows', [])
-    cfs.push({
-      id: cfId, date: new Date().toISOString().slice(0, 10), type: 'expense',
-      amount: amt, description: appr.title, accountCode: appr.accountCode || '5110',
-      counter: '', writeDate: new Date().toISOString().slice(0, 10),
-    })
-    setItem('acct_cashflows', cfs)
-
-    // 품의 상태 → 지출완료
-    const allAppr = getItem<Approval[]>('acct_approvals', [])
-    setItem('acct_approvals', allAppr.map(a => String(a.id) === String(appr.id) ? { ...a, status: 'expensed' } : a))
-    setRefresh(r => r + 1)
+    setForm(f => ({
+      ...f,
+      desc: appr.title || '',
+      amount: amt ? amt.toLocaleString('ko-KR') : '',
+      accountCode: appr.accountCode || '5110',
+      counter: '',
+      tradeDate: today,
+      writeDate: today,
+      memo: `품의 연결: ${appr.title}`,
+    }))
+    setLinkedApprovalId(appr.id)
+    // 폼 영역으로 스크롤
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100)
   }
 
   return (
@@ -2469,8 +2462,8 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
                   <div className="text-[10px] text-[var(--text-muted)]">{(ap.date || '').slice(0, 10)} · {ap.applicant || '-'}</div>
                 </div>
                 <div className="text-[13px] font-extrabold text-[#22c55e] shrink-0">{formatNumber(ap.amount || 0)}원</div>
-                <button onClick={() => executeApproval(ap)} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#ef4444] to-[#dc2626] text-white text-[11px] font-bold cursor-pointer hover:shadow-lg transition-all shrink-0">
-                  💸 지출처리
+                <button onClick={() => prepareApproval(ap)} className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-white text-[11px] font-bold cursor-pointer hover:shadow-lg transition-all shrink-0 ${String(linkedApprovalId) === String(ap.id) ? 'bg-gradient-to-r from-[#3b82f6] to-[#2563eb] ring-2 ring-blue-300' : 'bg-gradient-to-r from-[#f59e0b] to-[#d97706]'}`}>
+                  {String(linkedApprovalId) === String(ap.id) ? '✓ 준비중' : '📋 지출준비'}
                 </button>
               </div>
             ))}
@@ -2608,7 +2601,14 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
             <input value={form.memo} onChange={e => setForm(f => ({ ...f, memo: e.target.value }))} placeholder="참고 사항을 입력하세요" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
           </div>
         </div>
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          {linkedApprovalId ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+              <ShieldCheck size={13} className="text-blue-500" />
+              <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">품의 연결됨</span>
+              <button onClick={() => { setLinkedApprovalId(null); setForm(f => ({ ...f, desc: '', amount: '', memo: '' })) }} className="text-[10px] text-blue-400 hover:text-blue-600 cursor-pointer ml-1">{'\u2715'}</button>
+            </div>
+          ) : <div />}
           <button onClick={saveEntry} className={`flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-white text-sm font-bold cursor-pointer shadow-md bg-gradient-to-r ${typeGrads[type]}`}>
             <Save size={14} /> {type === 'income' ? '입금' : '지출'} 등록
           </button>
