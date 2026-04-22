@@ -49,6 +49,7 @@ const tabs: Tab[] = [
   { key: 'taskStatus', label: '진행상태',             icon: Layers,     color: '#06b6d4' },
   { key: 'accounts',   label: '계정과목',             icon: Calculator, color: '#0ea5e9' },
   { key: 'budgetItems',label: '예산항목',               icon: Wallet,     color: '#f97316' },
+  { key: 'budgetSub',  label: '예산세목',               icon: Layers,     color: '#ea580c' },
   { key: 'payMethods', label: '지출수단',             icon: CreditCard, color: '#ec4899' },
   { key: 'bizCategory',label: '거래처구분',            icon: ContactRound, color: '#14b8a6' },
 ]
@@ -160,6 +161,7 @@ export function SettingsPage() {
       {activeTab === 'taskStatus' && <TaskStatusPanel />}
       {activeTab === 'accounts' && <AccountPanel />}
       {activeTab === 'budgetItems' && <BudgetItemPanel />}
+      {activeTab === 'budgetSub' && <BudgetSubPanel />}
       {activeTab === 'payMethods' && <PaymentMethodPanel />}
       {activeTab === 'bizCategory' && <BizCategoryPanel />}
     </div>
@@ -1080,6 +1082,106 @@ function BudgetItemPanel() {
         <div className="space-y-0.5">
           {allNames.map((name, idx) => {
             const inBudget = budgets.some(b => b.itemName === name)
+            return (
+              <div key={name} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--bg-muted)] transition-all group">
+                <span className="text-[11px] font-bold text-[var(--text-muted)] w-5 text-center shrink-0">{idx + 1}</span>
+                <span className="text-sm font-semibold text-[var(--text-primary)] flex-1 truncate">{name}</span>
+                {inBudget && (
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/20 text-green-600">사용중</span>
+                )}
+                <button
+                  onClick={() => handleDelete(name)}
+                  className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </Card>
+  )
+}
+
+/* ══════════════════════════════════════════════
+   예산세목 관리 패널
+   ══════════════════════════════════════════════ */
+function BudgetSubPanel() {
+  const [refresh, setRefresh] = useState(0)
+  const [newName, setNewName] = useState('')
+  const addToast = useToastStore((s) => s.add)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // 예산 데이터에서 사용된 세목 + 히스토리
+  const budgets: { subName?: string }[] = getItem('acct_budgets', [])
+  const hist: string[] = getItem('acct_subName_history', [])
+  void refresh
+
+  const allNames = Array.from(new Set([
+    ...budgets.map(b => b.subName).filter(Boolean) as string[],
+    ...hist.filter(Boolean),
+  ])).sort()
+
+  const handleAdd = () => {
+    if (!newName.trim()) return
+    if (allNames.includes(newName.trim())) {
+      addToast('error', '이미 존재하는 예산세목입니다')
+      return
+    }
+    const updated = [...hist, newName.trim()]
+    localStorage.setItem('workm_acct_subName_history', JSON.stringify(updated))
+    addToast('success', `예산세목 "${newName.trim()}" 추가 완료`)
+    setNewName('')
+    setRefresh(r => r + 1)
+    inputRef.current?.focus()
+  }
+
+  const handleDelete = (name: string) => {
+    if (!confirm(`"${name}" 예산세목을 삭제하시겠습니까?`)) return
+    const updated = hist.filter(h => h !== name)
+    localStorage.setItem('workm_acct_subName_history', JSON.stringify(updated))
+    addToast('warning', `예산세목 "${name}" 삭제 완료`)
+    setRefresh(r => r + 1)
+  }
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <div className="text-sm font-extrabold text-[var(--text-primary)]">예산세목 관리</div>
+          <div className="text-[11px] text-[var(--text-muted)]">예산 등록 시 자동완성에 표시되는 예산세목 목록입니다</div>
+        </div>
+      </div>
+
+      {/* 추가 폼 */}
+      <div className="flex gap-2 mb-4">
+        <div className="flex-1">
+          <Input
+            ref={inputRef}
+            placeholder="새 예산세목 입력 (예: 석조문화재 보수, 발굴장비 구입비)"
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          />
+        </div>
+        <Button onClick={handleAdd} icon={<Plus size={15} />} size="md" className="shrink-0">
+          <span className="hidden sm:inline">추가</span>
+        </Button>
+      </div>
+
+      {/* 헤더 */}
+      <div className="flex items-center justify-between pb-2 mb-2 border-b border-[var(--border-default)]">
+        <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">예산세목 목록</span>
+        <span className="text-[11px] font-bold text-[#ea580c]">{allNames.length}건</span>
+      </div>
+
+      {allNames.length === 0 ? (
+        <div className="py-10 text-center text-sm text-[var(--text-muted)]">등록된 예산세목이 없습니다</div>
+      ) : (
+        <div className="space-y-0.5">
+          {allNames.map((name, idx) => {
+            const inBudget = budgets.some(b => b.subName === name)
             return (
               <div key={name} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--bg-muted)] transition-all group">
                 <span className="text-[11px] font-bold text-[var(--text-muted)] w-5 text-center shrink-0">{idx + 1}</span>
