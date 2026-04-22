@@ -1405,7 +1405,7 @@ function AcctApproval({ year }: { year: number }) {
   const [refresh, setRefresh] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
   const [editId, setEditId] = useState<string | number | null>(null)
-  const [form, setForm] = useState({ title: '', amount: '', date: new Date().toISOString().slice(0, 10), accountCode: '', description: '', applicant: 'admin', approver: '' })
+  const [form, setForm] = useState({ title: '', amount: '', date: new Date().toISOString().slice(0, 10), accountCode: '', budgetCatId: '' as string | number, budgetItemName: '', budgetSubName: '', description: '', applicant: 'admin', approver: '' })
   const [approveModal, setApproveModal] = useState<Approval | null>(null)
   const [approvePw, setApprovePw] = useState('')
   const [approveForm, setApproveForm] = useState({ title: '', amount: '', accountCode: '', description: '' })
@@ -1489,7 +1489,7 @@ function AcctApproval({ year }: { year: number }) {
   }
 
   const resetForm = () => {
-    setForm({ title: '', amount: '', date: new Date().toISOString().slice(0, 10), accountCode: '', description: '', applicant: myName || 'admin', approver: '' })
+    setForm({ title: '', amount: '', date: new Date().toISOString().slice(0, 10), accountCode: '', budgetCatId: '', budgetItemName: '', budgetSubName: '', description: '', applicant: myName || 'admin', approver: '' })
     setEditId(null)
   }
 
@@ -1497,9 +1497,13 @@ function AcctApproval({ year }: { year: number }) {
 
   const openEdit = (a: Approval) => {
     setEditId(a.id)
+    const matchBudget = budgetItems.find(b => b.accountCode === a.accountCode || b.itemName === a.accountCode)
     setForm({
       title: a.title || '', amount: a.amount ? Number(a.amount).toLocaleString('ko-KR') : '',
       date: a.date || new Date().toISOString().slice(0, 10), accountCode: a.accountCode || '',
+      budgetCatId: matchBudget?.catId || (a as any).budgetCatId || '',
+      budgetItemName: matchBudget?.itemName || (a as any).budgetItemName || '',
+      budgetSubName: matchBudget?.subName || (a as any).budgetSubName || '',
       description: a.description || '', applicant: a.applicant || myName || 'admin', approver: a.approver || '',
     })
     setModalOpen(true)
@@ -1511,17 +1515,21 @@ function AcctApproval({ year }: { year: number }) {
     if (amt <= 0) return alert('금액을 입력해주세요')
     if (!form.approver) return alert('승인자를 선택해주세요')
     const all = getItem<Approval[]>('acct_approvals', [])
+    const resolvedCode = form.budgetSubName || form.budgetItemName || form.accountCode
     if (editId) {
       const idx = all.findIndex(a => String(a.id) === String(editId))
       if (idx >= 0) {
-        all[idx] = { ...all[idx], title: form.title.trim(), amount: amt, date: form.date, accountCode: form.accountCode, description: form.description, applicant: form.applicant, approver: form.approver }
+        all[idx] = { ...all[idx], title: form.title.trim(), amount: amt, date: form.date, accountCode: resolvedCode, description: form.description, applicant: form.applicant, approver: form.approver,
+          ...(form.budgetCatId ? { budgetCatId: form.budgetCatId, budgetItemName: form.budgetItemName, budgetSubName: form.budgetSubName } : {}),
+        }
       }
     } else {
       all.push({
         id: Date.now() + Math.floor(Math.random() * 1000),
         title: form.title.trim(), amount: amt, date: form.date, status: 'pending',
-        accountCode: form.accountCode, description: form.description,
+        accountCode: resolvedCode, description: form.description,
         applicant: form.applicant, approver: form.approver, createdAt: new Date().toISOString(),
+        ...(form.budgetCatId ? { budgetCatId: form.budgetCatId, budgetItemName: form.budgetItemName, budgetSubName: form.budgetSubName } : {}),
       })
     }
     setItem('acct_approvals', all)
@@ -1765,28 +1773,60 @@ function AcctApproval({ year }: { year: number }) {
                 <label className={labelCls}>품의명 *</label>
                 <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="예) 사무용품 구매" className={inputCls} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelCls}>예산과목 *</label>
+              <div>
+                <label className={labelCls}>예산선택 *</label>
+                <div className="grid grid-cols-3 gap-2">
                   <CustomSelect
-                    value={form.accountCode}
-                    onChange={v => setForm(f => ({ ...f, accountCode: v }))}
-                    placeholder="— 선택 —"
+                    value={String(form.budgetCatId || '')}
+                    onChange={v => setForm(f => ({ ...f, budgetCatId: v, budgetItemName: '', budgetSubName: '', accountCode: v }))}
+                    placeholder="예산구분"
                     options={[
-                      { value: '', label: '— 선택 —' },
-                      ...budgetCats.flatMap(cat =>
-                        budgetItems.filter(b => b.catId === cat.id).map(b => ({
-                          value: b.accountCode || b.itemName,
-                          label: `${cat.name} > ${b.itemName}`,
-                        }))
-                      ),
+                      { value: '', label: '예산구분' },
+                      ...budgetCats.map(c => ({ value: String(c.id), label: c.name })),
+                    ]}
+                  />
+                  <CustomSelect
+                    value={form.budgetItemName}
+                    onChange={v => setForm(f => ({ ...f, budgetItemName: v, budgetSubName: '', accountCode: v }))}
+                    placeholder="예산항목"
+                    options={[
+                      { value: '', label: '예산항목' },
+                      ...(form.budgetCatId
+                        ? Array.from(new Set(budgetItems.filter(b => String(b.catId) === String(form.budgetCatId)).map(b => b.itemName).filter(Boolean))).map(n => ({ value: n, label: n }))
+                        : []),
+                    ]}
+                  />
+                  <CustomSelect
+                    value={form.budgetSubName}
+                    onChange={v => {
+                      const matched = budgetItems.find(b => String(b.catId) === String(form.budgetCatId) && b.itemName === form.budgetItemName && b.subName === v)
+                      setForm(f => ({ ...f, budgetSubName: v, accountCode: matched?.accountCode || v }))
+                    }}
+                    placeholder="예산세목"
+                    options={[
+                      { value: '', label: '예산세목' },
+                      ...(form.budgetItemName
+                        ? Array.from(new Set(
+                            budgetItems
+                              .filter(b => String(b.catId) === String(form.budgetCatId) && b.itemName === form.budgetItemName)
+                              .map(b => b.subName)
+                              .filter(Boolean) as string[]
+                          )).map(n => ({ value: n, label: n }))
+                        : []),
                     ]}
                   />
                 </div>
-                <div>
-                  <label className={labelCls}>금액 (원) *</label>
-                  <input value={form.amount} onChange={e => handleAmtInput(e.target.value, v => setForm(f => ({ ...f, amount: v })))} placeholder="0" className={`${inputCls} text-right font-bold`} />
-                </div>
+                {(form.budgetCatId || form.budgetItemName || form.budgetSubName) && (
+                  <div className="mt-1.5 text-[10px] text-primary-500 font-semibold">
+                    {budgetCats.find(c => String(c.id) === String(form.budgetCatId))?.name || ''}
+                    {form.budgetItemName && ` ${String.fromCharCode(8250)} ${form.budgetItemName}`}
+                    {form.budgetSubName && ` ${String.fromCharCode(8250)} ${form.budgetSubName}`}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className={labelCls}>금액 (원) *</label>
+                <input value={form.amount} onChange={e => handleAmtInput(e.target.value, v => setForm(f => ({ ...f, amount: v })))} placeholder="0" className={`${inputCls} text-right font-bold`} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
