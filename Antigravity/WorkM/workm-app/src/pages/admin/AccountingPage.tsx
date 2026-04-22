@@ -986,82 +986,52 @@ function AcctBudget({ year }: { year: number }) {
                   </tr>
                 </thead>
                 <tbody>
-                {(() => {
-                  /* 계정과목별 그룹핑 */
-                  const groups: Record<string, typeof filtered> = {}
-                  filtered.forEach(b => {
-                    const key = b.accountCode || '미설정'
-                    if (!groups[key]) groups[key] = []
-                    groups[key].push(b)
-                  })
-                  const groupKeys = Object.keys(groups).sort()
-                  return groupKeys.map(gk => {
-                    const items = groups[gk]
-                    const gAmt = items.reduce((a, b) => a + (b.amount || 0), 0)
-                    const gSpent = items.reduce((a, b) => a + (b.spent || 0), 0)
-                    const gPct = gAmt > 0 ? Math.round(gSpent / gAmt * 100) : 0
-                    const acctName = accounts.find(a => a.code === gk)?.name || ''
-                    return (
-                      <>
-                        {/* 계정과목 소계 헤더 */}
-                        <tr key={`grp-${gk}`} className="bg-[rgba(79,110,247,.04)]">
-                          <td colSpan={2} className="py-2 px-3.5 text-[11px] font-extrabold text-primary-600">
-                            📌 {gk}{acctName ? ` (${acctName})` : ''}
-                            <span className="text-[10px] text-[var(--text-muted)] ml-2 font-bold">{items.length}건</span>
-                          </td>
-                          <td className="py-2 px-3.5 text-[11px] font-extrabold text-primary-600 text-right">{formatNumber(gAmt)}원</td>
-                          <td className="py-2 px-3.5 text-[11px] font-extrabold text-danger text-right">{formatNumber(gSpent)}원</td>
-                          <td className="py-2 px-3.5 text-[11px] font-extrabold text-right" style={{ color: gAmt - gSpent < 0 ? '#ef4444' : '#22c55e' }}>{formatNumber(gAmt - gSpent)}원</td>
-                          <td className="py-2 px-3.5 text-[10px] font-bold text-[var(--text-muted)]">{gPct}%</td>
-                          <td />
-                        </tr>
-                        {/* 해당 계정과목의 예산 항목 */}
-                        {items.map(b => {
-                          const pct = b.amount > 0 ? Math.round((b.spent || 0) / b.amount * 100) : 0
-                          const color = pct > 100 ? '#ef4444' : pct > 80 ? '#f59e0b' : '#4f6ef7'
-                          return (
-                            <tr key={b.id} className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors">
-                              <td className="py-2.5 px-3.5 text-[12px] font-bold text-[var(--text-primary)] pl-8">{b.itemName}</td>
-                              <td className="py-2.5 px-3.5 text-[11px] text-[var(--text-muted)] font-mono">{b.accountCode || '-'}</td>
-                              <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-[var(--text-primary)] text-right">{formatNumber(b.amount)}원</td>
-                              <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-danger text-right">{formatNumber(b.spent || 0)}원</td>
-                              <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-right" style={{ color: (b.amount - (b.spent || 0)) < 0 ? '#ef4444' : '#22c55e' }}>
-                                {formatNumber(b.amount - (b.spent || 0))}원
-                              </td>
-                              <td className="py-2.5 px-3.5">
-                                <div className="flex items-center gap-2">
-                                  <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-subtle)] overflow-hidden max-w-[80px]">
-                                    <div className="h-full rounded-full" style={{ width: `${Math.min(100, pct)}%`, background: color }} />
-                                  </div>
-                                  <span className="text-[11px] font-extrabold" style={{ color }}>{pct}%</span>
-                                  {pct > 100 && <span className="text-[10px] text-danger font-bold">⚠️</span>}
-                                </div>
-                              </td>
-                              <td className="py-2.5 px-3.5 text-center">
-                                <div className="flex items-center justify-center gap-1">
-                                  <button
-                                    onClick={() => openBudgetModal(b.id as number)}
-                                    className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--text-muted)] hover:bg-primary-100 hover:text-primary-500 transition-all cursor-pointer"
-                                    title="수정"
-                                  >
-                                    <Edit3 size={12} />
-                                  </button>
-                                  <button
-                                    onClick={() => deleteBudgetItem(b.id as number)}
-                                    className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--text-muted)] hover:bg-red-100 hover:text-danger transition-all cursor-pointer"
-                                    title="삭제"
-                                  >
-                                    <Trash2 size={12} />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </>
-                    )
-                  })
-                })()}
+                {filtered.map(b => {
+                  const pct = b.amount > 0 ? Math.round((b.spent || 0) / b.amount * 100) : 0
+                  const color = pct > 100 ? '#ef4444' : pct > 80 ? '#f59e0b' : '#4f6ef7'
+                  const acctName = accounts.find(a => a.code === b.accountCode)?.name || ''
+                  return (
+                    <tr key={b.id} className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors">
+                      <td className="py-2.5 px-3.5 text-[12px] font-bold text-[var(--text-primary)]">{b.itemName}</td>
+                      <td className="py-2.5 px-3.5 text-[11px] text-[var(--text-muted)]">
+                        <span className="font-mono">{b.accountCode || '-'}</span>
+                        {acctName && <span className="ml-1 text-[10px] text-[var(--text-secondary)]">({acctName})</span>}
+                      </td>
+                      <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-[var(--text-primary)] text-right">{formatNumber(b.amount)}원</td>
+                      <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-danger text-right">{formatNumber(b.spent || 0)}원</td>
+                      <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-right" style={{ color: (b.amount - (b.spent || 0)) < 0 ? '#ef4444' : '#22c55e' }}>
+                        {formatNumber(b.amount - (b.spent || 0))}원
+                      </td>
+                      <td className="py-2.5 px-3.5">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-subtle)] overflow-hidden max-w-[80px]">
+                            <div className="h-full rounded-full" style={{ width: `${Math.min(100, pct)}%`, background: color }} />
+                          </div>
+                          <span className="text-[11px] font-extrabold" style={{ color }}>{pct}%</span>
+                          {pct > 100 && <span className="text-[10px] text-danger font-bold">⚠️</span>}
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3.5 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => openBudgetModal(b.id as number)}
+                            className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--text-muted)] hover:bg-primary-100 hover:text-primary-500 transition-all cursor-pointer"
+                            title="수정"
+                          >
+                            <Edit3 size={12} />
+                          </button>
+                          <button
+                            onClick={() => deleteBudgetItem(b.id as number)}
+                            className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--text-muted)] hover:bg-red-100 hover:text-danger transition-all cursor-pointer"
+                            title="삭제"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
                 </tbody>
                 <tfoot>
                   <tr className="bg-[var(--bg-muted)]">
