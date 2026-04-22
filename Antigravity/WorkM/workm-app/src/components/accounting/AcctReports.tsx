@@ -471,7 +471,8 @@ function CashBook({ vouchers, balances, year }: { vouchers: Voucher[]; balances:
 function AccountLedger({ vouchers, year }: { vouchers: Voucher[]; year: number }) {
   const byCounterpart: Record<string, Voucher[]> = {}
   vouchers.forEach(v => {
-    const cp = v.counterpart || '(미지정)'
+    const cp = v.counterpart
+    if (!cp) return
     if (!byCounterpart[cp]) byCounterpart[cp] = []
     byCounterpart[cp].push(v)
   })
