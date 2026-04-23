@@ -107,7 +107,7 @@ function initAccountingSeed() {
   }
 
   /* ═══ 샘플 데이터 — 시드 가드로 중복 생성 방지 ═══ */
-  if (localStorage.getItem('_acct_react_seed_v6')) return
+  if (localStorage.getItem('_acct_react_seed_v7')) return
 
   const uid = () => Date.now().toString(36) + Math.random().toString(36).substring(2, 7)
 
@@ -306,24 +306,24 @@ function initAccountingSeed() {
     setItem('acct_approvals', approvals)
   }
 
-  /* ── 지출/입금/출금 샘플 각 10건 ── */
-  if (getItem<any[]>('acct_cashflows', []).length === 0) {
+  /* ── 지출/입금/출금 샘플 각 10건 (v7: 현금/예금 균형 배분) ── */
+  {
     const cfs: any[] = []
     const vs: any[] = []
     let sid = 3001
 
-    // 지출 10건
+    // 지출 10건 (현금/계좌이체/카드 다양하게)
     const expenses = [
-      { desc: '사무용품 구매 (복사지, 토너)', amt: 320000, date: `${year}-01-20`, counter: '(주)스마트오피스', method: '카드' },
+      { desc: '사무용품 구매 (복사지, 토너)', amt: 320000, date: `${year}-01-20`, counter: '(주)스마트오피스', method: '현금' },
       { desc: '현장작업자 안전장비', amt: 1500000, date: `${year}-02-08`, counter: '(주)한국전자', method: '계좌이체' },
-      { desc: '3월 법인차량 유류비', amt: 450000, date: `${year}-03-15`, counter: '주유소', method: '법인카드' },
+      { desc: '3월 법인차량 유류비', amt: 450000, date: `${year}-03-15`, counter: '주유소', method: '현금' },
       { desc: '보고서 인쇄비 (300부)', amt: 1200000, date: `${year}-03-28`, counter: '대한인쇄공사', method: '계좌이체' },
-      { desc: '사무실 인터넷 요금', amt: 88000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-05`, counter: '한빛통신(주)', method: '계좌이체' },
+      { desc: '현장 소모품 구입', amt: 280000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-05`, counter: '철물점', method: '현금' },
       { desc: '조경 유지보수비', amt: 3500000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-10`, counter: '(주)그린조경', method: '계좌이체' },
-      { desc: '직원 간식비', amt: 150000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-12`, counter: '(주)맛나푸드', method: '법인카드' },
+      { desc: '직원 간식비', amt: 150000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-12`, counter: '(주)맛나푸드', method: '현금' },
       { desc: '법률자문 수수료', amt: 2200000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-18`, counter: '세종법률사무소', method: '계좌이체' },
-      { desc: '차량 정기검사비', amt: 350000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-02`, counter: '(주)퍼스트카', method: '카드' },
-      { desc: '사무실 정수기 렌탈', amt: 55000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-05`, counter: '정수기렌탈', method: '계좌이체' },
+      { desc: '차량 정기검사비', amt: 350000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-02`, counter: '(주)퍼스트카', method: '현금' },
+      { desc: '사무실 정수기 렌탈', amt: 55000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-05`, counter: '정수기렌탈', method: '현금' },
     ]
     expenses.forEach(e => {
       const id = sid++
@@ -334,18 +334,18 @@ function initAccountingSeed() {
       ]})
     })
 
-    // 입금 10건
+    // 입금 10건 (현금/계좌이체 다양하게)
     const incomes = [
       { desc: '문화재청 1차 보조금', amt: 25000000, date: `${year}-01-10`, counter: '문화재청', method: '계좌이체' },
-      { desc: '경주시 관광홍보 보조금', amt: 10000000, date: `${year}-02-01`, counter: '경주시청', method: '계좌이체' },
+      { desc: '주차장 운영 수입', amt: 3200000, date: `${year}-02-28`, counter: '(주)그린조경', method: '현금' },
       { desc: '문화재청 2차 보조금', amt: 25000000, date: `${year}-03-05`, counter: '문화재청', method: '계좌이체' },
-      { desc: '발굴조사 용역 수입', amt: 8000000, date: `${year}-03-20`, counter: '경주문화재연구원', method: '계좌이체' },
-      { desc: '유적 입장료 수입', amt: 3200000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-01`, counter: '현장매표소', method: '현금' },
-      { desc: '기념품 판매 수입', amt: 1500000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-08`, counter: '기념품샵', method: '카드' },
-      { desc: '경주시 3차 보조금', amt: 10000000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-15`, counter: '경주시청', method: '계좌이체' },
-      { desc: '교육 프로그램 참가비', amt: 2400000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-20`, counter: '교육참가자', method: '계좌이체' },
-      { desc: '도서 판매 수입', amt: 850000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-03`, counter: '온라인서점', method: '계좌이체' },
-      { desc: '문화재청 3차 보조금', amt: 20000000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-10`, counter: '문화재청', method: '계좌이체' },
+      { desc: '유적 입장료 수입', amt: 8500000, date: `${year}-03-01`, counter: '경주시청', method: '현금' },
+      { desc: '블로거 촬영비 수입', amt: 1300000, date: `${year}-03-01`, counter: 'KT서브마리나TV', method: '현금' },
+      { desc: '기념품 판매 수입', amt: 1500000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-08`, counter: '기념품샵', method: '현금' },
+      { desc: '경주시 3차 보조금', amt: 10000000, date: `${year}-04-05`, counter: '경주시청', method: '계좌이체' },
+      { desc: '교육 프로그램 참가비', amt: 2400000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-20`, counter: '교육참가자', method: '현금' },
+      { desc: '주차장 운영 수입', amt: 1800000, date: `${year}-07-05`, counter: '(주)그린조경', method: '현금' },
+      { desc: '문화재청 3차 보조금', amt: 20000000, date: `${year}-03-15`, counter: '문화재청', method: '계좌이체' },
     ]
     incomes.forEach(e => {
       const id = sid++
@@ -356,17 +356,17 @@ function initAccountingSeed() {
       ]})
     })
 
-    // 출금 10건 (type: 'expense' + withdrawal 형태)
+    // 출금 10건 (현금/계좌이체 다양하게)
     const withdrawals = [
       { desc: '임직원 1월 급여', amt: 15000000, date: `${year}-01-25`, counter: '직원계좌', method: '계좌이체' },
-      { desc: '임직원 2월 급여', amt: 15000000, date: `${year}-02-25`, counter: '직원계좌', method: '계좌이체' },
+      { desc: '거래처 접대비', amt: 650000, date: `${year}-02-20`, counter: '경주시청', method: '현금' },
       { desc: '4대보험 납부', amt: 4800000, date: `${year}-02-28`, counter: '국민건강보험공단', method: '계좌이체' },
-      { desc: '임직원 3월 급여', amt: 15000000, date: `${year}-03-25`, counter: '직원계좌', method: '계좌이체' },
+      { desc: '출장 여비교통비', amt: 850000, date: `${year}-03-05`, counter: '사무실', method: '현금' },
       { desc: '퇴직연금 적립', amt: 3000000, date: `${year}-03-31`, counter: '퇴직연금운용사', method: '계좌이체' },
-      { desc: '세금 납부 (부가세)', amt: 5500000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-10`, counter: '국세청', method: '계좌이체' },
-      { desc: '임직원 ${new Date().getMonth() + 1}월 급여', amt: 15000000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-25`, counter: '직원계좌', method: '계좌이체' },
+      { desc: '회의 다과비', amt: 180000, date: `${year}-05-15`, counter: '(주)미니바로', method: '현금' },
+      { desc: 'VIP 접대비', amt: 450000, date: `${year}-05-20`, counter: '경주시청', method: '현금' },
       { desc: '사무실 임대료', amt: 3300000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`, counter: '건물주', method: '계좌이체' },
-      { desc: '4대보험 납부', amt: 4800000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-05`, counter: '국민건강보험공단', method: '계좌이체' },
+      { desc: '비품 수리비', amt: 220000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-05`, counter: '수리업체', method: '현금' },
       { desc: '관리비 납부', amt: 880000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-10`, counter: '관리사무소', method: '계좌이체' },
     ]
     withdrawals.forEach(e => {
@@ -374,7 +374,7 @@ function initAccountingSeed() {
       cfs.push({ id, date: e.date, type: 'expense', amount: e.amt, description: e.desc, accountCode: '5210', counter: e.counter, method: e.method, isWithdrawal: true })
       vs.push({ id: sid++, date: e.date, type: 'expense', description: e.desc, counterpart: e.counter, paymentMethod: e.method, createdAt: e.date + 'T09:00:00Z', entries: [
         { side: 'debit', accountCode: '5210', amount: e.amt },
-        { side: 'credit', accountCode: '1020', amount: e.amt },
+        { side: 'credit', accountCode: e.method === '현금' ? '1010' : '1020', amount: e.amt },
       ]})
     })
 
@@ -382,7 +382,7 @@ function initAccountingSeed() {
     setItem('acct_vouchers', vs)
   }
 
-  localStorage.setItem('_acct_react_seed_v6', '1')
+  localStorage.setItem('_acct_react_seed_v7', '1')
 }
 
 // 모듈 로드 시 즉시 실행 — 컴포넌트 렌더링 전에 localStorage 데이터 보장
