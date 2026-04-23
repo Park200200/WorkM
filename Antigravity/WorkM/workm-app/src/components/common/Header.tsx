@@ -155,6 +155,35 @@ export function Header() {
               </button>
             ))}
           </div>
+
+          {/* 예산구분 필터 탭 (지출/입금/출금 전용) */}
+          {['expense', 'income', 'withdrawal'].includes(activeTab) && (() => {
+            const budgetCatsForYear = budgetCats.filter((c: any) => {
+              const catYear = c.year || (c.periodFrom ? parseInt(c.periodFrom.substring(0, 4)) : currentYear)
+              return catYear === acctYear
+            })
+            const currentCat = searchParams.get('cat') || 'all'
+            const setCat = (catId: string) => {
+              const params: Record<string, string> = { tab: activeTab, year: String(acctYear), cat: catId }
+              setSearchParams(params)
+            }
+            return budgetCatsForYear.length > 0 ? (
+              <div className="hidden md:flex items-center gap-1 bg-[var(--bg-muted)] rounded-lg px-1 py-0.5 border border-[var(--border-default)]">
+                <button onClick={() => setCat('all')}
+                  className={cn('px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer',
+                    currentCat === 'all' ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]')}>
+                  전체
+                </button>
+                {budgetCatsForYear.map((c: any) => (
+                  <button key={c.id} onClick={() => setCat(String(c.id))}
+                    className={cn('px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer',
+                      currentCat === String(c.id) ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]')}>
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            ) : null
+          })()}
         </div>
       )
     }

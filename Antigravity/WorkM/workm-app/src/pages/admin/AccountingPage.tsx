@@ -2513,7 +2513,15 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
   const [editMode, setEditMode] = useState(false)
   const [editForm, setEditForm] = useState<any>({ description: '', amount: 0, counter: '', memo: '' })
   const [linkedApprovalId, setLinkedApprovalId] = useState<string | number | null>(null)
-  const [budgetCatFilter, setBudgetCatFilter] = useState<string>('all')
+
+  /* 예산구분 필터: URL searchParams의 cat으로 관리 */
+  const [searchParams, setSearchParams] = useSearchParams()
+  const budgetCatFilter = searchParams.get('cat') || 'all'
+  const setBudgetCatFilter = (catId: string) => {
+    const tab = searchParams.get('tab') || 'expense'
+    const yr = searchParams.get('year') || String(year)
+    setSearchParams({ tab, year: yr, cat: catId })
+  }
 
   /* 예산구분 카테고리 목록 */
   const budgetCatsForFilter = useMemo(() => {
@@ -2662,8 +2670,8 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
 
   return (
     <div className="space-y-4">
-      {/* ── 예산구분 필터 탭 ── */}
-      <div className="flex items-center gap-2 flex-wrap">
+      {/* ── 예산구분 필터 탭 (모바일 전용 - 데스크탑은 Header에 표시) ── */}
+      <div className="flex items-center gap-2 flex-wrap md:hidden">
         <button
           onClick={() => setBudgetCatFilter('all')}
           className={`px-4 py-2 rounded-full text-[13px] font-bold cursor-pointer transition-all border ${
