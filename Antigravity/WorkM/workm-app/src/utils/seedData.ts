@@ -3,19 +3,15 @@
    ══════════════════════════════════════════════ */
 import { getItem, setItem } from './storage'
 
-const SEED_VERSION = 'v6'
+const SEED_VERSION = 'v7'
 
 export function seedIfEmpty() {
   const prevVersion = getItem<string>('ws_seed_version', '')
   // 이미 시드된 경우 스킵
   if (prevVersion === SEED_VERSION) return
 
-  // 버전 업그레이드 시 사원·부서·업무 데이터 강제 갱신
-  if (prevVersion && prevVersion !== SEED_VERSION) {
-    localStorage.removeItem('ws_users')
-    localStorage.removeItem('ws_departments')
-    localStorage.removeItem('ws_tasks')
-  }
+  // 버전 업그레이드 시에도 기존 데이터 유지 (삭제 없이 새 시드만 추가)
+  // v7: 상세업무 시드 추가
 
   // ── 부서 ──
   if (!getItem('ws_departments', null)) {
@@ -106,6 +102,24 @@ export function seedIfEmpty() {
       { id: 8, name: '포기', icon: 'x-circle', color: '#dc2626' },
       { id: 9, name: '완료', icon: 'check-circle-2', color: '#10b981' },
       { id: 10, name: '검토중', icon: 'eye', color: '#6366f1' },
+    ])
+  }
+
+  // ── 상세업무 ──
+  if (!getItem('ws_detail_tasks', null)) {
+    setItem('ws_detail_tasks', [
+      { id: 1, name: '발굴조사 현장관리' },
+      { id: 2, name: '문화재 보수공사 감독' },
+      { id: 3, name: '유물 정리 및 분석' },
+      { id: 4, name: '보고서 작성 및 편집' },
+      { id: 5, name: '예산 집행 관리' },
+      { id: 6, name: '행정서류 처리' },
+      { id: 7, name: '대외기관 협력' },
+      { id: 8, name: '안전관리 점검' },
+      { id: 9, name: '교육 프로그램 운영' },
+      { id: 10, name: '홈페이지 콘텐츠 관리' },
+      { id: 11, name: '장비 유지보수' },
+      { id: 12, name: '현장 측량 및 기록' },
     ])
   }
 
