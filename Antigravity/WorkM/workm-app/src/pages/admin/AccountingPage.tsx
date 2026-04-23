@@ -23,10 +23,9 @@ import {
 
 /* ─── 회계 시드 데이터 초기화 ── */
 function initAccountingSeed() {
-  if (localStorage.getItem('_acct_react_seed_v5')) return
-
-  const uid = () => Date.now().toString(36) + Math.random().toString(36).substring(2, 7)
   const year = new Date().getFullYear()
+
+  /* ═══ 필수 기반 데이터 — 시드 버전과 무관하게 항상 보정 ═══ */
 
   /* ── 계정과목 초기화 (없을 때만) ── */
   if (getItem<any[]>('acct_accounts', []).length === 0) {
@@ -71,6 +70,46 @@ function initAccountingSeed() {
     ]
     setItem('acct_accounts', defaultAccounts)
   }
+
+  /* ── 기초잔액 초기화 (없을 때만) ── */
+  if (getItem<any[]>('acct_opening_balances', []).length === 0) {
+    const openingBalances = [
+      { year, accountCode: '1010', amount: 5000000 },
+      { year, accountCode: '1020', amount: 50000000 },
+      { year, accountCode: '1030', amount: 2000000 },
+      { year, accountCode: '1040', amount: 1000000 },
+      { year, accountCode: '1530', amount: 3000000 },
+      { year, accountCode: '1540', amount: 10000000 },
+      { year, accountCode: '2010', amount: 5000000 },
+      { year, accountCode: '2030', amount: 3000000 },
+      { year, accountCode: '3010', amount: 50000000 },
+      { year, accountCode: '3020', amount: 13000000 },
+    ]
+    setItem('acct_opening_balances', openingBalances)
+  }
+
+  /* ── 기존 전표 counterpart 마이그레이션 ── */
+  {
+    const vs = getItem<any[]>('acct_vouchers', [])
+    const cfs = getItem<any[]>('acct_cashflows', [])
+    let patched = false
+    vs.forEach((v: any) => {
+      if (!v.counterpart && v.description) {
+        const cf = cfs.find((c: any) => c.description === v.description && c.date === v.date)
+        if (cf && cf.counter) {
+          v.counterpart = cf.counter
+          v.paymentMethod = cf.method || ''
+          patched = true
+        }
+      }
+    })
+    if (patched) setItem('acct_vouchers', vs)
+  }
+
+  /* ═══ 샘플 데이터 — 시드 가드로 중복 생성 방지 ═══ */
+  if (localStorage.getItem('_acct_react_seed_v5')) return
+
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).substring(2, 7)
 
   /* ── 예산 시드 (기존 데이터 없을 때만) ── */
   const cats = getItem<BudgetCat[]>('acct_budget_cats', [])
@@ -240,41 +279,6 @@ function initAccountingSeed() {
 
     setItem('acct_cashflows', cfs)
     setItem('acct_vouchers', vs)
-  }
-
-  /* ── 기초잔액 시드 ── */
-  if (getItem<any[]>('acct_opening_balances', []).length === 0) {
-    const openingBalances = [
-      { year, accountCode: '1010', amount: 5000000 },   // 현금
-      { year, accountCode: '1020', amount: 50000000 },  // 보통예금
-      { year, accountCode: '1030', amount: 2000000 },   // 미수금
-      { year, accountCode: '1040', amount: 1000000 },   // 선급금
-      { year, accountCode: '1530', amount: 3000000 },   // 비품
-      { year, accountCode: '1540', amount: 10000000 },  // 임차보증금
-      { year, accountCode: '2010', amount: 5000000 },   // 미지급금
-      { year, accountCode: '2030', amount: 3000000 },   // 예수금
-      { year, accountCode: '3010', amount: 50000000 },  // 자본금
-      { year, accountCode: '3020', amount: 13000000 },  // 이익잉여금
-    ]
-    setItem('acct_opening_balances', openingBalances)
-  }
-
-  /* ── 기존 전표 counterpart 마이그레이션 ── */
-  {
-    const vs = getItem<any[]>('acct_vouchers', [])
-    const cfs = getItem<any[]>('acct_cashflows', [])
-    let patched = false
-    vs.forEach((v: any) => {
-      if (!v.counterpart && v.description) {
-        const cf = cfs.find((c: any) => c.description === v.description && c.date === v.date)
-        if (cf && cf.counter) {
-          v.counterpart = cf.counter
-          v.paymentMethod = cf.method || ''
-          patched = true
-        }
-      }
-    })
-    if (patched) setItem('acct_vouchers', vs)
   }
 
   localStorage.setItem('_acct_react_seed_v5', '1')
