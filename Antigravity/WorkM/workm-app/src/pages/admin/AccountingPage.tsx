@@ -107,7 +107,7 @@ function initAccountingSeed() {
   }
 
   /* ═══ 샘플 데이터 — 시드 가드로 중복 생성 방지 ═══ */
-  if (localStorage.getItem('_acct_react_seed_v7')) return
+  if (localStorage.getItem('_acct_react_seed_v8')) return
 
   const uid = () => Date.now().toString(36) + Math.random().toString(36).substring(2, 7)
 
@@ -306,28 +306,35 @@ function initAccountingSeed() {
     setItem('acct_approvals', approvals)
   }
 
-  /* ── 지출/입금/출금 샘플 각 10건 (v7: 현금/예금 균형 배분) ── */
+  /* ── 지출/입금/출금 샘플 각 10건 (v7: 현금/예금 균형 배분 + budgetCatId) ── */
   {
+    /* 저장된 예산구분 카테고리 읽기 */
+    const savedCats: { id: string | number; name: string; year: number }[] = getItem('acct_budget_cats', [])
+    const catByName = (name: string) => savedCats.find(c => c.name === name)?.id || ''
+    const catMCJ = catByName('문화재청')
+    const catGJS = catByName('경주시청')
+    const catSelf = catByName('자체예산')
+
     const cfs: any[] = []
     const vs: any[] = []
     let sid = 3001
 
     // 지출 10건 (현금/계좌이체/카드 다양하게)
     const expenses = [
-      { desc: '사무용품 구매 (복사지, 토너)', amt: 320000, date: `${year}-01-20`, counter: '(주)스마트오피스', method: '현금' },
-      { desc: '현장작업자 안전장비', amt: 1500000, date: `${year}-02-08`, counter: '(주)한국전자', method: '계좌이체' },
-      { desc: '3월 법인차량 유류비', amt: 450000, date: `${year}-03-15`, counter: '주유소', method: '현금' },
-      { desc: '보고서 인쇄비 (300부)', amt: 1200000, date: `${year}-03-28`, counter: '대한인쇄공사', method: '계좌이체' },
-      { desc: '현장 소모품 구입', amt: 280000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-05`, counter: '철물점', method: '현금' },
-      { desc: '조경 유지보수비', amt: 3500000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-10`, counter: '(주)그린조경', method: '계좌이체' },
-      { desc: '직원 간식비', amt: 150000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-12`, counter: '(주)맛나푸드', method: '현금' },
-      { desc: '법률자문 수수료', amt: 2200000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-18`, counter: '세종법률사무소', method: '계좌이체' },
-      { desc: '차량 정기검사비', amt: 350000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-02`, counter: '(주)퍼스트카', method: '현금' },
-      { desc: '사무실 정수기 렌탈', amt: 55000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-05`, counter: '정수기렌탈', method: '현금' },
+      { desc: '사무용품 구매 (복사지, 토너)', amt: 320000, date: `${year}-01-20`, counter: '(주)스마트오피스', method: '현금', catId: catSelf },
+      { desc: '현장작업자 안전장비', amt: 1500000, date: `${year}-02-08`, counter: '(주)한국전자', method: '계좌이체', catId: catMCJ },
+      { desc: '3월 법인차량 유류비', amt: 450000, date: `${year}-03-15`, counter: '주유소', method: '현금', catId: catSelf },
+      { desc: '보고서 인쇄비 (300부)', amt: 1200000, date: `${year}-03-28`, counter: '대한인쇄공사', method: '계좌이체', catId: catMCJ },
+      { desc: '현장 소모품 구입', amt: 280000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-05`, counter: '철물점', method: '현금', catId: catGJS },
+      { desc: '조경 유지보수비', amt: 3500000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-10`, counter: '(주)그린조경', method: '계좌이체', catId: catGJS },
+      { desc: '직원 간식비', amt: 150000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-12`, counter: '(주)맛나푸드', method: '현금', catId: catSelf },
+      { desc: '법률자문 수수료', amt: 2200000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-18`, counter: '세종법률사무소', method: '계좌이체', catId: catSelf },
+      { desc: '차량 정기검사비', amt: 350000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-02`, counter: '(주)퍼스트카', method: '현금', catId: catSelf },
+      { desc: '사무실 정수기 렌탈', amt: 55000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-05`, counter: '정수기렌탈', method: '현금', catId: catSelf },
     ]
     expenses.forEach(e => {
       const id = sid++
-      cfs.push({ id, date: e.date, type: 'expense', amount: e.amt, description: e.desc, accountCode: '5110', counter: e.counter, method: e.method })
+      cfs.push({ id, date: e.date, type: 'expense', amount: e.amt, description: e.desc, accountCode: '5110', counter: e.counter, method: e.method, budgetCatId: e.catId })
       vs.push({ id: sid++, date: e.date, type: 'expense', description: e.desc, counterpart: e.counter, paymentMethod: e.method, createdAt: e.date + 'T09:00:00Z', entries: [
         { side: 'debit', accountCode: '5110', amount: e.amt },
         { side: 'credit', accountCode: e.method === '현금' ? '1010' : '1020', amount: e.amt },
@@ -336,20 +343,20 @@ function initAccountingSeed() {
 
     // 입금 10건 (현금/계좌이체 다양하게)
     const incomes = [
-      { desc: '문화재청 1차 보조금', amt: 25000000, date: `${year}-01-10`, counter: '문화재청', method: '계좌이체' },
-      { desc: '주차장 운영 수입', amt: 3200000, date: `${year}-02-28`, counter: '(주)그린조경', method: '현금' },
-      { desc: '문화재청 2차 보조금', amt: 25000000, date: `${year}-03-05`, counter: '문화재청', method: '계좌이체' },
-      { desc: '유적 입장료 수입', amt: 8500000, date: `${year}-03-01`, counter: '경주시청', method: '현금' },
-      { desc: '블로거 촬영비 수입', amt: 1300000, date: `${year}-03-01`, counter: 'KT서브마리나TV', method: '현금' },
-      { desc: '기념품 판매 수입', amt: 1500000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-08`, counter: '기념품샵', method: '현금' },
-      { desc: '경주시 3차 보조금', amt: 10000000, date: `${year}-04-05`, counter: '경주시청', method: '계좌이체' },
-      { desc: '교육 프로그램 참가비', amt: 2400000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-20`, counter: '교육참가자', method: '현금' },
-      { desc: '주차장 운영 수입', amt: 1800000, date: `${year}-07-05`, counter: '(주)그린조경', method: '현금' },
-      { desc: '문화재청 3차 보조금', amt: 20000000, date: `${year}-03-15`, counter: '문화재청', method: '계좌이체' },
+      { desc: '문화재청 1차 보조금', amt: 25000000, date: `${year}-01-10`, counter: '문화재청', method: '계좌이체', catId: catMCJ },
+      { desc: '주차장 운영 수입', amt: 3200000, date: `${year}-02-28`, counter: '(주)그린조경', method: '현금', catId: catSelf },
+      { desc: '문화재청 2차 보조금', amt: 25000000, date: `${year}-03-05`, counter: '문화재청', method: '계좌이체', catId: catMCJ },
+      { desc: '유적 입장료 수입', amt: 8500000, date: `${year}-03-01`, counter: '경주시청', method: '현금', catId: catGJS },
+      { desc: '블로거 촬영비 수입', amt: 1300000, date: `${year}-03-01`, counter: 'KT서브마리나TV', method: '현금', catId: catSelf },
+      { desc: '기념품 판매 수입', amt: 1500000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-08`, counter: '기념품샵', method: '현금', catId: catSelf },
+      { desc: '경주시 3차 보조금', amt: 10000000, date: `${year}-04-05`, counter: '경주시청', method: '계좌이체', catId: catGJS },
+      { desc: '교육 프로그램 참가비', amt: 2400000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-20`, counter: '교육참가자', method: '현금', catId: catGJS },
+      { desc: '주차장 운영 수입', amt: 1800000, date: `${year}-07-05`, counter: '(주)그린조경', method: '현금', catId: catSelf },
+      { desc: '문화재청 3차 보조금', amt: 20000000, date: `${year}-03-15`, counter: '문화재청', method: '계좌이체', catId: catMCJ },
     ]
     incomes.forEach(e => {
       const id = sid++
-      cfs.push({ id, date: e.date, type: 'income', amount: e.amt, description: e.desc, accountCode: '4030', counter: e.counter, method: e.method })
+      cfs.push({ id, date: e.date, type: 'income', amount: e.amt, description: e.desc, accountCode: '4030', counter: e.counter, method: e.method, budgetCatId: e.catId })
       vs.push({ id: sid++, date: e.date, type: 'income', description: e.desc, counterpart: e.counter, paymentMethod: e.method, createdAt: e.date + 'T09:00:00Z', entries: [
         { side: 'debit', accountCode: e.method === '현금' ? '1010' : '1020', amount: e.amt },
         { side: 'credit', accountCode: '4030', amount: e.amt },
@@ -358,20 +365,20 @@ function initAccountingSeed() {
 
     // 출금 10건 (현금/계좌이체 다양하게)
     const withdrawals = [
-      { desc: '임직원 1월 급여', amt: 15000000, date: `${year}-01-25`, counter: '직원계좌', method: '계좌이체' },
-      { desc: '거래처 접대비', amt: 650000, date: `${year}-02-20`, counter: '경주시청', method: '현금' },
-      { desc: '4대보험 납부', amt: 4800000, date: `${year}-02-28`, counter: '국민건강보험공단', method: '계좌이체' },
-      { desc: '출장 여비교통비', amt: 850000, date: `${year}-03-05`, counter: '사무실', method: '현금' },
-      { desc: '퇴직연금 적립', amt: 3000000, date: `${year}-03-31`, counter: '퇴직연금운용사', method: '계좌이체' },
-      { desc: '회의 다과비', amt: 180000, date: `${year}-05-15`, counter: '(주)미니바로', method: '현금' },
-      { desc: 'VIP 접대비', amt: 450000, date: `${year}-05-20`, counter: '경주시청', method: '현금' },
-      { desc: '사무실 임대료', amt: 3300000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`, counter: '건물주', method: '계좌이체' },
-      { desc: '비품 수리비', amt: 220000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-05`, counter: '수리업체', method: '현금' },
-      { desc: '관리비 납부', amt: 880000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-10`, counter: '관리사무소', method: '계좌이체' },
+      { desc: '임직원 1월 급여', amt: 15000000, date: `${year}-01-25`, counter: '직원계좌', method: '계좌이체', catId: catSelf },
+      { desc: '거래처 접대비', amt: 650000, date: `${year}-02-20`, counter: '경주시청', method: '현금', catId: catGJS },
+      { desc: '4대보험 납부', amt: 4800000, date: `${year}-02-28`, counter: '국민건강보험공단', method: '계좌이체', catId: catSelf },
+      { desc: '출장 여비교통비', amt: 850000, date: `${year}-03-05`, counter: '사무실', method: '현금', catId: catMCJ },
+      { desc: '퇴직연금 적립', amt: 3000000, date: `${year}-03-31`, counter: '퇴직연금운용사', method: '계좌이체', catId: catSelf },
+      { desc: '회의 다과비', amt: 180000, date: `${year}-05-15`, counter: '(주)미니바로', method: '현금', catId: catGJS },
+      { desc: 'VIP 접대비', amt: 450000, date: `${year}-05-20`, counter: '경주시청', method: '현금', catId: catGJS },
+      { desc: '사무실 임대료', amt: 3300000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`, counter: '건물주', method: '계좌이체', catId: catSelf },
+      { desc: '비품 수리비', amt: 220000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-05`, counter: '수리업체', method: '현금', catId: catSelf },
+      { desc: '관리비 납부', amt: 880000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-10`, counter: '관리사무소', method: '계좌이체', catId: catSelf },
     ]
     withdrawals.forEach(e => {
       const id = sid++
-      cfs.push({ id, date: e.date, type: 'expense', amount: e.amt, description: e.desc, accountCode: '5210', counter: e.counter, method: e.method, isWithdrawal: true })
+      cfs.push({ id, date: e.date, type: 'expense', amount: e.amt, description: e.desc, accountCode: '5210', counter: e.counter, method: e.method, isWithdrawal: true, budgetCatId: e.catId })
       vs.push({ id: sid++, date: e.date, type: 'expense', description: e.desc, counterpart: e.counter, paymentMethod: e.method, createdAt: e.date + 'T09:00:00Z', entries: [
         { side: 'debit', accountCode: '5210', amount: e.amt },
         { side: 'credit', accountCode: e.method === '현금' ? '1010' : '1020', amount: e.amt },
@@ -382,7 +389,7 @@ function initAccountingSeed() {
     setItem('acct_vouchers', vs)
   }
 
-  localStorage.setItem('_acct_react_seed_v7', '1')
+  localStorage.setItem('_acct_react_seed_v8', '1')
 }
 
 // 모듈 로드 시 즉시 실행 — 컴포넌트 렌더링 전에 localStorage 데이터 보장
@@ -424,6 +431,10 @@ interface CashFlow {
   counter?: string
   writeDate?: string
   memo?: string
+  budgetCatId?: string | number
+  budgetItemName?: string
+  budgetSubName?: string
+  method?: string
 }
 
 interface Approval {
@@ -2502,6 +2513,13 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
   const [editMode, setEditMode] = useState(false)
   const [editForm, setEditForm] = useState<any>({ description: '', amount: 0, counter: '', memo: '' })
   const [linkedApprovalId, setLinkedApprovalId] = useState<string | number | null>(null)
+  const [budgetCatFilter, setBudgetCatFilter] = useState<string>('all')
+
+  /* 예산구분 카테고리 목록 */
+  const budgetCatsForFilter = useMemo(() => {
+    const allCats: { id: number | string; name: string; year: number }[] = getItem('acct_budget_cats', [])
+    return allCats.filter(c => c.year === year)
+  }, [year, refresh])
 
   /* 예산항목 목록 (기타설정의 예산항목 데이터) */
   const budgetItemNames = useMemo(() => {
@@ -2528,7 +2546,7 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const cashflows = useMemo(() => {
+  const allCashflows = useMemo(() => {
     const all = getItem<CashFlow[]>('acct_cashflows', [])
     return all.filter(c => {
       if (!c.date) return false
@@ -2536,6 +2554,12 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
       return c.type === type || (type === 'withdrawal' && c.type === 'expense')
     }).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
   }, [year, type, refresh])
+
+  /* 예산구분 필터 적용 */
+  const cashflows = useMemo(() => {
+    if (budgetCatFilter === 'all') return allCashflows
+    return allCashflows.filter(c => String((c as any).budgetCatId) === budgetCatFilter)
+  }, [allCashflows, budgetCatFilter])
 
   const totalAmount = cashflows.reduce((a, c) => a + (c.amount || 0), 0)
 
@@ -2583,6 +2607,8 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
       id: cfId, date: form.tradeDate, type: type === 'withdrawal' ? 'expense' : type,
       amount: amt, description: form.desc, accountCode: form.accountCode || (type === 'income' ? '4030' : '5110'),
       counter: form.counter, writeDate: form.writeDate, memo: form.memo,
+      method: form.method,
+      ...(form.budgetCatId ? { budgetCatId: form.budgetCatId, budgetItemName: form.budgetItemName, budgetSubName: form.budgetSubName } : {}),
     })
     setItem('acct_cashflows', cfs)
 
@@ -2636,6 +2662,33 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
 
   return (
     <div className="space-y-4">
+      {/* ── 예산구분 필터 탭 ── */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          onClick={() => setBudgetCatFilter('all')}
+          className={`px-4 py-2 rounded-full text-[13px] font-bold cursor-pointer transition-all border ${
+            budgetCatFilter === 'all'
+              ? 'bg-primary-500 text-white border-primary-500 shadow-md'
+              : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border-[var(--border-default)] hover:border-primary-400 hover:text-[var(--text-primary)]'
+          }`}
+        >
+          전체
+        </button>
+        {budgetCatsForFilter.map(cat => (
+          <button
+            key={cat.id}
+            onClick={() => setBudgetCatFilter(String(cat.id))}
+            className={`px-4 py-2 rounded-full text-[13px] font-bold cursor-pointer transition-all border ${
+              budgetCatFilter === String(cat.id)
+                ? 'bg-primary-500 text-white border-primary-500 shadow-md'
+                : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border-[var(--border-default)] hover:border-primary-400 hover:text-[var(--text-primary)]'
+            }`}
+          >
+            {cat.name}
+          </button>
+        ))}
+      </div>
+
       {/* ── 승인된 품의 (지출 타입 전용) ── */}
       {type === 'expense' && approvedApprovals.length > 0 && (
         <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
