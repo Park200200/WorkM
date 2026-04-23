@@ -284,6 +284,9 @@ function initAccountingSeed() {
   localStorage.setItem('_acct_react_seed_v5', '1')
 }
 
+// 모듈 로드 시 즉시 실행 — 컴포넌트 렌더링 전에 localStorage 데이터 보장
+initAccountingSeed()
+
 /* ─────────────────────────────────────────────
    타입
    ───────────────────────────────────────────── */
@@ -379,7 +382,7 @@ export function AccountingPage() {
   const currentYear = new Date().getFullYear()
   const year = parseInt(searchParams.get('year') || '') || currentYear
 
-  useEffect(() => { initAccountingSeed() }, [])
+  // initAccountingSeed()는 모듈 레벨에서 이미 실행됨
 
   return (
     <div className="animate-fadeIn">
