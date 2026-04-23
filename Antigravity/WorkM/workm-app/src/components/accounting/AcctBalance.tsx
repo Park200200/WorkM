@@ -33,8 +33,12 @@ export function AcctBalance({ year }: { year: number }) {
   })
 
   const accounts = useMemo(() => {
-    let accts = getItem<Account[]>('acct_accounts', [])
-    if (!accts || accts.length === 0) {
+    const raw = localStorage.getItem('acct_accounts')
+    console.log('[AcctBalance] raw acct_accounts:', raw ? `${raw.substring(0, 80)}... (len=${raw.length})` : 'NULL')
+    let accts: Account[] = []
+    try { accts = raw ? JSON.parse(raw) : [] } catch { accts = [] }
+    if (!Array.isArray(accts) || accts.length === 0) {
+      console.log('[AcctBalance] Creating default accounts...')
       accts = [
         { code: '1010', name: '현금', type: 'asset', group: '유동자산' },
         { code: '1020', name: '보통예금', type: 'asset', group: '유동자산' },
