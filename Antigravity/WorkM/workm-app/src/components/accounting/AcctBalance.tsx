@@ -34,50 +34,57 @@ export function AcctBalance({ year }: { year: number }) {
 
   const accounts = useMemo(() => {
     const raw = localStorage.getItem('acct_accounts')
-    console.log('[AcctBalance] raw acct_accounts:', raw ? `${raw.substring(0, 80)}... (len=${raw.length})` : 'NULL')
     let accts: Account[] = []
     try { accts = raw ? JSON.parse(raw) : [] } catch { accts = [] }
-    if (!Array.isArray(accts) || accts.length === 0) {
-      console.log('[AcctBalance] Creating default accounts...')
-      accts = [
-        { code: '1010', name: '현금', type: 'asset', group: '유동자산' },
-        { code: '1020', name: '보통예금', type: 'asset', group: '유동자산' },
-        { code: '1030', name: '미수금', type: 'asset', group: '유동자산' },
-        { code: '1040', name: '선급금', type: 'asset', group: '유동자산' },
-        { code: '1050', name: '재고자산', type: 'asset', group: '유동자산' },
-        { code: '1510', name: '건물', type: 'asset', group: '비유동자산' },
-        { code: '1520', name: '차량운반구', type: 'asset', group: '비유동자산' },
-        { code: '1530', name: '비품', type: 'asset', group: '비유동자산' },
-        { code: '1540', name: '임차보증금', type: 'asset', group: '비유동자산' },
-        { code: '2010', name: '미지급금', type: 'liability', group: '유동부채' },
-        { code: '2020', name: '선수금', type: 'liability', group: '유동부채' },
-        { code: '2030', name: '예수금', type: 'liability', group: '유동부채' },
-        { code: '2510', name: '장기차입금', type: 'liability', group: '비유동부채' },
-        { code: '3010', name: '자본금', type: 'equity', group: '자본' },
-        { code: '3020', name: '이익잉여금', type: 'equity', group: '자본' },
-        { code: '4010', name: '매출', type: 'revenue', group: '매출' },
-        { code: '4020', name: '이자수익', type: 'revenue', group: '영업외수익' },
-        { code: '4030', name: '기타수익', type: 'revenue', group: '영업외수익' },
-        { code: '5010', name: '급여', type: 'expense', group: '인건비' },
-        { code: '5020', name: '복리후생비', type: 'expense', group: '인건비' },
-        { code: '5030', name: '임차료', type: 'expense', group: '임차료' },
-        { code: '5040', name: '통신비', type: 'expense', group: '경비' },
-        { code: '5050', name: '수도광열비', type: 'expense', group: '경비' },
-        { code: '5060', name: '소모품비', type: 'expense', group: '경비' },
-        { code: '5070', name: '운반비', type: 'expense', group: '경비' },
-        { code: '5080', name: '접대비', type: 'expense', group: '경비' },
-        { code: '5090', name: '광고선전비', type: 'expense', group: '경비' },
-        { code: '5100', name: '여비교통비', type: 'expense', group: '경비' },
-        { code: '5110', name: '세금과공과', type: 'expense', group: '경비' },
-        { code: '5120', name: '보험료', type: 'expense', group: '경비' },
-        { code: '5130', name: '감가상각비', type: 'expense', group: '경비' },
-        { code: '5140', name: '수선비', type: 'expense', group: '경비' },
-        { code: '5150', name: '도서인쇄비', type: 'expense', group: '경비' },
-        { code: '5160', name: '교육훈련비', type: 'expense', group: '경비' },
-        { code: '5170', name: '차량유지비', type: 'expense', group: '경비' },
-        { code: '5180', name: '외주용역비', type: 'expense', group: '경비' },
-        { code: '5190', name: '잡비', type: 'expense', group: '경비' },
-      ]
+    if (!Array.isArray(accts)) accts = []
+
+    /* 필수 계정 (자산/부채/자본) 누락 시 기본 계정 병합 */
+    const DEFAULT_ACCOUNTS: Account[] = [
+      { code: '1010', name: '현금', type: 'asset', group: '유동자산' },
+      { code: '1020', name: '보통예금', type: 'asset', group: '유동자산' },
+      { code: '1030', name: '미수금', type: 'asset', group: '유동자산' },
+      { code: '1040', name: '선급금', type: 'asset', group: '유동자산' },
+      { code: '1050', name: '재고자산', type: 'asset', group: '유동자산' },
+      { code: '1510', name: '건물', type: 'asset', group: '비유동자산' },
+      { code: '1520', name: '차량운반구', type: 'asset', group: '비유동자산' },
+      { code: '1530', name: '비품', type: 'asset', group: '비유동자산' },
+      { code: '1540', name: '임차보증금', type: 'asset', group: '비유동자산' },
+      { code: '2010', name: '미지급금', type: 'liability', group: '유동부채' },
+      { code: '2020', name: '선수금', type: 'liability', group: '유동부채' },
+      { code: '2030', name: '예수금', type: 'liability', group: '유동부채' },
+      { code: '2510', name: '장기차입금', type: 'liability', group: '비유동부채' },
+      { code: '3010', name: '자본금', type: 'equity', group: '자본' },
+      { code: '3020', name: '이익잉여금', type: 'equity', group: '자본' },
+      { code: '4010', name: '매출', type: 'revenue', group: '매출' },
+      { code: '4020', name: '이자수익', type: 'revenue', group: '영업외수익' },
+      { code: '4030', name: '기타수익', type: 'revenue', group: '영업외수익' },
+      { code: '5010', name: '급여', type: 'expense', group: '인건비' },
+      { code: '5020', name: '복리후생비', type: 'expense', group: '인건비' },
+      { code: '5030', name: '임차료', type: 'expense', group: '임차료' },
+      { code: '5040', name: '통신비', type: 'expense', group: '경비' },
+      { code: '5050', name: '수도광열비', type: 'expense', group: '경비' },
+      { code: '5060', name: '소모품비', type: 'expense', group: '경비' },
+      { code: '5070', name: '운반비', type: 'expense', group: '경비' },
+      { code: '5080', name: '접대비', type: 'expense', group: '경비' },
+      { code: '5090', name: '광고선전비', type: 'expense', group: '경비' },
+      { code: '5100', name: '여비교통비', type: 'expense', group: '경비' },
+      { code: '5110', name: '세금과공과', type: 'expense', group: '경비' },
+      { code: '5120', name: '보험료', type: 'expense', group: '경비' },
+      { code: '5130', name: '감가상각비', type: 'expense', group: '경비' },
+      { code: '5140', name: '수선비', type: 'expense', group: '경비' },
+      { code: '5150', name: '도서인쇄비', type: 'expense', group: '경비' },
+      { code: '5160', name: '교육훈련비', type: 'expense', group: '경비' },
+      { code: '5170', name: '차량유지비', type: 'expense', group: '경비' },
+      { code: '5180', name: '외주용역비', type: 'expense', group: '경비' },
+      { code: '5190', name: '잡비', type: 'expense', group: '경비' },
+      { code: '5200', name: '대표자인출', type: 'expense', group: '경비' },
+      { code: '5210', name: '기타출금', type: 'expense', group: '경비' },
+    ]
+
+    const existingCodes = new Set(accts.map(a => a.code))
+    const missing = DEFAULT_ACCOUNTS.filter(d => !existingCodes.has(d.code))
+    if (missing.length > 0) {
+      accts = [...accts, ...missing]
       setItem('acct_accounts', accts)
     }
     return accts
