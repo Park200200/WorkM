@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { getItem, setItem } from '../../utils/storage'
 import { ScrollText, Save, FileText, Shield, BookOpen } from 'lucide-react'
 
@@ -178,23 +178,7 @@ const TB_ALIGN = [
 ]
 
 export function HpTermsMgmt() {
-  /* 메뉴등록에서 활성화된 약관 유형만 표시 */
-  const TABS = useMemo(() => {
-    const menuReg = getItem<{ details?: Record<number, { sets?: { type: string; solutions?: string[] }[] }> }>('hp_menu_reg', null)
-    if (!menuReg?.details) return ALL_TABS
-    const found = new Set<string>()
-    Object.values(menuReg.details).forEach(detail => {
-      detail.sets?.forEach(set => {
-        if (set.type === 'solution' && set.solutions) {
-          set.solutions.forEach(solId => {
-            if (TERMS_SOL_IDS.includes(solId)) found.add(solId)
-          })
-        }
-      })
-    })
-    if (found.size === 0) return ALL_TABS
-    return ALL_TABS.filter(t => found.has(t.solId))
-  }, [])
+  const TABS = ALL_TABS
 
   const [tab, setTab] = useState<TermsTab>(() => TABS[0]?.key || 'tos')
   const [data, setData] = useState<Record<TermsTab, string>>(() => {
