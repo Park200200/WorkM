@@ -215,6 +215,24 @@ function initAccountingSeed() {
     setItem('acct_opening_balances', openingBalances)
   }
 
+  /* ── 기존 전표 counterpart 마이그레이션 ── */
+  {
+    const vs = getItem<any[]>('acct_vouchers', [])
+    const cfs = getItem<any[]>('acct_cashflows', [])
+    let patched = false
+    vs.forEach((v: any) => {
+      if (!v.counterpart && v.description) {
+        const cf = cfs.find((c: any) => c.description === v.description && c.date === v.date)
+        if (cf && cf.counter) {
+          v.counterpart = cf.counter
+          v.paymentMethod = cf.method || ''
+          patched = true
+        }
+      }
+    })
+    if (patched) setItem('acct_vouchers', vs)
+  }
+
   localStorage.setItem('_acct_react_seed_v4', '1')
 }
 
