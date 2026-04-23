@@ -773,8 +773,71 @@ export function DailyReportModal({ open, onClose }: { open: boolean; onClose: ()
               </div>
               <span className="text-[12px] text-[var(--text-muted)] font-semibold">{dateStrKo}</span>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-[11.5px] min-w-[800px]">
+
+            {/* 모바일: 카드 리스트 */}
+            <div className="md:hidden space-y-2.5">
+              {todayTasks.length > 0 ? todayTasks.map(t => {
+                const stB = getStatusBadge(t.status || 'waiting')
+                const dDiff = Math.ceil((new Date(t.dueDate).getTime() - now.getTime()) / 86400000)
+                const impB = t.importance ? getImpBadge(t.importance as string) : null
+                const hasReport = hasTodayHistory(t.id)
+                return (
+                  <div key={t.id} onClick={() => setProgressTask(t)}
+                    className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-3.5 cursor-pointer hover:shadow-md transition-all active:scale-[0.98]">
+                    {/* 상단: 업무명 + D-DAY + 보고여부 */}
+                    <div className="flex items-start gap-2 mb-2.5">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-extrabold text-[var(--text-primary)] leading-snug mb-1">{t.title}</div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-0.5"
+                            style={{ background: stB.color + '18', color: stB.color, borderLeft: `2px solid ${stB.color}` }}>✦ {stB.label}</span>
+                          {impB && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: (impB.color || '#f59e0b') + '18', color: impB.color || '#f59e0b' }}>{impB.label}</span>}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <span className={cn('text-[12px] font-extrabold px-2 py-0.5 rounded-lg',
+                          dDiff < 0 ? 'text-red-500 bg-red-50 dark:bg-red-900/20'
+                          : dDiff <= 3 ? 'text-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                          : 'text-[var(--text-muted)] bg-[var(--bg-muted)]')}>
+                          {dDiff < 0 ? `D+${Math.abs(dDiff)}` : dDiff === 0 ? 'D-DAY' : `D-${dDiff}`}
+                        </span>
+                        {hasReport ? (
+                          <span className="text-[9px] font-extrabold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-md">OK</span>
+                        ) : (
+                          <span className="text-[9px] font-extrabold text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-md">NO</span>
+                        )}
+                      </div>
+                    </div>
+                    {/* 하단: 지시자 / 협업자 / 진행율 */}
+                    <div className="flex items-center gap-3 text-[10.5px]">
+                      <div className="flex items-center gap-1">
+                        <span className="text-[var(--text-muted)]">지시자</span>
+                        <span className="font-bold text-[var(--text-secondary)]">{getUser(t.assignerId)?.name || '-'}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[var(--text-muted)]">협업자</span>
+                        <span className="font-bold text-[var(--text-secondary)]">{(t.assigneeIds || []).map(id => getUser(id)?.name).filter(Boolean).join(', ') || '-'}</span>
+                      </div>
+                      <div className="ml-auto flex items-center gap-1.5">
+                        <div className="w-14 h-1.5 rounded-full bg-[var(--border-default)] overflow-hidden">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${t.progress || 0}%`, background: stB.color }} />
+                        </div>
+                        <span className="text-[10px] font-bold text-[var(--text-secondary)]">{t.progress || 0}%</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              }) : (
+                <div className="flex flex-col items-center gap-2 py-8 text-[var(--text-muted)]">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-30"><rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>
+                  <span className="text-sm">금일 담당 업무가 없습니다</span>
+                </div>
+              )}
+            </div>
+
+            {/* 데스크탑: 테이블 */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-[11.5px]">
                 <thead>
                   <tr className="border-b border-[var(--border-default)]">
                     <th className="text-left py-2 px-2 font-bold text-[var(--text-muted)] min-w-[140px]">업무명</th>
