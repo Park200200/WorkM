@@ -107,47 +107,146 @@ function initAccountingSeed() {
   }
 
   /* ═══ 샘플 데이터 — 시드 가드로 중복 생성 방지 ═══ */
-  if (localStorage.getItem('_acct_react_seed_v5')) return
+  if (localStorage.getItem('_acct_react_seed_v6')) return
 
   const uid = () => Date.now().toString(36) + Math.random().toString(36).substring(2, 7)
 
-  /* ── 예산 시드 (기존 데이터 없을 때만) ── */
-  const cats = getItem<BudgetCat[]>('acct_budget_cats', [])
-  const budgets = getItem<BudgetItem[]>('acct_budgets', [])
-
-  if (cats.length === 0 && budgets.length === 0) {
+  /* ── 예산 시드 (v6: 풍부한 세목 포함) ── */
+  {
     const catDefs = [
       { name: '문화재청', bank: '기업은행 1010-1100-12', from: `${year}-01-01`, to: `${year}-12-31` },
       { name: '경주시청', bank: '농협은행 2020-2200-34', from: `${year}-01-01`, to: `${year}-12-31` },
       { name: '자체예산', bank: '국민은행 3030-3300-56', from: `${year}-01-01`, to: `${year}-12-31` },
     ]
 
-    const itemSets = [
+    /* 각 예산구분별 항목 → 세목(subName) + 계정과목(accountCode) */
+    const itemSets: { item: string; subs: { sub: string; code: string; amt: number }[] }[][] = [
+      /* ── 문화재청 ── */
       [
-        { item: '문화재 보수비', code: '5110', amt: 50000000 },
-        { item: '발굴조사비', code: '5120', amt: 30000000 },
-        { item: '전문인력 인건비', code: '5210', amt: 25000000 },
-        { item: '장비 구입비', code: '5130', amt: 15000000 },
-        { item: '안전관리비', code: '5140', amt: 8000000 },
+        { item: '문화재 보수비', subs: [
+          { sub: '석조물 보수', code: '5140', amt: 15000000 },
+          { sub: '목조건축 보수', code: '5140', amt: 12000000 },
+          { sub: '단청 보수', code: '5140', amt: 8000000 },
+          { sub: '기와 교체', code: '5060', amt: 5000000 },
+          { sub: '방수처리', code: '5140', amt: 4000000 },
+          { sub: '안전진단비', code: '5180', amt: 3000000 },
+          { sub: '감리비', code: '5180', amt: 3000000 },
+        ]},
+        { item: '발굴조사비', subs: [
+          { sub: '시굴조사', code: '5180', amt: 10000000 },
+          { sub: '정밀발굴', code: '5180', amt: 8000000 },
+          { sub: '유물분석', code: '5180', amt: 5000000 },
+          { sub: '보고서발간', code: '5150', amt: 3000000 },
+          { sub: '현장장비임차', code: '5030', amt: 2000000 },
+          { sub: '측량비', code: '5180', amt: 2000000 },
+        ]},
+        { item: '전문인력 인건비', subs: [
+          { sub: '연구원 급여', code: '5010', amt: 10000000 },
+          { sub: '보조연구원', code: '5010', amt: 6000000 },
+          { sub: '현장인부', code: '5010', amt: 4000000 },
+          { sub: '자문위원 수당', code: '5080', amt: 3000000 },
+          { sub: '4대보험', code: '5020', amt: 2000000 },
+        ]},
+        { item: '장비 구입비', subs: [
+          { sub: '측량장비', code: '5060', amt: 5000000 },
+          { sub: '촬영장비', code: '5060', amt: 4000000 },
+          { sub: '안전장비', code: '5060', amt: 3000000 },
+          { sub: '분석기기', code: '5060', amt: 2000000 },
+          { sub: 'IT장비', code: '5060', amt: 1000000 },
+        ]},
+        { item: '안전관리비', subs: [
+          { sub: '안전시설물', code: '5140', amt: 2500000 },
+          { sub: '소방설비', code: '5140', amt: 2000000 },
+          { sub: '안전교육', code: '5160', amt: 1500000 },
+          { sub: '보험료', code: '5120', amt: 1000000 },
+          { sub: '안전점검', code: '5180', amt: 1000000 },
+        ]},
       ],
+      /* ── 경주시청 ── */
       [
-        { item: '유적정비비', code: '5110', amt: 40000000 },
-        { item: '관광홍보비', code: '5320', amt: 20000000 },
-        { item: '시설유지비', code: '5130', amt: 15000000 },
-        { item: '조경공사비', code: '5120', amt: 12000000 },
-        { item: '행사운영비', code: '5310', amt: 8000000 },
+        { item: '유적정비비', subs: [
+          { sub: '정비설계', code: '5180', amt: 10000000 },
+          { sub: '정비공사', code: '5140', amt: 12000000 },
+          { sub: '조경정비', code: '5140', amt: 6000000 },
+          { sub: '배수시설', code: '5140', amt: 5000000 },
+          { sub: '안내판설치', code: '5060', amt: 4000000 },
+          { sub: '감리비', code: '5180', amt: 3000000 },
+        ]},
+        { item: '관광홍보비', subs: [
+          { sub: '홍보영상제작', code: '5090', amt: 5000000 },
+          { sub: '리플렛제작', code: '5150', amt: 3000000 },
+          { sub: 'SNS광고', code: '5090', amt: 4000000 },
+          { sub: '현수막·배너', code: '5090', amt: 3000000 },
+          { sub: '기념품제작', code: '5060', amt: 3000000 },
+          { sub: '웹사이트운영', code: '5040', amt: 2000000 },
+        ]},
+        { item: '시설유지비', subs: [
+          { sub: '전기요금', code: '5050', amt: 4000000 },
+          { sub: '수도요금', code: '5050', amt: 2000000 },
+          { sub: '냉난방비', code: '5050', amt: 3000000 },
+          { sub: '청소용역', code: '5180', amt: 3000000 },
+          { sub: '시설보수', code: '5140', amt: 3000000 },
+        ]},
+        { item: '조경공사비', subs: [
+          { sub: '식재공사', code: '5140', amt: 4000000 },
+          { sub: '잔디관리', code: '5180', amt: 2000000 },
+          { sub: '수목관리', code: '5180', amt: 2000000 },
+          { sub: '조경설계', code: '5180', amt: 2000000 },
+          { sub: '관수시설', code: '5060', amt: 2000000 },
+        ]},
+        { item: '행사운영비', subs: [
+          { sub: '무대설치', code: '5180', amt: 2000000 },
+          { sub: '음향조명', code: '5030', amt: 1500000 },
+          { sub: '출연료', code: '5080', amt: 1500000 },
+          { sub: '진행요원', code: '5010', amt: 1500000 },
+          { sub: '행사보험', code: '5120', amt: 500000 },
+          { sub: '현장식대', code: '5020', amt: 1000000 },
+        ]},
       ],
+      /* ── 자체예산 ── */
       [
-        { item: '임직원 급여', code: '5210', amt: 60000000 },
-        { item: '사무용품비', code: '5190', amt: 5000000 },
-        { item: '통신비', code: '5340', amt: 3000000 },
-        { item: '차량유지비', code: '5310', amt: 4000000 },
-        { item: '복리후생비', code: '5350', amt: 6000000 },
+        { item: '임직원 급여', subs: [
+          { sub: '기본급', code: '5010', amt: 30000000 },
+          { sub: '상여금', code: '5010', amt: 10000000 },
+          { sub: '시간외수당', code: '5010', amt: 5000000 },
+          { sub: '퇴직급여충당', code: '5010', amt: 8000000 },
+          { sub: '4대보험(회사)', code: '5020', amt: 7000000 },
+        ]},
+        { item: '사무운영비', subs: [
+          { sub: '사무용품', code: '5060', amt: 2000000 },
+          { sub: '인쇄비', code: '5150', amt: 1000000 },
+          { sub: '우편·택배', code: '5070', amt: 500000 },
+          { sub: '도서구입', code: '5150', amt: 500000 },
+          { sub: '소프트웨어', code: '5060', amt: 1000000 },
+        ]},
+        { item: '통신비', subs: [
+          { sub: '유선전화', code: '5040', amt: 600000 },
+          { sub: '인터넷', code: '5040', amt: 400000 },
+          { sub: '휴대폰', code: '5040', amt: 1200000 },
+          { sub: '서버호스팅', code: '5040', amt: 500000 },
+          { sub: '우편요금', code: '5070', amt: 300000 },
+        ]},
+        { item: '차량유지비', subs: [
+          { sub: '유류비', code: '5170', amt: 1500000 },
+          { sub: '보험료', code: '5120', amt: 800000 },
+          { sub: '수리비', code: '5170', amt: 500000 },
+          { sub: '주차비', code: '5170', amt: 400000 },
+          { sub: '통행료', code: '5100', amt: 300000 },
+          { sub: '세차비', code: '5170', amt: 200000 },
+        ]},
+        { item: '복리후생비', subs: [
+          { sub: '식대', code: '5020', amt: 2000000 },
+          { sub: '경조사비', code: '5020', amt: 1000000 },
+          { sub: '건강검진', code: '5020', amt: 800000 },
+          { sub: '워크숍', code: '5020', amt: 1000000 },
+          { sub: '체육활동', code: '5020', amt: 700000 },
+          { sub: '명절선물', code: '5020', amt: 500000 },
+        ]},
       ],
     ]
 
-    const newCats = [...cats]
-    const newBudgets = [...budgets]
+    const newCats: BudgetCat[] = []
+    const newBudgets: BudgetItem[] = []
 
     catDefs.forEach((def, ci) => {
       const catId = uid()
@@ -155,11 +254,13 @@ function initAccountingSeed() {
         id: catId, name: def.name, year,
         bankInfo: def.bank, periodFrom: def.from, periodTo: def.to,
       })
-      itemSets[ci].forEach(b => {
-        newBudgets.push({
-          id: uid(), catId, year,
-          itemName: b.item, accountCode: b.code,
-          amount: b.amt, spent: Math.round(b.amt * (Math.random() * 0.4)), memo: '',
+      itemSets[ci].forEach(group => {
+        group.subs.forEach(s => {
+          newBudgets.push({
+            id: uid(), catId, year,
+            itemName: group.item, subName: s.sub, accountCode: s.code,
+            amount: s.amt, spent: Math.round(s.amt * (Math.random() * 0.35)), memo: '',
+          })
         })
       })
     })
@@ -281,7 +382,7 @@ function initAccountingSeed() {
     setItem('acct_vouchers', vs)
   }
 
-  localStorage.setItem('_acct_react_seed_v5', '1')
+  localStorage.setItem('_acct_react_seed_v6', '1')
 }
 
 // 모듈 로드 시 즉시 실행 — 컴포넌트 렌더링 전에 localStorage 데이터 보장
