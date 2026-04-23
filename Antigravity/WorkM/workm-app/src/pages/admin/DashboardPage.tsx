@@ -696,7 +696,8 @@ function GanttChart({ tasks, users }: { tasks: TaskItem[]; users: UserItem[] }) 
           <CalIcon size={14} className="text-amber-600" />
         </div>
         <span className="text-sm font-bold text-[var(--text-primary)]">
-          {window.innerWidth <= 767 ? '미완료 내업무 리스트' : '마감일 기준 미완료 나의 업무 차트'}
+          <span className="md:hidden">미완료 내업무 리스트</span>
+          <span className="hidden md:inline">마감일 기준 미완료 나의 업무 차트</span>
         </span>
         <span className="text-[10px] font-bold bg-[var(--bg-muted)] text-[var(--text-muted)] rounded-md px-1.5 py-0.5">
           {tasks.length}건
@@ -705,8 +706,53 @@ function GanttChart({ tasks, users }: { tasks: TaskItem[]; users: UserItem[] }) 
         <span className="ml-auto text-[11px] text-[var(--text-muted)]">금일 기준 정렬</span>
       </div>
 
-      {/* 간트 테이블 */}
-      <div className="overflow-x-auto">
+      {/* 모바일: 카드 리스트 */}
+      <div className="md:hidden space-y-2 p-3">
+        {tasks.map((t) => {
+          const ids = Array.isArray(t.assigneeIds) ? t.assigneeIds : (t.assigneeId ? [t.assigneeId] : [])
+          const assignee = getUser(ids[0])
+          const dd = getDdayBadge(t.dueDate)
+          const barColor = t.status === 'delay'
+            ? '#ef4444'
+            : t.status === 'done'
+              ? '#22c55e'
+              : getDday(t.dueDate) <= 2 ? '#f59e0b' : '#4f6ef7'
+          const dday = getDday(t.dueDate)
+          const ddayText = dday < 0 ? `D+${Math.abs(dday)}` : dday === 0 ? 'D-DAY' : `D-${dday}`
+          return (
+            <div key={t.id} className="bg-[var(--bg-muted)] border border-[var(--border-default)] rounded-xl p-3 transition-all">
+              {/* 1행: 업무명 + D-DAY */}
+              <div className="flex items-center gap-2 mb-1.5">
+                {t.isImportant && <Star size={12} className="text-amber-500 fill-amber-500 shrink-0" />}
+                <span className="text-[13px] font-extrabold text-[var(--text-primary)] truncate flex-1 min-w-0">{t.title}</span>
+                <span className={cn('text-[11px] font-extrabold px-2 py-0.5 rounded-md shrink-0', dd.cls)}>
+                  {dd.label}
+                </span>
+              </div>
+              {/* 2행: 담당자 */}
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <span className="text-[10.5px] text-[var(--text-muted)]">{assignee?.name || '-'}</span>
+              </div>
+              {/* 3행: 프로그레스바 */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-[18px] rounded-full bg-[var(--bg-subtle)] overflow-hidden relative">
+                  <div
+                    className="h-full rounded-full transition-all duration-500 flex items-center justify-center"
+                    style={{ width: `${Math.max(t.progress || 0, 8)}%`, background: `linear-gradient(135deg, ${barColor}, ${barColor}cc)`, minWidth: '36px' }}
+                  >
+                    <span className="text-[9px] font-bold text-white">
+                      {t.progress}% ({ddayText})
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* 데스크탑: 간트 테이블 */}
+      <div className="hidden md:block overflow-x-auto">
         {/* 날짜 헤더 */}
         <div className="flex min-w-[600px]">
           <div className="w-[200px] shrink-0 px-3 py-2 text-[10px] font-bold text-[var(--text-muted)] uppercase border-b border-[var(--border-default)]">
