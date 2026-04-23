@@ -23,7 +23,7 @@ import {
 
 /* ─── 회계 시드 데이터 초기화 ── */
 function initAccountingSeed() {
-  if (localStorage.getItem('_acct_react_seed_v3')) return
+  if (localStorage.getItem('_acct_react_seed_v4')) return
 
   const uid = () => Date.now().toString(36) + Math.random().toString(36).substring(2, 7)
   const year = new Date().getFullYear()
@@ -144,7 +144,7 @@ function initAccountingSeed() {
     expenses.forEach(e => {
       const id = sid++
       cfs.push({ id, date: e.date, type: 'expense', amount: e.amt, description: e.desc, accountCode: '5110', counter: e.counter, method: e.method })
-      vs.push({ id: sid++, date: e.date, type: 'expense', description: e.desc, createdAt: e.date + 'T09:00:00Z', entries: [
+      vs.push({ id: sid++, date: e.date, type: 'expense', description: e.desc, counterpart: e.counter, paymentMethod: e.method, createdAt: e.date + 'T09:00:00Z', entries: [
         { side: 'debit', accountCode: '5110', amount: e.amt },
         { side: 'credit', accountCode: e.method === '현금' ? '1010' : '1020', amount: e.amt },
       ]})
@@ -166,7 +166,7 @@ function initAccountingSeed() {
     incomes.forEach(e => {
       const id = sid++
       cfs.push({ id, date: e.date, type: 'income', amount: e.amt, description: e.desc, accountCode: '4030', counter: e.counter, method: e.method })
-      vs.push({ id: sid++, date: e.date, type: 'income', description: e.desc, createdAt: e.date + 'T09:00:00Z', entries: [
+      vs.push({ id: sid++, date: e.date, type: 'income', description: e.desc, counterpart: e.counter, paymentMethod: e.method, createdAt: e.date + 'T09:00:00Z', entries: [
         { side: 'debit', accountCode: e.method === '현금' ? '1010' : '1020', amount: e.amt },
         { side: 'credit', accountCode: '4030', amount: e.amt },
       ]})
@@ -188,7 +188,7 @@ function initAccountingSeed() {
     withdrawals.forEach(e => {
       const id = sid++
       cfs.push({ id, date: e.date, type: 'expense', amount: e.amt, description: e.desc, accountCode: '5210', counter: e.counter, method: e.method, isWithdrawal: true })
-      vs.push({ id: sid++, date: e.date, type: 'expense', description: e.desc, createdAt: e.date + 'T09:00:00Z', entries: [
+      vs.push({ id: sid++, date: e.date, type: 'expense', description: e.desc, counterpart: e.counter, paymentMethod: e.method, createdAt: e.date + 'T09:00:00Z', entries: [
         { side: 'debit', accountCode: '5210', amount: e.amt },
         { side: 'credit', accountCode: '1020', amount: e.amt },
       ]})
@@ -198,7 +198,24 @@ function initAccountingSeed() {
     setItem('acct_vouchers', vs)
   }
 
-  localStorage.setItem('_acct_react_seed_v3', '1')
+  /* ── 기초잔액 시드 ── */
+  if (getItem<any[]>('acct_opening_balances', []).length === 0) {
+    const openingBalances = [
+      { year, accountCode: '1010', amount: 5000000 },   // 현금
+      { year, accountCode: '1020', amount: 50000000 },  // 보통예금
+      { year, accountCode: '1030', amount: 2000000 },   // 미수금
+      { year, accountCode: '1040', amount: 1000000 },   // 선급금
+      { year, accountCode: '1530', amount: 3000000 },   // 비품
+      { year, accountCode: '1540', amount: 10000000 },  // 임차보증금
+      { year, accountCode: '2010', amount: 5000000 },   // 미지급금
+      { year, accountCode: '2030', amount: 3000000 },   // 예수금
+      { year, accountCode: '3010', amount: 50000000 },  // 자본금
+      { year, accountCode: '3020', amount: 13000000 },  // 이익잉여금
+    ]
+    setItem('acct_opening_balances', openingBalances)
+  }
+
+  localStorage.setItem('_acct_react_seed_v4', '1')
 }
 
 /* ─────────────────────────────────────────────
@@ -260,6 +277,8 @@ interface Voucher {
   type?: string
   date?: string
   description?: string
+  counterpart?: string
+  paymentMethod?: string
   createdAt?: string
   entries?: Array<{ side: string; amount: number; accountCode?: string; account?: string }>
 }
@@ -2382,7 +2401,8 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
     }
     vouchers.push({
       id: vId, date: form.tradeDate, type: type === 'withdrawal' ? 'expense' : type,
-      description: form.desc, entries: vEntries,
+      description: form.desc, counterpart: form.counter, paymentMethod: form.method,
+      entries: vEntries,
       createdAt: new Date().toISOString(),
     })
     setItem('acct_vouchers', vouchers)
