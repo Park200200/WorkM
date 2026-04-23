@@ -115,7 +115,7 @@ function initAccountingSeed() {
   const cats = getItem<BudgetCat[]>('acct_budget_cats', [])
   const budgets = getItem<BudgetItem[]>('acct_budgets', [])
 
-  if (cats.length === 0 || budgets.length === 0) {
+  if (cats.length === 0 && budgets.length === 0) {
     const catDefs = [
       { name: '문화재청', bank: '기업은행 1010-1100-12', from: `${year}-01-01`, to: `${year}-12-31` },
       { name: '경주시청', bank: '농협은행 2020-2200-34', from: `${year}-01-01`, to: `${year}-12-31` },
