@@ -2954,11 +2954,12 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
         ) : (
           /* === 기존 플랫 리스트 === */
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[500px]">
+            <table className="w-full min-w-[500px] table-fixed">
+              <colgroup><col className="w-[130px]" /><col /><col className="w-[130px]" /><col className="w-[60px]" /></colgroup>
               <thead>
                 <tr className="bg-[var(--bg-muted)]">
                   {['날짜', '내용', '금액', '삭제'].map(h => (
-                    <th key={h} className={cn('py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)]', h === '금액' ? 'text-right' : h === '삭제' ? 'text-center w-[60px]' : 'text-left')}>{h}</th>
+                    <th key={h} className={cn('py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)]', h === '금액' ? 'text-right' : h === '삭제' ? 'text-center' : 'text-left')}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -2966,7 +2967,7 @@ function AcctVoucherEntry({ year, type }: { year: number; type: 'expense' | 'inc
                 {cashflows.map(c => (
                   <tr key={c.id} className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors cursor-pointer" onDoubleClick={() => setDetailModal(c)}>
                     <td className="py-2.5 px-3.5 text-[12px] text-[var(--text-secondary)]">{c.date || ''}</td>
-                    <td className="py-2.5 px-3.5 text-[12px] font-bold text-[var(--text-primary)]">{c.description || '-'}</td>
+                    <td className="py-2.5 px-3.5 text-[12px] font-bold text-[var(--text-primary)] truncate">{c.description || '-'}</td>
                     <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-right" style={{ color: typeColors[type] }}>{formatNumber(c.amount || 0)}원</td>
                     <td className="py-2.5 px-3.5 text-center">
                       <button onClick={(e) => { e.stopPropagation(); deleteEntry(c.id) }} className="p-1 rounded-md bg-[rgba(239,68,68,.08)] text-[#ef4444] hover:bg-[rgba(239,68,68,.15)] cursor-pointer"><Trash2 size={13} /></button>
