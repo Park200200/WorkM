@@ -339,7 +339,7 @@ export function DashboardPage() {
       </div>
 
       {/* ── 간트 차트 ── */}
-      <GanttChart tasks={ganttTasks} users={users} />
+      <GanttChart tasks={ganttTasks} users={users} onProgress={(t) => setProgressTask(t)} />
 
       {/* ── 메인 그리드: 채팅 + 아코디언 (2컬럼) ── */}
       <div className="mt-4 md:mt-5 grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-3">
@@ -650,7 +650,7 @@ export function DashboardPage() {
 /* ─────────────────────────────────────────────
    간트 차트
    ───────────────────────────────────────────── */
-function GanttChart({ tasks, users }: { tasks: TaskItem[]; users: UserItem[] }) {
+function GanttChart({ tasks, users, onProgress }: { tasks: TaskItem[]; users: UserItem[]; onProgress?: (task: TaskItem) => void }) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
@@ -720,7 +720,7 @@ function GanttChart({ tasks, users }: { tasks: TaskItem[]; users: UserItem[] }) 
           const dday = getDday(t.dueDate)
           const ddayText = dday < 0 ? `D+${Math.abs(dday)}` : dday === 0 ? 'D-DAY' : `D-${dday}`
           return (
-            <div key={t.id} className="bg-[var(--bg-muted)] border border-[var(--border-default)] rounded-xl p-3 transition-all">
+            <div key={t.id} onClick={() => onProgress?.(t)} className="bg-[var(--bg-muted)] border border-[var(--border-default)] rounded-xl p-3 transition-all cursor-pointer active:scale-[0.98] hover:shadow-md">
               {/* 1행: 업무명 + D-DAY */}
               <div className="flex items-center gap-2 mb-1.5">
                 {t.isImportant && <Star size={12} className="text-amber-500 fill-amber-500 shrink-0" />}
@@ -797,7 +797,7 @@ function GanttChart({ tasks, users }: { tasks: TaskItem[]; users: UserItem[] }) 
               : getDday(t.dueDate) <= 2 ? '#f59e0b' : '#4f6ef7'
 
           return (
-            <div key={t.id} className="flex min-w-[600px] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer">
+            <div key={t.id} onClick={() => onProgress?.(t)} className="flex min-w-[600px] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer">
               {/* 업무 정보 */}
               <div className="w-[200px] shrink-0 px-3 py-2 border-b border-[var(--border-default)]">
                 <div className="flex items-center gap-1.5">
