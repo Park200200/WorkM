@@ -1,0 +1,7 @@
+node_modules/
+workm-app/dist/
+*.zip
+.vscode/
+workmBP/
+IMSI/
+B/
