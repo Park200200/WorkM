@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect, useRef } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../../components/common/PageHeader'
@@ -2238,21 +2238,57 @@ export function AcctApproval({ year }: { year: number }) {
     <div className="space-y-4">
       {/* ── 3개 그룹 카드 ── */}
       <div className="grid grid-cols-3 gap-3">
-        {groupDefs.map((g, gi) => (
-          <div key={g.key}
-            onClick={() => changeGroup(g.key)}
-            className={cn('bg-[var(--bg-surface)] border-2 rounded-xl p-4 cursor-pointer transition-all hover:shadow-lg',
-              activeGroup === g.key ? 'shadow-md' : 'border-[var(--border-default)] opacity-70 hover:opacity-100'
-            )}
-            style={activeGroup === g.key ? { borderColor: g.color } : {}}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg">{g.icon}</span>
-              <span className="text-[12px] font-extrabold text-[var(--text-primary)]">{g.label}</span>
+        {groupDefs.map((g, gi) => {
+          const isActive = activeGroup === g.key
+          return (
+            <div key={g.key}
+              onClick={() => changeGroup(g.key)}
+              className={cn(
+                'rounded-xl p-3 cursor-pointer transition-all border-2 select-none',
+                isActive
+                  ? 'shadow-md bg-[var(--bg-surface)]'
+                  : 'bg-[var(--bg-surface)] border-[var(--border-default)] opacity-65 hover:opacity-100 hover:shadow-sm'
+              )}
+              style={isActive ? { borderColor: g.color } : {}}
+            >
+              {/* 상단: 아이콘 + 제목 + 총 건수 */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[15px]">{g.icon}</span>
+                  <span className="text-[11px] font-extrabold text-[var(--text-primary)]">{g.label}</span>
+                </div>
+                <span className="text-[18px] font-black leading-none" style={{ color: g.color }}>{groupCounts[gi]}</span>
+              </div>
+              {/* 하단: 서브탭별 미니 카운트 배지 */}
+              <div className="flex flex-wrap gap-1">
+                {g.subTabs.map(t => {
+                  const cnt = approvals.filter(a => {
+                    if (g.key === 'myRequest' && a.status === 'rejected' && t.key === 'rejected') return (a as any).applicant === currentUserName || (a as any).approver === currentUserName
+                    if (g.key === 'myRequest' && (a as any).applicant !== currentUserName) return false
+                    if (g.key === 'myApproval' && (a as any).approver !== currentUserName) return false
+                    if (g.key === 'myExpense') {
+                      const bc: BudgetCat[] = getItem('acct_budget_cats', [])
+                      const ids = new Set(bc.filter(c => c.users?.includes(currentUserName)).map(c => String(c.id)))
+                      const nms = new Set(bc.filter(c => c.users?.includes(currentUserName)).map(c => c.name))
+                      if (!((a as any).budgetCatId && ids.has(String((a as any).budgetCatId))) && !((a as any).budgetCatName && nms.has((a as any).budgetCatName)) && (a as any).applicant !== currentUserName) return false
+                    }
+                    if (t.key === 'completed') return ['completed', 'vouchered'].includes(a.status)
+                    if (t.key === 'toResolve' && g.key === 'myExpense') return a.status === 'confirming'
+                    return a.status === t.key
+                  }).length
+                  return (
+                    <span key={t.key}
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold"
+                      style={{ background: `${t.color}18`, color: t.color }}
+                    >
+                      {t.label}<span className="font-black">{cnt}</span>
+                    </span>
+                  )
+                })}
+              </div>
             </div>
-            <div className="text-2xl font-extrabold" style={{ color: g.color }}>{groupCounts[gi]}</div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* ── 세부탭 ── */}
@@ -2615,12 +2651,12 @@ export function AcctApproval({ year }: { year: number }) {
       {/* 품의 등록 모달 */}
       {modalOpen && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) { setModalOpen(false); setEditingId(null); setModalApprovalType('expense'); setForm({ title: '', amount: '', date: new Date().toISOString().slice(0, 10), accountCode: '', description: '', applicant: currentUserName, approver: '' }) } }}>
-          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md mx-4" style={{ minHeight: '520px', display: 'flex', flexDirection: 'column' }}>
+          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md mx-4" style={{ height: '560px', display: 'flex', flexDirection: 'column' }}>
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border-default)]">
               <span className="text-sm font-extrabold text-[var(--text-primary)]">{editingId ? '품의 수정' : (modalApprovalType === 'general' ? '일반품의 등록' : '지출품의 등록')}</span>
               <button onClick={() => { setModalOpen(false); setEditingId(null); setModalApprovalType('expense'); setForm({ title: '', amount: '', date: new Date().toISOString().slice(0, 10), accountCode: '', description: '', applicant: currentUserName, approver: '' }) }} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer"><X size={18} /></button>
             </div>
-            <div className="p-5 space-y-4 flex-1">
+            <div className="p-5 space-y-4 flex-1 overflow-y-auto">
               {!editingId && (
                 <div className="flex items-center gap-1.5 p-1.5 rounded-xl bg-[var(--bg-muted)] border border-[var(--border-default)]">
                   <button onClick={() => { setModalApprovalType('expense'); setForm(f => ({ ...f, approver: '' })) }} className={`flex-1 py-1.5 rounded-lg text-[12px] font-extrabold transition-all cursor-pointer ${modalApprovalType === 'expense' ? 'bg-[#4f6ef7] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}>💸 지출품의</button>
