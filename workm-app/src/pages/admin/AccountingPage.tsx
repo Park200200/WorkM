@@ -2136,6 +2136,7 @@ export function AcctApproval({ year }: { year: number }) {
       date: resubmitForm.date || new Date().toISOString().slice(0, 10),
       description: resubmitForm.description,
       status: (detailApproval.status === 'rejected' || detailApproval.status === 'preExpense') ? 'pending' : detailApproval.status,
+      isPreExpense: (a as any).isPreExpense || detailApproval.status === 'preExpense' || undefined,
       applicant: currentUserName,
       approver: autoApprover,
       budgetCatId: detailApproval.status === 'preExpense' ? (a as any).budgetCatId : undefined,
