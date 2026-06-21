@@ -3,7 +3,7 @@
    ══════════════════════════════════════════════ */
 import { getItem, setItem } from './storage'
 
-const SEED_VERSION = 'v8'
+const SEED_VERSION = 'v9'
 
 export function seedIfEmpty() {
   const prevVersion = getItem<string>('ws_seed_version', '')

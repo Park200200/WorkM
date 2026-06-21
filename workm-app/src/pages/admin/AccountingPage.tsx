@@ -174,7 +174,7 @@ function initAccountingSeed() {
     localStorage.setItem('_acct_preexp_resolve_v1', '1')
   }
 
-  if (localStorage.getItem('_acct_react_seed_v9')) return
+  if (localStorage.getItem('_acct_react_seed_v10')) return
 
   /* ── 계정과목 시드 (버전 변경 시 강제 리셋) ── */
   {
@@ -303,56 +303,8 @@ function initAccountingSeed() {
   const budgets = getItem<BudgetItem[]>('acct_budgets', [])
 
   if (cats.length === 0 || budgets.length === 0) {
-    const catDefs = [
-      { name: '문화재청', bank: '기업은행 1010-1100-12', from: `${year}-01-01`, to: `${year}-12-31` },
-      { name: '경주시청', bank: '농협은행 2020-2200-34', from: `${year}-01-01`, to: `${year}-12-31` },
-      { name: '자체예산', bank: '국민은행 3030-3300-56', from: `${year}-01-01`, to: `${year}-12-31` },
-    ]
-
-    const itemSets = [
-      [
-        { item: '문화재 보수비', code: '5110', amt: 50000000 },
-        { item: '발굴조사비', code: '5120', amt: 30000000 },
-        { item: '전문인력 인건비', code: '5210', amt: 25000000 },
-        { item: '장비 구입비', code: '5130', amt: 15000000 },
-        { item: '안전관리비', code: '5140', amt: 8000000 },
-      ],
-      [
-        { item: '유적정비비', code: '5110', amt: 40000000 },
-        { item: '관광홍보비', code: '5320', amt: 20000000 },
-        { item: '시설유지비', code: '5130', amt: 15000000 },
-        { item: '조경공사비', code: '5120', amt: 12000000 },
-        { item: '행사운영비', code: '5310', amt: 8000000 },
-      ],
-      [
-        { item: '임직원 급여', code: '5210', amt: 60000000 },
-        { item: '사무용품비', code: '5190', amt: 5000000 },
-        { item: '통신비', code: '5340', amt: 3000000 },
-        { item: '차량유지비', code: '5310', amt: 4000000 },
-        { item: '복리후생비', code: '5350', amt: 6000000 },
-      ],
-    ]
-
-    const newCats = [...cats]
-    const newBudgets = [...budgets]
-
-    catDefs.forEach((def, ci) => {
-      const catId = uid()
-      newCats.push({
-        id: catId, name: def.name, year,
-        bankInfo: def.bank, periodFrom: def.from, periodTo: def.to,
-      })
-      itemSets[ci].forEach(b => {
-        newBudgets.push({
-          id: uid(), catId, year,
-          itemName: b.item, accountCode: b.code,
-          amount: b.amt, spent: Math.round(b.amt * (Math.random() * 0.4)), memo: '',
-        })
-      })
-    })
-
-    setItem('acct_budget_cats', newCats)
-    setItem('acct_budgets', newBudgets)
+    setItem('acct_budget_cats', [{"id":"mp6lpa67gfje3","name":"문화재청","year":2026,"bankInfo":"카카오뱅크","periodFrom":"2026-01-01","periodTo":"2026-12-31","bank":"카카오뱅크","accounts":[{"id":1778912111737,"bankName":"카카오뱅크","cards":["일반관리카드 1234-5847-8282-7161"]},{"id":1778912224993,"bankName":"농협 321-90-38475","cards":["출장전용 3847-3546-1232-0980"]}],"users":["한경리"],"approvers":["최대표"],"approver":"","budgetStatus":"confirmed"},{"id":"mp6lpa67ha0uy","name":"경주시청","year":2026,"bankInfo":"농협은행 2020-2200-34","periodFrom":"2026-01-01","periodTo":"2026-12-31","bank":"농협은행 2020-2200-34","accounts":[],"users":["한경리"],"approvers":["최대표"],"approver":""},{"id":"mp6lpa676sg15","name":"자체예산","year":2026,"bankInfo":"국민은행 3030-3300-56","periodFrom":"2026-01-01","periodTo":"2026-12-31","bank":"국민은행 3030-3300-56","accounts":[],"users":["조영업"],"approvers":[]},{"id":1778999557736,"name":"자체예산","bank":"","bankInfo":"","accounts":[],"periodFrom":"2027-01-01","periodTo":"2027-12-31","year":2027,"users":["최대표"]},{"id":1779006937570,"name":"문화재청","bank":"","bankInfo":"","accounts":[],"periodFrom":"2028-01-01","periodTo":"2028-12-31","year":2028,"users":["박팀장"]}])
+    setItem('acct_budgets', [{"id":1781996219161,"catId":"mp6lpa67gfje3","year":2026,"itemName":"문화재보수비","subItemName":"단청보수","detailItemName":"","accountCode":"5-01-06","contraAccountCode":"1-01-03","amount":20000000,"spent":0,"budgetItemDefId":2},{"id":1781996218480,"catId":"mp6lpa67gfje3","year":2026,"itemName":"문화재보수비","subItemName":"현장인부","detailItemName":"","accountCode":"5-02-26","contraAccountCode":"1-01-03","amount":3000000,"spent":0,"budgetItemDefId":2},{"id":1781996218740,"catId":"mp6lpa67gfje3","year":2026,"itemName":"문화재보수비","subItemName":"석조보수","detailItemName":"","accountCode":"5-02-13","contraAccountCode":"1-01-03","amount":2000000,"spent":0,"budgetItemDefId":2},{"id":1781948301126,"catId":"mp6lpa67gfje3","year":2026,"itemName":"장비구입비","subItemName":"안전장비","detailItemName":"","accountCode":"5-02-20","contraAccountCode":"2-01-04","amount":0,"spent":0,"budgetItemDefId":4},{"id":1781948304503,"catId":"mp6lpa67gfje3","year":2026,"itemName":"장비구입비","subItemName":"사무기기","detailItemName":"","accountCode":"1-02-10","contraAccountCode":"2-01-04","amount":0,"spent":0,"budgetItemDefId":4},{"id":1781995470792,"catId":"mp6lpa67gfje3","year":2026,"itemName":"운영비","subItemName":"일반수용비","detailItemName":"사무용품구입비","accountCode":"5-02-19","contraAccountCode":"1-01-03","amount":0,"spent":50000,"budgetItemDefId":1304},{"id":1781948299578,"catId":"mp6lpa67gfje3","year":2026,"itemName":"운영비","subItemName":"일반수용비","detailItemName":"인쇄및유인비","accountCode":"5-02-18","contraAccountCode":"1-01-03","amount":23000000,"spent":50000,"budgetItemDefId":1304},{"id":1781948299225,"catId":"mp6lpa67gfje3","year":2026,"itemName":"운영비","subItemName":"일반수용비","detailItemName":"안내홍보물등 제작비","accountCode":"5-02-22","contraAccountCode":"1-01-03","amount":50000,"spent":50000,"budgetItemDefId":1304},{"id":1781995470139,"catId":"mp6lpa67gfje3","year":2026,"itemName":"운영비","subItemName":"일반수용비","detailItemName":"소모성 물품 구입비","accountCode":"5060","contraAccountCode":"1-01-03","amount":0,"spent":50000,"budgetItemDefId":1304},{"id":1781995472077,"catId":"mp6lpa67gfje3","year":2026,"itemName":"운영비","subItemName":"일반수용비","detailItemName":"간행물 등 구입비","accountCode":"5-02-21","contraAccountCode":"1-01-03","amount":0,"spent":50000,"budgetItemDefId":1304},{"id":1781996904105,"catId":"mp6lpa67gfje3","year":2026,"itemName":"인건비","subItemName":"고정임금","detailItemName":"","accountCode":"5-02-01","contraAccountCode":"1-01-03","amount":0,"spent":0,"budgetItemDefId":1},{"id":1781996901855,"catId":"mp6lpa67gfje3","year":2026,"itemName":"인건비","subItemName":"일용임금","detailItemName":"","accountCode":"5-01-04","contraAccountCode":"1-01-03","amount":0,"spent":0,"budgetItemDefId":1},{"id":1781997001164,"catId":"mp6lpa67gfje3","year":2026,"itemName":"문화재보수비","subItemName":"목조보수","detailItemName":"","accountCode":"5-02-13","contraAccountCode":"1-01-03","amount":0,"spent":0,"budgetItemDefId":2},{"id":1782026307941,"catId":"mp6lpa67gfje3","year":2026,"itemName":"발굴조사비","subItemName":"발굴장비임대","detailItemName":"","accountCode":"5-01-06","contraAccountCode":"2-01-04","amount":230000,"spent":0,"budgetItemDefId":3},{"id":1782026301705,"catId":"mp6lpa67gfje3","year":2026,"itemName":"발굴조사비","subItemName":"시굴조사","detailItemName":"","accountCode":"5-01-06","contraAccountCode":"2-01-04","amount":0,"spent":0,"budgetItemDefId":3},{"id":1782026302071,"catId":"mp6lpa67gfje3","year":2026,"itemName":"발굴조사비","subItemName":"조사인력","detailItemName":"","accountCode":"5-02-26","contraAccountCode":"2-01-04","amount":0,"spent":0,"budgetItemDefId":3}])
   }
 
   /* ── 거래처 샘플 10건 ── */
@@ -374,96 +326,475 @@ function initAccountingSeed() {
 
   /* ── 품의 샘플 10건 ── */
   if (getItem<any[]>('acct_approvals', []).length === 0) {
-    const mm = (m: number) => String(m).padStart(2, '0')
-    const approvals = [
-      { id: 2001, title: 'Q1 사무용품 일괄 구매', amount: 1500000, date: `${year}-01-15`, status: 'approved', accountCode: '5190', description: '1분기 사무용품 일괄 구매 품의', applicant: 'admin', approver: '박팀장', budgetItem: '사무용품비', budgetSubItem: '사무용품', budgetCatName: '문화재청', createdAt: `${year}-01-14T09:00:00Z` },
-      { id: 2002, title: '문화재 현장 안전장비 구입', amount: 3200000, date: `${year}-02-05`, status: 'approved', accountCode: '5140', description: '현장 안전모, 안전벨트 등 구입', applicant: '최경리', approver: '박팀장', budgetItem: '안전관리비', budgetSubItem: '안전장비', budgetCatName: '문화재청', createdAt: `${year}-02-04T10:00:00Z` },
-      { id: 2003, title: '발굴조사 장비 임대', amount: 8500000, date: `${year}-02-20`, status: 'approved', accountCode: '5120', description: '3월 발굴조사 장비 임대 비용', applicant: '하팀원', approver: '최대표', budgetItem: '발굴조사비', budgetSubItem: '장비임대', budgetCatName: '문화재청', createdAt: `${year}-02-19T14:00:00Z` },
-      { id: 2004, title: '보고서 인쇄비', amount: 2800000, date: `${year}-03-10`, status: 'pending', accountCode: '5190', description: '2025년도 연간보고서 인쇄', applicant: 'admin', approver: '강선임', budgetItem: '사무용품비', budgetSubItem: '인쇄비', budgetCatName: '자체예산', createdAt: `${year}-03-09T11:00:00Z` },
-      { id: 2005, title: '직원 역량강화 교육비', amount: 4500000, date: `${year}-03-25`, status: 'pending', accountCode: '5350', description: '문화재 복원기술 교육 수강료', applicant: 'admin', approver: '박팀장', budgetItem: '복리후생비', budgetSubItem: '교육비', budgetCatName: '자체예산', createdAt: `${year}-03-24T09:30:00Z` },
-      { id: 2006, title: '법인차량 정기정비', amount: 780000, date: `${year}-${mm(new Date().getMonth())}-05`, status: 'approved', accountCode: '5310', description: '법인차량 3대 정기정비', applicant: '조영업', approver: '조영업', budgetItem: '차량유지비', budgetSubItem: '정비비', budgetCatName: '자체예산', createdAt: `${year}-${mm(new Date().getMonth())}-04T08:00:00Z` },
-      { id: 2007, title: '유적지 조경공사', amount: 12000000, date: `${year}-${mm(new Date().getMonth())}-12`, status: 'pending', accountCode: '5120', description: '경주 유적지 봄 조경정비', applicant: 'admin', approver: '최대표', budgetItem: '문화재 보수비', budgetSubItem: '조경공사', budgetCatName: '문화재청', createdAt: `${year}-${mm(new Date().getMonth())}-11T10:00:00Z` },
-      { id: 2008, title: '사무실 통신비 연간계약', amount: 3600000, date: `${year}-${mm(new Date().getMonth() + 1)}-01`, status: 'rejected', accountCode: '5340', description: '인터넷/전화 연간계약 갱신', applicant: 'admin', approver: '강선임', budgetItem: '통신비', budgetSubItem: '인터넷', budgetCatName: '자체예산', createdAt: `${year}-${mm(new Date().getMonth())}-28T15:00:00Z` },
-      { id: 2009, title: '현장 드론 구입', amount: 5500000, date: `${year}-${mm(new Date().getMonth() + 1)}-10`, status: 'pending', accountCode: '5130', description: '항공촬영용 고성능 드론 2대', applicant: 'admin', approver: '임기획', budgetItem: '장비 구입비', budgetSubItem: '촬영장비', budgetCatName: '문화재청', createdAt: `${year}-${mm(new Date().getMonth() + 1)}-09T09:00:00Z` },
-      { id: 2010, title: '행사장 케이터링', amount: 2200000, date: `${year}-${mm(new Date().getMonth() + 1)}-20`, status: 'pending', accountCode: '5310', description: '문화유산의 날 행사 케이터링', applicant: 'admin', approver: '오개발', budgetItem: '복리후생비', budgetSubItem: '행사비', budgetCatName: '자체예산', createdAt: `${year}-${mm(new Date().getMonth() + 1)}-19T13:00:00Z` },
-    ]
-    setItem('acct_approvals', approvals)
+    setItem('acct_approvals', [
+            {
+                  "id": 2001,
+                  "title": "Q1 사무용품 일괄 구매",
+                  "amount": 1500000,
+                  "date": "2026-01-15",
+                  "status": "toResolve",
+                  "accountCode": "5190",
+                  "description": "1분기 사무용품 일괄 구매 품의",
+                  "applicant": "최대표",
+                  "approver": "박팀장",
+                  "createdAt": "2026-01-14T09:00:00Z"
+            },
+            {
+                  "id": 2002,
+                  "title": "문화재 현장 안전장비 구입",
+                  "amount": 3200000,
+                  "date": "2026-02-05",
+                  "status": "toResolve",
+                  "accountCode": "5140",
+                  "description": "현장 안전모, 안전벨트 등 구입",
+                  "applicant": "하팀원",
+                  "approver": "최대표",
+                  "createdAt": "2026-02-04T10:00:00Z"
+            },
+            {
+                  "id": 2003,
+                  "title": "발굴조사 장비 임대",
+                  "amount": 8500000,
+                  "date": "2026-02-20",
+                  "status": "toResolve",
+                  "accountCode": "5120",
+                  "description": "3월 발굴조사 장비 임대 비용",
+                  "applicant": "한경리",
+                  "approver": "최대표",
+                  "createdAt": "2026-02-19T14:00:00Z"
+            },
+            {
+                  "id": 2004,
+                  "title": "보고서 인쇄비",
+                  "amount": 2800000,
+                  "date": "2026-03-10",
+                  "status": "pending",
+                  "accountCode": "5190",
+                  "description": "2025년도 연간보고서 인쇄",
+                  "applicant": "강선임",
+                  "approver": "박팀장",
+                  "createdAt": "2026-03-09T11:00:00Z"
+            },
+            {
+                  "id": 2005,
+                  "title": "직원 역량강화 교육비",
+                  "amount": 4500000,
+                  "date": "2026-03-25",
+                  "status": "pending",
+                  "accountCode": "5350",
+                  "description": "문화재 복원기술 교육 수강료",
+                  "applicant": "박팀장",
+                  "approver": "최대표",
+                  "createdAt": "2026-03-24T09:30:00Z"
+            },
+            {
+                  "id": 2006,
+                  "title": "법인차량 정기정비",
+                  "amount": 780000,
+                  "date": "2026-04-05",
+                  "status": "toResolve",
+                  "accountCode": "5310",
+                  "description": "법인차량 3대 정기정비",
+                  "applicant": "조영업",
+                  "approver": "최대표",
+                  "createdAt": "2026-04-04T08:00:00Z"
+            },
+            {
+                  "id": 2007,
+                  "title": "유적지 조경공사",
+                  "amount": 12000000,
+                  "date": "2026-04-12",
+                  "status": "approved",
+                  "accountCode": "5120",
+                  "description": "경주 유적지 봄 조경정비",
+                  "applicant": "하팀원",
+                  "approver": "최대표",
+                  "createdAt": "2026-04-11T10:00:00Z"
+            },
+            {
+                  "id": 2008,
+                  "title": "사무실 통신비 연간계약",
+                  "amount": 3600000,
+                  "date": "2026-05-01",
+                  "status": "rejected",
+                  "accountCode": "5340",
+                  "description": "인터넷/전화 연간계약 갱신",
+                  "applicant": "임기획",
+                  "approver": "박팀장",
+                  "createdAt": "2026-04-28T15:00:00Z"
+            },
+            {
+                  "id": 2009,
+                  "title": "현장 드론 구입",
+                  "amount": 5500000,
+                  "date": "2026-05-10",
+                  "status": "approved",
+                  "accountCode": "5130",
+                  "description": "항공촬영용 고성능 드론 2대",
+                  "applicant": "한경리",
+                  "approver": "최대표",
+                  "createdAt": "2026-05-09T09:00:00Z"
+            },
+            {
+                  "id": 2010,
+                  "title": "행사장 케이터링",
+                  "amount": 2200000,
+                  "date": "2026-05-20",
+                  "status": "approved",
+                  "accountCode": "5310",
+                  "description": "문화유산의 날 행사 케이터링",
+                  "applicant": "강선임",
+                  "approver": "최대표",
+                  "createdAt": "2026-05-19T13:00:00Z"
+            },
+            {
+                  "id": 1778920129748,
+                  "title": "컴퓨터 구매",
+                  "amount": 1500000,
+                  "date": "2026-05-16",
+                  "status": "approved",
+                  "accountCode": "",
+                  "description": "컴퓨터가 필요합니다.",
+                  "applicant": "최대표",
+                  "approver": "최대표",
+                  "createdAt": "2026-05-16T08:28:49.714Z",
+                  "resubmittedAt": "2026-05-16T12:09:43.200Z",
+                  "budgetCatId": "mp6lpa676sg15",
+                  "budgetCatName": "자체예산",
+                  "budgetItemId": "mp6lpa67vtzi2",
+                  "budgetItem": "사무운영비",
+                  "budgetSubId": "mp6lpa6700zwf",
+                  "budgetSubItem": "사무운영비",
+                  "approvedAt": "2026-05-16T23:16:33.665Z"
+            },
+            {
+                  "id": 1778924551839,
+                  "title": "컴퓨터구매",
+                  "amount": 2000000,
+                  "date": "2026-05-16",
+                  "status": "approved",
+                  "accountCode": "",
+                  "description": "그냥사게",
+                  "applicant": "최대표",
+                  "approver": "최대표",
+                  "createdAt": "2026-05-16T09:42:31.807Z"
+            },
+            {
+                  "id": 1778924741860,
+                  "title": "컴퓨터구매",
+                  "amount": 6000000,
+                  "date": "2026-05-16",
+                  "status": "toResolve",
+                  "accountCode": "",
+                  "description": "오잉\n",
+                  "applicant": "최대표",
+                  "approver": "최대표",
+                  "createdAt": "2026-05-16T09:45:41.827Z",
+                  "budgetCatId": "mp6lpa67gfje3",
+                  "budgetItemId": "mp6lpa679xmm2",
+                  "budgetSubId": "mp6lpa679xmm2",
+                  "approvedAt": "2026-05-16T11:28:29.736Z"
+            },
+            {
+                  "id": 1778933840182,
+                  "title": "연습",
+                  "amount": 50,
+                  "date": "2026-05-16",
+                  "status": "confirming",
+                  "accountCode": "",
+                  "description": "ㅇㅇ",
+                  "applicant": "최대표",
+                  "approver": "최대표",
+                  "createdAt": "2026-05-16T12:17:19.499Z",
+                  "budgetCatId": "mp6lpa676sg15",
+                  "budgetItemId": "mp6lpa67mn4l0",
+                  "budgetSubId": "mp6lpa67jwi1z",
+                  "approvedAt": "2026-05-16T15:34:11.609Z",
+                  "attachments": [
+                        {
+                              "name": "워크엠_01.jpg",
+                              "size": 2055082,
+                              "type": "image/jpeg",
+                              "addedAt": "2026-05-17T01:48:07.159Z",
+                              "title": "연습",
+                              "dimensions": "20"
+                        }
+                  ],
+                  "confirmedAt": "2026-05-17T16:05:06.187Z",
+                  "returnedAt": "2026-05-17T03:29:56.329Z"
+            },
+            {
+                  "id": 1778944330150,
+                  "title": "ㅇㄻㄹ",
+                  "amount": 345,
+                  "date": "2026-05-16",
+                  "status": "toResolve",
+                  "accountCode": "",
+                  "description": "ㅇㄹㄹ",
+                  "applicant": "최대표",
+                  "approver": "최대표",
+                  "createdAt": "2026-05-16T15:12:09.341Z",
+                  "budgetCatId": "mp6lpa67gfje3",
+                  "budgetItemId": "mp6lpa670zb6d",
+                  "budgetSubId": "mp6lpa670zb6d",
+                  "approvedAt": "2026-05-16T15:27:44.307Z"
+            },
+            {
+                  "id": 1779027204813,
+                  "status": "pending",
+                  "title": "[선지출] 구매",
+                  "amount": 300000,
+                  "date": "2026-05-17",
+                  "createdAt": "2026-05-17T14:13:24.350Z",
+                  "accountCode": "",
+                  "description": "출금전표 선지출 - 문화재 보수비 > 돌탑수리",
+                  "applicant": "최대표",
+                  "approver": "최대표",
+                  "budgetItem": "문화재 보수비",
+                  "budgetSubItem": "돌탑수리",
+                  "budgetCatId": "mp6lpa67gfje3",
+                  "budgetCatName": "문화재청",
+                  "resubmittedAt": "2026-05-18T06:48:52.888Z"
+            },
+            {
+                  "id": 1779087828586,
+                  "title": "ㅇㅇ",
+                  "amount": 50,
+                  "date": "2026-05-18",
+                  "status": "pending",
+                  "accountCode": "",
+                  "description": "ㅇㅇ",
+                  "applicant": "최대표",
+                  "approver": "최대표",
+                  "budgetItem": "",
+                  "budgetSubItem": "",
+                  "createdAt": "2026-05-18T07:03:48.142Z"
+            },
+            {
+                  "id": 1779089444785,
+                  "status": "preExpense",
+                  "isPreExpense": true,
+                  "title": "[선지출] 멋지게살자",
+                  "amount": 1700000,
+                  "date": "2026-05-18",
+                  "createdAt": "2026-05-18T07:30:44.615Z",
+                  "accountCode": "",
+                  "description": "출금전표 선지출 - 문화재 보수비 > 돌탑수리",
+                  "applicant": "최대표",
+                  "approver": "",
+                  "budgetItem": "문화재 보수비",
+                  "budgetSubItem": "돌탑수리",
+                  "budgetCatId": "mp6lpa67gfje3",
+                  "budgetCatName": "문화재청",
+                  "budgetItemId": "mp6lpa676bwjc",
+                  "budgetSubId": "1779027171295"
+            },
+            {
+                  "id": 1781937293865,
+                  "status": "pending",
+                  "isPreExpense": true,
+                  "title": "[선지출] 컴퓨터구매",
+                  "amount": 1000000,
+                  "date": "2026-06-20",
+                  "createdAt": "2026-06-20T06:34:53.706Z",
+                  "accountCode": "",
+                  "description": "출금전표 선지출 - 운영비 > 일반수용비",
+                  "applicant": "박팀장",
+                  "approver": "최대표",
+                  "budgetItem": "운영비",
+                  "budgetSubItem": "일반수용비",
+                  "budgetCatId": "mp6lpa67gfje3",
+                  "budgetCatName": "문화재청",
+                  "budgetItemId": "1781925489685",
+                  "budgetSubId": "1781925489685",
+                  "resubmittedAt": "2026-06-21T04:01:15.274Z"
+            },
+            {
+                  "id": 1782009881804,
+                  "title": "컴퓨터구매",
+                  "amount": 1000000,
+                  "date": "2026-06-21",
+                  "status": "completed",
+                  "accountCode": "",
+                  "description": "컴퓨터사줘요",
+                  "applicant": "박팀장",
+                  "approver": "최대표",
+                  "isGeneral": false,
+                  "budgetItem": "장비구입비",
+                  "budgetSubItem": "사무기기",
+                  "createdAt": "2026-06-21T02:44:41.665Z",
+                  "budgetCatId": "mp6lpa67gfje3",
+                  "budgetCatName": "문화재청",
+                  "budgetItemId": "1781948301126",
+                  "budgetSubId": "1781948304503",
+                  "approvedAmount": 1000000,
+                  "approvedMemo": "비교견적받고 진행하세요",
+                  "approvedAt": "2026-06-21T03:38:20.204Z",
+                  "attachments": [
+                        {
+                              "name": "영수증-01.jpg",
+                              "size": 120825,
+                              "type": "image/jpeg",
+                              "addedAt": "2026-06-21T05:33:54.290Z",
+                              "title": "영수증-01",
+                              "printWidth": 180,
+                              "imageKey": "att_1782009881804_1782020034289_4gu0n7",
+                              "row": 0
+                        },
+                        {
+                              "name": "영수증-01.jpg",
+                              "size": 120825,
+                              "type": "image/jpeg",
+                              "addedAt": "2026-06-21T05:35:22.954Z",
+                              "title": "영수증-01",
+                              "printWidth": 181,
+                              "imageKey": "att_1782009881804_1782020122952_ojvco9",
+                              "row": 0
+                        },
+                        {
+                              "name": "KakaoTalk_20260615_115613910.jpg",
+                              "size": 3705794,
+                              "type": "image/jpeg",
+                              "addedAt": "2026-06-21T05:35:57.809Z",
+                              "title": "설치후",
+                              "printWidth": 400,
+                              "imageKey": "att_1782009881804_1782020157807_tmhg5n"
+                        }
+                  ],
+                  "confirmedAt": "2026-06-21T05:52:45.542Z",
+                  "returnedAt": "2026-06-21T05:52:11.919Z",
+                  "returnReason": "영수증이 잘못된 것 같습니다.",
+                  "returnedBy": "한경리",
+                  "completedAt": "2026-06-21T06:00:52.057Z",
+                  "completedBy": "한경리"
+            },
+            {
+                  "id": 1782014550101,
+                  "title": "지출테스트",
+                  "amount": 500000,
+                  "date": "2026-06-21",
+                  "status": "toResolve",
+                  "accountCode": "",
+                  "description": "지출 테스트",
+                  "applicant": "박팀장",
+                  "approver": "최대표",
+                  "isGeneral": false,
+                  "budgetItem": "운영비",
+                  "budgetSubItem": "일반수용비",
+                  "createdAt": "2026-06-21T04:02:29.405Z",
+                  "budgetCatId": "mp6lpa67gfje3",
+                  "budgetCatName": "문화재청",
+                  "budgetItemId": "1781995470792",
+                  "budgetSubId": "1781995470792",
+                  "budgetDetailId": "1781995470792",
+                  "budgetDetailItem": "사무용품구입비",
+                  "approvedAmount": 500000,
+                  "approvedMemo": "비교 견적 2곳 이상 요망",
+                  "approvedAt": "2026-06-21T04:33:31.500Z"
+            },
+            {
+                  "id": 1782028353377,
+                  "title": "지출 테스트",
+                  "amount": 200000,
+                  "date": "2026-06-21",
+                  "status": "confirming",
+                  "accountCode": "",
+                  "description": "지출 연습",
+                  "applicant": "한경리",
+                  "approver": "최대표",
+                  "isGeneral": false,
+                  "budgetCatId": "mp6lpa67gfje3",
+                  "budgetCatName": "문화재청",
+                  "createdAt": "2026-06-21T07:52:32.616Z",
+                  "resubmittedAt": "2026-06-21T08:06:48.968Z",
+                  "budgetItemId": "1781995470792",
+                  "budgetItem": "운영비",
+                  "budgetSubId": "1781995470792",
+                  "budgetSubItem": "일반수용비",
+                  "budgetDetailId": "1781948299578",
+                  "budgetDetailItem": "인쇄및유인비",
+                  "approvedAmount": 200000,
+                  "approvedMemo": "비교견적 2개이상 첨부",
+                  "approvedAt": "2026-06-21T08:52:10.064Z",
+                  "attachments": [
+                        {
+                              "name": "영수증-02.jpg",
+                              "size": 111551,
+                              "type": "image/jpeg",
+                              "addedAt": "2026-06-21T08:58:22.338Z",
+                              "title": "영수증-02",
+                              "printWidth": 183,
+                              "imageKey": "att_1782028353377_1782032302338_usj9at"
+                        }
+                  ],
+                  "confirmedAt": "2026-06-21T08:58:44.401Z"
+            },
+            {
+                  "id": 1782029243828,
+                  "title": "연습",
+                  "amount": 0,
+                  "date": "2026-06-21",
+                  "status": "pending",
+                  "accountCode": "",
+                  "description": "연습",
+                  "applicant": "한경리",
+                  "approver": "박팀장",
+                  "isGeneral": true,
+                  "budgetItem": "",
+                  "budgetSubItem": "",
+                  "budgetCatId": "",
+                  "budgetCatName": "",
+                  "createdAt": "2026-06-21T08:07:22.872Z"
+            },
+            {
+                  "id": 1782040622302,
+                  "status": "completed",
+                  "isPreExpense": true,
+                  "title": "[선지출] 연습",
+                  "amount": 50000,
+                  "date": "2026-06-21",
+                  "createdAt": "2026-06-21T11:17:02.009Z",
+                  "accountCode": "",
+                  "description": "출금전표 선지출 - 운영비 > 일반수용비\n연습합니다.",
+                  "applicant": "박팀장",
+                  "approver": "최대표",
+                  "budgetItem": "운영비",
+                  "budgetSubItem": "일반수용비",
+                  "budgetCatId": "mp6lpa67gfje3",
+                  "budgetCatName": "문화재청",
+                  "budgetItemId": "1781995470792",
+                  "resubmittedAt": "2026-06-21T11:21:46.712Z",
+                  "budgetDetailItem": "",
+                  "approvedAmount": 50000,
+                  "approvedMemo": "ok",
+                  "approvedAt": "2026-06-21T12:30:52.604Z",
+                  "attachments": [
+                        {
+                              "name": "영수증-01.jpg",
+                              "size": 120825,
+                              "type": "image/jpeg",
+                              "addedAt": "2026-06-21T12:45:40.668Z",
+                              "title": "영수증-01",
+                              "printWidth": 156,
+                              "imageKey": "att_1782040622302_1782045940668_4jyxyq"
+                        }
+                  ],
+                  "confirmedAt": "2026-06-21T12:45:52.947Z",
+                  "completedAt": "2026-06-21T12:46:28.413Z",
+                  "completedBy": "한경리"
+            }
+      ])
   }
 
   /* ── 지출/입금/출금 샘플 각 10건 ── */
   if (getItem<any[]>('acct_cashflows', []).length === 0) {
-    const cfs: any[] = []
-    const vs: any[] = []
-    let sid = 3001
+    setItem('acct_cashflows', [{"id":3031,"date":"2026-04-08","type":"income","amount":1500000,"description":"기념품 판매 수입","accountCode":"4030","counter":"기념품샵","method":"현금","budgetCatId":"mp6lpa676sg15"},{"id":3033,"date":"2026-04-05","type":"income","amount":10000000,"description":"경주시 3차 보조금","accountCode":"4030","counter":"경주시청","method":"계좌이체","budgetCatId":"mp6lpa67ha0uy"},{"id":3035,"date":"2026-04-20","type":"income","amount":2400000,"description":"교육 프로그램 참가비","accountCode":"4030","counter":"교육참가자","method":"현금","budgetCatId":"mp6lpa67ha0uy"},{"id":3039,"date":"2026-03-15","type":"income","amount":20000000,"description":"문화재청 3차 보조금","accountCode":"4030","counter":"문화재청","method":"계좌이체","budgetCatId":"mp6lpa67gfje3"},{"id":1781937421402,"date":"2026-06-20","type":"expense","amount":3200000,"description":"문화재 현장 안전장비 구입","accountCode":"5110","counter":"","writeDate":"2026-06-20","manager":"하팀원","approvalId":"2002"},{"id":1781937440808,"date":"2026-06-20","type":"expense","amount":8500000,"description":"발굴조사 장비 임대","accountCode":"5110","counter":"","writeDate":"2026-06-20","manager":"한경리","approvalId":"2003"},{"id":1781937450451,"date":"2026-06-20","type":"expense","amount":780000,"description":"법인차량 정기정비","accountCode":"5110","counter":"","writeDate":"2026-06-20","manager":"조영업","approvalId":"2006"},{"id":1781937914840,"date":"2026-06-20","type":"income","amount":97000000,"description":"보통예금","accountCode":"4030","counter":"경주문화재연구원","writeDate":"2026-06-20","manager":"","incomeNote":"보조금"},{"id":1781938099754,"date":"2026-06-20","type":"income","amount":25499501,"description":"보통예금","accountCode":"4030","counter":"경주문화재연구원","writeDate":"2026-06-20","manager":"","budgetCatId":"mp6lpa67gfje3","incomeNote":"특별보조금"},{"id":1781938136357,"date":"2026-06-20","type":"income","amount":499,"description":"보통예금","accountCode":"4030","counter":"경주문화재연구원","writeDate":"2026-06-20","manager":"","budgetCatId":"mp6lpa67gfje3","incomeNote":"그냥"},{"id":1781945825620,"date":"2026-06-20","type":"income","amount":33333,"description":"현금","accountCode":"4030","counter":"","writeDate":"2026-06-20","manager":"","budgetCatId":"","incomeNote":"ddzzzz"},{"id":1782019260794,"date":"2026-06-21","type":"expense","amount":1000000,"description":"장비구입비","accountCode":"5110","counter":"(주)서울건설","writeDate":"2026-06-21","manager":"박팀장","budgetCatId":"","createdBy":"한경리","approvalId":"1782009881804"},{"id":1782032173289,"date":"2026-06-21","type":"expense","amount":200000,"description":"운영비","accountCode":"5110","counter":"(주)서울건설","writeDate":"2026-06-21","manager":"한경리","budgetCatId":"","createdBy":"한경리","approvalId":"1782028353377"},{"id":1782032222296,"date":"2026-06-21","type":"expense","amount":6000000,"description":"컴퓨터구매","accountCode":"5110","counter":"(주)서울건설","writeDate":"2026-06-21","manager":"최대표","budgetCatId":"","createdBy":"한경리","approvalId":"1778924741860"},{"id":1782032253870,"date":"2026-06-21","type":"expense","amount":345,"description":"ㅇㄻㄹ","accountCode":"5110","counter":"경주문화재연구원","writeDate":"2026-06-21","manager":"최대표","budgetCatId":"","createdBy":"한경리","approvalId":"1778944330150"},{"id":1782040622157,"date":"2026-06-21","type":"expense","amount":50000,"description":"연습","accountCode":"5110","counter":"경주문화재연구원","writeDate":"2026-06-21","manager":"박팀장","budgetCatId":"mp6lpa67gfje3","createdBy":"한경리","approvalId":"1782040622302"}])
+  }
 
-    // 지출 10건
-    const expenses = [
-      { desc: '사무용품 구매 (복사지, 토너)', amt: 320000, date: `${year}-01-20`, counter: '(주)스마트오피스', method: '카드' },
-      { desc: '현장작업자 안전장비', amt: 1500000, date: `${year}-02-08`, counter: '(주)한국전자', method: '계좌이체' },
-      { desc: '3월 법인차량 유류비', amt: 450000, date: `${year}-03-15`, counter: '주유소', method: '법인카드' },
-      { desc: '보고서 인쇄비 (300부)', amt: 1200000, date: `${year}-03-28`, counter: '대한인쇄공사', method: '계좌이체' },
-      { desc: '사무실 인터넷 요금', amt: 88000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-05`, counter: '한빛통신(주)', method: '계좌이체' },
-      { desc: '조경 유지보수비', amt: 3500000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-10`, counter: '(주)그린조경', method: '계좌이체' },
-      { desc: '직원 간식비', amt: 150000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-12`, counter: '(주)맛나푸드', method: '법인카드' },
-      { desc: '법률자문 수수료', amt: 2200000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-18`, counter: '세종법률사무소', method: '계좌이체' },
-      { desc: '차량 정기검사비', amt: 350000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-02`, counter: '(주)퍼스트카', method: '카드' },
-      { desc: '사무실 정수기 렌탈', amt: 55000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-05`, counter: '정수기렌탈', method: '계좌이체' },
-    ]
-    expenses.forEach(e => {
-      const id = sid++
-      cfs.push({ id, date: e.date, type: 'expense', amount: e.amt, description: e.desc, accountCode: '5110', counter: e.counter, method: e.method })
-      vs.push({ id: sid++, date: e.date, type: 'expense', description: e.desc, createdAt: e.date + 'T09:00:00Z', entries: [
-        { side: 'debit', accountCode: '5110', amount: e.amt },
-        { side: 'credit', accountCode: e.method === '현금' ? '1010' : '1020', amount: e.amt },
-      ]})
-    })
 
-    // 입금 10건
-    const incomes = [
-      { desc: '문화재청 1차 보조금', amt: 25000000, date: `${year}-01-10`, counter: '문화재청', method: '계좌이체' },
-      { desc: '경주시 관광홍보 보조금', amt: 10000000, date: `${year}-02-01`, counter: '경주시청', method: '계좌이체' },
-      { desc: '문화재청 2차 보조금', amt: 25000000, date: `${year}-03-05`, counter: '문화재청', method: '계좌이체' },
-      { desc: '발굴조사 용역 수입', amt: 8000000, date: `${year}-03-20`, counter: '경주문화재연구원', method: '계좌이체' },
-      { desc: '유적 입장료 수입', amt: 3200000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-01`, counter: '현장매표소', method: '현금' },
-      { desc: '기념품 판매 수입', amt: 1500000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-08`, counter: '기념품샵', method: '카드' },
-      { desc: '경주시 3차 보조금', amt: 10000000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-15`, counter: '경주시청', method: '계좌이체' },
-      { desc: '교육 프로그램 참가비', amt: 2400000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-20`, counter: '교육참가자', method: '계좌이체' },
-      { desc: '도서 판매 수입', amt: 850000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-03`, counter: '온라인서점', method: '계좌이체' },
-      { desc: '문화재청 3차 보조금', amt: 20000000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-10`, counter: '문화재청', method: '계좌이체' },
-    ]
-    incomes.forEach(e => {
-      const id = sid++
-      cfs.push({ id, date: e.date, type: 'income', amount: e.amt, description: e.desc, accountCode: '4030', counter: e.counter, method: e.method })
-      vs.push({ id: sid++, date: e.date, type: 'income', description: e.desc, createdAt: e.date + 'T09:00:00Z', entries: [
-        { side: 'debit', accountCode: e.method === '현금' ? '1010' : '1020', amount: e.amt },
-        { side: 'credit', accountCode: '4030', amount: e.amt },
-      ]})
-    })
-
-    // 출금 10건 (type: 'expense' + withdrawal 형태)
-    const withdrawals = [
-      { desc: '임직원 1월 급여', amt: 15000000, date: `${year}-01-25`, counter: '직원계좌', method: '계좌이체' },
-      { desc: '임직원 2월 급여', amt: 15000000, date: `${year}-02-25`, counter: '직원계좌', method: '계좌이체' },
-      { desc: '4대보험 납부', amt: 4800000, date: `${year}-02-28`, counter: '국민건강보험공단', method: '계좌이체' },
-      { desc: '임직원 3월 급여', amt: 15000000, date: `${year}-03-25`, counter: '직원계좌', method: '계좌이체' },
-      { desc: '퇴직연금 적립', amt: 3000000, date: `${year}-03-31`, counter: '퇴직연금운용사', method: '계좌이체' },
-      { desc: '세금 납부 (부가세)', amt: 5500000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-10`, counter: '국세청', method: '계좌이체' },
-      { desc: '임직원 ${new Date().getMonth() + 1}월 급여', amt: 15000000, date: `${year}-${String(new Date().getMonth()).padStart(2, '0')}-25`, counter: '직원계좌', method: '계좌이체' },
-      { desc: '사무실 임대료', amt: 3300000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`, counter: '건물주', method: '계좌이체' },
-      { desc: '4대보험 납부', amt: 4800000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-05`, counter: '국민건강보험공단', method: '계좌이체' },
-      { desc: '관리비 납부', amt: 880000, date: `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-10`, counter: '관리사무소', method: '계좌이체' },
-    ]
-    withdrawals.forEach(e => {
-      const id = sid++
-      cfs.push({ id, date: e.date, type: 'expense', amount: e.amt, description: e.desc, accountCode: '5210', counter: e.counter, method: e.method, isWithdrawal: true })
-      vs.push({ id: sid++, date: e.date, type: 'expense', description: e.desc, createdAt: e.date + 'T09:00:00Z', entries: [
-        { side: 'debit', accountCode: '5210', amount: e.amt },
-        { side: 'credit', accountCode: '1020', amount: e.amt },
-      ]})
-    })
-
-    setItem('acct_cashflows', cfs)
-    setItem('acct_vouchers', vs)
+  /* ── 전표 시드 ── */
+  if (getItem<any[]>('acct_vouchers', []).length === 0) {
+    setItem('acct_vouchers', [{"id":3002,"date":"2026-01-20","type":"expense","description":"사무용품 구매 (복사지, 토너)","counterpart":"(주)스마트오피스","paymentMethod":"현금","createdAt":"2026-01-20T09:00:00Z","entries":[{"side":"debit","accountCode":"5110","amount":320000},{"side":"credit","accountCode":"1010","amount":320000}]},{"id":3004,"date":"2026-02-08","type":"expense","description":"현장작업자 안전장비","counterpart":"(주)한국전자","paymentMethod":"계좌이체","createdAt":"2026-02-08T09:00:00Z","entries":[{"side":"debit","accountCode":"5110","amount":1500000},{"side":"credit","accountCode":"1020","amount":1500000}]},{"id":3006,"date":"2026-03-15","type":"expense","description":"3월 법인차량 유류비","counterpart":"주유소","paymentMethod":"현금","createdAt":"2026-03-15T09:00:00Z","entries":[{"side":"debit","accountCode":"5110","amount":450000},{"side":"credit","accountCode":"1010","amount":450000}]},{"id":3008,"date":"2026-03-28","type":"expense","description":"보고서 인쇄비 (300부)","counterpart":"대한인쇄공사","paymentMethod":"계좌이체","createdAt":"2026-03-28T09:00:00Z","entries":[{"side":"debit","accountCode":"5110","amount":1200000},{"side":"credit","accountCode":"1020","amount":1200000}]},{"id":3010,"date":"2026-04-05","type":"expense","description":"현장 소모품 구입","counterpart":"철물점","paymentMethod":"현금","createdAt":"2026-04-05T09:00:00Z","entries":[{"side":"debit","accountCode":"5110","amount":280000},{"side":"credit","accountCode":"1010","amount":280000}]},{"id":3012,"date":"2026-04-10","type":"expense","description":"조경 유지보수비","counterpart":"(주)그린조경","paymentMethod":"계좌이체","createdAt":"2026-04-10T09:00:00Z","entries":[{"side":"debit","accountCode":"5110","amount":3500000},{"side":"credit","accountCode":"1020","amount":3500000}]},{"id":3014,"date":"2026-04-12","type":"expense","description":"직원 간식비","counterpart":"(주)맛나푸드","paymentMethod":"현금","createdAt":"2026-04-12T09:00:00Z","entries":[{"side":"debit","accountCode":"5110","amount":150000},{"side":"credit","accountCode":"1010","amount":150000}]},{"id":3016,"date":"2026-04-18","type":"expense","description":"법률자문 수수료","counterpart":"세종법률사무소","paymentMethod":"계좌이체","createdAt":"2026-04-18T09:00:00Z","entries":[{"side":"debit","accountCode":"5110","amount":2200000},{"side":"credit","accountCode":"1020","amount":2200000}]},{"id":3018,"date":"2026-05-02","type":"expense","description":"차량 정기검사비","counterpart":"(주)퍼스트카","paymentMethod":"현금","createdAt":"2026-05-02T09:00:00Z","entries":[{"side":"debit","accountCode":"5110","amount":350000},{"side":"credit","accountCode":"1010","amount":350000}]},{"id":3020,"date":"2026-05-05","type":"expense","description":"사무실 정수기 렌탈","counterpart":"정수기렌탈","paymentMethod":"현금","createdAt":"2026-05-05T09:00:00Z","entries":[{"side":"debit","accountCode":"5110","amount":55000},{"side":"credit","accountCode":"1010","amount":55000}]},{"id":3022,"date":"2026-01-10","type":"income","description":"문화재청 1차 보조금","counterpart":"문화재청","paymentMethod":"계좌이체","createdAt":"2026-01-10T09:00:00Z","entries":[{"side":"debit","accountCode":"1020","amount":25000000},{"side":"credit","accountCode":"4030","amount":25000000}]},{"id":3024,"date":"2026-02-28","type":"income","description":"주차장 운영 수입","counterpart":"(주)그린조경","paymentMethod":"현금","createdAt":"2026-02-28T09:00:00Z","entries":[{"side":"debit","accountCode":"1010","amount":3200000},{"side":"credit","accountCode":"4030","amount":3200000}]},{"id":3026,"date":"2026-03-05","type":"income","description":"문화재청 2차 보조금","counterpart":"문화재청","paymentMethod":"계좌이체","createdAt":"2026-03-05T09:00:00Z","entries":[{"side":"debit","accountCode":"1020","amount":25000000},{"side":"credit","accountCode":"4030","amount":25000000}]},{"id":3028,"date":"2026-03-01","type":"income","description":"유적 입장료 수입","counterpart":"경주시청","paymentMethod":"현금","createdAt":"2026-03-01T09:00:00Z","entries":[{"side":"debit","accountCode":"1010","amount":8500000},{"side":"credit","accountCode":"4030","amount":8500000}]},{"id":3030,"date":"2026-03-01","type":"income","description":"블로거 촬영비 수입","counterpart":"KT서브마리나TV","paymentMethod":"현금","createdAt":"2026-03-01T09:00:00Z","entries":[{"side":"debit","accountCode":"1010","amount":1300000},{"side":"credit","accountCode":"4030","amount":1300000}]},{"id":3032,"date":"2026-04-08","type":"income","description":"기념품 판매 수입","counterpart":"기념품샵","paymentMethod":"현금","createdAt":"2026-04-08T09:00:00Z","entries":[{"side":"debit","accountCode":"1010","amount":1500000},{"side":"credit","accountCode":"4030","amount":1500000}]},{"id":3034,"date":"2026-04-05","type":"income","description":"경주시 3차 보조금","counterpart":"경주시청","paymentMethod":"계좌이체","createdAt":"2026-04-05T09:00:00Z","entries":[{"side":"debit","accountCode":"1020","amount":10000000},{"side":"credit","accountCode":"4030","amount":10000000}]},{"id":3036,"date":"2026-04-20","type":"income","description":"교육 프로그램 참가비","counterpart":"교육참가자","paymentMethod":"현금","createdAt":"2026-04-20T09:00:00Z","entries":[{"side":"debit","accountCode":"1010","amount":2400000},{"side":"credit","accountCode":"4030","amount":2400000}]},{"id":3038,"date":"2026-07-05","type":"income","description":"주차장 운영 수입","counterpart":"(주)그린조경","paymentMethod":"현금","createdAt":"2026-07-05T09:00:00Z","entries":[{"side":"debit","accountCode":"1010","amount":1800000},{"side":"credit","accountCode":"4030","amount":1800000}]},{"id":3040,"date":"2026-03-15","type":"income","description":"문화재청 3차 보조금","counterpart":"문화재청","paymentMethod":"계좌이체","createdAt":"2026-03-15T09:00:00Z","entries":[{"side":"debit","accountCode":"1020","amount":20000000},{"side":"credit","accountCode":"4030","amount":20000000}]},{"id":3042,"date":"2026-01-25","type":"expense","description":"임직원 1월 급여","counterpart":"직원계좌","paymentMethod":"계좌이체","createdAt":"2026-01-25T09:00:00Z","entries":[{"side":"debit","accountCode":"5210","amount":15000000},{"side":"credit","accountCode":"1020","amount":15000000}]},{"id":3044,"date":"2026-02-20","type":"expense","description":"거래처 접대비","counterpart":"경주시청","paymentMethod":"현금","createdAt":"2026-02-20T09:00:00Z","entries":[{"side":"debit","accountCode":"5210","amount":650000},{"side":"credit","accountCode":"1010","amount":650000}]},{"id":3046,"date":"2026-02-28","type":"expense","description":"4대보험 납부","counterpart":"국민건강보험공단","paymentMethod":"계좌이체","createdAt":"2026-02-28T09:00:00Z","entries":[{"side":"debit","accountCode":"5210","amount":4800000},{"side":"credit","accountCode":"1020","amount":4800000}]},{"id":3048,"date":"2026-03-05","type":"expense","description":"출장 여비교통비","counterpart":"사무실","paymentMethod":"현금","createdAt":"2026-03-05T09:00:00Z","entries":[{"side":"debit","accountCode":"5210","amount":850000},{"side":"credit","accountCode":"1010","amount":850000}]},{"id":3050,"date":"2026-03-31","type":"expense","description":"퇴직연금 적립","counterpart":"퇴직연금운용사","paymentMethod":"계좌이체","createdAt":"2026-03-31T09:00:00Z","entries":[{"side":"debit","accountCode":"5210","amount":3000000},{"side":"credit","accountCode":"1020","amount":3000000}]},{"id":3052,"date":"2026-05-15","type":"expense","description":"회의 다과비","counterpart":"(주)미니바로","paymentMethod":"현금","createdAt":"2026-05-15T09:00:00Z","entries":[{"side":"debit","accountCode":"5210","amount":180000},{"side":"credit","accountCode":"1010","amount":180000}]},{"id":3054,"date":"2026-05-20","type":"expense","description":"VIP 접대비","counterpart":"경주시청","paymentMethod":"현금","createdAt":"2026-05-20T09:00:00Z","entries":[{"side":"debit","accountCode":"5210","amount":450000},{"side":"credit","accountCode":"1010","amount":450000}]},{"id":3056,"date":"2026-05-01","type":"expense","description":"사무실 임대료","counterpart":"건물주","paymentMethod":"계좌이체","createdAt":"2026-05-01T09:00:00Z","entries":[{"side":"debit","accountCode":"5210","amount":3300000},{"side":"credit","accountCode":"1020","amount":3300000}]},{"id":3058,"date":"2026-05-05","type":"expense","description":"비품 수리비","counterpart":"수리업체","paymentMethod":"현금","createdAt":"2026-05-05T09:00:00Z","entries":[{"side":"debit","accountCode":"5210","amount":220000},{"side":"credit","accountCode":"1010","amount":220000}]},{"id":3060,"date":"2026-05-10","type":"expense","description":"관리비 납부","counterpart":"관리사무소","paymentMethod":"계좌이체","createdAt":"2026-05-10T09:00:00Z","entries":[{"side":"debit","accountCode":"5210","amount":880000},{"side":"credit","accountCode":"1020","amount":880000}]},{"id":1778943487828,"date":"2026-05-16","type":"expense","description":"Q1 사무용품 일괄 구매","entries":[{"side":"debit","accountCode":"5110","amount":1500000},{"side":"credit","accountCode":"1020","amount":1500000}],"createdAt":"2026-05-16T14:58:06.877Z"},{"id":1778943496791,"date":"2026-05-16","type":"expense","description":"문화재 현장 안전장비 구입","entries":[{"side":"debit","accountCode":"5110","amount":3200000},{"side":"credit","accountCode":"1020","amount":3200000}],"createdAt":"2026-05-16T14:58:16.509Z"},{"id":1778979213649,"date":"2026-05-17","type":"expense","description":"임직원 급여","entries":[{"side":"debit","accountCode":"5110","amount":50},{"side":"credit","accountCode":"1020","amount":50}],"createdAt":"2026-05-17T00:53:33.425Z"},{"id":1779027204638,"date":"2026-05-17","type":"expense","description":"구매","entries":[{"side":"debit","accountCode":"5110","amount":300000},{"side":"credit","accountCode":"1020","amount":300000}],"createdAt":"2026-05-17T14:13:24.349Z"},{"id":1779089445533,"date":"2026-05-18","type":"expense","description":"멋지게살자","entries":[{"side":"debit","accountCode":"5110","amount":1700000},{"side":"credit","accountCode":"1020","amount":1700000}],"createdAt":"2026-05-18T07:30:44.614Z"},{"id":1781933526762,"date":"2026-06-20","type":"expense","description":"Q1 사무용품 일괄 구매","entries":[{"side":"debit","accountCode":"5110","amount":1500000},{"side":"credit","accountCode":"1010","amount":1500000}],"createdAt":"2026-06-20T05:32:06.761Z"},{"id":1781937293873,"date":"2026-06-20","type":"expense","description":"컴퓨터구매","entries":[{"side":"debit","accountCode":"5110","amount":1000000},{"side":"credit","accountCode":"1020","amount":1000000}],"createdAt":"2026-06-20T06:34:53.705Z"},{"id":1781937421605,"date":"2026-06-20","type":"expense","description":"문화재 현장 안전장비 구입","entries":[{"side":"debit","accountCode":"5110","amount":3200000},{"side":"credit","accountCode":"1020","amount":3200000}],"createdAt":"2026-06-20T06:37:00.666Z"},{"id":1781937440763,"date":"2026-06-20","type":"expense","description":"발굴조사 장비 임대","entries":[{"side":"debit","accountCode":"5110","amount":8500000},{"side":"credit","accountCode":"1020","amount":8500000}],"createdAt":"2026-06-20T06:37:20.728Z"},{"id":1781937450064,"date":"2026-06-20","type":"expense","description":"법인차량 정기정비","entries":[{"side":"debit","accountCode":"5110","amount":780000},{"side":"credit","accountCode":"1020","amount":780000}],"createdAt":"2026-06-20T06:37:29.993Z"},{"id":1781937818007,"date":"2026-06-20","type":"income","description":"보통예금","entries":[{"side":"debit","accountCode":"1020","amount":70000000},{"side":"credit","accountCode":"4030","amount":70000000}],"createdAt":"2026-06-20T06:43:37.523Z"},{"id":1781937914940,"date":"2026-06-20","type":"income","description":"보통예금","entries":[{"side":"debit","accountCode":"1020","amount":97000000},{"side":"credit","accountCode":"4030","amount":97000000}],"createdAt":"2026-06-20T06:45:14.227Z"},{"id":1781938100272,"date":"2026-06-20","type":"income","description":"보통예금","entries":[{"side":"debit","accountCode":"1020","amount":25499501},{"side":"credit","accountCode":"4030","amount":25499501}],"createdAt":"2026-06-20T06:48:19.535Z"},{"id":1781938136030,"date":"2026-06-20","type":"income","description":"보통예금","entries":[{"side":"debit","accountCode":"1020","amount":499},{"side":"credit","accountCode":"4030","amount":499}],"createdAt":"2026-06-20T06:48:55.463Z"},{"id":1781945825395,"date":"2026-06-20","type":"income","description":"현금","entries":[{"side":"debit","accountCode":"1020","amount":33333},{"side":"credit","accountCode":"4030","amount":33333}],"createdAt":"2026-06-20T08:57:05.047Z"},{"id":1782019135417,"date":"2026-06-21","type":"expense","description":"운영비","entries":[{"side":"debit","accountCode":"5110","amount":500000},{"side":"credit","accountCode":"1020","amount":500000}],"createdAt":"2026-06-21T05:18:55.398Z"},{"id":1782019260641,"date":"2026-06-21","type":"expense","description":"장비구입비","entries":[{"side":"debit","accountCode":"5110","amount":1000000},{"side":"credit","accountCode":"1020","amount":1000000}],"createdAt":"2026-06-21T05:21:00.545Z"},{"id":1782032173014,"date":"2026-06-21","type":"expense","description":"운영비","entries":[{"side":"debit","accountCode":"5110","amount":200000},{"side":"credit","accountCode":"1020","amount":200000}],"createdAt":"2026-06-21T08:56:12.880Z"},{"id":1782032221835,"date":"2026-06-21","type":"expense","description":"컴퓨터구매","entries":[{"side":"debit","accountCode":"5110","amount":6000000},{"side":"credit","accountCode":"1020","amount":6000000}],"createdAt":"2026-06-21T08:57:01.810Z"},{"id":1782032253984,"date":"2026-06-21","type":"expense","description":"ㅇㄻㄹ","entries":[{"side":"debit","accountCode":"5110","amount":345},{"side":"credit","accountCode":"1020","amount":345}],"createdAt":"2026-06-21T08:57:33.650Z"},{"id":1782040622110,"date":"2026-06-21","type":"expense","description":"연습","entries":[{"side":"debit","accountCode":"5110","amount":50000},{"side":"credit","accountCode":"1020","amount":50000}],"createdAt":"2026-06-21T11:17:02.009Z"}])
   }
 
   localStorage.setItem('_acct_react_seed_v9', '1')
