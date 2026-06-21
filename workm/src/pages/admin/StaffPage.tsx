@@ -18,9 +18,6 @@ import {
   Pencil, Trash2, PhoneCall, Map, Briefcase, Camera, Eye, EyeOff, PenTool,
 } from 'lucide-react'
 
-import { useAuthStore } from '../../stores/authStore'
-import { getItem } from '../../utils/storage'
-
 const statusVariant: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
   '근무': 'success', '근무(휴가)': 'info', '근무(출장)': 'warning',
   '근무(조퇴)': 'warning', '근무(퇴근)': 'info', '휴직': 'danger', '퇴사': 'default',
@@ -30,15 +27,6 @@ export function StaffPage() {
   const { staff, add, update, remove } = useStaffStore()
   const { departments, ranks, positions } = useSettingsStore()
   const addToast = useToastStore((s) => s.add)
-  const user = useAuthStore(s => s.user)
-  
-  // 지출승인권자 확인
-  const isBudgetApprover = useMemo(() => {
-    const userName = user?.name || ''
-    const staffList = getItem<any[]>('ws_users', [])
-    const currentStaff = staffList.find(s => s.name === userName)
-    return currentStaff?.approverType === 'approver'
-  }, [user])
   const [search, setSearch] = useState('')
   const [filterDept, setFilterDept] = useState('all')
   const [modalOpen, setModalOpen] = useState(false)
@@ -110,18 +98,6 @@ export function StaffPage() {
     reader.readAsDataURL(file)
   }
 
-  if (!isBudgetApprover) {
-    return (
-      <div className="animate-fadeIn">
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="text-5xl mb-4">🔒</div>
-          <div className="text-lg font-bold text-[var(--text-primary)] mb-2">접근 권한이 없습니다</div>
-          <div className="text-sm text-[var(--text-muted)]">사원관리는 지출승인권자만 사용할 수 있습니다.</div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="animate-fadeIn">
       <PageHeader title="직원관리" subtitle="명부 등록 및 인사 정보 관리">
@@ -167,7 +143,7 @@ export function StaffPage() {
                     <tr className="border-b border-[var(--border-default)] bg-[var(--bg-muted)]">
                       <th className="text-left px-4 py-3 text-[11px] font-bold text-[var(--text-muted)] uppercase">이름</th>
                       <th className="text-left px-3 py-3 text-[11px] font-bold text-[var(--text-muted)] uppercase">직급</th>
-                      <th className="text-left px-3 py-3 text-[11px] font-bold text-[var(--text-muted)] uppercase">직함</th>
+                      <th className="text-left px-3 py-3 text-[11px] font-bold text-[var(--text-muted)] uppercase">직책</th>
                       <th className="text-left px-3 py-3 text-[11px] font-bold text-[var(--text-muted)] uppercase">전화번호</th>
                       <th className="text-left px-3 py-3 text-[11px] font-bold text-[var(--text-muted)] uppercase">주소</th>
                       <th className="text-left px-3 py-3 text-[11px] font-bold text-[var(--text-muted)] uppercase">상태</th>
@@ -295,9 +271,9 @@ export function StaffPage() {
                   className="h-[44px]"
                 />
               </div>
-              {/* 직함 */}
+              {/* 직책 */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">직함 *</label>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">직책 *</label>
                 <CustomSelect
                   value={form.position || ''}
                   onChange={(v) => setForm({ ...form, position: v })}

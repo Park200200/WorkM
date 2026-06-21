@@ -20,7 +20,6 @@ interface NavEntry {
   label: string
   icon: React.ElementType
   badge?: number
-  disabled?: boolean
 }
 
 interface NavGroup {
@@ -50,6 +49,7 @@ const mainNav: NavItem[] = [
     ],
   },
   { path: '/progress', label: '진행현황', icon: Settings },
+  { path: '/?panel=approval', label: '품의하기', icon: FileCheck },
 ]
 
 const analyticsNav: NavItem[] = [
@@ -80,10 +80,8 @@ const acctNav: { tab: string; label: string; icon: React.ElementType }[] = [
   { tab: 'payment',      label: '전표장부',   icon: ScrollText },
   { tab: 'reports',      label: '회계현황',   icon: BarChart3 },
   { tab: 'vendors',      label: '거래처관리',   icon: ContactRound },
-  { tab: 'payMethods',   label: '지출수단',   icon: CreditCard },
-  { tab: 'budgetTree',   label: '예산과목',   icon: Wallet },
+  { tab: 'accounts',     label: '계정관리',   icon: Settings2 },
   { tab: 'hq_vendor',    label: '본사거래처',   icon: Building2 },
-  { tab: 'acct_mgmt',    label: '계정관리',   icon: Settings2 },
 ]
 
 /* ═══════════════════════════════════════════
@@ -150,52 +148,29 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {/* 네비게이션 */}
         <nav className="flex-1 overflow-y-auto px-2.5 py-3 space-y-0.5">
           <SectionLabel collapsed={collapsed}>회계관리</SectionLabel>
-          {(() => {
-            const userName = user?.name || ''
-            const staffList = JSON.parse(localStorage.getItem('ws_users') || '[]') as any[]
-            const currentStaff = staffList.find((s: any) => s.name === userName)
-            const isBudgetApprover = currentStaff?.approverType === 'approver'
-            // 예산담당자 여부: 어떤 예산구분의 users 또는 approvers에 포함
-            const budgetCats = JSON.parse(localStorage.getItem('acct_budget_cats') || '[]') as any[]
-            const isBudgetHandler = budgetCats.some((c: any) =>
-              (c.users && c.users.includes(userName)) ||
-              (c.approvers && c.approvers.includes(userName))
+          {acctNav.map((entry) => {
+            const Icon = entry.icon
+            const isActive = currentTab === entry.tab
+
+            return (
+              <button
+                key={entry.tab}
+                onClick={() => navigate(`/accounting?tab=${entry.tab}${currentYear ? `&year=${currentYear}` : ''}`)}
+                className={cn(
+                  'flex items-center gap-3 rounded-lg h-9 w-full transition-all duration-150 cursor-pointer',
+                  collapsed ? 'justify-center px-0 mx-1' : 'px-3',
+                  isActive
+                    ? 'font-bold'
+                    : 'text-[var(--sidebar-text)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-title)]',
+                )}
+                style={isActive ? { color: 'var(--sidebar-active)', background: 'color-mix(in srgb, var(--sidebar-active) 10%, transparent)' } : undefined}
+                title={collapsed ? entry.label : undefined}
+              >
+                <Icon size={18} className="shrink-0" style={isActive ? { color: 'var(--sidebar-active)' } : undefined} />
+                {!collapsed && <span className="text-[13px] truncate" style={isActive ? { color: 'var(--sidebar-active)' } : undefined}>{entry.label}</span>}
+              </button>
             )
-            const hasBudgetAccess = isBudgetApprover || isBudgetHandler
-            // 예산관련자만 접근 가능한 탭
-            const restrictedTabs = ['base_budget', 'income', 'withdrawal', 'payment', 'reports', 'vendors', 'budgetTree', 'accounts', 'hq_vendor']
-
-            return acctNav.map((entry) => {
-              const Icon = entry.icon
-              const isActive = currentTab === entry.tab
-              const isRestricted = !hasBudgetAccess && restrictedTabs.includes(entry.tab)
-
-              return (
-                <button
-                  key={entry.tab}
-                  onClick={isRestricted ? undefined : () => navigate(`/accounting?tab=${entry.tab}${currentYear ? `&year=${currentYear}` : ''}`)}
-                  className={cn(
-                    'flex items-center gap-3 rounded-lg h-9 w-full transition-all duration-150',
-                    collapsed ? 'justify-center px-0 mx-1' : 'px-3',
-                    isRestricted
-                      ? 'opacity-40 cursor-not-allowed'
-                      : 'cursor-pointer',
-                    isActive && !isRestricted
-                      ? 'font-bold'
-                      : isRestricted
-                        ? ''
-                        : 'text-[var(--sidebar-text)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-title)]',
-                  )}
-                  style={isActive && !isRestricted ? { color: 'var(--sidebar-active)', background: 'color-mix(in srgb, var(--sidebar-active) 10%, transparent)' } : undefined}
-                  title={isRestricted ? '예산담당자 또는 지출승인권자만 사용 가능' : (collapsed ? entry.label : undefined)}
-                >
-                  <Icon size={18} className="shrink-0" style={isActive && !isRestricted ? { color: 'var(--sidebar-active)' } : undefined} />
-                  {!collapsed && <span className="text-[13px] truncate" style={isActive && !isRestricted ? { color: 'var(--sidebar-active)' } : undefined}>{entry.label}</span>}
-                  {!collapsed && isRestricted && <span className="ml-auto text-[8px]">🔒</span>}
-                </button>
-              )
-            })
-          })()}
+          })}
         </nav>
 
         {/* 내 책상으로 */}
@@ -331,31 +306,9 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* 네비게이션 */}
       <nav className="flex-1 overflow-y-auto px-2.5 py-3 space-y-0.5">
         <SectionLabel collapsed={collapsed}>Main</SectionLabel>
-        {(() => {
-          const userName = user?.name || ''
-          const staffList = JSON.parse(localStorage.getItem('ws_users') || '[]') as any[]
-          const currentStaff = staffList.find((s: any) => s.name === userName)
-          const isBudgetApprover = currentStaff?.approverType === 'approver'
-          
-          // 사원관리(/staff)는 지출승인권자만 클릭 가능
-          const filteredMainNav = mainNav.map(item => {
-            if (isGroup(item) && item.label === '기본관리') {
-              return {
-                ...item,
-                children: item.children.map(child => 
-                  child.path === '/staff' && !isBudgetApprover
-                    ? { ...child, disabled: true }
-                    : child
-                )
-              }
-            }
-            return item
-          })
-          
-          return filteredMainNav.map((item, i) => (
-            <NavItemRenderer key={i} item={item} collapsed={collapsed} currentPath={location.pathname} />
-          ))
-        })()}
+        {mainNav.map((item, i) => (
+          <NavItemRenderer key={i} item={item} collapsed={collapsed} currentPath={location.pathname} />
+        ))}
 
         <SectionLabel collapsed={collapsed}>Analytics</SectionLabel>
         {analyticsNav.map((item, i) => (
@@ -429,25 +382,6 @@ function NavSingleItem({ entry, collapsed }: { entry: NavEntry; collapsed: boole
   const location = useLocation()
   const nav = useNavigate()
   const hasQuery = entry.path.includes('?')
-
-  // disabled 상태
-  if (entry.disabled) {
-    return (
-      <div
-        className={cn(
-          'flex items-center gap-3 rounded-lg h-9 w-full opacity-40 cursor-not-allowed',
-          collapsed ? 'justify-center px-0 mx-1' : 'px-3',
-        )}
-        title={collapsed ? entry.label : '접근 권한이 없습니다'}
-      >
-        <span className="shrink-0 flex items-center text-[var(--sidebar-text)]">
-          <Icon size={18} />
-        </span>
-        {!collapsed && <span className="text-[13px] truncate text-[var(--sidebar-text)]">{entry.label}</span>}
-        {!collapsed && <span className="ml-auto text-[8px] text-[var(--text-muted)]">🔒</span>}
-      </div>
-    )
-  }
 
   // 쿼리 파라미터가 있는 경우: button + useNavigate 방식
   if (hasQuery) {

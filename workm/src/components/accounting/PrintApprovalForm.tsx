@@ -49,7 +49,7 @@ interface PrintAttachment {
 interface PrintApprovalData {
   // 기본 정보
   date?: string           // 품의일자
-  expenseDate?: string    // 지출일자
+  expenseDate?: string    // 지출일지
   settleDate?: string     // 결제일자
   accountName?: string    // 계정과목
   evidenceType?: string   // 증빙구분
@@ -62,15 +62,7 @@ interface PrintApprovalData {
   approver?: string       // 승인자/상임이사
   applicantSealImg?: string  // 품의자 도장/사인 이미지
   approverSealImg?: string   // 승인자 도장/사인 이미지
-  applicantPosition?: string // 품의자 직함
-  approverPosition?: string  // 승인자 직함
-  approvalStatus?: string    // 승인 상태
-  approvedMemo?: string      // 승인 메모
   attachments?: PrintAttachment[]  // 첨부파일
-  isGeneral?: boolean      // 일반품의 여부
-  approvalType?: string    // 품의유형 (지출/일반)
-  approvedDate?: string    // 승인일자
-  department?: string      // 소속 부서
 }
 
 interface PrintApprovalFormProps {
@@ -84,10 +76,7 @@ interface PrintApprovalFormProps {
 export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments, readOnly }: PrintApprovalFormProps) {
   const canEdit = !readOnly
   const printRef = useRef<HTMLDivElement>(null)
-  const [formTitle, setFormTitle] = useState(() => {
-    if (data.isGeneral) return localStorage.getItem('pf_title_general') || '품 의 서'
-    return localStorage.getItem('pf_title') || '지 출 품 의 서'
-  })
+  const [formTitle, setFormTitle] = useState(() => localStorage.getItem('pf_title') || '지 출 품 의 서')
   const [printWidth, setPrintWidth] = useState(() => Number(localStorage.getItem('pf_width')) || 210)
   const [localAttachments, setLocalAttachments] = useState<PrintAttachment[]>(data.attachments || [])
   const [evidencePreview, setEvidencePreview] = useState(false)
@@ -175,11 +164,7 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
             <span style={{ fontSize: 13, fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap' }}>타이틀</span>
             <input
               value={formTitle}
-              onChange={e => {
-                setFormTitle(e.target.value)
-                if (data.isGeneral) localStorage.setItem('pf_title_general', e.target.value)
-                else localStorage.setItem('pf_title', e.target.value)
-              }}
+              onChange={e => { setFormTitle(e.target.value); localStorage.setItem('pf_title', e.target.value) }}
               className="pf-header-input"
               style={{ width: 160 }}
             />
@@ -220,28 +205,25 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
               </colgroup>
               <thead>
                 <tr>
-                  <th>{data.applicantPosition || '담 당'}</th>
-                  <th>{data.approverPosition || '승인자'}</th>
+                  <th>담 당</th>
+                  <th>상임이사</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td className="pf-stamp-cell">
-                    {(() => {
-                      const isApproved = ['approved','expensed','toResolve','confirming','completed'].includes(data.approvalStatus || '')
-                      if (isApproved && data.applicantSealImg) return <img src={data.applicantSealImg} alt="담당 도장" className="pf-stamp-img" />
-                      if (data.applicant) return <span className="pf-stamp-name">{data.applicant}</span>
-                      return null
-                    })()}
+                    {data.applicantSealImg ? (
+                      <img src={data.applicantSealImg} alt="담당 도장" className="pf-stamp-img" />
+                    ) : data.applicant ? (
+                      <span className="pf-stamp-name">{data.applicant}</span>
+                    ) : null}
                   </td>
                   <td className="pf-stamp-cell">
-                    {(() => {
-                      const isApproved = ['approved','expensed','toResolve','confirming','completed'].includes(data.approvalStatus || '')
-                      if (!isApproved) return null
-                      if (data.approverSealImg) return <img src={data.approverSealImg} alt="승인자 도장" className="pf-stamp-img" />
-                      if (data.approver) return <span className="pf-stamp-name">{data.approver}</span>
-                      return null
-                    })()}
+                    {data.approverSealImg ? (
+                      <img src={data.approverSealImg} alt="상임이사 도장" className="pf-stamp-img" />
+                    ) : data.approver ? (
+                      <span className="pf-stamp-name">{data.approver}</span>
+                    ) : null}
                   </td>
                 </tr>
               </tbody>
@@ -252,160 +234,84 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
           <h1 className="pf-title">{formTitle}</h1>
 
           {/* ── 기본 정보 테이블 ── */}
-          {data.isGeneral ? (
-            /* ── 일반품의서 레이아웃 ── */
-            <>
-            <table className="pf-main-table">
-              <colgroup>
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '36%' }} />
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '36%' }} />
-              </colgroup>
-              <tbody>
-                <tr>
-                  <th>품의일자</th>
-                  <td>{data.date || ''}</td>
-                  <th>품의유형</th>
-                  <td>{data.approvalType || '일반품의'}</td>
-                </tr>
-                <tr>
-                  <th>승인일자</th>
-                  <td>{data.approvedDate || ''}</td>
-                  <th>증빙구분</th>
-                  <td>{data.evidenceType || ''}</td>
-                </tr>
-                <tr>
-                  <th>작 성 자</th>
-                  <td>{data.applicant || ''}</td>
-                  <th>소&ensp;&ensp;&ensp;속</th>
-                  <td>{data.department || ''}</td>
-                </tr>
-                <tr>
-                  <th>제&ensp;&ensp;&ensp;목</th>
-                  <td colSpan={3}>{data.itemName || ''}</td>
-                </tr>
-              </tbody>
-            </table>
+          <table className="pf-main-table">
+            <colgroup>
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '36%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '36%' }} />
+            </colgroup>
+            <tbody>
+              <tr>
+                <th>품의일자</th>
+                <td>{data.date || ''}</td>
+                <th>계정과목</th>
+                <td>{data.accountName || ''}</td>
+              </tr>
+              <tr>
+                <th>지출일지</th>
+                <td>{data.expenseDate || ''}</td>
+                <th>증빙구분</th>
+                <td>{data.evidenceType || ''}</td>
+              </tr>
+              <tr>
+                <th>결제일자</th>
+                <td>{data.settleDate || ''}</td>
+                <th>거래처</th>
+                <td>{data.vendor || ''}</td>
+              </tr>
+              <tr>
+                <th>물 품 명</th>
+                <td>{data.itemName || ''}</td>
+                <th>용 도</th>
+                <td>{data.purpose || ''}</td>
+              </tr>
+            </tbody>
+          </table>
 
-            {/* ── 품의 요청문 ── */}
-            <div className="pf-declaration">
-              <div className="pf-declaration-text">
-                아래의 내용으로 품의 하오니 허락을 요청 드립니다.
-              </div>
+          {/* ── 지출금액 테이블 ── */}
+          <table className="pf-amount-table">
+            <colgroup>
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '86%' }} />
+            </colgroup>
+            <tbody>
+              <tr>
+                <th>지출금액</th>
+                <td className="pf-amount-cell">
+                  <div className="pf-amount-value">
+                    ₩ {formatNumber(data.amount || 0)}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* ── 금액 한글 + 결의문 ── */}
+          <div className="pf-declaration">
+            <div className="pf-amount-korean">
+              금 {numberToKorean(data.amount || 0)}
             </div>
-
-            {/* ── 설명 (비고) ── */}
-            <table className="pf-memo-table" style={{ flex: 1 }}>
-              <colgroup>
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '86%' }} />
-              </colgroup>
-              <tbody style={{ height: '100%' }}>
-                <tr style={{ height: '100%' }}>
-                  <th>설&ensp;&ensp;&ensp;명</th>
-                  <td className="pf-memo-cell">
-                    {data.memo || ''}
-                    {data.approvedMemo && (
-                      <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px dashed #ccc' }}>
-                        <span style={{ fontSize: '9px', fontWeight: 700, color: '#22c55e' }}>승인메모:</span>{' '}
-                        <span style={{ fontSize: '10px' }}>{data.approvedMemo}</span>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            </>
-          ) : (
-            /* ── 지출품의서 레이아웃 ── */
-            <>
-            <table className="pf-main-table">
-              <colgroup>
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '36%' }} />
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '36%' }} />
-              </colgroup>
-              <tbody>
-                <tr>
-                  <th>품의일자</th>
-                  <td>{data.date || ''}</td>
-                  <th>계정과목</th>
-                  <td>{data.accountName || ''}</td>
-                </tr>
-                <tr>
-                  <th>지출일자</th>
-                  <td>{data.expenseDate || ''}</td>
-                  <th>증빙구분</th>
-                  <td>{data.evidenceType || ''}</td>
-                </tr>
-                <tr>
-                  <th>결제일자</th>
-                  <td>{data.settleDate || ''}</td>
-                  <th>거 래 처</th>
-                  <td>{data.vendor || ''}</td>
-                </tr>
-                <tr>
-                  <th>물 품 명</th>
-                  <td>{data.itemName || ''}</td>
-                  <th>용&ensp;&ensp;&ensp;도</th>
-                  <td>{data.purpose || ''}</td>
-                </tr>
-              </tbody>
-            </table>
-
-            {/* ── 지출금액 테이블 ── */}
-            <table className="pf-amount-table">
-              <colgroup>
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '86%' }} />
-              </colgroup>
-              <tbody>
-                <tr>
-                  <th>지출금액</th>
-                  <td className="pf-amount-cell">
-                    <div className="pf-amount-value">
-                      ₩ {formatNumber(data.amount || 0)}
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            {/* ── 금액 한글 + 결의문 ── */}
-            <div className="pf-declaration">
-              <div className="pf-amount-korean">
-                금 {numberToKorean(data.amount || 0)}
-              </div>
-              <div className="pf-declaration-text">
-                상기 금액을 용도에 따라 지출하였음을 결의합니다.
-              </div>
+            <div className="pf-declaration-text">
+              상기 금액을 용도에 따라 지출하였음을 결의합니다.
             </div>
+          </div>
 
-            {/* ── 비고 테이블 (페이지 끝까지 채움) ── */}
-            <table className="pf-memo-table" style={{ flex: 1 }}>
-              <colgroup>
-                <col style={{ width: '14%' }} />
-                <col style={{ width: '86%' }} />
-              </colgroup>
-              <tbody style={{ height: '100%' }}>
-                <tr style={{ height: '100%' }}>
-                  <th>비 고</th>
-                  <td className="pf-memo-cell">
-                    {data.memo || ''}
-                    {data.approvedMemo && (
-                      <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px dashed #ccc' }}>
-                        <span style={{ fontSize: '9px', fontWeight: 700, color: '#22c55e' }}>승인메모:</span>{' '}
-                        <span style={{ fontSize: '10px' }}>{data.approvedMemo}</span>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            </>
-          )}
+          {/* ── 비고 테이블 (페이지 끝까지 채움) ── */}
+          <table className="pf-memo-table" style={{ flex: 1 }}>
+            <colgroup>
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '86%' }} />
+            </colgroup>
+            <tbody style={{ height: '100%' }}>
+              <tr style={{ height: '100%' }}>
+                <th>비 고</th>
+                <td className="pf-memo-cell">
+                  {data.memo || ''}
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
         </div>
       </div>

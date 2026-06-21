@@ -160,7 +160,7 @@ export function ProfilePage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <FieldRow label="직급" value={currentUser.role || '-'} />
-                  <FieldRow label="직함" value={currentUser.pos || '-'} />
+                  <FieldRow label="직책" value={currentUser.pos || '-'} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <FieldRow label="이메일" value={currentUser.email || '-'} />

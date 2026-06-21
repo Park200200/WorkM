@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
 import { InstructionModal, DailyReportModal, ScheduleModal, ProgressReportModal } from '../../components/modals/DashboardModals'
 import { AcctApproval } from './AccountingPage'
@@ -15,7 +15,6 @@ import {
   ClipboardList, PlayCircle, AlertTriangle, Zap, CheckCircle2,
   ChevronDown, ChevronUp, Star, Send as SendIcon, Download, Calendar as CalIcon,
   AlertCircle, MessageSquare, FileText, Lightbulb, ArrowRight,
-  FileCheck, Stamp, CreditCard, Receipt, CheckCircle,
 } from 'lucide-react'
 import { setItem as setStorageItem } from '../../utils/storage'
 import { formatDate } from '../../utils/format'
@@ -88,7 +87,6 @@ function getDdayBadge(dueDate: string) {
    ───────────────────────────────────────────── */
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user)
-  const navigate = useNavigate()
   const [refreshKey, setRefreshKey] = useState(0)
 
   const tasks = useMemo(() => getItem<TaskItem[]>('ws_tasks', []), [refreshKey])
@@ -330,71 +328,6 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* ── 결제업무 카드 ── */}
-      {(() => {
-        const userName = user?.name || ''
-        const approvals: any[] = getItem('acct_approvals', [])
-        const budgetCats: any[] = getItem('acct_budget_cats', [])
-        const userCatIds = new Set(budgetCats.filter((c: any) => c.users && c.users.includes(userName)).map((c: any) => String(c.id)))
-        const userCatNames = new Set(budgetCats.filter((c: any) => c.users && c.users.includes(userName)).map((c: any) => c.name))
-        const isInMyCat = (a: any) => {
-          if (a.budgetCatId && userCatIds.has(String(a.budgetCatId))) return true
-          if (a.budgetCatName && userCatNames.has(a.budgetCatName)) return true
-          return false
-        }
-        const pendingApprove = approvals.filter(a => a.status === 'pending' && a.approver === userName).length
-        const toResolve = approvals.filter(a => a.status === 'toResolve' && a.applicant === userName).length
-        const toExpense = approvals.filter(a => a.status === 'approved' && (isInMyCat(a) || a.applicant === userName)).length
-        const toSettle = approvals.filter(a => a.status === 'confirming' && isInMyCat(a)).length
-        const completed = approvals.filter(a => ['completed', 'vouchered'].includes(a.status) && (isInMyCat(a) || a.applicant === userName)).length
-        const total = pendingApprove + toResolve + toExpense + toSettle
-        const items = [
-          { label: '승인할', value: pendingApprove, icon: Stamp, color: '#f59e0b', bg: 'rgba(245,158,11,.12)', tab: 'approval' },
-          { label: '결의할', value: toResolve, icon: FileCheck, color: '#8b5cf6', bg: 'rgba(139,92,246,.12)', tab: 'approval' },
-          { label: '지출할', value: toExpense, icon: CreditCard, color: '#ef4444', bg: 'rgba(239,68,68,.12)', tab: 'expense' },
-          { label: '정산할', value: toSettle, icon: Receipt, color: '#06b6d4', bg: 'rgba(6,182,212,.12)', tab: 'approval' },
-          { label: '완료됨', value: completed, icon: CheckCircle, color: '#22c55e', bg: 'rgba(34,197,94,.12)', tab: 'approval' },
-        ]
-        return (
-          <div className="mb-4">
-            <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#4f6ef7] to-[#8b5cf6] flex items-center justify-center">
-                    <FileCheck size={16} className="text-white" />
-                  </div>
-                  <div>
-                    <div className="text-[13px] font-extrabold text-[var(--text-primary)]">결제업무</div>
-                    <div className="text-[10px] text-[var(--text-muted)]">미처리 {total}건</div>
-                  </div>
-                </div>
-                <button onClick={() => navigate('/accounting?tab=approval')} className="text-[10px] font-bold text-primary-500 hover:text-primary-600 cursor-pointer flex items-center gap-0.5">
-                  품의하기 <ArrowRight size={12} />
-                </button>
-              </div>
-              <div className="grid grid-cols-5 gap-2">
-                {items.map(item => {
-                  const Icon = item.icon
-                  return (
-                    <div
-                      key={item.label}
-                      onClick={() => navigate(`/accounting?tab=${item.tab}`)}
-                      className="bg-[var(--bg-muted)] rounded-lg p-2.5 text-center cursor-pointer hover:border-primary-400 border border-transparent transition-all group"
-                    >
-                      <div className="w-7 h-7 rounded-lg mx-auto mb-1.5 flex items-center justify-center" style={{ background: item.bg, color: item.color }}>
-                        <Icon size={14} />
-                      </div>
-                      <div className="text-lg font-extrabold text-[var(--text-primary)] leading-none" style={item.value > 0 ? { color: item.color } : {}}>{item.value}</div>
-                      <div className="text-[10px] font-bold text-[var(--text-muted)] mt-0.5">{item.label}</div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-        )
-      })()}
-
       {/* ── 5개 통계 카드 ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3 mb-5">
         {stats.map((s) => {
@@ -422,8 +355,6 @@ export function DashboardPage() {
 
       {/* ── 간트 차트 ── */}
       <GanttChart tasks={ganttTasks} users={users} onProgress={(t) => setProgressTask(t)} />
-
-
 
       {/* ── 메인 그리드: 채팅 + 아코디언 (2컬럼) ── */}
       <div className="mt-4 md:mt-5 grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-3">

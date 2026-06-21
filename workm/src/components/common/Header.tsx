@@ -131,30 +131,14 @@ export function Header() {
               const catYear = c.year || (c.periodFrom ? parseInt(c.periodFrom.substring(0, 4)) : currentYear)
               return catYear === acctYear
             })
-            // 지출담당(users) + 지출승인(approvers) 필터 + 예산승인자는 전체 표시
-            const userName = user?.name || ''
-            // staffList에서 현재 사용자가 예산승인자(approverType='approver')인지 확인
-            const staffList = JSON.parse(localStorage.getItem('ws_users') || '[]') as any[]
-            const currentStaff = staffList.find((s: any) => s.name === userName)
-            const isBudgetApprover = currentStaff?.approverType === 'approver'
-            
-            let budgetCatsForYear = allCatsForYear
-            if (!isBudgetApprover && userName) {
-              budgetCatsForYear = allCatsForYear.filter((c: any) =>
-                (c.users && c.users.length > 0 && c.users.includes(userName)) ||
-                (c.approvers && c.approvers.length > 0 && c.approvers.includes(userName))
-              )
-            }
-            // 예산담당자 여부 확인
-            const isBudgetHandler = allCatsForYear.some((c: any) =>
-              (c.users && c.users.includes(userName)) ||
-              (c.approvers && c.approvers.includes(userName))
+            // 집출담당(users) 필터 + 폴백
+            const userCats = allCatsForYear.filter((c: any) =>
+              c.users && c.users.length > 0 && c.users.includes(user?.name || '')
             )
-            const hasBudgetAccess = isBudgetApprover || isBudgetHandler
+            const budgetCatsForYear = userCats.length > 0 ? userCats : allCatsForYear
 
             const currentCat = searchParams.get('cat') || 'all'
             const setCat = (catId: string) => {
-              if (!hasBudgetAccess) return
               const params: Record<string, string> = { tab: activeTab, year: String(acctYear), cat: catId }
               setSearchParams(params)
             }
@@ -178,19 +162,15 @@ export function Header() {
                 {/* 전체 버튼 (지출하기 탭에서는 숨김) */}
                 {activeTab !== 'expense' && (
                 <button onClick={() => setCat('all')}
-                  className={cn('px-2.5 py-1 rounded-md text-[11px] font-bold transition-all',
-                    !hasBudgetAccess ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
-                    currentCat === 'all' ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)]' + (hasBudgetAccess ? ' hover:text-[var(--text-primary)]' : ''))}
-                  title={!hasBudgetAccess ? '예산담당자 또는 지출승인권자만 사용 가능' : undefined}>
+                  className={cn('px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer',
+                    currentCat === 'all' ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]')}>
                   전체
                 </button>
                 )}
                 {budgetCatsForYear.map((c: any) => (
                   <button key={c.id} onClick={() => setCat(String(c.id))}
-                    className={cn('px-2.5 py-1 rounded-md text-[11px] font-bold transition-all',
-                      !hasBudgetAccess ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
-                      currentCat === String(c.id) ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)]' + (hasBudgetAccess ? ' hover:text-[var(--text-primary)]' : ''))}
-                    title={!hasBudgetAccess ? '예산담당자 또는 지출승인권자만 사용 가능' : undefined}>
+                    className={cn('px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer',
+                      currentCat === String(c.id) ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]')}>
                     {c.name}
                   </button>
                 ))}

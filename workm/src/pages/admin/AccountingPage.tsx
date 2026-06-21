@@ -5,13 +5,11 @@ import { PageHeader } from '../../components/common/PageHeader'
 import { EmptyState } from '../../components/common/EmptyState'
 import { cn } from '../../utils/cn'
 import { getItem, setItem } from '../../utils/storage'
-import { useToastStore } from '../../stores/toastStore'
 import { saveAttachmentImage, deleteAttachmentImage } from '../../utils/attachmentDB'
 import { formatNumber } from '../../utils/format'
 import { AcctBalance } from '../../components/accounting/AcctBalance'
 import { AcctReports } from '../../components/accounting/AcctReports'
 import { PrintApprovalForm } from '../../components/accounting/PrintApprovalForm'
-import { BudgetTreePanel } from './SettingsPage'
 import { useStaffStore } from '../../stores/staffStore'
 import { useAuthStore } from '../../stores/authStore'
 import { CustomSelect } from '../../components/ui/CustomSelect'
@@ -27,153 +25,6 @@ import {
 
 /* ─── 회계 시드 데이터 초기화 ── */
 function initAccountingSeed() {
-  /* ── 기존 계정에 description이 누락된 경우 보충 패치 (early return 이전 실행) ── */
-  if (!localStorage.getItem('_acct_desc_patch_v1')) {
-    const descMap: Record<string, string> = {
-      '1-01-01': '지폐·동전 등 즉시 사용 가능한 통화',
-      '1-01-02': '수표 발행이 가능한 은행 예금',
-      '1-01-03': '수시 입출금 가능한 일반 예금',
-      '1-01-04': '일정 기간 예치 확정금리 예금',
-      '1-01-05': '외화로 보유하는 은행 예금',
-      '1-01-06': '거래처로부터 받은 약속어음·환어음',
-      '1-01-07': '외상 판매로 발생한 매출채권',
-      '1-01-08': '회수 불능 예상액 차감 평가계정',
-      '1-01-09': '1년 이내 회수 예정 대여금',
-      '1-01-10': '영업 외 거래에서 발생한 미수채권',
-      '1-01-11': '발생했으나 미수취한 수익',
-      '1-01-12': '상품·원재료 구입 시 선지급 대금',
-      '1-01-13': '미래 기간 비용을 미리 지급한 금액',
-      '1-01-14': '매입 시 부담한 부가세 환급 대상액',
-      '1-01-15': '판매 목적으로 매입한 완성 상품',
-      '1-01-16': '자사 제조 완성 판매용 제품',
-      '1-01-17': '제품 제조에 투입될 원자재',
-      '1-01-18': '제조 과정 중인 미완성 제품',
-      '1-01-19': '만기 1년 이내 금융상품(CD, MMF 등)',
-      '1-02-01': '사업용 토지(감가상각 대상 아님)',
-      '1-02-02': '사무실·공장·창고 등 사업용 건축물',
-      '1-02-03': '건물의 누적 감가상각액(차감계정)',
-      '1-02-04': '도로·교량·담장 등 토지 정착 구조물',
-      '1-02-05': '구축물의 누적 감가상각액(차감계정)',
-      '1-02-06': '생산·제조에 사용되는 기계 설비',
-      '1-02-07': '기계장치의 누적 감가상각액(차감계정)',
-      '1-02-08': '업무용 자동차·트럭 등 운반 차량',
-      '1-02-09': '차량운반구의 누적 감가상각액(차감계정)',
-      '1-02-10': '사무용 가구·전자기기 등 업무용 비품',
-      '1-02-11': '비품의 누적 감가상각액(차감계정)',
-      '1-02-12': '업무용 SW 라이선스·개발비',
-      '1-02-13': '소프트웨어의 누적 상각액(차감계정)',
-      '1-02-14': '사업 인수 시 초과 지급한 프리미엄',
-      '1-02-15': '1년 초과 장기 대여금',
-      '1-02-16': '임차보증금·전세금 등 반환 예정 보증금',
-      '1-02-17': '만기 1년 초과 금융상품',
-      '1-02-18': '피투자기업에 대한 지분법 적용 주식',
-      '2-01-01': '외상 매입으로 발생한 채무',
-      '2-01-02': '거래처에 발행한 약속어음',
-      '2-01-03': '1년 이내 상환 예정 차입금',
-      '2-01-04': '영업 외 거래에서 발생한 미지급 채무',
-      '2-01-05': '발생했으나 미지급한 비용',
-      '2-01-06': '재화·용역 제공 전 미리 받은 대금',
-      '2-01-07': '미래 기간 수익을 미리 받은 금액',
-      '2-01-08': '일시적으로 보관 중인 타인 자금',
-      '2-01-09': '매출 시 징수한 부가세 납부 대상액',
-      '2-01-10': '급여에서 원천징수한 소득세',
-      '2-01-11': '급여에서 공제한 국민연금·건보·고용·산재',
-      '2-01-12': '1년 내 상환 도래 장기부채 전환분',
-      '2-02-01': '상환기한 1년 초과 장기 차입금',
-      '2-02-02': '퇴직 시 지급 예상 퇴직금 적립액',
-      '2-02-03': '임차인으로부터 받은 보증금(반환 의무)',
-      '2-02-04': '회사가 발행한 채권(회사채)',
-      '3-01-01': '보통주 발행으로 납입된 자본금',
-      '3-01-02': '우선주 발행으로 납입된 자본금',
-      '3-02-01': '주식을 액면가 초과로 발행한 차액',
-      '3-02-02': '자본 감소 시 발생한 차익',
-      '3-03-01': '상법에 의해 의무적으로 적립하는 금액',
-      '3-03-02': '사업 확장 등 목적으로 자발적 적립',
-      '3-03-03': '아직 배당 등 처분되지 않은 이익잉여금',
-      '3-03-04': '해당 회계연도의 최종 순이익',
-      '4-01-01': '매입 상품 판매로 발생한 수익',
-      '4-01-02': '자사 제조 제품 판매 수익',
-      '4-01-03': '서비스(용역) 제공으로 발생한 수익',
-      '4-01-04': '매출 할인·반품 등 매출 차감 항목',
-      '4-02-01': '예금·대여금 등의 이자 수입',
-      '4-02-02': '투자 주식에서 수령한 배당금',
-      '4-02-03': '부동산·자산 임대로 발생한 수익',
-      '4-02-04': '외화 거래 시 유리한 환율 차이 이익',
-      '4-02-05': '외화 자산·부채 환산 시 평가 이익',
-      '4-02-06': '유형자산 장부가 초과 매각 이익',
-      '4-02-07': '기타 소액·비경상적 영업외 수익',
-      '5-01-01': '판매된 상품의 매입 원가',
-      '5-01-02': '판매된 제품의 제조 원가',
-      '5-01-03': '제품 제조에 투입된 원재료 비용',
-      '5-01-04': '제조 현장 근로자의 인건비',
-      '5-01-05': '원재료·노무비 외 제조 관련 간접 비용',
-      '5-01-06': '제조·생산 공정 외부 위탁 가공 비용',
-      '5-02-01': '임직원 기본급·수당 등 급여 총액',
-      '5-02-02': '성과·명절 등 특별 상여금',
-      '5-02-03': '당기 인식 퇴직급여 비용',
-      '5-02-04': '식대·건강검진·경조사비 등 복지 비용',
-      '5-02-05': '출장비·교통비·숙박비 등',
-      '5-02-06': '거래처 접대·선물·식음료 비용',
-      '5-02-07': '전화·인터넷·우편 등 통신 비용',
-      '5-02-08': '수도·가스·난방 등 유틸리티 비용',
-      '5-02-09': '전기 사용 요금',
-      '5-02-10': '재산세·자동차세·각종 공과금',
-      '5-02-11': '유형자산의 내용연수별 가치 감소 비용',
-      '5-02-12': '사무실·장비 등 임차 사용료',
-      '5-02-13': '건물·기계 등 유지보수·수리 비용',
-      '5-02-14': '화재·배상책임 등 각종 보험 납입액',
-      '5-02-15': '업무용 차량 유류비·정비비·주차비',
-      '5-02-16': '연구·개발 활동에 소요되는 경상 비용',
-      '5-02-17': '임직원 교육·연수·자격증 취득 비용',
-      '5-02-18': '서적 구입·명함·인쇄물 제작 비용',
-      '5-02-19': '문구·사무용 소모품 구입 비용',
-      '5-02-20': '일반 소모품 구입 비용',
-      '5-02-21': '세무·법무·은행 등 각종 수수료',
-      '5-02-22': '광고·홍보·마케팅 관련 비용',
-      '5-02-23': '회수 불능 채권의 당기 상각 비용',
-      '5-02-24': '상품·제품 배송·운송 비용',
-      '5-02-25': '기타 소액·분류 불가 판관비',
-      '5-02-26': '시공·관리 등 외부 인력 용역 인건비',
-      '5-03-01': '차입금·사채 등에 대한 이자 지급액',
-      '5-03-02': '외화 거래 시 불리한 환율 차이 손실',
-      '5-03-03': '외화 자산·부채 환산 시 평가 손실',
-      '5-03-04': '공익·자선 목적 기부 지출액',
-      '5-03-05': '유형자산 장부가 미만 매각 손실',
-      '5-03-06': '기타 소액·비경상적 영업외 손실',
-      '5-04-01': '당기 법인세 및 법인지방소득세',
-    }
-    const existing = getItem<any[]>('acct_accounts', [])
-    if (existing.length > 0) {
-      let patched = false
-      const updated = existing.map((a: any) => {
-        if (!a.description && descMap[a.code]) {
-          patched = true
-          return { ...a, description: descMap[a.code] }
-        }
-        return a
-      })
-      if (patched) {
-        setItem('acct_accounts', updated)
-      }
-    }
-    localStorage.setItem('_acct_desc_patch_v1', '1')
-  }
-
-  /* ── 선지출 품의가 approved 상태인 경우 toResolve로 자동 마이그레이션 ── */
-  if (!localStorage.getItem('_acct_preexp_resolve_v1')) {
-    const existingApprovals = getItem<any[]>('acct_approvals', [])
-    let patchedPre = false
-    const updatedApprovals = existingApprovals.map((a: any) => {
-      if (a.status === 'approved' && (a.isPreExpense || (a.title || '').startsWith('[선지출]'))) {
-        patchedPre = true
-        return { ...a, status: 'toResolve' }
-      }
-      return a
-    })
-    if (patchedPre) setItem('acct_approvals', updatedApprovals)
-    localStorage.setItem('_acct_preexp_resolve_v1', '1')
-  }
-
   if (localStorage.getItem('_acct_react_seed_v9')) return
 
   /* ── 계정과목 시드 (버전 변경 시 강제 리셋) ── */
@@ -293,7 +144,6 @@ function initAccountingSeed() {
     ]
     setItem('acct_accounts', defaultAccounts)
   }
-
 
   const uid = () => Date.now().toString(36) + Math.random().toString(36).substring(2, 7)
   const year = new Date().getFullYear()
@@ -487,38 +337,6 @@ interface BudgetCat {
   periodFrom?: string
   periodTo?: string
   users?: string[]  // 지출담당자 (직원 이름 목록)
-  approver?: string  // 승인담당자
-}
-
-interface AccountPoolEntry {
-  accountCode: string
-  contraAccountCode?: string
-}
-interface BudgetDetailDef {
-  id: number
-  name: string
-  parentId: number
-  aliases: string[]
-  accountCode?: string
-  sortOrder: number
-}
-interface BudgetSubDef {
-  id: number
-  name: string
-  parentId: number
-  aliases: string[]
-  accountCode?: string
-  detailItems?: BudgetDetailDef[]
-  sortOrder: number
-}
-interface BudgetItemDef {
-  id: number
-  name: string
-  aliases: string[]
-  accountPool: AccountPoolEntry[]
-  defaultAccountCode?: string
-  subItems: BudgetSubDef[]
-  sortOrder: number
 }
 
 interface BudgetItem {
@@ -527,14 +345,11 @@ interface BudgetItem {
   year?: number
   itemName: string
   subItemName?: string
-  detailItemName?: string
   accountCode?: string
   contraAccountCode?: string
   amount: number
   spent: number
   memo?: string
-  budgetItemDefId?: number
-  budgetSubDefId?: number
 }
 
 interface CashFlow {
@@ -583,10 +398,8 @@ const SUB_PAGES = [
   { key: 'payment',      label: '전표장부',   icon: BookOpen },
   { key: 'reports',      label: '회계현황',   icon: ScrollText },
   { key: 'vendors',      label: '거래처관리',   icon: ContactRound },
-  { key: 'payMethods',   label: '지출수단',   icon: CreditCard },
-  { key: 'budgetTree',   label: '예산과목',   icon: Settings },
+  { key: 'accounts',     label: '계정관리',   icon: Settings2 },
   { key: 'hq_vendor',    label: '본사거래처',   icon: Building2 },
-  { key: 'acct_mgmt',    label: '계정관리',   icon: Settings2 },
 ]
 
 /* ═══════════════════════════════════════════
@@ -652,11 +465,9 @@ export function AccountingPage() {
       {activeSub === 'payment' && <AcctPaymentLedger year={year} />}
       {activeSub === 'reports' && <AcctReports year={year} />}
       {activeSub === 'vendors' && <AcctVendors />}
-      {activeSub === 'payMethods' && <AcctPayMethods catId={selectedOverviewCatId} />}
+      {activeSub === 'accounts' && <AcctAccountsMgmt />}
       {activeSub === 'hq_vendor' && <AcctHQVendor />}
-      {activeSub === 'budgetTree' && <BudgetTreePanel />}
-      {activeSub === 'acct_mgmt' && <AcctAccountsMgmt />}
-      {!['overview','base_budget','budget','balance','approval','expense','income','withdrawal','payment','reports','vendors','payMethods','hq_vendor','budgetTree','acct_mgmt'].includes(activeSub) && (
+      {!['overview','base_budget','budget','balance','approval','expense','income','withdrawal','payment','reports','vendors','accounts','hq_vendor'].includes(activeSub) && (
         <AcctSubPlaceholder
           pageKey={activeSub}
           label={SUB_PAGES.find(s => s.key === activeSub)?.label || ''}
@@ -675,22 +486,9 @@ function AcctOverview({ year, selectedCatId }: { year: number; selectedCatId: st
   const cashflows = useMemo(() => getItem<CashFlow[]>('acct_cashflows', []), [])
   const approvals = useMemo(() => getItem<Approval[]>('acct_approvals', []), [])
   const vouchers = useMemo(() => getItem<Voucher[]>('acct_vouchers', []), [])
-  const user = useAuthStore(s => s.user)
 
   const selectedOverviewCatId = selectedCatId
 
-  // 예산 접근 권한 확인
-  const { hasBudgetAccess, isBudgetApprover } = useMemo(() => {
-    const userName = user?.name || ''
-    const staffList = getItem<any[]>('ws_users', [])
-    const currentStaff = staffList.find(s => s.name === userName)
-    const isApprover = currentStaff?.approverType === 'approver'
-    const isHandler = budgetCats.some(c =>
-      (c.users && c.users.includes(userName)) ||
-      ((c as any).approvers && (c as any).approvers.includes(userName))
-    )
-    return { hasBudgetAccess: isApprover || isHandler, isBudgetApprover: isApprover }
-  }, [user, budgetCats])
 
   const isInYear = (dateStr?: string) => {
     if (!dateStr) return false
@@ -698,12 +496,10 @@ function AcctOverview({ year, selectedCatId }: { year: number; selectedCatId: st
   }
 
   /* ── 연도별 필터 ── */
-  const allYearCats = budgetCats.filter(cat => {
+  const yearCats = budgetCats.filter(cat => {
     const catYear = cat.year || (cat.periodFrom ? parseInt(cat.periodFrom.substring(0, 4)) : new Date().getFullYear())
     return catYear === year
   })
-  // 모든 카테고리 표시 (클릭 가능 여부는 렌더링에서 개별 체크)
-  const yearCats = allYearCats
   const yearCatIds = yearCats.map(c => c.id)
   const yearBudgets = budgets.filter(b => yearCatIds.includes(b.catId))
   const yearCashflows = cashflows.filter(cf => isInYear(cf.date))
@@ -829,40 +625,30 @@ function AcctOverview({ year, selectedCatId }: { year: number; selectedCatId: st
         {/* 예산구분 서브탭 */}
         <div className="flex items-center gap-1 mb-4">
           <button
-            onClick={isBudgetApprover ? () => setOverviewCat(null) : undefined}
+            onClick={() => setOverviewCat(null)}
             className={cn(
-              'px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all border',
-              !isBudgetApprover ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
+              'px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer border',
               !selectedOverviewCatId
                 ? 'bg-primary-500 text-white border-primary-500 shadow-sm'
-                : 'bg-transparent text-[var(--text-muted)] border-[var(--border-default)]' + (isBudgetApprover ? ' hover:border-primary-400' : '')
+                : 'bg-transparent text-[var(--text-muted)] border-[var(--border-default)] hover:border-primary-400'
             )}
-            title={!isBudgetApprover ? '지출승인권자만 사용 가능' : undefined}
           >
             전체
           </button>
-          {yearCats.map(cat => {
-            const userName = user?.name || ''
-            const canAccess = isBudgetApprover ||
-              (cat.users && cat.users.includes(userName)) ||
-              ((cat as any).approvers && (cat as any).approvers.includes(userName))
-            return (
-              <button
-                key={cat.id}
-                onClick={canAccess ? () => setOverviewCat(String(cat.id)) : undefined}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all border',
-                  !canAccess ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
-                  String(selectedOverviewCatId) === String(cat.id)
-                    ? 'bg-primary-500 text-white border-primary-500 shadow-sm'
-                    : 'bg-transparent text-[var(--text-muted)] border-[var(--border-default)]' + (canAccess ? ' hover:border-primary-400' : '')
-                )}
-                title={!canAccess ? '예산담당자 또는 지출승인권자만 사용 가능' : undefined}
-              >
-                {cat.name}
-              </button>
-            )
-          })}
+          {yearCats.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setOverviewCat(String(cat.id))}
+              className={cn(
+                'px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer border',
+                String(selectedOverviewCatId) === String(cat.id)
+                  ? 'bg-primary-500 text-white border-primary-500 shadow-sm'
+                  : 'bg-transparent text-[var(--text-muted)] border-[var(--border-default)] hover:border-primary-400'
+              )}
+            >
+              {cat.name}
+            </button>
+          ))}
         </div>
 
 
@@ -1039,12 +825,6 @@ function AcctOverview({ year, selectedCatId }: { year: number; selectedCatId: st
 function AcctBaseBudget({ year: propYear }: { year: number }) {
   const [searchParams, setSearchParams] = useSearchParams()
   const currentYear = new Date().getFullYear()
-  const user = useAuthStore(s => s.user)
-  const isBudgetApprover = useMemo(() => {
-    const userName = user?.name || ''
-    const sl = getItem<any[]>('ws_users', [])
-    return sl.find(s => s.name === userName)?.approverType === 'approver'
-  }, [user])
 
   /* 내부 탭: budget / balance */
   const [innerTab, setInnerTab] = useState<'budget' | 'balance'>('budget')
@@ -1096,15 +876,13 @@ function AcctBaseBudget({ year: propYear }: { year: number }) {
               📊 예산설정
             </button>
             <button
-              onClick={isBudgetApprover ? () => setInnerTab('balance') : undefined}
+              onClick={() => setInnerTab('balance')}
               className={cn(
-                'px-4 py-2 rounded-lg text-[13px] font-bold transition-all',
-                isBudgetApprover ? 'cursor-pointer' : 'cursor-not-allowed opacity-50',
+                'px-4 py-2 rounded-lg text-[13px] font-bold transition-all cursor-pointer',
                 innerTab === 'balance'
                   ? 'bg-emerald-500 text-white shadow-md'
-                  : 'text-[var(--text-muted)]' + (isBudgetApprover ? ' hover:text-[var(--text-primary)]' : '')
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               )}
-              title={!isBudgetApprover ? '지출승인권자만 사용 가능' : undefined}
             >
               🏦 기초잔액
             </button>
@@ -1117,23 +895,21 @@ function AcctBaseBudget({ year: propYear }: { year: number }) {
             {years.map(y => (
               <button
                 key={y}
-                onClick={isBudgetApprover ? () => setYear(y) : undefined}
+                onClick={() => setYear(y)}
                 className={cn(
-                  'px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all',
-                  isBudgetApprover ? 'cursor-pointer' : 'cursor-not-allowed opacity-50',
+                  'px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all cursor-pointer',
                   y === propYear
                     ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm border border-[var(--border-default)]'
-                    : 'text-[var(--text-muted)]' + (isBudgetApprover ? ' hover:text-[var(--text-primary)]' : '')
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
                 )}
-                title={!isBudgetApprover ? '지출승인권자만 사용 가능' : undefined}
               >
                 {String(y).slice(-2)}년도
               </button>
             ))}
             <button
-              onClick={isBudgetApprover ? addYear : undefined}
-              className={`w-7 h-7 rounded-lg flex items-center justify-center ${isBudgetApprover ? 'text-[var(--text-muted)] hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/30 dark:hover:text-primary-400 cursor-pointer' : 'text-[var(--text-muted)] opacity-50 cursor-not-allowed'} transition-all text-[14px] font-bold`}
-              title={isBudgetApprover ? '연도 추가' : '지출승인권자만 사용 가능'}
+              onClick={addYear}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:bg-primary-100 hover:text-primary-600 dark:hover:bg-primary-900/30 dark:hover:text-primary-400 transition-all cursor-pointer text-[14px] font-bold"
+              title="연도 추가"
             >
               +
             </button>
@@ -1146,15 +922,14 @@ function AcctBaseBudget({ year: propYear }: { year: number }) {
           </button>
           {/* 회계년도 적용 버튼 */}
           <button
-            onClick={isBudgetApprover ? () => {
+            onClick={() => {
               localStorage.setItem('acct_active_year', String(propYear))
               setAppliedYear(propYear)
               const tab = searchParams.get('tab') || 'base_budget'
               const params: Record<string, string> = { tab, year: String(propYear) }
               setSearchParams(params)
-            } : undefined}
-            className={`px-3 py-1.5 rounded-lg text-[12px] font-bold bg-primary-500 text-white border border-primary-500 ${isBudgetApprover ? 'hover:bg-primary-600 cursor-pointer' : 'opacity-50 cursor-not-allowed'} transition-all shadow-sm`}
-            title={!isBudgetApprover ? '지출승인권자만 사용 가능' : undefined}
+            }}
+            className="px-3 py-1.5 rounded-lg text-[12px] font-bold bg-primary-500 text-white border border-primary-500 hover:bg-primary-600 transition-all cursor-pointer shadow-sm"
           >
             회계년도 적용
           </button>
@@ -1178,100 +953,50 @@ function AcctBudget({ year }: { year: number }) {
   const [selectedCatId, setSelectedCatId] = useState<string | number | null>(null)
   const [refresh, setRefresh] = useState(0)
   const staffListForBudget = useStaffStore(s => s.staff).filter(s => !s.resignedAt)
-  const user = useAuthStore(s => s.user)
-  const isBudgetApprover = useMemo(() => {
-    const userName = user?.name || ''
-    const sl = getItem<any[]>('ws_users', [])
-    return sl.find(s => s.name === userName)?.approverType === 'approver'
-  }, [user])
 
   /* ── 모달 상태 ── */
   const [catModalOpen, setCatModalOpen] = useState(false)
   const [catEditId, setCatEditId] = useState<string | number | null>(null)
-  const [catForm, setCatForm] = useState({ name: '', bank: '', accounts: [] as BudgetCatAccount[], periodFrom: `${year}-01-01`, periodTo: `${year}-12-31`, users: [] as string[], approver: '' })
-
-  // 지출수단에서 등록된 계좌+카드 목록
-  const registeredAccounts = useMemo(() => {
-    try {
-      const raw = localStorage.getItem('acct_pay_methods_v2')
-      if (!raw) return []
-      const items = JSON.parse(raw) as any[]
-      return items.filter((i: any) => i.category === '계좌' && (i.bankName || i.accountNumber))
-    } catch { return [] }
-  }, [catModalOpen])
+  const [catForm, setCatForm] = useState({ name: '', bank: '', accounts: [] as BudgetCatAccount[], periodFrom: `${year}-01-01`, periodTo: `${year}-12-31`, users: [] as string[] })
 
   const [budgetModalOpen, setBudgetModalOpen] = useState(false)
   const [budgetEditId, setBudgetEditId] = useState<number | null>(null)
-  const [budgetForm, setBudgetForm] = useState({ itemName: '', subItemName: '', detailItemName: '', accountCode: '', contraAccountCode: '', amount: '', memo: '', budgetItemDefId: undefined as number | undefined, budgetSubDefId: undefined as number | undefined })
+  const [budgetForm, setBudgetForm] = useState({ itemName: '', subItemName: '', accountCode: '', contraAccountCode: '', amount: '', memo: '' })
   const [itemNameSearch, setItemNameSearch] = useState('')
   const [itemNamePopup, setItemNamePopup] = useState(false)
-  const [subNamePopup, setSubNamePopup] = useState(false)
-  const [detailNamePopup, setDetailNamePopup] = useState(false)
   const [acctSearch, setAcctSearch] = useState('')
   const [acctPopup, setAcctPopup] = useState(false)
   const [contraAcctSearch, setContraAcctSearch] = useState('')
   const [contraAcctPopup, setContraAcctPopup] = useState(false)
 
-  /* ── 예산과목 선택 모달 ── */
-  const [budgetPickerOpen, setBudgetPickerOpen] = useState(false)
-  const [pickerChecked, setPickerChecked] = useState<Set<string>>(new Set())
-  const [pickerFilterItem, setPickerFilterItem] = useState<string | null>(null) // 특정 예산목만 표시
-
-  /* ── 인라인 금액 편집 ── */
-  const [editingAmountId, setEditingAmountId] = useState<string | number | null>(null)
-  const [editingAmountVal, setEditingAmountVal] = useState('')
-
-  /* ── 편성/확정 비밀번호 모달 ── */
-  const [budgetStatusModal, setBudgetStatusModal] = useState<{ catId: string | number; catName: string; newStatus: string } | null>(null)
-  const [budgetStatusPw, setBudgetStatusPw] = useState('')
-  const [budgetStatusPwErr, setBudgetStatusPwErr] = useState('')
-
-  /* ── 동의어 변경 ── */
-  const [aliasDropId, setAliasDropId] = useState<string | null>(null) // "item:인건비" / "sub:인건비>기본급" / "det:인건비>기본급>정규직기본급"
-
   /* ── 데이터 ── */
   const budgetCats = useMemo(() => {
     const cats = getItem<BudgetCat[]>('acct_budget_cats', [])
-    const yearCats = cats.filter(cat => {
+    return cats.filter(cat => {
       const catYear = cat.year || (cat.periodFrom ? parseInt(cat.periodFrom.substring(0, 4)) : new Date().getFullYear())
       return catYear === year
     })
-    // 예산승인자/관련자 필터
-    const userName = user?.name || ''
-    const staffList = getItem<any[]>('ws_users', [])
-    const currentStaff = staffList.find(s => s.name === userName)
-    const isBudgetApprover = currentStaff?.approverType === 'approver'
-    if (isBudgetApprover) return yearCats
-    if (userName) {
-      return yearCats.filter(c =>
-        (c.users && c.users.length > 0 && c.users.includes(userName)) ||
-        ((c as any).approvers && (c as any).approvers.length > 0 && (c as any).approvers.includes(userName))
-      )
-    }
-    return yearCats
-  }, [year, refresh, user])
+  }, [year, refresh])
 
   const budgets = useMemo(() => getItem<BudgetItem[]>('acct_budgets', []), [refresh])
   const accounts = useMemo(() => getItem<{ code: string; name: string; type: string; group?: string }[]>('acct_accounts', []), [refresh])
   const expenseAccounts = accounts.filter(a => a.type === 'expense')
   const itemNameHistory = useMemo(() => getItem<string[]>('acct_itemName_history', []), [refresh])
 
-  const budgetItemDefs = useMemo(() => getItem<BudgetItemDef[]>('acct_budget_item_defs', []).sort((a, b) => a.sortOrder - b.sortOrder), [refresh])
-  const allItemNames = useMemo(() => budgetItemDefs.map(d => d.name), [budgetItemDefs])
-  const selectedItemDef = useMemo(() => budgetItemDefs.find(d => d.name === budgetForm.itemName || d.id === budgetForm.budgetItemDefId), [budgetItemDefs, budgetForm.itemName, budgetForm.budgetItemDefId])
-  const availableSubItems = useMemo(() => selectedItemDef?.subItems.sort((a, b) => a.sortOrder - b.sortOrder) || [], [selectedItemDef])
-  const selectedSubDef = useMemo(() => availableSubItems.find(s => s.name === budgetForm.subItemName), [availableSubItems, budgetForm.subItemName])
-  const availableDetailItems = useMemo(() => (selectedSubDef?.detailItems || []).sort((a, b) => a.sortOrder - b.sortOrder), [selectedSubDef])
+  // 기타설정의 예산목과 동일: 히스토리 + 기존 예산 데이터의 itemName 합산
+  const allItemNames = useMemo(() => {
+    return Array.from(new Set([
+      ...budgets.map(b => b.itemName).filter(Boolean),
+      ...itemNameHistory.filter(Boolean),
+    ])).sort()
+  }, [budgets, itemNameHistory])
+
+  // 필터링된 예산목 리스트
   const filteredItemNames = useMemo(() => {
     if (!itemNameSearch.trim()) return allItemNames
     const q = itemNameSearch.toLowerCase()
-    return allItemNames.filter(n => {
-      if (n.toLowerCase().includes(q)) return true
-      const def = budgetItemDefs.find(d => d.name === n)
-      if (def?.aliases.some(a => a.toLowerCase().includes(q))) return true
-      return false
-    })
-  }, [allItemNames, itemNameSearch, budgetItemDefs])
+    return allItemNames.filter(n => n.toLowerCase().includes(q))
+  }, [allItemNames, itemNameSearch])
   const isNewItemName = itemNameSearch.trim() && !allItemNames.includes(itemNameSearch.trim())
 
   // 필터링된 계정과목 리스트
@@ -1293,24 +1018,6 @@ function AcctBudget({ year }: { year: number }) {
   const filtered = selCat ? budgets.filter(b => String(b.catId) === String(selCat.id)) : []
   const totalAmt = filtered.reduce((a, b) => a + (b.amount || 0), 0)
   const totalSpent = filtered.reduce((a, b) => a + (b.spent || 0), 0)
-
-  const budgetTreeGroups = (() => {
-    const grouped = new Map<string, { budgets: typeof filtered; subs: Map<string, { budgets: typeof filtered; details: Map<string, typeof filtered> }> }>()
-    filtered.forEach(b => {
-      const itemKey = b.itemName || '(미분류)'
-      if (!grouped.has(itemKey)) grouped.set(itemKey, { budgets: [] as typeof filtered, subs: new Map() })
-      const itemGroup = grouped.get(itemKey)!
-      itemGroup.budgets.push(b)
-      const subKey = b.subItemName || ''
-      if (!itemGroup.subs.has(subKey)) itemGroup.subs.set(subKey, { budgets: [] as typeof filtered, details: new Map() })
-      const subGroup = itemGroup.subs.get(subKey)!
-      subGroup.budgets.push(b)
-      const detailKey = b.detailItemName || ''
-      if (!subGroup.details.has(detailKey)) subGroup.details.set(detailKey, [] as typeof filtered)
-      subGroup.details.get(detailKey)!.push(b)
-    })
-    return grouped
-  })()
 
   // 계정 타입별 기본 상대계정 자동 추천
   const suggestContraAccount = (code: string): string => {
@@ -1334,11 +1041,11 @@ function AcctBudget({ year }: { year: number }) {
       const c = getItem<BudgetCat[]>('acct_budget_cats', []).find(x => String(x.id) === String(editId))
       if (c) {
         setCatEditId(editId)
-        setCatForm({ name: c.name || '', bank: c.bank || c.bankInfo || '', accounts: c.accounts || (c.bank ? [{ id: Date.now(), bankName: c.bank || c.bankInfo || '', cards: [] }] : []), periodFrom: c.periodFrom || `${year}-01-01`, periodTo: c.periodTo || `${year}-12-31`, users: c.users || [], approver: c.approver || '' })
+        setCatForm({ name: c.name || '', bank: c.bank || c.bankInfo || '', accounts: c.accounts || (c.bank ? [{ id: Date.now(), bankName: c.bank || c.bankInfo || '', cards: [] }] : []), periodFrom: c.periodFrom || `${year}-01-01`, periodTo: c.periodTo || `${year}-12-31`, users: c.users || [] })
       }
     } else {
       setCatEditId(null)
-      setCatForm({ name: '', bank: '', accounts: [], periodFrom: `${year}-01-01`, periodTo: `${year}-12-31`, users: [], approver: '' })
+      setCatForm({ name: '', bank: '', accounts: [], periodFrom: `${year}-01-01`, periodTo: `${year}-12-31`, users: [] })
     }
     setCatModalOpen(true)
   }
@@ -1350,7 +1057,7 @@ function AcctBudget({ year }: { year: number }) {
       const updated = all.map(c => {
         if (String(c.id) !== String(catEditId)) return c
         const y = catForm.periodFrom ? parseInt(catForm.periodFrom.substring(0, 4)) : year
-        return { ...c, name: catForm.name.trim(), bank: catForm.accounts[0]?.bankName || catForm.bank, bankInfo: catForm.accounts[0]?.bankName || catForm.bank, accounts: catForm.accounts, periodFrom: catForm.periodFrom, periodTo: catForm.periodTo, year: y, users: catForm.users, approver: catForm.approver }
+        return { ...c, name: catForm.name.trim(), bank: catForm.accounts[0]?.bankName || catForm.bank, bankInfo: catForm.accounts[0]?.bankName || catForm.bank, accounts: catForm.accounts, periodFrom: catForm.periodFrom, periodTo: catForm.periodTo, year: y, users: catForm.users }
       })
       localStorage.setItem('acct_budget_cats', JSON.stringify(updated))
     } else {
@@ -1365,7 +1072,6 @@ function AcctBudget({ year }: { year: number }) {
         periodTo: catForm.periodTo,
         year: y,
         users: catForm.users,
-        approver: catForm.approver,
       }
       all.push(newCat)
       localStorage.setItem('acct_budget_cats', JSON.stringify(all))
@@ -1392,17 +1098,15 @@ function AcctBudget({ year }: { year: number }) {
       const b = budgets.find(x => x.id === editId)
       if (b) {
         setBudgetEditId(editId)
-        setBudgetForm({ itemName: b.itemName || '', subItemName: b.subItemName || '', detailItemName: (b as any).detailItemName || '', accountCode: b.accountCode || '', contraAccountCode: b.contraAccountCode || '', amount: formatNumber(b.amount), memo: b.memo || '', budgetItemDefId: (b as any).budgetItemDefId, budgetSubDefId: (b as any).budgetSubDefId })
+        setBudgetForm({ itemName: b.itemName || '', subItemName: b.subItemName || '', accountCode: b.accountCode || '', contraAccountCode: b.contraAccountCode || '', amount: formatNumber(b.amount), memo: b.memo || '' })
       }
     } else {
       setBudgetEditId(null)
-      setBudgetForm({ itemName: '', subItemName: '', detailItemName: '', accountCode: '', contraAccountCode: '', amount: '', memo: '', budgetItemDefId: undefined, budgetSubDefId: undefined })
+      setBudgetForm({ itemName: '', subItemName: '', accountCode: '', contraAccountCode: '', amount: '', memo: '' })
     }
     setBudgetModalOpen(true)
     setItemNameSearch('')
     setItemNamePopup(false)
-    setSubNamePopup(false)
-    setDetailNamePopup(false)
     setAcctSearch('')
     setAcctPopup(false)
     setContraAcctSearch('')
@@ -1411,13 +1115,14 @@ function AcctBudget({ year }: { year: number }) {
 
   const saveBudgetItem = () => {
     if (!budgetForm.itemName.trim()) return
+    if (!budgetForm.accountCode) return
     const amt = parseInt(budgetForm.amount.replace(/,/g, '')) || 0
     if (amt <= 0) return
     const all = getItem<BudgetItem[]>('acct_budgets', [])
     if (budgetEditId) {
       const updated = all.map(b => {
         if (b.id !== budgetEditId) return b
-        return { ...b, itemName: budgetForm.itemName.trim(), subItemName: budgetForm.subItemName.trim(), detailItemName: budgetForm.detailItemName.trim(), accountCode: budgetForm.accountCode, contraAccountCode: budgetForm.contraAccountCode, amount: amt, memo: budgetForm.memo, budgetItemDefId: budgetForm.budgetItemDefId, budgetSubDefId: budgetForm.budgetSubDefId }
+        return { ...b, itemName: budgetForm.itemName.trim(), subItemName: budgetForm.subItemName.trim(), accountCode: budgetForm.accountCode, contraAccountCode: budgetForm.contraAccountCode, amount: amt, memo: budgetForm.memo }
       })
       localStorage.setItem('acct_budgets', JSON.stringify(updated))
     } else {
@@ -1427,14 +1132,11 @@ function AcctBudget({ year }: { year: number }) {
         year,
         itemName: budgetForm.itemName.trim(),
         subItemName: budgetForm.subItemName.trim(),
-        detailItemName: budgetForm.detailItemName.trim(),
         accountCode: budgetForm.accountCode,
         contraAccountCode: budgetForm.contraAccountCode,
         amount: amt,
         spent: 0,
         memo: budgetForm.memo,
-        budgetItemDefId: budgetForm.budgetItemDefId,
-        budgetSubDefId: budgetForm.budgetSubDefId,
       })
       localStorage.setItem('acct_budgets', JSON.stringify(all))
     }
@@ -1456,190 +1158,11 @@ function AcctBudget({ year }: { year: number }) {
     setRefresh(r => r + 1)
   }
 
-  /* ── 이름→원래 def 이름 정규화 ── */
-  const normalizeItemName = (name: string) => {
-    const def = budgetItemDefs.find(d => d.name === name || d.aliases.includes(name))
-    return def?.name || name
-  }
-  const normalizeSubName = (itemName: string, subName: string) => {
-    const def = budgetItemDefs.find(d => d.name === itemName || d.aliases.includes(itemName))
-    if (!def) return subName
-    const sub = def.subItems.find(s => s.name === subName || (s.aliases || []).includes(subName))
-    return sub?.name || subName
-  }
-  const normalizeDetName = (itemName: string, subName: string, detName: string) => {
-    const def = budgetItemDefs.find(d => d.name === itemName || d.aliases.includes(itemName))
-    if (!def) return detName
-    const sub = def.subItems.find(s => s.name === subName || (s.aliases || []).includes(subName))
-    if (!sub?.detailItems) return detName
-    const det = sub.detailItems.find(d => d.name === detName || (d.aliases || []).includes(detName))
-    return det?.name || detName
-  }
-  const buildNormalizedKey = (b: BudgetItem) => {
-    const ni = normalizeItemName(b.itemName)
-    if (!b.subItemName) return ni
-    const ns = normalizeSubName(b.itemName, b.subItemName)
-    if (!(b as any).detailItemName) return `${ni}>${ns}`
-    const nd = normalizeDetName(b.itemName, b.subItemName, (b as any).detailItemName)
-    return `${ni}>${ns}>${nd}`
-  }
-
-  /* ── 예산과목 선택 모달 열기 ── */
-  const openBudgetPicker = (filterItemName?: string) => {
-    if (!selCat) return
-    // 이미 등록된 항목들을 체크 상태로 초기화 (정규화된 키 사용)
-    const checked = new Set<string>()
-    filtered.forEach(b => {
-      checked.add(buildNormalizedKey(b))
-    })
-    setPickerChecked(checked)
-    // 필터 이름도 정규화
-    setPickerFilterItem(filterItemName ? normalizeItemName(filterItemName) : null)
-    setBudgetPickerOpen(true)
-  }
-
-  /* ── 예산과목 선택 적용 ── */
-  const applyBudgetPicker = () => {
-    if (!selCat) return
-    const all = getItem<BudgetItem[]>('acct_budgets', [])
-    const catBudgets = all.filter(b => String(b.catId) === String(selCat.id))
-    const otherBudgets = all.filter(b => String(b.catId) !== String(selCat.id))
-
-    // 기존 항목의 정규화된 키 맵
-    const existingKeys = new Map<string, BudgetItem>()
-    catBudgets.forEach(b => {
-      existingKeys.set(buildNormalizedKey(b), b)
-    })
-
-    const newBudgets: BudgetItem[] = []
-    pickerChecked.forEach(key => {
-      if (existingKeys.has(key)) {
-        // 기존 항목 유지 (현재 표시 이름 그대로)
-        newBudgets.push(existingKeys.get(key)!)
-        existingKeys.delete(key)
-      } else {
-        // 새로 추가: 예산과목에서 계정과목 자동 연결
-        const parts = key.split('>')
-        const itemName = parts[0]
-        const subItemName = parts[1] || ''
-        const detailItemName = parts[2] || ''
-        const def = budgetItemDefs.find(d => d.name === itemName)
-        let acctCode = def?.defaultAccountCode || ''
-        let contraAcctCode = def?.accountPool?.[0]?.contraAccountCode || ''
-        if (subItemName && def) {
-          const subDef = def.subItems.find(s => s.name === subItemName)
-          if (subDef?.accountCode) acctCode = subDef.accountCode
-          if (detailItemName && subDef?.detailItems) {
-            const detDef = subDef.detailItems.find(d => d.name === detailItemName)
-            if (detDef?.accountCode) acctCode = detDef.accountCode
-          }
-        }
-        newBudgets.push({
-          id: Date.now() + Math.floor(Math.random() * 10000) + newBudgets.length,
-          catId: selCat.id,
-          year,
-          itemName,
-          subItemName,
-          detailItemName,
-          accountCode: acctCode,
-          contraAccountCode: contraAcctCode,
-          amount: 0,
-          spent: 0,
-          budgetItemDefId: def?.id,
-        })
-      }
-    })
-
-    localStorage.setItem('acct_budgets', JSON.stringify([...otherBudgets, ...newBudgets]))
-    setBudgetPickerOpen(false)
-    setRefresh(r => r + 1)
-  }
-
-  /* ── 인라인 금액 편집 저장 ── */
-  const saveInlineAmount = (budgetId: string | number) => {
-    const amt = parseInt(editingAmountVal.replace(/,/g, '')) || 0
-    const all = getItem<BudgetItem[]>('acct_budgets', [])
-    const updated = all.map(b => b.id === budgetId ? { ...b, amount: amt } : b)
-    localStorage.setItem('acct_budgets', JSON.stringify(updated))
-    setEditingAmountId(null)
-    setEditingAmountVal('')
-    setRefresh(r => r + 1)
-  }
-
   /* ── 금액 포맷 입력 ── */
   const handleAmountInput = (val: string) => {
     const digits = val.replace(/[^\d]/g, '')
     setBudgetForm(f => ({ ...f, amount: digits ? Number(digits).toLocaleString('ko-KR') : '' }))
   }
-
-  /* ── 동의어로 이름 변경 ── */
-  const renameByAlias = (level: 'item' | 'sub' | 'det', origName: string, newName: string, parentItem?: string, parentSub?: string) => {
-    const all = getItem<BudgetItem[]>('acct_budgets', [])
-    const updated = all.map(b => {
-      if (String(b.catId) !== String(selCat?.id)) return b
-      if (level === 'item' && b.itemName === origName) {
-        return { ...b, itemName: newName }
-      }
-      if (level === 'sub' && b.itemName === parentItem && b.subItemName === origName) {
-        return { ...b, subItemName: newName }
-      }
-      if (level === 'det' && b.itemName === parentItem && b.subItemName === parentSub && (b as any).detailItemName === origName) {
-        return { ...b, detailItemName: newName }
-      }
-      return b
-    })
-    localStorage.setItem('acct_budgets', JSON.stringify(updated))
-    setAliasDropId(null)
-    setRefresh(r => r + 1)
-  }
-
-  /* 동의어 목록 가져오기 */
-  const getAliases = (level: 'item' | 'sub' | 'det', name: string, parentItem?: string, parentSub?: string): string[] => {
-    if (level === 'item') {
-      const def = budgetItemDefs.find(d => d.name === name || d.aliases.includes(name))
-      if (!def) return []
-      return [def.name, ...def.aliases].filter(a => a !== name)
-    }
-    if (level === 'sub') {
-      const itemDef = budgetItemDefs.find(d => d.name === parentItem || d.aliases.includes(parentItem || ''))
-      if (!itemDef) return []
-      const subDef = itemDef.subItems.find(s => s.name === name || (s.aliases || []).includes(name))
-      if (!subDef) return []
-      return [subDef.name, ...(subDef.aliases || [])].filter(a => a !== name)
-    }
-    if (level === 'det') {
-      const itemDef = budgetItemDefs.find(d => d.name === parentItem || d.aliases.includes(parentItem || ''))
-      if (!itemDef) return []
-      const subDef = itemDef.subItems.find(s => s.name === parentSub || (s.aliases || []).includes(parentSub || ''))
-      if (!subDef?.detailItems) return []
-      const detDef = subDef.detailItems.find(d => d.name === name || (d.aliases || []).includes(name))
-      if (!detDef) return []
-      return [detDef.name, ...(detDef.aliases || [])].filter(a => a !== name)
-    }
-    return []
-  }
-  /* 지출담당자 여부: 현재 선택 카테고리에 users로 등록된 사용자 */
-  const isExpenseManager = useMemo(() => {
-    if (!selCat) return false
-    const userName = user?.name || ''
-    return selCat.users?.includes(userName) || false
-  }, [selCat, user])
-  /* 예산값 수정 가능 여부: (승인권자 또는 지출담당자) + 확정 아닌 상태 */
-  const isConfirmed = (selCat as any)?.budgetStatus === 'confirmed'
-  const canEditValues = (isBudgetApprover || isExpenseManager) && !isConfirmed
-
-  /* 비승인권자 클릭 차단 핸들러 (구분 추가/삭제 등 구조 변경) */
-  const guardClick = (fn: () => void) => {
-    if (!isBudgetApprover || isConfirmed) return () => {}
-    return fn
-  }
-  const guardBtnClass = (!isBudgetApprover || isConfirmed) ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer'
-  /* 예산값 수정용 핸들러 (승인권자 + 지출담당자 모두 가능) */
-  const guardEditClick = (fn: () => void) => {
-    if (!canEditValues) return () => {}
-    return fn
-  }
-  const guardEditBtnClass = !canEditValues ? ' opacity-50 cursor-not-allowed' : ' cursor-pointer'
 
   return (
     <div className="space-y-4">
@@ -1650,9 +1173,8 @@ function AcctBudget({ year }: { year: number }) {
             <PieChart size={16} className="text-primary-500" /> 예산구분 관리
           </div>
           <button
-            onClick={guardClick(() => openCatModal())}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] font-bold text-[var(--text-secondary)] ${isBudgetApprover ? 'hover:border-primary-400 hover:text-primary-500' : ''} transition-all${guardBtnClass}`}
-            title={!isBudgetApprover ? '지출승인권자만 사용 가능' : undefined}
+            onClick={() => openCatModal()}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] font-bold text-[var(--text-secondary)] hover:border-primary-400 hover:text-primary-500 transition-all cursor-pointer"
           >
             <Plus size={12} /> 구분 추가
           </button>
@@ -1701,32 +1223,19 @@ function AcctBudget({ year }: { year: number }) {
                       <div className="h-full rounded-full" style={{ width: `${Math.min(100, pct)}%`, background: pct > 100 ? '#ef4444' : cc }} />
                     </div>
                   </div>
-                  {/* 수정 / 삭제 / 편성·확정 */}
+                  {/* 수정 / 삭제 */}
                   <div className="flex border-t border-[var(--border-default)]">
                     <button
-                      onClick={e => { e.stopPropagation(); if (isBudgetApprover && (cat as any).budgetStatus !== 'confirmed') openCatModal(cat.id) }}
-                      className={`flex-1 py-2 text-[11px] font-bold text-[var(--text-secondary)] ${isBudgetApprover && (cat as any).budgetStatus !== 'confirmed' ? 'hover:bg-[var(--bg-muted)] cursor-pointer' : 'opacity-50 cursor-not-allowed'} transition-colors border-r border-[var(--border-default)]`}
+                      onClick={e => { e.stopPropagation(); openCatModal(cat.id) }}
+                      className="flex-1 py-2 text-[11px] font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer border-r border-[var(--border-default)]"
                     >
                       수정
                     </button>
                     <button
-                      onClick={e => { e.stopPropagation(); if (isBudgetApprover && (cat as any).budgetStatus !== 'confirmed') deleteCat(cat.id) }}
-                      className={`flex-1 py-2 text-[11px] font-bold text-danger ${isBudgetApprover && (cat as any).budgetStatus !== 'confirmed' ? 'hover:bg-[var(--bg-muted)] cursor-pointer' : 'opacity-50 cursor-not-allowed'} transition-colors border-r border-[var(--border-default)]`}
+                      onClick={e => { e.stopPropagation(); deleteCat(cat.id) }}
+                      className="flex-1 py-2 text-[11px] font-bold text-danger hover:bg-[var(--bg-muted)] transition-colors cursor-pointer"
                     >
                       삭제
-                    </button>
-                    <button
-                      onClick={e => {
-                        e.stopPropagation()
-                        if (!isBudgetApprover) return
-                        const newStatus = (cat as any).budgetStatus === 'confirmed' ? 'drafting' : 'confirmed'
-                        setBudgetStatusModal({ catId: cat.id, catName: cat.name, newStatus })
-                        setBudgetStatusPw('')
-                        setBudgetStatusPwErr('')
-                      }}
-                      className={`flex-1 py-2 text-[11px] font-bold ${(cat as any).budgetStatus === 'confirmed' ? 'text-[#22c55e] bg-green-50 dark:bg-green-900/10' : 'text-[#f59e0b]'} ${isBudgetApprover ? 'hover:bg-[var(--bg-muted)] cursor-pointer' : 'opacity-50 cursor-not-allowed'} transition-colors`}
-                    >
-                      {(cat as any).budgetStatus === 'confirmed' ? '✅ 확정' : '📝 편성'}
                     </button>
                   </div>
                 </div>
@@ -1746,320 +1255,90 @@ function AcctBudget({ year }: { year: number }) {
               <span className="text-[10px] font-bold text-[var(--text-muted)] bg-[var(--bg-muted)] px-2 py-0.5 rounded-full">
                 {filtered.length}건 · {formatNumber(totalAmt)}원
               </span>
-              {isConfirmed && (
-                <span className="text-[10px] font-bold text-[#22c55e] bg-green-100 dark:bg-green-900/20 px-2 py-0.5 rounded-full">✅ 확정됨 · 수정불가</span>
-              )}
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={guardEditClick(() => openBudgetPicker())}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-500 text-white text-[12px] font-bold ${canEditValues ? 'hover:bg-primary-600' : 'opacity-50'} transition-all${guardEditBtnClass}`}
-                title={!canEditValues ? '지출승인권자 또는 지출담당자만 사용 가능' : undefined}
-              >
-                <Plus size={12} /> 예산과목 선택
-              </button>
-            </div>
+            <button
+              onClick={() => openBudgetModal()}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-500 text-white text-[12px] font-bold hover:bg-primary-600 transition-all cursor-pointer"
+            >
+              <Plus size={12} /> 예산 추가
+            </button>
           </div>
 
           {filtered.length === 0 ? (
             <div className="p-8 text-center">
-              <EmptyState emoji="📋" title="예산과목을 선택하세요" />
-              <p className="text-[11px] text-[var(--text-muted)] mt-1">"예산과목 선택" 버튼으로 항목을 추가하세요</p>
+              <EmptyState emoji="💰" title="등록된 예산이 없습니다" />
+              <p className="text-[11px] text-[var(--text-muted)] mt-1">"예산 추가" 버튼을 눌러 등록하세요</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[700px]">
                 <thead>
                   <tr className="bg-[var(--bg-muted)]">
-                    {['예산항목', '자동분개', '편성액', '집행액', '잔여', '소진율', '관리'].map(h => (
+                    {['예산항목', '예산세목', '자동분개', '편성액', '집행액', '잔여', '소진율', '관리'].map(h => (
                       <th key={h} className={cn("py-2.5 px-3.5 text-[11px] font-bold text-[var(--text-muted)]", h === '관리' ? 'text-center w-[80px]' : 'text-left')}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {Array.from(budgetTreeGroups.entries()).map(([itemName, itemGroup]) => {
-                    const itemAmt = itemGroup.budgets.reduce((s: number, b: BudgetItem) => s + (b.amount || 0), 0)
-                    const itemSpent = itemGroup.budgets.reduce((s: number, b: BudgetItem) => s + (b.spent || 0), 0)
-                    const itemRemain = itemAmt - itemSpent
-                    const itemPct = itemAmt > 0 ? Math.round(itemSpent / itemAmt * 100) : 0
-                    const itemColor = itemPct > 100 ? '#ef4444' : itemPct > 80 ? '#f59e0b' : '#4f6ef7'
-                    const hasSubs = itemGroup.subs.size > 1 || (itemGroup.subs.size === 1 && !itemGroup.subs.has(''))
-
-                    const rows: React.ReactNode[] = []
-
-                    {/* ─── 1뎁스: 예산목 소계 ─── */}
-                    rows.push(
-                      <tr key={`item-${itemName}`} className="border-b border-[var(--border-default)] bg-blue-50/40 dark:bg-blue-900/5" onDoubleClick={() => canEditValues && openBudgetPicker(itemName)} style={canEditValues ? { cursor: 'pointer' } : undefined}>
+                  {filtered.map(b => {
+                    const pct = b.amount > 0 ? Math.round((b.spent || 0) / b.amount * 100) : 0
+                    const color = pct > 100 ? '#ef4444' : pct > 80 ? '#f59e0b' : '#4f6ef7'
+                    return (
+                      <tr key={b.id} className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors">
+                        <td className="py-2.5 px-3.5 text-[12px] font-bold text-[var(--text-primary)]">{b.itemName}</td>
+                        <td className="py-2.5 px-3.5 text-[12px] text-[var(--text-secondary)]">{b.subItemName || '-'}</td>
                         <td className="py-2.5 px-3.5">
-                          <div className="relative inline-flex items-center gap-2">
-                            {(() => {
-                              const aliases = getAliases('item', itemName)
-                              const dropKey = `item:${itemName}`
-                              return aliases.length > 0 && isBudgetApprover ? (
-                                <>
-                                  <span
-                                    className="text-[13px] font-extrabold text-[var(--text-primary)] cursor-pointer hover:text-primary-500 transition-colors border-b border-dashed border-transparent hover:border-primary-400"
-                                    onClick={() => setAliasDropId(aliasDropId === dropKey ? null : dropKey)}
-                                  >{itemName}</span>
-                                  {aliasDropId === dropKey && (
-                                    <div className="absolute top-full left-0 mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl shadow-xl z-50 min-w-[160px] py-1">
-                                      {aliases.map(a => (
-                                        <button key={a} onClick={() => renameByAlias('item', itemName, a)} className="w-full text-left px-3 py-1.5 text-[12px] text-[var(--text-secondary)] hover:bg-primary-50 dark:hover:bg-primary-900/10 hover:text-primary-600 transition-colors cursor-pointer">
-                                          {a}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  )}
-                                </>
-                              ) : (
-                                <span className="text-[13px] font-extrabold text-[var(--text-primary)]">{itemName}</span>
-                              )
-                            })()}
-                            {hasSubs && <span className="text-[9px] font-bold text-primary-500 bg-primary-100 dark:bg-primary-900/20 px-1.5 py-0.5 rounded">{itemGroup.subs.size}개 세목</span>}
-                          </div>
-                        </td>
-                        <td className="py-2.5 px-3.5" />
-                        <td className="py-2.5 px-3.5 text-right">
-                          {!hasSubs && itemGroup.budgets.length === 1 && canEditValues ? (
-                            editingAmountId === itemGroup.budgets[0].id ? (
-                              <input
-                                autoFocus
-                                value={editingAmountVal}
-                                onChange={e => {
-                                  const d = e.target.value.replace(/[^\d]/g, '')
-                                  setEditingAmountVal(d ? Number(d).toLocaleString('ko-KR') : '')
-                                }}
-                                onBlur={() => saveInlineAmount(itemGroup.budgets[0].id)}
-                                onKeyDown={e => { if (e.key === 'Enter') saveInlineAmount(itemGroup.budgets[0].id); if (e.key === 'Escape') setEditingAmountId(null) }}
-                                className="w-[120px] px-2 py-1 text-right text-[12px] font-extrabold border border-primary-400 rounded-md bg-white dark:bg-gray-800 outline-none text-[var(--text-primary)]"
-                              />
-                            ) : (
-                              <span
-                                className="text-[12px] font-extrabold text-[var(--text-primary)] cursor-pointer hover:text-primary-500 hover:underline transition-colors"
-                                onClick={() => { setEditingAmountId(itemGroup.budgets[0].id); setEditingAmountVal(formatNumber(itemAmt)) }}
-                              >{formatNumber(itemAmt)}원</span>
-                            )
+                          {b.contraAccountCode && b.accountCode ? (
+                            <div className="flex items-center gap-1 text-[10px]">
+                              <span className="font-bold text-[#4f6ef7]">차</span>
+                              <span className="font-mono text-[var(--text-muted)]">{b.accountCode}</span>
+                              <span className="text-[var(--text-muted)]">→</span>
+                              <span className="font-bold text-[#ef4444]">대</span>
+                              <span className="font-mono text-[var(--text-muted)]">{b.contraAccountCode}</span>
+                            </div>
                           ) : (
-                            <span className="text-[12px] font-extrabold text-[var(--text-primary)]">{formatNumber(itemAmt)}원</span>
+                            <span className="text-[10px] text-[var(--text-muted)]">{b.accountCode || '-'}</span>
                           )}
                         </td>
-                        <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-danger text-right">{formatNumber(itemSpent)}원</td>
-                        <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-right" style={{ color: itemRemain < 0 ? '#ef4444' : '#22c55e' }}>{formatNumber(itemRemain)}원</td>
+                        <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-[var(--text-primary)] text-right">{formatNumber(b.amount)}원</td>
+                        <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-danger text-right">{formatNumber(b.spent || 0)}원</td>
+                        <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-right" style={{ color: (b.amount - (b.spent || 0)) < 0 ? '#ef4444' : '#22c55e' }}>
+                          {formatNumber(b.amount - (b.spent || 0))}원
+                        </td>
                         <td className="py-2.5 px-3.5">
                           <div className="flex items-center gap-2">
                             <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-subtle)] overflow-hidden max-w-[80px]">
-                              <div className="h-full rounded-full" style={{ width: `${Math.min(100, itemPct)}%`, background: itemColor }} />
+                              <div className="h-full rounded-full" style={{ width: `${Math.min(100, pct)}%`, background: color }} />
                             </div>
-                            <span className="text-[11px] font-extrabold" style={{ color: itemColor }}>{itemPct}%</span>
+                            <span className="text-[11px] font-extrabold" style={{ color }}>{pct}%</span>
+                            {pct > 100 && <span className="text-[10px] text-danger font-bold">⚠️</span>}
                           </div>
                         </td>
                         <td className="py-2.5 px-3.5 text-center">
-                          {!hasSubs && itemGroup.budgets.length === 1 && (
-                            <div className="flex items-center justify-center gap-1">
-                              <button onClick={guardClick(() => deleteBudgetItem(itemGroup.budgets[0].id as number))} className={`w-6 h-6 rounded-md flex items-center justify-center text-[var(--text-muted)] ${isBudgetApprover ? 'hover:bg-red-100 hover:text-danger cursor-pointer' : 'opacity-50 cursor-not-allowed'} transition-all`} title="삭제"><Trash2 size={12} /></button>
-                            </div>
-                          )}
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => openBudgetModal(b.id as number)}
+                              className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--text-muted)] hover:bg-primary-100 hover:text-primary-500 transition-all cursor-pointer"
+                              title="수정"
+                            >
+                              <Edit3 size={12} />
+                            </button>
+                            <button
+                              onClick={() => deleteBudgetItem(b.id as number)}
+                              className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--text-muted)] hover:bg-red-100 hover:text-danger transition-all cursor-pointer"
+                              title="삭제"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )
-
-                    {/* ─── 2뎁스: 세목 ─── */}
-                    if (hasSubs) {
-                      Array.from(itemGroup.subs.entries()).forEach(([subName, subGroup]) => {
-                        if (!subName) return
-                        const subAmt = subGroup.budgets.reduce((s: number, b: BudgetItem) => s + (b.amount || 0), 0)
-                        const subSpent = subGroup.budgets.reduce((s: number, b: BudgetItem) => s + (b.spent || 0), 0)
-                        const subRemain = subAmt - subSpent
-                        const subPct = subAmt > 0 ? Math.round(subSpent / subAmt * 100) : 0
-                        const subColor = subPct > 100 ? '#ef4444' : subPct > 80 ? '#f59e0b' : '#22c55e'
-                        const hasDetails = subGroup.details.size > 1 || (subGroup.details.size === 1 && !subGroup.details.has(''))
-
-                        rows.push(
-                          <tr key={`sub-${itemName}-${subName}`} className="border-b border-[var(--border-default)]/50 hover:bg-[var(--bg-muted)] transition-colors">
-                            <td className="py-2 px-3.5 pl-8">
-                              <div className="relative inline-flex items-center gap-1.5">
-                                <span className="text-[10px] text-primary-400">└</span>
-                                {(() => {
-                                  const aliases = getAliases('sub', subName, itemName)
-                                  const dropKey = `sub:${itemName}>${subName}`
-                                  return aliases.length > 0 && isBudgetApprover ? (
-                                    <>
-                                      <span
-                                        className="text-[12px] font-bold text-[var(--text-secondary)] cursor-pointer hover:text-primary-500 transition-colors border-b border-dashed border-transparent hover:border-primary-400"
-                                        onClick={() => setAliasDropId(aliasDropId === dropKey ? null : dropKey)}
-                                      >{subName}</span>
-                                      {aliasDropId === dropKey && (
-                                        <div className="absolute top-full left-4 mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl shadow-xl z-50 min-w-[140px] py-1">
-                                          {aliases.map(a => (
-                                            <button key={a} onClick={() => renameByAlias('sub', subName, a, itemName)} className="w-full text-left px-3 py-1.5 text-[11px] text-[var(--text-secondary)] hover:bg-primary-50 dark:hover:bg-primary-900/10 hover:text-primary-600 transition-colors cursor-pointer">
-                                              {a}
-                                            </button>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <span className="text-[12px] font-bold text-[var(--text-secondary)]">{subName}</span>
-                                  )
-                                })()}
-                                {hasDetails && <span className="text-[8px] font-bold text-violet-500 bg-violet-50 dark:bg-violet-900/20 px-1 py-px rounded">{subGroup.details.size}건</span>}
-                              </div>
-                            </td>
-                            <td className="py-2 px-3.5" />
-                            <td className="py-2 px-3.5 text-right">
-                              {!hasDetails && subGroup.budgets.length === 1 && canEditValues ? (
-                                editingAmountId === subGroup.budgets[0].id ? (
-                                  <input
-                                    autoFocus
-                                    value={editingAmountVal}
-                                    onChange={e => {
-                                      const d = e.target.value.replace(/[^\d]/g, '')
-                                      setEditingAmountVal(d ? Number(d).toLocaleString('ko-KR') : '')
-                                    }}
-                                    onBlur={() => saveInlineAmount(subGroup.budgets[0].id)}
-                                    onKeyDown={e => { if (e.key === 'Enter') saveInlineAmount(subGroup.budgets[0].id); if (e.key === 'Escape') setEditingAmountId(null) }}
-                                    className="w-[110px] px-2 py-0.5 text-right text-[11px] font-bold border border-primary-400 rounded-md bg-white dark:bg-gray-800 outline-none text-[var(--text-primary)]"
-                                  />
-                                ) : (
-                                  <span
-                                    className="text-[11px] font-bold text-[var(--text-secondary)] cursor-pointer hover:text-primary-500 hover:underline transition-colors"
-                                    onClick={() => { setEditingAmountId(subGroup.budgets[0].id); setEditingAmountVal(formatNumber(subAmt)) }}
-                                  >{formatNumber(subAmt)}원</span>
-                                )
-                              ) : (
-                                <span className="text-[11px] font-bold text-[var(--text-secondary)]">{formatNumber(subAmt)}원</span>
-                              )}
-                            </td>
-                            <td className="py-2 px-3.5 text-[11px] font-bold text-danger/80 text-right">{formatNumber(subSpent)}원</td>
-                            <td className="py-2 px-3.5 text-[11px] font-bold text-right" style={{ color: subRemain < 0 ? '#ef4444' : '#22c55e' }}>{formatNumber(subRemain)}원</td>
-                            <td className="py-2 px-3.5">
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 h-1 rounded-full bg-[var(--bg-subtle)] overflow-hidden max-w-[80px]">
-                                  <div className="h-full rounded-full" style={{ width: `${Math.min(100, subPct)}%`, background: subColor }} />
-                                </div>
-                                <span className="text-[10px] font-bold" style={{ color: subColor }}>{subPct}%</span>
-                              </div>
-                            </td>
-                            <td className="py-2 px-3.5 text-center">
-                              {!hasDetails && subGroup.budgets.length === 1 && (
-                                <div className="flex items-center justify-center gap-1">
-                                  <button onClick={guardClick(() => deleteBudgetItem(subGroup.budgets[0].id as number))} className={`w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] ${isBudgetApprover ? 'hover:bg-red-100 hover:text-danger cursor-pointer' : 'opacity-50 cursor-not-allowed'} transition-all`} title="삭제"><Trash2 size={10} /></button>
-                                </div>
-                              )}
-                            </td>
-                          </tr>
-                        )
-
-                        {/* ─── 3뎁스: 세세항목 ─── */}
-                        if (hasDetails) {
-                          Array.from(subGroup.details.entries()).forEach(([detailName, detailBudgets]) => {
-                            if (!detailName) return
-                            const dBudgets = detailBudgets as BudgetItem[]
-                            const detAmt = dBudgets.reduce((s, b) => s + (b.amount || 0), 0)
-                            const detSpent = dBudgets.reduce((s, b) => s + (b.spent || 0), 0)
-                            const detRemain = detAmt - detSpent
-                            const detPct = detAmt > 0 ? Math.round(detSpent / detAmt * 100) : 0
-                            const detColor = detPct > 100 ? '#ef4444' : detPct > 80 ? '#f59e0b' : '#a78bfa'
-                            const firstB = dBudgets[0]
-
-                            rows.push(
-                              <tr key={`det-${itemName}-${subName}-${detailName}`} className="border-b border-dashed border-[var(--border-default)]/30 hover:bg-violet-50/10 dark:hover:bg-violet-900/5 transition-colors">
-                                <td className="py-1.5 px-3.5 pl-14">
-                                  <div className="relative inline-flex items-center gap-1.5">
-                                    <span className="text-[9px] text-violet-400">└</span>
-                                    {(() => {
-                                      const aliases = getAliases('det', detailName, itemName, subName)
-                                      const dropKey = `det:${itemName}>${subName}>${detailName}`
-                                      return aliases.length > 0 && isBudgetApprover ? (
-                                        <>
-                                          <span
-                                            className="text-[11px] font-semibold text-[var(--text-muted)] cursor-pointer hover:text-primary-500 transition-colors border-b border-dashed border-transparent hover:border-primary-400"
-                                            onClick={() => setAliasDropId(aliasDropId === dropKey ? null : dropKey)}
-                                          >{detailName}</span>
-                                          {aliasDropId === dropKey && (
-                                            <div className="absolute top-full left-4 mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl shadow-xl z-50 min-w-[130px] py-1">
-                                              {aliases.map(a => (
-                                                <button key={a} onClick={() => renameByAlias('det', detailName, a, itemName, subName)} className="w-full text-left px-3 py-1.5 text-[10px] text-[var(--text-secondary)] hover:bg-primary-50 dark:hover:bg-primary-900/10 hover:text-primary-600 transition-colors cursor-pointer">
-                                                  {a}
-                                                </button>
-                                              ))}
-                                            </div>
-                                          )}
-                                        </>
-                                      ) : (
-                                        <span className="text-[11px] font-semibold text-[var(--text-muted)]">{detailName}</span>
-                                      )
-                                    })()}
-                                  </div>
-                                </td>
-                                <td className="py-1.5 px-3.5">
-                                  {firstB.contraAccountCode && firstB.accountCode ? (
-                                    <div className="flex items-center gap-1 text-[9px]">
-                                      <span className="font-bold text-[#4f6ef7]">차</span>
-                                      <span className="font-mono text-[var(--text-muted)]">{firstB.accountCode}</span>
-                                      <span className="text-[var(--text-muted)]">→</span>
-                                      <span className="font-bold text-[#ef4444]">대</span>
-                                      <span className="font-mono text-[var(--text-muted)]">{firstB.contraAccountCode}</span>
-                                    </div>
-                                  ) : (
-                                    <span className="text-[9px] text-[var(--text-muted)]">{firstB.accountCode || ''}</span>
-                                  )}
-                                </td>
-                                <td className="py-1.5 px-3.5 text-right">
-                                  {dBudgets.length === 1 && canEditValues ? (
-                                    editingAmountId === dBudgets[0].id ? (
-                                      <input
-                                        autoFocus
-                                        value={editingAmountVal}
-                                        onChange={e => {
-                                          const d = e.target.value.replace(/[^\d]/g, '')
-                                          setEditingAmountVal(d ? Number(d).toLocaleString('ko-KR') : '')
-                                        }}
-                                        onBlur={() => saveInlineAmount(dBudgets[0].id)}
-                                        onKeyDown={e => { if (e.key === 'Enter') saveInlineAmount(dBudgets[0].id); if (e.key === 'Escape') setEditingAmountId(null) }}
-                                        className="w-[100px] px-2 py-0.5 text-right text-[10px] font-semibold border border-primary-400 rounded-md bg-white dark:bg-gray-800 outline-none text-[var(--text-primary)]"
-                                      />
-                                    ) : (
-                                      <span
-                                        className="text-[10px] font-semibold text-[var(--text-muted)] cursor-pointer hover:text-primary-500 hover:underline transition-colors"
-                                        onClick={() => { setEditingAmountId(dBudgets[0].id); setEditingAmountVal(formatNumber(detAmt)) }}
-                                      >{formatNumber(detAmt)}원</span>
-                                    )
-                                  ) : (
-                                    <span className="text-[10px] font-semibold text-[var(--text-muted)]">{formatNumber(detAmt)}원</span>
-                                  )}
-                                </td>
-                                <td className="py-1.5 px-3.5 text-[10px] font-semibold text-danger/60 text-right">{formatNumber(detSpent)}원</td>
-                                <td className="py-1.5 px-3.5 text-[10px] font-semibold text-right" style={{ color: detRemain < 0 ? '#ef4444' : '#22c55e' }}>{formatNumber(detRemain)}원</td>
-                                <td className="py-1.5 px-3.5">
-                                  <div className="flex items-center gap-2">
-                                    <div className="flex-1 h-1 rounded-full bg-[var(--bg-subtle)] overflow-hidden max-w-[80px]">
-                                      <div className="h-full rounded-full" style={{ width: `${Math.min(100, detPct)}%`, background: detColor }} />
-                                    </div>
-                                    <span className="text-[9px] font-bold" style={{ color: detColor }}>{detPct}%</span>
-                                  </div>
-                                </td>
-                                <td className="py-1.5 px-3.5 text-center">
-                                  {dBudgets.length === 1 && (
-                                    <div className="flex items-center justify-center gap-1">
-                                      <button onClick={guardClick(() => deleteBudgetItem(dBudgets[0].id as number))} className={`w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] ${isBudgetApprover ? 'hover:bg-red-100 hover:text-danger cursor-pointer' : 'opacity-50 cursor-not-allowed'} transition-all`} title="삭제"><Trash2 size={10} /></button>
-                                    </div>
-                                  )}
-                                </td>
-                              </tr>
-                            )
-                          })
-                        }
-                      })
-                    }
-
-                    return rows
                   })}
                 </tbody>
                 <tfoot>
                   <tr className="bg-[var(--bg-muted)]">
-                    <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-[var(--text-primary)]">합계</td>
-                    <td />
+                    <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-[var(--text-primary)]" colSpan={2}>합계</td>
                     <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-[var(--text-primary)] text-right">{formatNumber(totalAmt)}원</td>
                     <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-danger text-right">{formatNumber(totalSpent)}원</td>
                     <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-success text-right">{formatNumber(totalAmt - totalSpent)}원</td>
@@ -2074,66 +1353,6 @@ function AcctBudget({ year }: { year: number }) {
           )}
         </div>
       )}
-
-      {/* ═══════════════════════════════════════════
-         모달: 편성/확정 비밀번호 인증
-         ═══════════════════════════════════════════ */}
-      {budgetStatusModal && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={() => setBudgetStatusModal(null)}>
-          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-[380px] mx-4 border border-[var(--border-default)]" onClick={e => e.stopPropagation()}>
-            <div className="px-5 py-4 border-b border-[var(--border-default)]">
-              <h3 className="text-base font-extrabold text-[var(--text-primary)]">
-                {budgetStatusModal.newStatus === 'confirmed' ? '🔒 예산 확정' : '🔓 확정 해제'}
-              </h3>
-              <p className="text-[11px] text-[var(--text-muted)] mt-1">
-                {budgetStatusModal.newStatus === 'confirmed'
-                  ? `"${budgetStatusModal.catName}" 예산을 확정합니다.\n확정 후에는 누구도 예산을 수정·삭제할 수 없습니다.`
-                  : `"${budgetStatusModal.catName}" 예산 확정을 해제합니다.\n편성 상태로 변경하면 수정이 가능해집니다.`}
-              </p>
-            </div>
-            <div className="px-5 py-4 space-y-3">
-              <div>
-                <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">비밀번호 확인 *</label>
-                <input
-                  type="password"
-                  autoFocus
-                  value={budgetStatusPw}
-                  onChange={e => { setBudgetStatusPw(e.target.value); setBudgetStatusPwErr('') }}
-                  onKeyDown={e => { if (e.key === 'Enter') { (e.target as HTMLInputElement).blur(); document.getElementById('btn-budget-status-confirm')?.click() } }}
-                  placeholder="비밀번호를 입력하세요"
-                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none"
-                />
-                {budgetStatusPwErr && <p className="text-[10px] text-danger mt-1">{budgetStatusPwErr}</p>}
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 px-5 py-3 border-t border-[var(--border-default)]">
-              <button
-                onClick={() => setBudgetStatusModal(null)}
-                className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer"
-              >취소</button>
-              <button
-                id="btn-budget-status-confirm"
-                onClick={() => {
-                  if (!budgetStatusPw.trim()) { setBudgetStatusPwErr('비밀번호를 입력해주세요'); return }
-                  const staffList = getItem<any[]>('ws_users', [])
-                  const userName = user?.name || ''
-                  const me = staffList.find(s => s.name === userName)
-                  if (!me || me.pw !== budgetStatusPw) { setBudgetStatusPwErr('비밀번호가 일치하지 않습니다'); return }
-                  const cats = getItem<BudgetCat[]>('acct_budget_cats', [])
-                  const updated = cats.map(c => String(c.id) === String(budgetStatusModal.catId) ? { ...c, budgetStatus: budgetStatusModal.newStatus } : c)
-                  setItem('acct_budget_cats', updated)
-                  setRefresh(r => r + 1)
-                  setBudgetStatusModal(null)
-                  setBudgetStatusPw('')
-                }}
-                className={`px-4 py-2 rounded-lg text-white text-sm font-bold cursor-pointer ${budgetStatusModal.newStatus === 'confirmed' ? 'bg-[#22c55e] hover:bg-[#16a34a]' : 'bg-[#f59e0b] hover:bg-[#d97706]'}`}
-              >
-                {budgetStatusModal.newStatus === 'confirmed' ? '확정' : '해제'}
-              </button>
-            </div>
-          </div>
-        </div>
-      , document.body)}
 
       {/* ═══════════════════════════════════════════
          모달: 예산구분 추가/수정
@@ -2163,110 +1382,75 @@ function AcctBudget({ year }: { year: number }) {
                     통장/계좌
                     {catForm.accounts.length > 0 && <span className="ml-1 text-[9px] bg-blue-100 dark:bg-blue-900/20 text-blue-600 px-1.5 py-0.5 rounded">{catForm.accounts.length}개</span>}
                   </label>
-                  {registeredAccounts.length > 0 ? (
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const availAccts = registeredAccounts.filter((ra: any) => !catForm.accounts.some(a => a.bankName === `${ra.bankName || ''} ${ra.accountNumber || ''}`.trim()))
-                          if (availAccts.length === 0) return
-                          const ra = availAccts[0]
-                          const label = `${ra.bankName || ''} ${ra.accountNumber || ''}`.trim()
-                          setCatForm(f => ({ ...f, accounts: [...f.accounts, { id: Date.now(), bankName: label, cards: [] }] }))
-                        }}
-                        className="text-[10px] font-bold text-primary-500 hover:text-primary-600 cursor-pointer flex items-center gap-0.5"
-                      >
-                        + 계좌 선택
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-[9px] text-[var(--text-muted)]">지출수단에서 계좌를 먼저 등록하세요</span>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setCatForm(f => ({ ...f, accounts: [...f.accounts, { id: Date.now(), bankName: '', cards: [] }] }))}
+                    className="text-[10px] font-bold text-primary-500 hover:text-primary-600 cursor-pointer flex items-center gap-0.5"
+                  >
+                    + 계좌 추가
+                  </button>
                 </div>
                 {catForm.accounts.length === 0 ? (
                   <div className="text-center text-[11px] text-[var(--text-muted)] py-3 border border-dashed border-[var(--border-default)] rounded-lg">등록된 계좌가 없습니다</div>
                 ) : (
                   <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                    {catForm.accounts.map((acct, ai) => {
-                      // 현재 계좌에 매칭되는 등록 계좌 찾기
-                      const matchedRA = registeredAccounts.find((ra: any) => `${ra.bankName || ''} ${ra.accountNumber || ''}`.trim() === acct.bankName)
-                      const availableCards: any[] = matchedRA?.cards || []
-                      return (
-                        <div key={acct.id} className="border border-[var(--border-default)] rounded-lg p-2.5 bg-[var(--bg-muted)]/30">
-                          <div className="flex items-center gap-1.5 mb-1.5">
-                            <span className="text-[9px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-1.5 py-0.5 rounded">계좌 {ai + 1}</span>
-                            <select
-                              value={acct.bankName}
-                              onChange={e => {
-                                const v = e.target.value
-                                setCatForm(f => ({ ...f, accounts: f.accounts.map((a, i) => i === ai ? { ...a, bankName: v, cards: [] } : a) }))
-                              }}
-                              className="flex-1 px-2 py-1.5 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] outline-none focus:border-primary-400"
-                            >
-                              <option value="">계좌 선택</option>
-                              {registeredAccounts.map((ra: any) => {
-                                const label = `${ra.bankName || ''} ${ra.accountNumber || ''}`.trim()
-                                return <option key={ra.id} value={label}>{label}{ra.accountHolder ? ` (${ra.accountHolder})` : ''}</option>
-                              })}
-                            </select>
+                    {catForm.accounts.map((acct, ai) => (
+                      <div key={acct.id} className="border border-[var(--border-default)] rounded-lg p-2.5 bg-[var(--bg-muted)]/30">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <span className="text-[9px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-1.5 py-0.5 rounded">계좌 {ai + 1}</span>
+                          <input
+                            value={acct.bankName}
+                            onChange={e => {
+                              const v = e.target.value
+                              setCatForm(f => ({ ...f, accounts: f.accounts.map((a, i) => i === ai ? { ...a, bankName: v } : a) }))
+                            }}
+                            placeholder="예) 기업은행 10110-11001-12"
+                            className="flex-1 px-2 py-1.5 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] outline-none focus:border-primary-400"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setCatForm(f => ({ ...f, accounts: f.accounts.filter((_, i) => i !== ai) }))}
+                            className="p-1 rounded text-[#ef4444] hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
+                          ><Trash2 size={12} /></button>
+                        </div>
+                        {/* 연결 카드 */}
+                        <div className="pl-4">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[9px] font-bold text-[var(--text-muted)]">연결 카드</span>
                             <button
                               type="button"
-                              onClick={() => setCatForm(f => ({ ...f, accounts: f.accounts.filter((_, i) => i !== ai) }))}
-                              className="p-1 rounded text-[#ef4444] hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
-                            ><Trash2 size={12} /></button>
+                              onClick={() => setCatForm(f => ({ ...f, accounts: f.accounts.map((a, i) => i === ai ? { ...a, cards: [...a.cards, ''] } : a) }))}
+                              className="text-[9px] font-bold text-amber-500 hover:text-amber-600 cursor-pointer"
+                            >+ 카드 추가</button>
                           </div>
-                          {/* 연결 카드 */}
-                          <div className="pl-4">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-[9px] font-bold text-[var(--text-muted)]">연결 카드{acct.cards.length > 0 && <span className="ml-1 text-[9px] bg-amber-100 dark:bg-amber-900/20 text-amber-600 px-1 py-0.5 rounded">{acct.cards.length}</span>}</span>
-                              {(() => {
-                                const unlinked = availableCards.filter((c: any) => !acct.cards.includes(`${c.cardName || ''} ${c.cardNumber || ''}`.trim()))
-                                if (unlinked.length === 0) return null
-                                return (
-                                  <select
-                                    value=""
+                          {acct.cards.length === 0 ? (
+                            <div className="text-[10px] text-[var(--text-muted)]/60 py-1">연결된 카드 없음</div>
+                          ) : (
+                            <div className="space-y-1">
+                              {acct.cards.map((card, ci) => (
+                                <div key={ci} className="flex items-center gap-1">
+                                  <span className="text-[9px] text-amber-500">💳</span>
+                                  <input
+                                    value={card}
                                     onChange={e => {
-                                      if (!e.target.value) return
-                                      setCatForm(f => ({
-                                        ...f,
-                                        accounts: f.accounts.map((a, i) => i === ai ? { ...a, cards: [...a.cards, e.target.value] } : a)
-                                      }))
+                                      const v = e.target.value
+                                      setCatForm(f => ({ ...f, accounts: f.accounts.map((a, i) => i === ai ? { ...a, cards: a.cards.map((c, j) => j === ci ? v : c) } : a) }))
                                     }}
-                                    className="text-[9px] font-bold text-amber-500 bg-transparent border border-amber-200 dark:border-amber-800 rounded px-1.5 py-0.5 cursor-pointer outline-none"
-                                  >
-                                    <option value="">+ 카드 연결</option>
-                                    {unlinked.map((card: any) => {
-                                      const cardLabel = `${card.cardName || ''} ${card.cardNumber || ''}`.trim()
-                                      return <option key={card.id} value={cardLabel}>{card.cardName || '카드'} {card.cardNumber || ''} {card.cardUser ? `(${card.cardUser})` : ''}</option>
-                                    })}
-                                  </select>
-                                )
-                              })()}
+                                    placeholder="카드번호 또는 카드명"
+                                    className="flex-1 px-2 py-1 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[11px] text-[var(--text-primary)] outline-none focus:border-amber-400"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setCatForm(f => ({ ...f, accounts: f.accounts.map((a, i) => i === ai ? { ...a, cards: a.cards.filter((_, j) => j !== ci) } : a) }))}
+                                    className="p-0.5 rounded text-[#ef4444] hover:bg-red-50 cursor-pointer"
+                                  ><X size={10} /></button>
+                                </div>
+                              ))}
                             </div>
-                            {acct.cards.length === 0 ? (
-                              <div className="text-[10px] text-[var(--text-muted)]/60 py-1">{acct.bankName ? (availableCards.length > 0 ? '연결된 카드 없음' : '등록된 카드 없음') : '계좌를 먼저 선택하세요'}</div>
-                            ) : (
-                              <div className="space-y-1">
-                                {acct.cards.map((cardLabel, ci) => (
-                                  <div key={ci} className="flex items-center gap-1.5 text-[11px] text-[var(--text-primary)] bg-amber-50/50 dark:bg-amber-900/10 rounded px-2 py-1">
-                                    <span className="text-[9px] text-amber-500">💳</span>
-                                    <span className="flex-1">{cardLabel}</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => setCatForm(f => ({
-                                        ...f,
-                                        accounts: f.accounts.map((a, i) => i === ai ? { ...a, cards: a.cards.filter((_, j) => j !== ci) } : a)
-                                      }))}
-                                      className="p-0.5 rounded text-[#ef4444] hover:bg-red-50 cursor-pointer"
-                                    ><X size={10} /></button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
+                          )}
                         </div>
-                      )
-                    })}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -2284,49 +1468,38 @@ function AcctBudget({ year }: { year: number }) {
               <div>
                 <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1.5 block">
                   지출담당자
+                  {catForm.users.length > 0 && <span className="ml-1.5 text-[9px] bg-primary-100 dark:bg-primary-900/20 text-primary-600 px-1.5 py-0.5 rounded">{catForm.users.length}명</span>}
                 </label>
-                <select
-                  value={catForm.users[0] || ''}
-                  onChange={e => {
-                    setCatForm(f => ({ ...f, users: e.target.value ? [e.target.value] : [] }))
-                  }}
-                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors"
-                >
-                  <option value="">선택하세요</option>
-                  {staffListForBudget.map(s => (
-                    <option key={s.id || s.name} value={s.name}>{s.name} {s.position || ''} {s.department || ''}</option>
-                  ))}
-                </select>
-              </div>
-              {/* 승인담당자 */}
-              <div>
-                <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1.5 block">
-                  승인담당자
-                </label>
-                {(() => {
-                  const defaultApprover = staffListForBudget.find(s => (s as any).approverType === 'approver')
-                  return defaultApprover ? (
-                    <div className="flex items-center gap-2 px-3 py-2 mb-2 rounded-lg bg-primary-50 dark:bg-primary-900/10 border border-primary-200 dark:border-primary-800">
-                      <span className="text-[10px] font-bold text-primary-500 bg-primary-100 dark:bg-primary-900/20 px-1.5 py-0.5 rounded">기본</span>
-                      <span className="text-[13px] font-bold text-primary-600">{defaultApprover.name}</span>
-                      <span className="text-[10px] text-[var(--text-muted)]">{defaultApprover.position || ''} {defaultApprover.department || ''}</span>
-                    </div>
+                <div className="border border-[var(--border-default)] rounded-lg max-h-[140px] overflow-y-auto p-1.5">
+                  {staffListForBudget.length === 0 ? (
+                    <div className="text-center text-[11px] text-[var(--text-muted)] py-2">등록된 직원이 없습니다</div>
                   ) : (
-                    <div className="text-[11px] text-[var(--text-muted)] px-3 py-2 mb-2 rounded-lg border border-dashed border-[var(--border-default)]">기본승인담당자가 설정되지 않았습니다</div>
-                  )
-                })()}
-                <select
-                  value={catForm.approver}
-                  onChange={e => {
-                    setCatForm(f => ({ ...f, approver: e.target.value }))
-                  }}
-                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors"
-                >
-                  <option value="">추가승인담당자를 선택하세요</option>
-                  {staffListForBudget.filter(s => (s as any).approverType !== 'approver').map(s => (
-                    <option key={s.id || s.name} value={s.name}>{s.name} {s.position || ''} {s.department || ''}</option>
-                  ))}
-                </select>
+                    staffListForBudget.map(s => {
+                      const checked = catForm.users.includes(s.name)
+                      return (
+                        <label key={s.id || s.name}
+                          className={cn('flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors text-[12px]',
+                            checked ? 'bg-primary-50 dark:bg-primary-900/10' : 'hover:bg-[var(--bg-muted)]'
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              setCatForm(f => ({
+                                ...f,
+                                users: checked ? f.users.filter(u => u !== s.name) : [...f.users, s.name]
+                              }))
+                            }}
+                            className="accent-primary-500 w-3.5 h-3.5"
+                          />
+                          <span className={cn('font-bold', checked ? 'text-primary-600' : 'text-[var(--text-primary)]')}>{s.name}</span>
+                          <span className="text-[10px] text-[var(--text-muted)]">{s.position || ''} {s.department || ''}</span>
+                        </label>
+                      )
+                    })
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 px-5 py-3 border-t border-[var(--border-default)]">
@@ -2384,14 +1557,10 @@ function AcctBudget({ year }: { year: number }) {
                 {itemNamePopup && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl shadow-xl z-50 max-h-[220px] overflow-hidden">
                     <div className="max-h-[200px] overflow-y-auto p-1.5">
-                      {filteredItemNames.map(name => {
-                        const def = budgetItemDefs.find(d => d.name === name)
-                        return (
+                      {filteredItemNames.map(name => (
                         <button key={name}
                           onClick={() => {
-                            const acctCode = def?.defaultAccountCode || ''
-                            const contraCode = def?.accountPool?.[0]?.contraAccountCode || (acctCode ? suggestContraAccount(acctCode) : '')
-                            setBudgetForm(f => ({ ...f, itemName: name, subItemName: '', detailItemName: '', budgetItemDefId: def?.id, accountCode: acctCode, contraAccountCode: contraCode }))
+                            setBudgetForm(f => ({ ...f, itemName: name }))
                             setItemNameSearch(name)
                             setItemNamePopup(false)
                           }}
@@ -2399,10 +1568,8 @@ function AcctBudget({ year }: { year: number }) {
                             budgetForm.itemName === name ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 font-bold' : 'hover:bg-[var(--bg-muted)] text-[var(--text-secondary)]')}
                         >
                           {name}
-                          {def && <span className="ml-1 text-[9px] text-[var(--text-muted)]">({def.subItems.length}개 세목)</span>}
                         </button>
-                        )
-                      })}
+                      ))}
                       {filteredItemNames.length === 0 && budgetForm.itemName.trim() && (
                         <div className="text-center text-xs py-3 space-y-1">
                           <div className="text-emerald-500 font-bold">✨ "{budgetForm.itemName.trim()}"</div>
@@ -2417,45 +1584,7 @@ function AcctBudget({ year }: { year: number }) {
                 )}
               </div>
 
-
-              {/* 예산세목 드롭다운 */}
-              {availableSubItems.length > 0 && (
-              <div className="relative">
-                <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">예산세목</label>
-                <div
-                  onClick={() => { setSubNamePopup(!subNamePopup); setItemNamePopup(false); setDetailNamePopup(false) }}
-                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm cursor-pointer hover:border-primary-400 transition-colors min-h-[40px] flex items-center"
-                >
-                  {budgetForm.subItemName ? (
-                    <span className="text-[var(--text-primary)] font-semibold">{budgetForm.subItemName}</span>
-                  ) : (
-                    <span className="text-[var(--text-muted)]">세목을 선택하세요</span>
-                  )}
-                </div>
-                {subNamePopup && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl shadow-xl z-50 max-h-[220px] overflow-hidden">
-                    <div className="max-h-[200px] overflow-y-auto p-1.5">
-                      {availableSubItems.map(sub => (
-                        <button key={sub.id}
-                          onClick={() => {
-                            const acctCode = sub.accountCode || selectedItemDef?.defaultAccountCode || budgetForm.accountCode
-                            const contraCode = selectedItemDef?.accountPool?.find(p => p.accountCode === acctCode)?.contraAccountCode || budgetForm.contraAccountCode
-                            setBudgetForm(f => ({ ...f, subItemName: sub.name, detailItemName: '', budgetSubDefId: sub.id, accountCode: acctCode, contraAccountCode: contraCode }))
-                            setSubNamePopup(false)
-                          }}
-                          className={cn('w-full text-left text-[12px] px-3 py-2 rounded-lg cursor-pointer transition-colors',
-                            budgetForm.subItemName === sub.name ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 font-bold' : 'hover:bg-[var(--bg-muted)] text-[var(--text-secondary)]')}
-                        >
-                          {sub.name}
-                          {sub.detailItems && sub.detailItems.length > 0 && <span className="ml-1 text-[9px] text-[var(--text-muted)]">({sub.detailItems.length}개 세세항목)</span>}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              )}
-              {availableSubItems.length === 0 && (
+              {/* 예산세목 입력 */}
               <div>
                 <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">예산세목</label>
                 <input
@@ -2465,72 +1594,188 @@ function AcctBudget({ year }: { year: number }) {
                   className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors"
                 />
               </div>
-              )}
 
-              {/* 세세항목 드롭다운 */}
-              {availableDetailItems.length > 0 && (
+              {/* 계정과목 - 검색 콤보박스 */}
               <div className="relative">
-                <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">세세항목</label>
+                <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">계정과목 *</label>
                 <div
-                  onClick={() => { setDetailNamePopup(!detailNamePopup); setSubNamePopup(false); setItemNamePopup(false) }}
+                  onClick={() => { setAcctPopup(!acctPopup); setItemNamePopup(false) }}
                   className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm cursor-pointer hover:border-primary-400 transition-colors min-h-[40px] flex items-center"
                 >
-                  {budgetForm.detailItemName ? (
-                    <span className="text-[var(--text-primary)] font-semibold">{budgetForm.detailItemName}</span>
+                  {budgetForm.accountCode ? (
+                    <span className="text-[var(--text-primary)] font-semibold">
+                      <span className="text-primary-500 font-mono">{budgetForm.accountCode}</span>
+                      {' '}{accounts.find(a => a.code === budgetForm.accountCode)?.name || ''}
+                    </span>
                   ) : (
-                    <span className="text-[var(--text-muted)]">세세항목을 선택하세요</span>
+                    <span className="text-[var(--text-muted)]">계정과목을 선택하세요</span>
                   )}
                 </div>
-                {detailNamePopup && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl shadow-xl z-50 max-h-[220px] overflow-hidden">
-                    <div className="max-h-[200px] overflow-y-auto p-1.5">
-                      {availableDetailItems.map(det => (
-                        <button key={det.id}
+                {acctPopup && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl shadow-xl z-50 max-h-[280px] overflow-hidden">
+                    <div className="p-2 border-b border-[var(--border-default)]">
+                      <input
+                        value={acctSearch}
+                        onChange={e => setAcctSearch(e.target.value)}
+                        placeholder="코드 또는 이름으로 검색..."
+                        className="w-full px-3 py-1.5 text-xs rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-[var(--text-primary)] outline-none focus:border-primary-400"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="max-h-[220px] overflow-y-auto p-1.5">
+                      {filteredAccounts.map(a => (
+                        <button key={a.code}
                           onClick={() => {
-                            const acctCode = det.accountCode || selectedSubDef?.accountCode || selectedItemDef?.defaultAccountCode || budgetForm.accountCode
-                            const contraCode = selectedItemDef?.accountPool?.find(p => p.accountCode === acctCode)?.contraAccountCode || budgetForm.contraAccountCode
-                            setBudgetForm(f => ({ ...f, detailItemName: det.name, accountCode: acctCode, contraAccountCode: contraCode }))
-                            setDetailNamePopup(false)
+                            const contra = suggestContraAccount(a.code)
+                            setBudgetForm(f => ({ ...f, accountCode: a.code, contraAccountCode: contra }))
+                            setAcctPopup(false)
+                            setAcctSearch('')
                           }}
-                          className={cn('w-full text-left text-[12px] px-3 py-2 rounded-lg cursor-pointer transition-colors',
-                            budgetForm.detailItemName === det.name ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 font-bold' : 'hover:bg-[var(--bg-muted)] text-[var(--text-secondary)]')}
+                          className={cn('w-full text-left text-[12px] px-3 py-2 rounded-lg cursor-pointer transition-colors flex items-center gap-2',
+                            budgetForm.accountCode === a.code ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 font-bold' : 'hover:bg-[var(--bg-muted)] text-[var(--text-secondary)]')}
                         >
-                          {det.name}
+                          <span className="font-mono text-primary-500 text-[11px] font-bold w-[40px] shrink-0">{a.code}</span>
+                          <span className="flex-1">{a.name}</span>
+                          <span className="text-[9px] text-[var(--text-muted)] shrink-0">{a.group || a.type}</span>
                         </button>
                       ))}
+                      {filteredAccounts.length === 0 && (
+                        <div className="text-center text-xs text-[var(--text-muted)] py-3">검색 결과가 없습니다</div>
+                      )}
                     </div>
                   </div>
                 )}
               </div>
-              )}
 
-              {/* 계정과목/상대계정 - 자동 읽기전용 */}
-              {budgetForm.accountCode && (
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 flex items-center gap-1">
-                      계정과목
-                      <span className="text-[8px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">⚙ 자동</span>
-                    </label>
-                    <div className="w-full px-3 py-2.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/30 dark:bg-emerald-900/10 text-sm min-h-[40px] flex items-center">
-                      <span className="text-primary-500 font-mono font-bold text-[11px]">{budgetForm.accountCode}</span>
-                      <span className="ml-1.5 text-[var(--text-primary)] font-semibold">{accounts.find(a => a.code === budgetForm.accountCode)?.name || ''}</span>
-                    </div>
-                  </div>
-                  {budgetForm.contraAccountCode && (
-                    <div className="flex-1">
-                      <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 flex items-center gap-1">
-                        상대계정
-                        <span className="text-[8px] font-bold text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded">⚙ 자동</span>
-                      </label>
-                      <div className="w-full px-3 py-2.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/30 dark:bg-amber-900/10 text-sm min-h-[40px] flex items-center">
-                        <span className="text-amber-600 font-mono font-bold text-[11px]">{budgetForm.contraAccountCode}</span>
-                        <span className="ml-1.5 text-[var(--text-primary)] font-semibold">{accounts.find(a => a.code === budgetForm.contraAccountCode)?.name || ''}</span>
-                      </div>
-                    </div>
+              {/* 자동분개: 상대계정(대변) 선택 */}
+              <div className="relative">
+                <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 flex items-center gap-1">
+                  상대계정 (대변)
+                  <span className="text-[9px] font-normal text-[var(--text-muted)]">— 자동분개</span>
+                  {budgetForm.contraAccountCode && budgetForm.accountCode && budgetForm.contraAccountCode === suggestContraAccount(budgetForm.accountCode) && (
+                    <span className="text-[8px] font-bold text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded">⚙ 시스템 추천</span>
+                  )}
+                  {budgetForm.contraAccountCode && budgetForm.accountCode && budgetForm.contraAccountCode !== suggestContraAccount(budgetForm.accountCode) && (
+                    <span className="text-[8px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">✎ 사용자 설정</span>
+                  )}
+                </label>
+                <div
+                  onClick={() => { setContraAcctPopup(!contraAcctPopup); setAcctPopup(false); setItemNamePopup(false) }}
+                  className={cn(
+                    'w-full px-3 py-2.5 rounded-lg border bg-[var(--bg-surface)] text-sm cursor-pointer hover:border-primary-400 transition-colors min-h-[40px] flex items-center',
+                    budgetForm.contraAccountCode ? 'border-amber-300 dark:border-amber-600' : 'border-[var(--border-default)]'
+                  )}
+                >
+                  {budgetForm.contraAccountCode ? (
+                    <span className="text-[var(--text-primary)] font-semibold flex items-center gap-1.5">
+                      <span className="text-amber-500 font-mono text-[11px] font-bold">{budgetForm.contraAccountCode}</span>
+                      {accounts.find(a => a.code === budgetForm.contraAccountCode)?.name || ''}
+                      <button onClick={e => { e.stopPropagation(); setBudgetForm(f => ({ ...f, contraAccountCode: '' })) }}
+                        className="ml-1 text-[var(--text-muted)] hover:text-danger text-xs cursor-pointer">✕</button>
+                    </span>
+                  ) : (
+                    <span className="text-[var(--text-muted)]">상대계정을 선택하세요 (선택)</span>
                   )}
                 </div>
-              )}
+                {budgetForm.contraAccountCode && budgetForm.accountCode && (
+                  <div className="mt-1.5 p-2 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30">
+                    <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400 mb-1">⚡ 자동분개 미리보기</div>
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <span className="font-bold text-[#4f6ef7]">차변</span>
+                      <span className="font-mono text-[var(--text-secondary)]">{budgetForm.accountCode} {accounts.find(a => a.code === budgetForm.accountCode)?.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <span className="font-bold text-[#ef4444]">대변</span>
+                      <span className="font-mono text-[var(--text-secondary)]">{budgetForm.contraAccountCode} {accounts.find(a => a.code === budgetForm.contraAccountCode)?.name}</span>
+                    </div>
+                  </div>
+                )}
+                {contraAcctPopup && (() => {
+                  const mainAcct = accounts.find(x => x.code === budgetForm.accountCode)
+                  const mainType = mainAcct?.type || 'expense'
+                  const isMainDebit = ['asset', 'expense'].includes(mainType)
+                  const mainName = mainAcct?.name || budgetForm.accountCode
+                  const headerText = mainAcct
+                    ? (mainType === 'asset' ? `💰 ${mainName} 들어올 때 · 나갈 때`
+                      : mainType === 'expense' ? `📤 ${mainName} 지출할 때`
+                      : mainType === 'revenue' ? `💵 ${mainName} 발생할 때`
+                      : `${mainName} 거래 시`)
+                    : '상대계정 선택'
+                  const getSit = (contra: typeof mainAcct) => {
+                    if (!contra || !mainAcct) return ''
+                    const ct = contra.type
+                    if (mainType === 'asset' && ct === 'revenue') return `${contra.name} 발생 → ${mainName} 입금`
+                    if (mainType === 'asset' && ct === 'liability') return `${contra.name} 발생/증가`
+                    if (mainType === 'asset' && ct === 'asset') return `${contra.name}에서 이동`
+                    if (mainType === 'expense' && ct === 'asset') return `${contra.name}에서 출금`
+                    if (mainType === 'expense' && ct === 'liability') return `${contra.name}으로 미지급`
+                    if (mainType === 'revenue' && ct === 'asset') return `${contra.name}으로 수령`
+                    return `${contra.name} 거래`
+                  }
+                  // 비활성 계정 제외
+                  const list = filteredContraAccounts.filter(x => x.active !== false)
+                  return (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl shadow-xl z-50 overflow-hidden">
+                    {/* 헤더 */}
+                    <div className="px-3 py-2 border-b border-[var(--border-default)] bg-[var(--bg-muted)]/50 flex items-center justify-between">
+                      <div className="text-[11px] font-bold text-[var(--text-primary)]">{headerText}</div>
+                      <button onClick={() => setContraAcctPopup(false)} className="p-1 rounded hover:bg-[var(--bg-muted)] text-[var(--text-muted)] cursor-pointer">
+                        <X size={14} />
+                      </button>
+                    </div>
+                    {/* 검색 */}
+                    <div className="p-2 border-b border-[var(--border-default)]">
+                      <input
+                        value={contraAcctSearch}
+                        onChange={e => setContraAcctSearch(e.target.value)}
+                        placeholder="코드 또는 이름으로 검색..."
+                        className="w-full px-3 py-1.5 text-xs rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-[var(--text-primary)] outline-none focus:border-primary-400"
+                        autoFocus
+                      />
+                    </div>
+                    {/* 테이블 헤더 */}
+                    <div className="flex border-b border-[var(--border-default)]">
+                      <div className="w-[100px] shrink-0 px-2 py-1 bg-blue-50 dark:bg-blue-900/10">
+                        <span className="text-[9px] font-bold text-[#4f6ef7]">차변</span>
+                      </div>
+                      <div className="w-[100px] shrink-0 px-2 py-1 bg-red-50 dark:bg-red-900/10 border-l border-[var(--border-default)]">
+                        <span className="text-[9px] font-bold text-[#ef4444]">대변</span>
+                      </div>
+                      <div className="flex-1 px-2 py-1 bg-amber-50 dark:bg-amber-900/10 border-l border-[var(--border-default)]">
+                        <span className="text-[9px] font-bold text-amber-600">상황</span>
+                      </div>
+                    </div>
+                    {/* 목록 */}
+                    <div className="max-h-[200px] overflow-y-auto">
+                      {list.map(ca => (
+                        <div key={ca.code}
+                          onClick={() => {
+                            setBudgetForm(f => ({ ...f, contraAccountCode: ca.code }))
+                            setContraAcctPopup(false)
+                            setContraAcctSearch('')
+                          }}
+                          className={cn('flex items-center border-b border-[var(--border-default)] last:border-0 cursor-pointer transition-colors',
+                            budgetForm.contraAccountCode === ca.code ? 'bg-amber-50 dark:bg-amber-900/20' : 'hover:bg-[var(--bg-muted)]/50')}
+                        >
+                          <div className="w-[100px] shrink-0 px-2 py-1.5">
+                            <div className="text-[10px] font-bold text-[#4f6ef7] truncate">{isMainDebit ? mainName : ca.name}</div>
+                          </div>
+                          <div className="w-[100px] shrink-0 px-2 py-1.5 border-l border-[var(--border-default)]">
+                            <div className="text-[10px] font-bold text-[#ef4444] truncate">{isMainDebit ? ca.name : mainName}</div>
+                          </div>
+                          <div className="flex-1 px-2 py-1.5 border-l border-[var(--border-default)]">
+                            <div className="text-[9px] text-[var(--text-secondary)] truncate">{getSit(ca)}</div>
+                          </div>
+                        </div>
+                      ))}
+                      {list.length === 0 && (
+                        <div className="text-center text-xs text-[var(--text-muted)] py-3">검색 결과가 없습니다</div>
+                      )}
+                    </div>
+                  </div>
+                  )
+                })()}
+              </div>
 
               <div>
                 <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">연간 예산액 (원) *</label>
@@ -2559,125 +1804,6 @@ function AcctBudget({ year }: { year: number }) {
           </div>
         </div>
       , document.body)}
-
-      {/* ═══════════════════════════════════════════
-         모달: 예산과목 선택 (체크리스트)
-         ═══════════════════════════════════════════ */}
-      {budgetPickerOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={() => setBudgetPickerOpen(false)}>
-          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-[500px] mx-4 border border-[var(--border-default)] max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-default)]">
-              <div>
-                <h3 className="text-base font-extrabold text-[var(--text-primary)]">📋 {pickerFilterItem ? `${pickerFilterItem} — 세목 선택` : '예산과목 선택'}</h3>
-                <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{pickerFilterItem ? '이 예산목의 세목을 선택하세요' : '체크한 항목이 예산으로 등록됩니다'}</p>
-              </div>
-              <button onClick={() => setBudgetPickerOpen(false)} className="text-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer">✕</button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-5 py-3 space-y-1">
-              {budgetItemDefs.filter(def => !pickerFilterItem || def.name === pickerFilterItem || def.aliases.includes(pickerFilterItem)).map(def => {
-                const itemKey = def.name
-                const hasSub = def.subItems && def.subItems.length > 0
-                // 모든 하위 키 수집
-                const allChildKeys: string[] = []
-                if (hasSub) {
-                  def.subItems.forEach(sub => {
-                    if (sub.detailItems && sub.detailItems.length > 0) {
-                      sub.detailItems.forEach(det => allChildKeys.push(`${def.name}>${sub.name}>${det.name}`))
-                    } else {
-                      allChildKeys.push(`${def.name}>${sub.name}`)
-                    }
-                  })
-                }
-                const allChecked = hasSub ? allChildKeys.every(k => pickerChecked.has(k)) : pickerChecked.has(itemKey)
-                const someChecked = hasSub ? allChildKeys.some(k => pickerChecked.has(k)) : false
-
-                return (
-                  <div key={def.id}>
-                    {/* 예산목 */}
-                    <label className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-[var(--bg-muted)] transition-colors cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={allChecked}
-                        ref={el => { if (el) el.indeterminate = !allChecked && someChecked }}
-                        onChange={() => {
-                          const next = new Set(pickerChecked)
-                          if (allChecked) {
-                            if (hasSub) allChildKeys.forEach(k => next.delete(k))
-                            else next.delete(itemKey)
-                          } else {
-                            if (hasSub) allChildKeys.forEach(k => next.add(k))
-                            else next.add(itemKey)
-                          }
-                          setPickerChecked(next)
-                        }}
-                        className="w-4 h-4 rounded border-2 border-[var(--border-default)] accent-primary-500 cursor-pointer"
-                      />
-                      <span className="text-[13px] font-bold text-[var(--text-primary)]">{def.name}</span>
-                      {hasSub && <span className="text-[9px] text-[var(--text-muted)] bg-[var(--bg-muted)] px-1.5 py-0.5 rounded">{def.subItems.length}개 세목</span>}
-                    </label>
-                    {/* 세목 */}
-                    {hasSub && def.subItems.map(sub => {
-                      const subHasDetail = sub.detailItems && sub.detailItems.length > 0
-                      const subChildKeys = subHasDetail
-                        ? sub.detailItems!.map(d => `${def.name}>${sub.name}>${d.name}`)
-                        : [`${def.name}>${sub.name}`]
-                      const subAllChecked = subChildKeys.every(k => pickerChecked.has(k))
-                      const subSomeChecked = subChildKeys.some(k => pickerChecked.has(k))
-
-                      return (
-                        <div key={sub.id}>
-                          <label className="flex items-center gap-2.5 pl-9 pr-3 py-1.5 rounded-lg hover:bg-[var(--bg-muted)] transition-colors cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={subAllChecked}
-                              ref={el => { if (el) el.indeterminate = !subAllChecked && subSomeChecked }}
-                              onChange={() => {
-                                const next = new Set(pickerChecked)
-                                if (subAllChecked) subChildKeys.forEach(k => next.delete(k))
-                                else subChildKeys.forEach(k => next.add(k))
-                                setPickerChecked(next)
-                              }}
-                              className="w-3.5 h-3.5 rounded border-2 border-[var(--border-default)] accent-primary-500 cursor-pointer"
-                            />
-                            <span className="text-[12px] font-semibold text-[var(--text-secondary)]">{sub.name}</span>
-                          </label>
-                          {/* 세세항목 */}
-                          {subHasDetail && sub.detailItems!.map(det => {
-                            const detKey = `${def.name}>${sub.name}>${det.name}`
-                            return (
-                              <label key={det.id} className="flex items-center gap-2.5 pl-16 pr-3 py-1 rounded-lg hover:bg-[var(--bg-muted)] transition-colors cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={pickerChecked.has(detKey)}
-                                  onChange={() => {
-                                    const next = new Set(pickerChecked)
-                                    if (next.has(detKey)) next.delete(detKey)
-                                    else next.add(detKey)
-                                    setPickerChecked(next)
-                                  }}
-                                  className="w-3 h-3 rounded border-2 border-[var(--border-default)] accent-primary-500 cursor-pointer"
-                                />
-                                <span className="text-[11px] text-[var(--text-muted)]">{det.name}</span>
-                              </label>
-                            )
-                          })}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )
-              })}
-            </div>
-            <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--border-default)]">
-              <span className="text-[11px] text-[var(--text-muted)]">{pickerChecked.size}개 선택됨</span>
-              <div className="flex gap-2">
-                <button onClick={() => setBudgetPickerOpen(false)} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer">취소</button>
-                <button onClick={applyBudgetPicker} className="px-4 py-2 rounded-lg bg-primary-500 text-white text-sm font-bold hover:bg-primary-600 transition-colors cursor-pointer">적용</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      , document.body)}
     </div>
   )
 }
@@ -2686,7 +1812,6 @@ function AcctBudget({ year }: { year: number }) {
    품의 (Approval) — CRUD
    ═══════════════════════════════════════════ */
 export function AcctApproval({ year }: { year: number }) {
-  const [, setSearchParams] = useSearchParams()
   const [refresh, setRefresh] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -2703,8 +1828,7 @@ export function AcctApproval({ year }: { year: number }) {
   const staffList = useStaffStore(s => s.staff).filter(s => !s.resignedAt)
 
   const budgetCats = useMemo(() => getItem<BudgetCat[]>('acct_budget_cats', []).filter(c => c.year === year), [year, refresh])
-  const budgetItems = useMemo(() => getItem<BudgetItem[]>('acct_budgets', []), [refresh])
-  const approveBudgetDefs = useMemo(() => getItem<BudgetItemDef[]>('acct_budget_item_defs', []).sort((a, b) => a.sortOrder - b.sortOrder), [refresh])
+  const budgetItems = useMemo(() => getItem<BudgetItem[]>('acct_budgets', []).filter(b => b.year === year), [year, refresh])
 
   const approvals = useMemo(() => {
     const all = getItem<Approval[]>('acct_approvals', [])
@@ -2773,81 +1897,6 @@ export function AcctApproval({ year }: { year: number }) {
     setSubTab(g.subTabs[0].key)
   }
 
-  const handleApproveConfirm = () => {
-    if (!detailApproval) return
-    const isGeneral = !!(detailApproval as any).isGeneral
-    const isPreExp = !!(detailApproval as any).isPreExpense || detailApproval.status === 'preExpense' || (detailApproval.title || '').startsWith('[선지출]')
-    if (isGeneral) {
-      // 일반품의: 비밀번호/예산 검증 없이 바로 완료
-      if (!approvePw.trim()) { setApprovePwError('비밀번호를 입력해주세요'); return }
-      const myStaff = staffList.find(s => s.name === currentUserName)
-      if (myStaff && myStaff.pw && myStaff.pw !== approvePw) {
-        setApprovePwError('비밀번호가 일치하지 않습니다'); return
-      }
-      const all = getItem<Approval[]>('acct_approvals', [])
-      const updated = all.map(a => String(a.id) === String(detailApproval.id) ? {
-        ...a,
-        status: 'completed',
-        approver: currentUserName,
-        approvedAt: new Date().toISOString(),
-        completedAt: new Date().toISOString(),
-      } : a)
-      setItem('acct_approvals', updated)
-      resetApproveState()
-      setDetailApproval(null)
-      setRefresh(r => r + 1)
-      return
-    }
-    // 선지출이 아닌 경우만 예산 선택 검증
-    if (!isPreExp) {
-      if (!approveBudgetCat) { setApprovePwError('예산구분을 선택해주세요'); return }
-      if (!approveBudgetItem) { setApprovePwError('예산항목을 선택해주세요'); return }
-      if (approveFilteredSubs.length > 0 && !approveBudgetSub) { setApprovePwError('예산세목을 선택해주세요'); return }
-      if (approveFilteredDetails.length > 0 && !approveBudgetDetail) { setApprovePwError('세세항을 선택해주세요'); return }
-    }
-    if (!approvePw.trim()) { setApprovePwError('비밀번호를 입력해주세요'); return }
-    const myStaff = staffList.find(s => s.name === currentUserName)
-    if (myStaff && myStaff.pw && myStaff.pw !== approvePw) {
-      setApprovePwError('비밀번호가 일치하지 않습니다'); return
-    }
-    const all = getItem<Approval[]>('acct_approvals', [])
-    const selectedBudgetItem = budgetItems.find(b => String(b.id) === String(approveBudgetItem))
-    const subEntry = approveBudgetSub ? approveFilteredSubs.find(s => s.id === approveBudgetSub) : null
-    const subName = subEntry?.name || ''
-    const selectedBudgetSub = subName ? budgetItems.find(b =>
-      String(b.catId) === String(selectedBudgetItem?.catId) &&
-      b.itemName === selectedBudgetItem?.itemName &&
-      b.subItemName === subName
-    ) : null
-    const selectedBudgetDetail = approveBudgetDetail ? budgetItems.find(b => String(b.id) === String(approveBudgetDetail)) : null
-    const selectedCat = budgetCats.find(c => String(c.id) === String(approveBudgetCat))
-    const approvedAmt = isPreExp ? (detailApproval.amount || 0) : (parseInt(approveAmount.replace(/[^0-9]/g, '')) || detailApproval.amount || 0)
-    const updated = all.map(a => String(a.id) === String(detailApproval.id) ? {
-      ...a,
-      // 선지출: 이미 지출 완료 → 바로 toResolve(결의할) / 일반: approved(승인됨)
-      status: isPreExp ? 'toResolve' : 'approved',
-      approver: currentUserName,
-      ...(isPreExp ? {} : {
-        budgetCatId: approveBudgetCat,
-        budgetCatName: selectedCat?.name || '',
-        budgetItemId: approveBudgetItem,
-        budgetItem: selectedBudgetItem?.itemName || '',
-        budgetSubId: selectedBudgetSub ? String(selectedBudgetSub.id) : undefined,
-        budgetSubItem: subName || selectedBudgetItem?.subItemName || '',
-        budgetDetailId: approveBudgetDetail || undefined,
-        budgetDetailItem: selectedBudgetDetail?.detailItemName || '',
-      }),
-      amount: approvedAmt,
-      approvedAmount: approvedAmt,
-      approvedMemo: approveMemo || '',
-      approvedAt: new Date().toISOString(),
-    } : a)
-    setItem('acct_approvals', updated)
-    resetApproveState()
-    setDetailApproval(null)
-    setRefresh(r => r + 1)
-  }
-
   // 나의 품의리스트에서 반려된 탭: 내가 신청한 것 + 내가 승인자로서 반려한 것 모두 포함
   const isMyRequestRejected = (a: Approval, groupKey: string, tabKey: string) => {
     if (groupKey === 'myRequest' && tabKey === 'rejected' && a.status === 'rejected') {
@@ -2873,9 +1922,7 @@ export function AcctApproval({ year }: { year: number }) {
       return true
     })
     if (tabKey === 'completed') return userFiltered.filter(a => ['completed', 'vouchered'].includes(a.status)).length
-    // 지출할 탭: approved + expensed
-    if (tabKey === 'expensed' && activeGroup === 'myExpense') return userFiltered.filter(a => a.status === 'approved' || a.status === 'expensed').length
-    // 정산할 탭: confirming
+    // 정산할 탭: toResolve + confirming
     if (tabKey === 'toResolve' && activeGroup === 'myExpense') return userFiltered.filter(a => a.status === 'confirming').length
     return userFiltered.filter(a => a.status === tabKey).length
   }
@@ -2896,8 +1943,6 @@ export function AcctApproval({ year }: { year: number }) {
     }
     // 상태 필터
     if (subTab === 'completed') return ['completed', 'vouchered'].includes(a.status)
-    // 나의 지출리스트 지출할 탭: approved + expensed 상태 표시
-    if (subTab === 'expensed' && activeGroup === 'myExpense') return a.status === 'approved' || a.status === 'expensed'
     // 나의 지출리스트 정산할 탭: confirming 상태만 표시
     if (subTab === 'toResolve' && activeGroup === 'myExpense') return a.status === 'confirming'
     return a.status === subTab
@@ -2922,8 +1967,6 @@ export function AcctApproval({ year }: { year: number }) {
         if (!hasCatId && !hasCatName && (a as any).applicant !== currentUserName) return false
       }
       if (keys.includes('completed') && ['completed', 'vouchered'].includes(a.status)) return true
-      // myExpense: 지출할 탭은 approved + expensed 표시
-      if (g.key === 'myExpense' && a.status === 'approved' && keys.includes('expensed')) return true
       // myExpense: 정산할 탭은 confirming만 표시, toResolve는 제외
       if (g.key === 'myExpense' && a.status === 'toResolve') return false
       if (g.key === 'myExpense' && keys.includes('toResolve') && a.status === 'confirming') return true
@@ -2959,7 +2002,6 @@ export function AcctApproval({ year }: { year: number }) {
       } : a)
       setItem('acct_approvals', updated)
     } else {
-      const selectedCat = budgetCats.find(c => String(c.id) === String((form as any).budgetCatId))
       all.push({
         id: Date.now() + Math.floor(Math.random() * 1000),
         title: form.title.trim(),
@@ -2973,8 +2015,6 @@ export function AcctApproval({ year }: { year: number }) {
         isGeneral: isGeneral,
         budgetItem: form.budgetItem,
         budgetSubItem: form.budgetSubItem,
-        budgetCatId: (form as any).budgetCatId || '',
-        budgetCatName: selectedCat?.name || '',
         createdAt: new Date().toISOString(),
       } as any)
       setItem('acct_approvals', all)
@@ -3016,14 +2056,6 @@ export function AcctApproval({ year }: { year: number }) {
   const [approveBudgetCat, setApproveBudgetCat] = useState('')
   const [approveBudgetItem, setApproveBudgetItem] = useState('')
   const [approveBudgetSub, setApproveBudgetSub] = useState('')
-  const [approveBudgetDetail, setApproveBudgetDetail] = useState('')
-  const [approveAmount, setApproveAmount] = useState('')
-  const [approveMemo, setApproveMemo] = useState('')
-  const [settleRejectMode, setSettleRejectMode] = useState(false)
-  const [settleRejectReason, setSettleRejectReason] = useState('')
-  const [settleCompleteMode, setSettleCompleteMode] = useState(false)
-  const [settleCompletePw, setSettleCompletePw] = useState('')
-  const [settleCompletePwError, setSettleCompletePwError] = useState('')
 
   // 승인할 탭에서의 상세 열기 여부
   const isApproverPendingView = activeGroup === 'myApproval' && subTab === 'pending'
@@ -3041,75 +2073,24 @@ export function AcctApproval({ year }: { year: number }) {
     })
   }, [approveBudgetCat, budgetItems])
 
-  // 선택된 예산항목의 세목 목록 (budgetItemDefs 기반 + 실제 데이터 병합)
+  // 선택된 예산항목의 세목 목록 (항상 표시)
   const approveFilteredSubs = useMemo(() => {
-    if (!approveBudgetItem) return [] as { id: string; name: string; isFromDef?: boolean }[]
+    if (!approveBudgetItem) return [] as BudgetItem[]
     const selectedItem = budgetItems.find(b => String(b.id) === String(approveBudgetItem))
     if (!selectedItem) return []
-    // budgetItemDefs에서 해당 예산항목의 세목 정의 가져오기
-    const def = approveBudgetDefs.find(d => d.name === selectedItem.itemName || d.aliases?.includes(selectedItem.itemName))
-    if (def && def.subItems && def.subItems.length > 0) {
-      // 정의 기반 세목 목록
-      return def.subItems.sort((a, b) => a.sortOrder - b.sortOrder).map(sub => ({
-        id: `def_${sub.id}`,
-        name: sub.name,
-        defId: sub.id,
-        isFromDef: true,
-      }))
-    }
-    // 정의가 없으면 실제 데이터에서 추출
-    const allForItem = budgetItems.filter(b =>
-      String(b.catId) === String(selectedItem.catId) &&
-      b.itemName === selectedItem.itemName &&
-      b.subItemName
-    )
-    const seen = new Set<string>()
-    return allForItem.filter(b => {
-      const key = b.subItemName!
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    }).map(b => ({ id: String(b.id), name: b.subItemName! }))
-  }, [approveBudgetItem, budgetItems, approveBudgetDefs])
-
-  // 선택된 세목의 세세항 목록
-  const approveFilteredDetails = useMemo(() => {
-    if (!approveBudgetSub || !approveBudgetItem) return [] as BudgetItem[]
-    const selectedItem = budgetItems.find(b => String(b.id) === String(approveBudgetItem))
-    if (!selectedItem) return []
-    // 선택된 세목의 이름 가져오기
-    const subEntry = approveFilteredSubs.find(s => s.id === approveBudgetSub)
-    const subName = subEntry?.name || ''
-    if (!subName) return []
+    // 같은 catId + 같은 itemName을 가진 모든 세부 항목
     return budgetItems.filter(b =>
       String(b.catId) === String(selectedItem.catId) &&
-      b.itemName === selectedItem.itemName &&
-      b.subItemName === subName &&
-      b.detailItemName
+      b.itemName === selectedItem.itemName
     )
-  }, [approveBudgetSub, approveBudgetItem, budgetItems, approveFilteredSubs])
+  }, [approveBudgetItem, budgetItems])
 
+  // 선택된 예산의 남은 금액 계산
   const approveRemainingBudget = useMemo(() => {
-    // 세세항이 선택된 경우
-    if (approveBudgetDetail) {
-      const det = budgetItems.find(b => String(b.id) === String(approveBudgetDetail))
-      if (det) return { amount: det.amount || 0, spent: det.spent || 0, remaining: (det.amount || 0) - (det.spent || 0) }
-    }
-    // 세목이 선택된 경우 해당 세목의 잔액 (이름으로 매칭)
-    if (approveBudgetSub && approveBudgetItem) {
-      const selectedItem = budgetItems.find(b => String(b.id) === String(approveBudgetItem))
-      const subEntry = approveFilteredSubs.find(s => s.id === approveBudgetSub)
-      const subName = subEntry?.name || ''
-      if (selectedItem && subName) {
-        const related = budgetItems.filter(b =>
-          String(b.catId) === String(selectedItem.catId) &&
-          b.itemName === selectedItem.itemName &&
-          b.subItemName === subName
-        )
-        const totalAmt = related.reduce((s, b) => s + (b.amount || 0), 0)
-        const totalSpent = related.reduce((s, b) => s + (b.spent || 0), 0)
-        return { amount: totalAmt, spent: totalSpent, remaining: totalAmt - totalSpent }
-      }
+    // 세목이 선택된 경우 해당 세목의 잔액
+    if (approveBudgetSub) {
+      const sub = budgetItems.find(b => String(b.id) === String(approveBudgetSub))
+      if (sub) return { amount: sub.amount || 0, spent: sub.spent || 0, remaining: (sub.amount || 0) - (sub.spent || 0) }
     }
     // 항목이 선택된 경우 해당 항목 하위 전체 합산
     if (approveBudgetItem) {
@@ -3125,7 +2106,7 @@ export function AcctApproval({ year }: { year: number }) {
       }
     }
     return null
-  }, [approveBudgetItem, approveBudgetSub, approveBudgetDetail, budgetItems, approveFilteredSubs])
+  }, [approveBudgetItem, approveBudgetSub, budgetItems])
 
   const resetApproveState = () => {
     setApproveMode(false)
@@ -3137,29 +2118,17 @@ export function AcctApproval({ year }: { year: number }) {
     setApproveBudgetCat('')
     setApproveBudgetItem('')
     setApproveBudgetSub('')
-    setApproveBudgetDetail('')
-    setApproveAmount('')
-    setApproveMemo('')
-    setSettleRejectMode(false)
-    setSettleRejectReason('')
-    setSettleCompleteMode(false)
-    setSettleCompletePw('')
-    setSettleCompletePwError('')
   }
 
   // 재품의 확인: 내용 수정 후 status를 pending으로 변경
   const handleResubmitConfirm = () => {
     if (!resubmitForm.title.trim()) { setApprovePwError('품의명을 입력해주세요'); return }
-    const isGeneral = !!(detailApproval as any).isGeneral
-    const amt = isGeneral ? 0 : (parseInt(resubmitForm.amount.replace(/,/g, '')) || 0)
-    if (!isGeneral && amt <= 0) { setApprovePwError('금액을 입력해주세요'); return }
+    const amt = parseInt(resubmitForm.amount.replace(/,/g, '')) || 0
+    if (amt <= 0) { setApprovePwError('금액을 입력해주세요'); return }
     if (!detailApproval) return
     const approverList = staffList.filter(s => (s as any).approverType === 'approver')
     const autoApprover = approverList.length > 0 ? approverList[0].name : (staffList.length > 0 ? staffList[0].name : '')
     const all = getItem<Approval[]>('acct_approvals', [])
-    // 예산구분 매핑
-    const newCatId = (resubmitForm as any).budgetCatId || (a => (a as any).budgetCatId)(detailApproval)
-    const selectedCat = newCatId ? budgetCats.find(c => String(c.id) === String(newCatId)) : null
     const updated = all.map(a => String(a.id) === String(detailApproval.id) ? {
       ...a,
       title: resubmitForm.title.trim(),
@@ -3170,12 +2139,12 @@ export function AcctApproval({ year }: { year: number }) {
       isPreExpense: (a as any).isPreExpense || detailApproval.status === 'preExpense' || undefined,
       applicant: currentUserName,
       approver: autoApprover,
-      budgetCatId: newCatId || (a as any).budgetCatId,
-      budgetCatName: selectedCat ? selectedCat.name : (a as any).budgetCatName,
-      budgetItemId: (a as any).budgetItemId,
-      budgetSubId: (a as any).budgetSubId,
-      budgetItem: (a as any).budgetItem,
-      budgetSubItem: (a as any).budgetSubItem,
+      budgetCatId: detailApproval.status === 'preExpense' ? (a as any).budgetCatId : undefined,
+      budgetItemId: detailApproval.status === 'preExpense' ? (a as any).budgetItemId : undefined,
+      budgetSubId: detailApproval.status === 'preExpense' ? (a as any).budgetSubId : undefined,
+      budgetItem: detailApproval.status === 'preExpense' ? (a as any).budgetItem : undefined,
+      budgetSubItem: detailApproval.status === 'preExpense' ? (a as any).budgetSubItem : undefined,
+      budgetCatName: detailApproval.status === 'preExpense' ? (a as any).budgetCatName : undefined,
       approvedAt: undefined,
       rejectedAt: undefined,
       resubmittedAt: new Date().toISOString(),
@@ -3189,6 +2158,60 @@ export function AcctApproval({ year }: { year: number }) {
   const handleResubmitAmtInput = (val: string) => {
     const digits = val.replace(/[^\d]/g, '')
     setResubmitForm(f => ({ ...f, amount: digits ? Number(digits).toLocaleString('ko-KR') : '' }))
+  }
+
+  const handleApproveConfirm = () => {
+    if (!detailApproval) return
+    const isGeneral = !!(detailApproval as any).isGeneral
+    if (isGeneral) {
+      // 일반품의: 비밀번호/예산 검증 없이 바로 완료
+      if (!approvePw.trim()) { setApprovePwError('비밀번호를 입력해주세요'); return }
+      const myStaff = staffList.find(s => s.name === currentUserName)
+      if (myStaff && myStaff.pw && myStaff.pw !== approvePw) {
+        setApprovePwError('비밀번호가 일치하지 않습니다'); return
+      }
+      const all = getItem<Approval[]>('acct_approvals', [])
+      const updated = all.map(a => String(a.id) === String(detailApproval.id) ? {
+        ...a,
+        status: 'completed',
+        approver: currentUserName,
+        approvedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+      } : a)
+      setItem('acct_approvals', updated)
+      resetApproveState()
+      setDetailApproval(null)
+      setRefresh(r => r + 1)
+      return
+    }
+    if (!approveBudgetCat) { setApprovePwError('예산구분을 선택해주세요'); return }
+    if (!approveBudgetItem) { setApprovePwError('예산항목을 선택해주세요'); return }
+    if (approveFilteredSubs.length > 0 && !approveBudgetSub) { setApprovePwError('예산세목을 선택해주세요'); return }
+    if (!approvePw.trim()) { setApprovePwError('비밀번호를 입력해주세요'); return }
+    const myStaff = staffList.find(s => s.name === currentUserName)
+    if (myStaff && myStaff.pw && myStaff.pw !== approvePw) {
+      setApprovePwError('비밀번호가 일치하지 않습니다'); return
+    }
+    const all = getItem<Approval[]>('acct_approvals', [])
+    const selectedBudgetItem = budgetItems.find(b => String(b.id) === String(approveBudgetItem))
+    const selectedBudgetSub = approveBudgetSub ? budgetItems.find(b => String(b.id) === String(approveBudgetSub)) : null
+    const selectedCat = budgetCats.find(c => String(c.id) === String(approveBudgetCat))
+    const updated = all.map(a => String(a.id) === String(detailApproval.id) ? {
+      ...a,
+      status: 'approved',
+      approver: currentUserName,
+      budgetCatId: approveBudgetCat,
+      budgetCatName: selectedCat?.name || '',
+      budgetItemId: approveBudgetItem,
+      budgetItem: selectedBudgetItem?.itemName || '',
+      budgetSubId: approveBudgetSub || undefined,
+      budgetSubItem: selectedBudgetSub?.subItemName || selectedBudgetSub?.itemName || selectedBudgetItem?.subItemName || '',
+      approvedAt: new Date().toISOString(),
+    } : a)
+    setItem('acct_approvals', updated)
+    resetApproveState()
+    setDetailApproval(null)
+    setRefresh(r => r + 1)
   }
 
   const handleRejectConfirm = () => {
@@ -3276,14 +2299,7 @@ export function AcctApproval({ year }: { year: number }) {
           return (
             <button
               key={t.key}
-              onClick={() => {
-                // 나의 지출리스트 → 지출할 탭 클릭 시 지출하기 페이지로 이동
-                if (activeGroup === 'myExpense' && t.key === 'expensed') {
-                  setSearchParams(prev => { prev.set('tab', 'expense'); return prev })
-                  return
-                }
-                setSubTab(t.key)
-              }}
+              onClick={() => setSubTab(t.key)}
               className={cn(
                 'text-[11px] font-bold px-3 py-1.5 rounded-full cursor-pointer transition-all border whitespace-nowrap',
                 subTab === t.key
@@ -3449,15 +2465,9 @@ export function AcctApproval({ year }: { year: number }) {
       {/* ── 지출품의서 폼 (상세 팝업 대체) ── */}
       {detailApproval && (
         <PrintApprovalForm
-          readOnly={['approved','expensed','confirming','completed'].includes(detailApproval.status)}
-          data={(() => {
-            // 연동된 cashflow 조회
-            const allCfs: any[] = getItem('acct_cashflows', [])
-            const linkedCf = allCfs.find(c => c.approvalId && String(c.approvalId) === String(detailApproval.id))
-            return {
+          readOnly={detailApproval.status === 'confirming' || detailApproval.status === 'completed'}
+          data={{
             date: (detailApproval.date || detailApproval.createdAt || '').slice(0, 10),
-            expenseDate: linkedCf?.tradeDate || (((detailApproval as any).isPreExpense || detailApproval.status === 'preExpense') ? (detailApproval.date || detailApproval.createdAt || '').slice(0, 10) : ''),
-            settleDate: linkedCf?.inputDate || '',
             accountName: (() => {
               const d = detailApproval as any
               if (d.budgetItemId) {
@@ -3467,7 +2477,7 @@ export function AcctApproval({ year }: { year: number }) {
               return d.budgetItem || ''
             })(),
             evidenceType: (detailApproval as any).budgetCatName || '',
-            vendor: linkedCf?.counter || (detailApproval as any).vendor || '',
+            vendor: (detailApproval as any).vendor || '',
             itemName: detailApproval.title || '',
             purpose: (() => {
               const d = detailApproval as any
@@ -3487,19 +2497,8 @@ export function AcctApproval({ year }: { year: number }) {
             approver: detailApproval.approver || '',
             applicantSealImg: staffList.find(s => s.name === (detailApproval as any).applicant)?.sealImg || '',
             approverSealImg: staffList.find(s => s.name === detailApproval.approver)?.sealImg || '',
-            applicantPosition: staffList.find(s => s.name === (detailApproval as any).applicant)?.position || '',
-            approverPosition: staffList.find(s => s.name === detailApproval.approver)?.position || '',
-            approvalStatus: detailApproval.status || '',
-            approvedMemo: (detailApproval as any).approvedMemo || '',
             attachments: (detailApproval as any).attachments || [],
-            isGeneral: !!(detailApproval as any).isGeneral,
-            approvalType: (detailApproval as any).isGeneral ? '일반품의' : '지출품의',
-            approvedDate: (detailApproval as any).approvedAt ? (detailApproval as any).approvedAt.slice(0, 10) : '',
-            department: (() => {
-              const staff = staffList.find(s => s.name === (detailApproval as any).applicant)
-              return (staff as any)?.department || (staff as any)?.dept || ''
-            })(),
-          }})()}
+          }}
           onClose={() => { resetApproveState(); setDetailApproval(null) }}
           onUpdateAttachments={(updated) => {
             // 삭제된 첨부의 IndexedDB 이미지 정리
@@ -3518,143 +2517,36 @@ export function AcctApproval({ year }: { year: number }) {
           }}
           actions={
             <>
+              <button onClick={() => { resetApproveState(); setDetailApproval(null) }} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer">취소</button>
               {isApproverPendingView && detailApproval.status === 'pending' && (
                 <>
-                  <button onClick={() => { setApproveMode(true); setRejectMode(false); setApprovePw(''); setApprovePwError(''); setApproveAmount(detailApproval.amount ? Number(detailApproval.amount).toLocaleString('ko-KR') : ''); setApproveMemo(''); const da=detailApproval as any; let catId=da.budgetCatId?String(da.budgetCatId):''; if(!catId&&da.budgetCatName){const cat=budgetCats.find(c=>c.name===da.budgetCatName);if(cat)catId=String(cat.id)} if(catId){setApproveBudgetCat(catId);const itemName=da.budgetItem||'';let itemId=da.budgetItemId?String(da.budgetItemId):'';if(!itemId&&itemName){const f=budgetItems.find(b=>String(b.catId)===catId&&b.itemName===itemName);if(f)itemId=String(f.id)} if(itemId){setApproveBudgetItem(itemId);let subId=da.budgetSubId?String(da.budgetSubId):'';if(!subId&&da.budgetSubItem){const f=budgetItems.find(b=>String(b.catId)===catId&&b.itemName===itemName&&b.subItemName===da.budgetSubItem);if(f)subId=String(f.id)} if(!subId){const subs=budgetItems.filter(b=>String(b.catId)===catId&&b.itemName===itemName&&b.subItemName);if(subs.length===1)subId=String(subs[0].id)} if(subId)setApproveBudgetSub(subId)}} }} className="px-4 py-2 rounded-lg bg-[#22c55e] text-white text-sm font-bold hover:bg-[#16a34a] cursor-pointer flex items-center gap-1 shadow-sm"><Check size={13} /> 승인</button>
+                  <button onClick={() => { setApproveMode(true); setRejectMode(false); setApprovePw(''); setApprovePwError(''); const da=detailApproval as any; let catId=da.budgetCatId?String(da.budgetCatId):''; if(!catId&&da.budgetCatName){const cat=budgetCats.find(c=>c.name===da.budgetCatName);if(cat)catId=String(cat.id)} if(catId){setApproveBudgetCat(catId);const itemName=da.budgetItem||'';let itemId=da.budgetItemId?String(da.budgetItemId):'';if(!itemId&&itemName){const f=budgetItems.find(b=>String(b.catId)===catId&&b.itemName===itemName);if(f)itemId=String(f.id)} if(itemId){setApproveBudgetItem(itemId);let subId=da.budgetSubId?String(da.budgetSubId):'';if(!subId&&da.budgetSubItem){const f=budgetItems.find(b=>String(b.catId)===catId&&b.itemName===itemName&&b.subItemName===da.budgetSubItem);if(f)subId=String(f.id)} if(!subId){const subs=budgetItems.filter(b=>String(b.catId)===catId&&b.itemName===itemName&&b.subItemName);if(subs.length===1)subId=String(subs[0].id)} if(subId)setApproveBudgetSub(subId)}} }} className="px-4 py-2 rounded-lg bg-[#22c55e] text-white text-sm font-bold hover:bg-[#16a34a] cursor-pointer flex items-center gap-1 shadow-sm"><Check size={13} /> 승인</button>
                   <button onClick={() => { setRejectMode(true); setApproveMode(false); setApprovePw(''); setApprovePwError('') }} className="px-4 py-2 rounded-lg bg-[#ef4444] text-white text-sm font-bold hover:bg-[#dc2626] cursor-pointer flex items-center gap-1 shadow-sm"><Ban size={13} /> 반려</button>
                 </>
               )}
               {!isApproverPendingView && detailApproval.status === 'pending' && (
                 <>
-                  <button onClick={() => { const a=detailApproval; const da=a as any; let catId=da.budgetCatId?String(da.budgetCatId):''; if(!catId&&da.budgetCatName){const cat=budgetCats.find(c=>c.name===da.budgetCatName);if(cat)catId=String(cat.id)} setResubmitMode(true); setResubmitForm({title:a.title||'',amount:a.amount?Number(a.amount).toLocaleString('ko-KR'):'',date:(a.date||a.createdAt||'').slice(0,10),description:da.description||'',budgetCatId:catId} as any); setApprovePwError('') }} className="px-4 py-2 rounded-lg bg-[#4f6ef7] text-white text-sm font-bold hover:bg-[#3b5de7] cursor-pointer flex items-center gap-1 shadow-sm"><Edit3 size={13} /> 수정</button>
+                  <button onClick={() => { const a=detailApproval; setResubmitMode(true); setResubmitForm({title:a.title||'',amount:a.amount?Number(a.amount).toLocaleString('ko-KR'):'',date:(a.date||a.createdAt||'').slice(0,10),description:(a as any).description||''}); setApprovePwError('') }} className="px-4 py-2 rounded-lg bg-[#4f6ef7] text-white text-sm font-bold hover:bg-[#3b5de7] cursor-pointer flex items-center gap-1 shadow-sm"><Edit3 size={13} /> 수정</button>
                   <button onClick={() => { deleteApproval(detailApproval.id); resetApproveState(); setDetailApproval(null) }} className="px-4 py-2 rounded-lg bg-[#ef4444] text-white text-sm font-bold hover:bg-[#dc2626] cursor-pointer flex items-center gap-1"><Trash2 size={13} /> 삭제</button>
                 </>
               )}
-              {!isApproverPendingView && detailApproval.status === 'approved' && (() => {
-                const catId = (detailApproval as any).budgetCatId
-                const cat = catId ? budgetCats.find(c => String(c.id) === String(catId)) : null
-                const expenseManagers = cat?.users || []
-                const managerNames = expenseManagers.length > 0
-                  ? expenseManagers.map((name: string) => {
-                      const staff = staffList.find(s => s.name === name)
-                      return staff ? `${name} ${staff.position || ''}` : name
-                    }).join(', ')
-                  : '지출담당자'
-                return (
-                  <span className="px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-[11px] text-amber-600 dark:text-amber-400 font-bold">
-                    {managerNames}님이 지출을 처리합니다.
-                  </span>
-                )
-              })()}
               {!isApproverPendingView && detailApproval.status === 'preExpense' && (
-                <button onClick={() => { const a=detailApproval; const da=a as any; let catId=da.budgetCatId?String(da.budgetCatId):''; if(!catId&&da.budgetCatName){const cat=budgetCats.find(c=>c.name===da.budgetCatName);if(cat)catId=String(cat.id)} setResubmitMode(true); setResubmitForm({title:a.title||'',amount:a.amount?Number(a.amount).toLocaleString('ko-KR'):'',date:(a.date||a.createdAt||'').slice(0,10),description:da.description||'',budgetCatId:catId} as any); setApprovePwError('') }} className="px-4 py-2 rounded-lg bg-[#f97316] text-white text-sm font-bold hover:bg-[#ea580c] cursor-pointer flex items-center gap-1 shadow-sm"><Edit3 size={13} /> 수정</button>
+                <button onClick={() => { const a=detailApproval; setResubmitMode(true); setResubmitForm({title:a.title||'',amount:a.amount?Number(a.amount).toLocaleString('ko-KR'):'',date:(a.date||a.createdAt||'').slice(0,10),description:(a as any).description||''}); setApprovePwError('') }} className="px-4 py-2 rounded-lg bg-[#f97316] text-white text-sm font-bold hover:bg-[#ea580c] cursor-pointer flex items-center gap-1 shadow-sm"><Edit3 size={13} /> 수정</button>
               )}
               {!isApproverPendingView && detailApproval.status === 'rejected' && (
                 <>
-                  <button onClick={() => { const a=detailApproval; const da=a as any; let catId=da.budgetCatId?String(da.budgetCatId):''; if(!catId&&da.budgetCatName){const cat=budgetCats.find(c=>c.name===da.budgetCatName);if(cat)catId=String(cat.id)} setResubmitMode(true); setResubmitForm({title:a.title||'',amount:a.amount?Number(a.amount).toLocaleString('ko-KR'):'',date:(a.date||a.createdAt||'').slice(0,10),description:da.description||'',budgetCatId:catId} as any); setApprovePwError('') }} className="px-4 py-2 rounded-lg bg-[#f59e0b] text-white text-sm font-bold hover:bg-[#d97706] cursor-pointer flex items-center gap-1 shadow-sm"><RefreshCw size={13} /> 재품의</button>
+                  <button onClick={() => { const a=detailApproval; setResubmitMode(true); setResubmitForm({title:a.title||'',amount:a.amount?Number(a.amount).toLocaleString('ko-KR'):'',date:(a.date||a.createdAt||'').slice(0,10),description:(a as any).description||''}); setApprovePwError('') }} className="px-4 py-2 rounded-lg bg-[#f59e0b] text-white text-sm font-bold hover:bg-[#d97706] cursor-pointer flex items-center gap-1 shadow-sm"><RefreshCw size={13} /> 재품의</button>
                   <button onClick={() => { deleteApproval(detailApproval.id); resetApproveState(); setDetailApproval(null) }} className="px-4 py-2 rounded-lg bg-[#ef4444] text-white text-sm font-bold hover:bg-[#dc2626] cursor-pointer flex items-center gap-1"><Trash2 size={13} /> 삭제</button>
                 </>
               )}
-              {!isApproverPendingView && detailApproval.status === 'confirming' && (() => {
-                const catId = (detailApproval as any).budgetCatId
-                const bCats: BudgetCat[] = getItem('acct_budget_cats', [])
-                const cat = catId ? bCats.find(c => String(c.id) === String(catId)) : null
-                const isExpenseManager = cat?.users?.includes(currentUserName) || false
-                return isExpenseManager ? (
-                  <>
-                    <button onClick={() => { setSettleCompleteMode(true); setSettleCompletePw(''); setSettleCompletePwError('') }} className="px-4 py-2 rounded-lg bg-[#22c55e] text-white text-sm font-bold hover:bg-[#16a34a] cursor-pointer flex items-center gap-1 shadow-sm"><Check size={13} /> 정산완료</button>
-                    <button onClick={() => { setSettleRejectMode(true); setSettleRejectReason('') }} className="px-4 py-2 rounded-lg bg-[#ef4444] text-white text-sm font-bold hover:bg-[#dc2626] cursor-pointer flex items-center gap-1 shadow-sm"><Ban size={13} /> 정산반려</button>
-                  </>
-                ) : (
-                  <span className="px-3 py-2 rounded-lg bg-violet-50 dark:bg-violet-900/20 text-[11px] text-violet-600 dark:text-violet-400 font-bold">
-                    정산확인 대기 중 입니다.
-                  </span>
-                )
-              })()}
-              {/* 정산완료 비밀번호 모달 */}
-              {settleCompleteMode && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={() => setSettleCompleteMode(false)}>
-                  <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-[380px] p-5 space-y-3" onClick={e => e.stopPropagation()}>
-                    <div className="text-sm font-extrabold text-[#22c55e] flex items-center gap-1.5"><Check size={16} /> 정산완료</div>
-                    <p className="text-[11px] text-[var(--text-muted)]">본인 확인을 위해 비밀번호를 입력해주세요.</p>
-                    <div>
-                      <input
-                        type="password"
-                        value={settleCompletePw}
-                        onChange={e => { setSettleCompletePw(e.target.value); setSettleCompletePwError('') }}
-                        onKeyDown={e => { if (e.key === 'Enter') { (e.target as HTMLInputElement).closest('div')?.querySelector<HTMLButtonElement>('.settle-confirm-btn')?.click() } }}
-                        placeholder="비밀번호"
-                        className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] focus:border-[#22c55e] outline-none"
-                        autoFocus
-                      />
-                      {settleCompletePwError && <p className="text-[10px] text-[#ef4444] mt-1">{settleCompletePwError}</p>}
-                    </div>
-                    <div className="flex justify-end gap-2 pt-1">
-                      <button onClick={() => setSettleCompleteMode(false)} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer">취소</button>
-                      <button className="settle-confirm-btn px-4 py-2 rounded-lg bg-[#22c55e] text-white text-sm font-bold hover:bg-[#16a34a] cursor-pointer flex items-center gap-1" onClick={() => {
-                        const me = staffList.find(s => s.name === currentUserName)
-                        if (!me?.pw || settleCompletePw !== me.pw) { setSettleCompletePwError('비밀번호가 일치하지 않습니다'); return }
-                        const approvals:any[]=getItem('acct_approvals',[])
-                        const idx=approvals.findIndex(a=>a.id===detailApproval.id)
-                        if(idx>=0){
-                          approvals[idx].status='completed'
-                          approvals[idx].completedAt=new Date().toISOString()
-                          approvals[idx].completedBy=currentUserName
-                          setItem('acct_approvals',approvals)
-                          setRefresh(r=>r+1)
-                        }
-                        setSettleCompleteMode(false)
-                        resetApproveState()
-                        setDetailApproval(null)
-                      }}><Check size={13} /> 정산완료 확인</button>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {/* 정산반려 사유 입력 모달 */}
-              {settleRejectMode && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={() => setSettleRejectMode(false)}>
-                  <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-[400px] p-5 space-y-3" onClick={e => e.stopPropagation()}>
-                    <div className="text-sm font-extrabold text-[#ef4444] flex items-center gap-1.5"><Ban size={16} /> 정산반려</div>
-                    <p className="text-[11px] text-[var(--text-muted)]">반려 사유를 입력하세요. 결의자가 확인할 수 있습니다.</p>
-                    <textarea
-                      value={settleRejectReason}
-                      onChange={e => setSettleRejectReason(e.target.value)}
-                      placeholder="반려 사유를 입력하세요"
-                      className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] focus:border-[#ef4444] outline-none resize-none h-[80px]"
-                      autoFocus
-                    />
-                    <div className="flex justify-end gap-2 pt-1">
-                      <button onClick={() => setSettleRejectMode(false)} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer">취소</button>
-                      <button onClick={() => {
-                        if (!settleRejectReason.trim()) { alert('반려 사유를 입력해주세요'); return }
-                        const approvals:any[]=getItem('acct_approvals',[])
-                        const idx=approvals.findIndex(a=>a.id===detailApproval.id)
-                        if(idx>=0){
-                          approvals[idx].status='toResolve'
-                          approvals[idx].returnedAt=new Date().toISOString()
-                          approvals[idx].returnReason=settleRejectReason.trim()
-                          approvals[idx].returnedBy=currentUserName
-                          setItem('acct_approvals',approvals)
-                          setRefresh(r=>r+1)
-                        }
-                        setSettleRejectMode(false)
-                        resetApproveState()
-                        setDetailApproval(null)
-                      }} className="px-4 py-2 rounded-lg bg-[#ef4444] text-white text-sm font-bold hover:bg-[#dc2626] cursor-pointer flex items-center gap-1"><Ban size={13} /> 반려 확인</button>
-                    </div>
-                  </div>
-                </div>
+              {!isApproverPendingView && detailApproval.status === 'confirming' && (
+                <>
+                  <button onClick={() => { if(!confirm('정산완료 처리하시겠습니까?\n완료됨 목록으로 이동됩니다.'))return; const approvals:any[]=getItem('acct_approvals',[]); const idx=approvals.findIndex(a=>a.id===detailApproval.id); if(idx>=0){approvals[idx].status='completed';approvals[idx].completedAt=new Date().toISOString();setItem('acct_approvals',approvals);setRefresh(r=>r+1)} resetApproveState();setDetailApproval(null) }} className="px-4 py-2 rounded-lg bg-[#22c55e] text-white text-sm font-bold hover:bg-[#16a34a] cursor-pointer flex items-center gap-1 shadow-sm"><Check size={13} /> 정산완료</button>
+                  <button onClick={() => { if(!confirm('정산반려 하시겠습니까?\n결의할 목록으로 되돌아갑니다.'))return; const approvals:any[]=getItem('acct_approvals',[]); const idx=approvals.findIndex(a=>a.id===detailApproval.id); if(idx>=0){approvals[idx].status='toResolve';approvals[idx].returnedAt=new Date().toISOString();setItem('acct_approvals',approvals);setRefresh(r=>r+1)} resetApproveState();setDetailApproval(null) }} className="px-4 py-2 rounded-lg bg-[#ef4444] text-white text-sm font-bold hover:bg-[#dc2626] cursor-pointer flex items-center gap-1 shadow-sm"><Ban size={13} /> 정산반려</button>
+                </>
               )}
               {!isApproverPendingView && detailApproval.status === 'toResolve' && (
                 <>
-                  {(detailApproval as any).returnReason && (
-                    <div className="w-full px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/15 border border-red-200 dark:border-red-800/30 text-[11px] space-y-0.5">
-                      <div className="font-bold text-[#ef4444] flex items-center gap-1"><Ban size={12} /> 정산반려 사유</div>
-                      <div className="text-[var(--text-primary)]">{(detailApproval as any).returnReason}</div>
-                      <div className="text-[var(--text-muted)] text-[10px]">반려자: {(detailApproval as any).returnedBy || '-'} · {((detailApproval as any).returnedAt || '').slice(0,10)}</div>
-                    </div>
-                  )}
                   <label className="px-4 py-2 rounded-lg bg-[#4f6ef7] text-white text-sm font-bold hover:bg-[#3b5de7] cursor-pointer flex items-center gap-1">
                     <Paperclip size={13} /> 증빙첨부
                     <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.hwp" className="hidden" onChange={async e => {
@@ -3712,269 +2604,6 @@ export function AcctApproval({ year }: { year: number }) {
         />
       )}
 
-      {/* ── 승인 확인 모달 ── */}
-      {approveMode && detailApproval && (() => {
-        const isPreExp = !!(detailApproval as any).isPreExpense || detailApproval.status === 'preExpense' || (detailApproval.title || '').startsWith('[선지출]')
-        return createPortal(
-        <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) { setApproveMode(false); setApprovePwError('') } }}>
-          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-fadeIn">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border-default)]">
-              <span className="text-sm font-extrabold text-[#22c55e] flex items-center gap-1.5">✅ {isPreExp ? '선지출 승인' : '품의 승인'}</span>
-              <button onClick={() => { setApproveMode(false); setApprovePwError('') }} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer"><X size={18} /></button>
-            </div>
-            <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
-              {/* 예산 할당 */}
-              {!(detailApproval as any).isGeneral && (
-                <div className="space-y-2">
-                  <div className="text-[11px] font-extrabold text-[var(--text-primary)] flex items-center gap-1">📋 {isPreExp ? '예산 정보 (선지출)' : '예산 할당'}</div>
-                  <div className="bg-[var(--bg-muted)] rounded-lg p-3 space-y-2">
-                    {isPreExp ? (
-                      /* ── 선지출: 예산 읽기전용 표시 (최대한 상세) ── */
-                      (() => {
-                        const allCfs: any[] = getItem('acct_cashflows', [])
-                        const linkedCf = allCfs.find((c: any) => c.approvalId && String(c.approvalId) === String(detailApproval.id))
-                        const da = detailApproval as any
-                        const catName = budgetCats.find(c => String(c.id) === String(approveBudgetCat || da.budgetCatId))?.name || da.budgetCatName || '-'
-                        const foundItem = budgetItems.find(b => String(b.id) === String(approveBudgetItem || da.budgetItemId))
-                        const itemName = foundItem?.itemName || da.budgetItem || '-'
-                        const subItemName = (() => {
-                          if (da.budgetSubItem) return da.budgetSubItem
-                          if (approveBudgetSub) {
-                            const s = approveFilteredSubs.find((b: any) => String(b.id) === String(approveBudgetSub))
-                            if ((s as any)?.name) return (s as any).name
-                            const bi = budgetItems.find(b => String(b.id) === String(approveBudgetSub))
-                            if (bi?.subItemName) return bi.subItemName
-                          }
-                          if (da.budgetSubId) {
-                            const bi = budgetItems.find(b => String(b.id) === String(da.budgetSubId))
-                            if (bi?.subItemName) return bi.subItemName
-                          }
-                          return ''
-                        })()
-                        const detailItemName = (() => {
-                          if (da.budgetDetailItem) return da.budgetDetailItem
-                          if (approveBudgetDetail) {
-                            const d = approveFilteredDetails.find((b: any) => String(b.id) === String(approveBudgetDetail))
-                            if ((d as any)?.detailItemName) return (d as any).detailItemName
-                          }
-                          return ''
-                        })()
-                        const expDate = linkedCf?.tradeDate || (da.date || da.createdAt || '').slice(0, 10)
-                        const vendor = linkedCf?.counter || da.vendor || ''
-                        const manager = linkedCf?.manager || da.applicant || ''
-                        return (
-                      <>
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-[var(--text-muted)]">예산구분</span>
-                          <span className="font-bold text-[var(--text-primary)]">{catName}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-[var(--text-muted)]">예산항목</span>
-                          <span className="font-bold text-[var(--text-primary)]">{itemName}</span>
-                        </div>
-                        {subItemName && (
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-[var(--text-muted)]">세항</span>
-                            <span className="font-bold text-[var(--text-primary)]">{subItemName}</span>
-                          </div>
-                        )}
-                        {detailItemName && (
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-[var(--text-muted)]">세세항</span>
-                            <span className="font-bold text-[var(--text-primary)]">{detailItemName}</span>
-                          </div>
-                        )}
-                        {expDate && (
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-[var(--text-muted)]">지출일자</span>
-                            <span className="font-bold text-[var(--text-primary)]">{expDate}</span>
-                          </div>
-                        )}
-                        {vendor && (
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-[var(--text-muted)]">거래처</span>
-                            <span className="font-bold text-[var(--text-primary)]">{vendor}</span>
-                          </div>
-                        )}
-                        {manager && (
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-[var(--text-muted)]">담당자</span>
-                            <span className="font-bold text-[var(--text-primary)]">{manager}</span>
-                          </div>
-                        )}
-                        {approveRemainingBudget && (
-                          <div className="flex items-center justify-between text-[11px] px-1 pt-1 border-t border-[var(--border-default)]">
-                            <span className="text-[var(--text-muted)]">잔액</span>
-                            <span className={`font-extrabold ${approveRemainingBudget.remaining < 0 ? 'text-[#ef4444]' : 'text-[#22c55e]'}`}>
-                              {approveRemainingBudget.remaining.toLocaleString()}원
-                            </span>
-                          </div>
-                        )}
-                      </>
-                        )
-                      })()
-                    ) : (
-                      /* ── 일반 품의: 예산 선택 가능 ── */
-                      <>
-                    <div>
-                      <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-0.5">예산구분 *</label>
-                      <select value={approveBudgetCat} onChange={e => { setApproveBudgetCat(e.target.value); setApproveBudgetItem(''); setApproveBudgetSub(''); setApproveBudgetDetail('') }} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
-                        <option value="">선택하세요</option>
-                        {budgetCats.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
-                      </select>
-                    </div>
-                    {approveBudgetCat && (
-                    <div>
-                      <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-0.5">예산항목 *</label>
-                      <select value={approveBudgetItem} onChange={e => { setApproveBudgetItem(e.target.value); setApproveBudgetSub(''); setApproveBudgetDetail('') }} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
-                        <option value="">선택하세요</option>
-                        {approveFilteredItems.map(b => <option key={b.id} value={String(b.id)}>{b.itemName}</option>)}
-                      </select>
-                    </div>
-                    )}
-                    {approveFilteredSubs.length > 0 && (
-                      <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-0.5">세목</label>
-                        <select value={approveBudgetSub} onChange={e => { setApproveBudgetSub(e.target.value); setApproveBudgetDetail('') }} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
-                          <option value="">선택하세요</option>
-                          {approveFilteredSubs.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                        </select>
-                      </div>
-                    )}
-                    {approveFilteredDetails.length > 0 && (
-                      <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-0.5">세세항</label>
-                        <select value={approveBudgetDetail} onChange={e => setApproveBudgetDetail(e.target.value)} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
-                          <option value="">선택하세요</option>
-                          {approveFilteredDetails.map(b => <option key={b.id} value={String(b.id)}>{b.detailItemName}</option>)}
-                        </select>
-                      </div>
-                    )}
-                    {approveRemainingBudget && (
-                      <div className="flex items-center justify-between text-[11px] px-1 pt-1 border-t border-[var(--border-default)]">
-                        <span className="text-[var(--text-muted)]">잔액</span>
-                        <span className={`font-extrabold ${approveRemainingBudget.remaining < 0 ? 'text-[#ef4444]' : 'text-[#22c55e]'}`}>
-                          {approveRemainingBudget.remaining.toLocaleString()}원
-                        </span>
-                      </div>
-                    )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 금액 확인/수정 */}
-              <div className="space-y-2">
-                <div className="text-[11px] font-extrabold text-[var(--text-primary)] flex items-center gap-1">💰 {isPreExp ? '지출금액 확인' : '금액 확인/수정'}</div>
-                <div className="bg-[var(--bg-muted)] rounded-lg p-3 space-y-2">
-                  {isPreExp ? (
-                    /* ── 선지출: 금액 수정 불가 ── */
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-[var(--text-muted)]">지출금액</span>
-                      <span className="font-extrabold text-[var(--text-primary)] text-[14px]">₩ {(detailApproval.amount || 0).toLocaleString()}</span>
-                    </div>
-                  ) : (
-                    /* ── 일반 품의: 금액 수정 가능 ── */
-                    <>
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-[var(--text-muted)]">요청금액</span>
-                    <span className="font-bold text-[var(--text-primary)]">₩ {(detailApproval.amount || 0).toLocaleString()}</span>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-0.5">승인금액 *</label>
-                    <input
-                      value={approveAmount}
-                      onChange={e => { const d = e.target.value.replace(/[^\d]/g, ''); setApproveAmount(d ? Number(d).toLocaleString('ko-KR') : '') }}
-                      className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[13px] font-bold text-[var(--text-primary)] text-right focus:outline-none focus:border-primary-500"
-                      placeholder="승인금액"
-                    />
-                  </div>
-                  {approveRemainingBudget && approveAmount && (() => {
-                    const amt = parseInt(approveAmount.replace(/[^0-9]/g, '')) || 0
-                    const afterBalance = approveRemainingBudget.remaining - amt
-                    return (
-                      <div className="flex items-center justify-between text-[11px] px-1 pt-1 border-t border-[var(--border-default)]">
-                        <span className="text-[var(--text-muted)]">승인 후 잔액</span>
-                        <span className={`font-extrabold ${afterBalance < 0 ? 'text-[#ef4444]' : 'text-[#22c55e]'}`}>
-                          {afterBalance.toLocaleString()}원
-                          {afterBalance < 0 && <span className="text-[9px] ml-1">⚠ 예산 초과</span>}
-                        </span>
-                      </div>
-                    )
-                  })()}
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* 승인 메모 */}
-              <div>
-                <label className="block text-[11px] font-extrabold text-[var(--text-primary)] mb-1">📝 승인 메모</label>
-                <input
-                  value={approveMemo}
-                  onChange={e => setApproveMemo(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-500"
-                  placeholder="승인 코멘트 (선택)"
-                />
-              </div>
-
-              {/* 비밀번호 */}
-              <div>
-                <label className="block text-[11px] font-extrabold text-[var(--text-primary)] mb-1">🔒 비밀번호 확인</label>
-                <input
-                  type="password"
-                  value={approvePw}
-                  onChange={e => { setApprovePw(e.target.value); setApprovePwError('') }}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-500"
-                  placeholder="비밀번호를 입력하세요"
-                  onKeyDown={e => { if (e.key === 'Enter') handleApproveConfirm() }}
-                />
-                {approvePwError && <p className="text-[11px] text-[#ef4444] mt-1 font-bold">{approvePwError}</p>}
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 px-5 py-3 border-t border-[var(--border-default)]">
-              <button onClick={() => { setApproveMode(false); setApprovePwError('') }} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer">취소</button>
-              <button onClick={handleApproveConfirm} className="px-4 py-2 rounded-lg bg-[#22c55e] text-white text-sm font-bold hover:bg-[#16a34a] cursor-pointer flex items-center gap-1"><Check size={14} /> 승인 완료</button>
-            </div>
-          </div>
-        </div>
-      , document.body)
-      })()}
-
-      {/* ── 반려 확인 모달 ── */}
-      {rejectMode && detailApproval && createPortal(
-        <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) { setRejectMode(false); setApprovePwError('') } }}>
-          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-sm mx-4 animate-fadeIn">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border-default)]">
-              <span className="text-sm font-extrabold text-[#ef4444] flex items-center gap-1.5">🚫 품의 반려</span>
-              <button onClick={() => { setRejectMode(false); setApprovePwError('') }} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer"><X size={18} /></button>
-            </div>
-            <div className="p-5 space-y-3">
-              <div className="text-[12px] text-[var(--text-secondary)]">
-                <strong>{detailApproval.title}</strong> (₩{(detailApproval.amount || 0).toLocaleString()}) 을 반려합니다.
-              </div>
-              <div>
-                <label className="block text-[11px] font-extrabold text-[var(--text-primary)] mb-1">🔒 비밀번호 확인</label>
-                <input
-                  type="password"
-                  value={approvePw}
-                  onChange={e => { setApprovePw(e.target.value); setApprovePwError('') }}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-500"
-                  placeholder="비밀번호를 입력하세요"
-                  onKeyDown={e => { if (e.key === 'Enter') handleRejectConfirm() }}
-                />
-                {approvePwError && <p className="text-[11px] text-[#ef4444] mt-1 font-bold">{approvePwError}</p>}
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 px-5 py-3 border-t border-[var(--border-default)]">
-              <button onClick={() => { setRejectMode(false); setApprovePwError('') }} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer">취소</button>
-              <button onClick={handleRejectConfirm} className="px-4 py-2 rounded-lg bg-[#ef4444] text-white text-sm font-bold hover:bg-[#dc2626] cursor-pointer flex items-center gap-1"><Ban size={14} /> 반려 확인</button>
-            </div>
-          </div>
-        </div>
-      , document.body)}
-
       {/* ── 수정 폼 모달 (PrintApprovalForm 위에 표시) ── */}
       {resubmitMode && detailApproval && createPortal(
         <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) { setResubmitMode(false); setApprovePwError('') } }}>
@@ -3990,27 +2619,13 @@ export function AcctApproval({ year }: { year: number }) {
                 <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">품의명</label>
                 <input value={resubmitForm.title} onChange={e => setResubmitForm(f => ({ ...f, title: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-500" placeholder="품의명을 입력해주세요" />
               </div>
-              {!(detailApproval as any).isGeneral && (
-              <>
-              <div>
-                <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">예산구분</label>
-                <select value={(resubmitForm as any).budgetCatId || ''} onChange={e => setResubmitForm(f => ({ ...f, budgetCatId: e.target.value } as any))} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
-                  <option value="">— 예산구분 선택 —</option>
-                  {budgetCats.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
-                </select>
-              </div>
               <div>
                 <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">금액</label>
-                <input value={resubmitForm.amount} onChange={e => {
-                  const d = e.target.value.replace(/[^\d]/g, '')
-                  setResubmitForm(f => ({ ...f, amount: d ? Number(d).toLocaleString('ko-KR') : '' }))
-                }} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm text-[var(--text-primary)] text-right font-bold focus:outline-none focus:border-primary-500" placeholder="0" />
+                <input value={resubmitForm.amount} readOnly className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] text-right opacity-60 cursor-not-allowed" />
               </div>
-              </>
-              )}
               <div>
                 <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">날짜</label>
-                <input type="date" value={resubmitForm.date} onChange={e => setResubmitForm(f => ({ ...f, date: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-500" />
+                <input type="date" value={resubmitForm.date} readOnly className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] opacity-60 cursor-not-allowed" />
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">비고 / 설명</label>
@@ -4054,19 +2669,10 @@ export function AcctApproval({ year }: { year: number }) {
                 <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="예) 사무용품 구매" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
               </div>
               {modalApprovalType !== 'general' && (
-              <>
-              <div>
-                <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">예산구분</label>
-                <select value={(form as any).budgetCatId || ''} onChange={e => setForm(f => ({ ...f, budgetCatId: e.target.value } as any))} className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none">
-                  <option value="">— 예산구분 선택 —</option>
-                  {budgetCats.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
-                </select>
-              </div>
               <div>
                 <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">금액 (원) *</label>
                 <input value={form.amount} onChange={e => handleAmtInput(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none text-right font-bold" />
               </div>
-              </>
               )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -4144,7 +2750,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const today = new Date().toISOString().slice(0, 10)
   const currentUser = useAuthStore(s => s.user)
   const currentUserName = currentUser?.name || (() => { try { const u = JSON.parse(localStorage.getItem('ws_user') || '{}'); return u?.name } catch { return '' } })() || 'admin'
-  const [form, setForm] = useState({ desc: '', subItem: '', detailItem: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, inputDate: today, manager: '', expenseManager: '', approvalStatus: '품의준비' })
+  const [form, setForm] = useState({ desc: '', subItem: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, inputDate: today, manager: '', expenseManager: '', approvalStatus: '품의준비' })
   const staffList = useStaffStore(s => s.staff).filter(s => !s.resignedAt)
   const [counterSearch, setCounterSearch] = useState('')
   const [showCounterList, setShowCounterList] = useState(false)
@@ -4152,35 +2758,25 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const [descMode, setDescMode] = useState<'select' | 'input'>('select')
   const [isFromApproval, setIsFromApproval] = useState(false)
   const [selectedApprovalId, setSelectedApprovalId] = useState<string | null>(null)
-  const [approvalMeta, setApprovalMeta] = useState<{approver:string; requestDate:string; approvedDate:string; budgetCatName:string; accountCode:string; budgetCatId?:string}>({approver:'',requestDate:'',approvedDate:'',budgetCatName:'',accountCode:''})
+  const [approvalMeta, setApprovalMeta] = useState<{approver:string; requestDate:string; approvedDate:string; budgetCatName:string; accountCode:string}>({approver:'',requestDate:'',approvedDate:'',budgetCatName:'',accountCode:''})
   const [selectedBudgetCat, setSelectedBudgetCat] = useState('')
   const [wdBudgetItem, setWdBudgetItem] = useState('')
   const [wdCatName, setWdCatName] = useState('')
 
   const user = useAuthStore(s => s.user)
 
-  /* 예산 카테고리 목록 (해당 연도 + 예산승인자/지출담당자 필터) */
+  /* 예산 카테고리 목록 (해당 연도 + 지출담당자 필터) */
   const expBudgetCats = useMemo(() => {
     const cats: BudgetCat[] = getItem('acct_budget_cats', [])
     const yearCats = cats.filter(c => {
       const cy = c.year || (c.periodFrom ? parseInt(c.periodFrom.substring(0, 4)) : year)
       return cy === year
     })
-    // 예산승인자(approverType=approver)인지 확인
-    const userName = user?.name || ''
-    const staffList = getItem<any[]>('ws_users', [])
-    const currentStaff = staffList.find(s => s.name === userName)
-    const isBudgetApprover = currentStaff?.approverType === 'approver'
-    
-    // 예산승인자는 모든 예산구분 표시
-    if (isBudgetApprover) return yearCats
-    
-    // 일반 사용자: 지출담당자/승인담당자로 지정된 카테고리만
-    if (userName) {
-      return yearCats.filter(c =>
-        (c.users && c.users.length > 0 && c.users.includes(userName)) ||
-        ((c as any).approvers && (c as any).approvers.length > 0 && (c as any).approvers.includes(userName))
-      )
+    // 지출하기일 때: 현재 사용자가 지출담당자로 설정된 카테고리만 표시
+    if (type === 'expense') {
+      const userName = user?.name || ''
+      const userCats = yearCats.filter(c => c.users && c.users.length > 0 && c.users.includes(userName))
+      return userCats.length > 0 ? userCats : yearCats
     }
     return yearCats
   }, [refresh, year, type, user])
@@ -4235,16 +2831,9 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
     return Array.from(new Set(filtered.map(b => b.itemName).filter(Boolean))).sort()
   }, [selectedBudgetCat, refresh])
 
-  /* 출금전표용: 선택된 예산항목의 세목 (budgetItemDefs 우선, 없으면 실제 데이터) */
+  /* 출금전표용: 선택된 예산항목의 세목 */
   const wdSubItemNames = useMemo(() => {
     if (!wdBudgetItem || !selectedBudgetCat) return [] as string[]
-    // budgetItemDefs에서 세목 정의 가져오기
-    const defs: BudgetItemDef[] = getItem('acct_budget_item_defs', [])
-    const def = defs.find(d => d.name === wdBudgetItem || d.aliases?.includes(wdBudgetItem))
-    if (def && def.subItems && def.subItems.length > 0) {
-      return def.subItems.sort((a, b) => a.sortOrder - b.sortOrder).map(s => s.name)
-    }
-    // 정의가 없으면 실제 데이터에서 추출
     const budgets: BudgetItem[] = getItem('acct_budgets', [])
     const filtered = budgets.filter(b =>
       String(b.catId) === String(selectedBudgetCat) && b.itemName === wdBudgetItem
@@ -4252,22 +2841,9 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
     return Array.from(new Set(filtered.map(b => b.subItemName).filter(Boolean))).sort() as string[]
   }, [wdBudgetItem, selectedBudgetCat, refresh])
 
-  /* 출금전표용: BudgetItemDef 기반 세세항목 */
-  const wdVoucherItemDefs = useMemo(() => getItem<BudgetItemDef[]>('acct_budget_item_defs', []).sort((a, b) => a.sortOrder - b.sortOrder), [refresh])
-  const wdSelectedDef = useMemo(() => wdVoucherItemDefs.find(d => d.name === wdBudgetItem), [wdVoucherItemDefs, wdBudgetItem])
-  const wdSelectedSub = useMemo(() => wdSelectedDef?.subItems.find(s => s.name === form.subItem), [wdSelectedDef, form.subItem])
-  const wdDetailItems = useMemo(() => (wdSelectedSub?.detailItems || []).sort((a, b) => a.sortOrder - b.sortOrder), [wdSelectedSub])
-
   /* 예산세목 (지출하기용: 선택된 예산목에 해당하는 세목 목록) */
   const subItemNames = useMemo(() => {
     if (!form.desc) return []
-    // budgetItemDefs에서 세목 정의 가져오기
-    const defs: BudgetItemDef[] = getItem('acct_budget_item_defs', [])
-    const def = defs.find(d => d.name === form.desc || d.aliases?.includes(form.desc))
-    if (def && def.subItems && def.subItems.length > 0) {
-      return def.subItems.sort((a, b) => a.sortOrder - b.sortOrder).map(s => s.name)
-    }
-    // 정의가 없으면 실제 데이터에서 추출
     return Array.from(new Set(
       budgetItems.filter(b => b.itemName === form.desc).map(b => b.subItemName).filter(Boolean)
     )).sort() as string[]
@@ -4294,46 +2870,12 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
 
   const cashflows = useMemo(() => {
     const all = getItem<CashFlow[]>('acct_cashflows', [])
-    // 사용자 관련 예산 카테고리 ID
-    const userName = user?.name || ''
-    const staffListData = getItem<any[]>('ws_users', [])
-    const curStaff = staffListData.find(s => s.name === userName)
-    const isApprover = curStaff?.approverType === 'approver'
-    const cats: BudgetCat[] = getItem('acct_budget_cats', [])
-    const myCatIds = isApprover
-      ? null // 승인권자는 모두 표시
-      : cats.filter(c =>
-          (c.users && c.users.includes(userName)) ||
-          ((c as any).approvers && (c as any).approvers.includes(userName))
-        ).map(c => String(c.id))
-
     return all.filter(c => {
       if (!c.date) return false
       if (parseInt(c.date.substring(0, 4)) !== year) return false
-      if (!(c.type === type || (type === 'withdrawal' && c.type === 'expense'))) return false
-      // 모든 전표: 내가 작성한 것만 표시 (승인권자는 전체)
-      if (!isApprover) {
-        const cfCreator = (c as any).createdBy || ''
-        const cfManager = (c as any).manager || ''
-        // createdBy 또는 manager가 나와 일치하는 경우만 표시
-        if (cfCreator && cfCreator !== userName && cfManager !== userName) return false
-        if (!cfCreator && cfManager && cfManager !== userName) return false
-      }
-      // 관련 예산 필터
-      if (myCatIds !== null) {
-        const cfCatId = String((c as any).budgetCatId || '')
-        if (cfCatId && myCatIds.length > 0) return myCatIds.includes(cfCatId)
-        // catId 없으면 catName으로 매칭
-        if ((c as any).budgetCatName) {
-          const matchCat = cats.find(ct => ct.name === (c as any).budgetCatName)
-          if (matchCat) return myCatIds.includes(String(matchCat.id))
-        }
-        // 매칭 안되면 표시 안함 (비관련자)
-        if (myCatIds.length === 0) return false
-      }
-      return true
+      return c.type === type || (type === 'withdrawal' && c.type === 'expense')
     }).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
-  }, [year, type, refresh, user])
+  }, [year, type, refresh])
 
   const totalAmount = cashflows.reduce((a, c) => a + (c.amount || 0), 0)
 
@@ -4348,8 +2890,6 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
     if (!form.desc.trim()) { alert('내용을 입력하세요'); return }
     const amt = parseInt(form.amount.replace(/,/g, '')) || 0
     if (amt <= 0) { alert('금액을 입력하세요'); return }
-    // 입금/출금전표: 예산구분 필수
-    if ((type === 'income' || type === 'withdrawal') && !selectedBudgetCat) { alert('예산구분을 선택하세요'); return }
 
     const cfId = uid()
     const vId = uid()
@@ -4383,8 +2923,6 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
       amount: amt, description: form.desc, accountCode: type === 'income' ? '4030' : '5110',
       counter: form.counter, writeDate: form.writeDate,
       manager: form.manager,
-      budgetCatId: selectedBudgetCat || '',
-      createdBy: currentUserName,
       ...(type === 'income' && (form as any).incomeNote ? { incomeNote: (form as any).incomeNote } : {}),
     }
     // 품의에서 지출등록한 경우 approvalId 연결
@@ -4461,7 +2999,6 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
         approver: '',
         budgetItem: wdBudgetItem,
         budgetSubItem: form.subItem || '',
-        budgetDetailItem: form.detailItem || '',
         budgetCatId: selectedBudgetCat,
         budgetCatName: catName,
         budgetItemId: matchedItem ? String(matchedItem.id) : '',
@@ -4474,7 +3011,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
       if (cfIdx >= 0) { (allCfs[cfIdx] as any).approvalId = String(preApprovalId); setItem('acct_cashflows', allCfs) }
     }
 
-    setForm({ desc: '', subItem: '', detailItem: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, inputDate: today, manager: '', expenseManager: '', approvalStatus: '품의준비' })
+    setForm({ desc: '', subItem: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, inputDate: today, manager: '', expenseManager: '', approvalStatus: '품의준비' })
     setCounterSearch('')
     setIsFromApproval(false)
     setWdBudgetItem('')
@@ -4483,32 +3020,15 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
 
   const deleteEntry = (id: string | number) => {
     if (!confirm('삭제하시겠습니까?')) return
-    const allCfs = getItem<CashFlow[]>('acct_cashflows', [])
-    const target = allCfs.find(c => String(c.id) === String(id))
-    // 연동된 품의가 있으면 상태를 approved로 되돌림
-    if (target && (target as any).approvalId) {
-      const approvals: any[] = getItem('acct_approvals', [])
-      const aIdx = approvals.findIndex(a => String(a.id) === String((target as any).approvalId))
-      if (aIdx >= 0) {
-        approvals[aIdx].status = 'approved'
-        delete approvals[aIdx].expensedAt
-        setItem('acct_approvals', approvals)
-      }
-    }
-    const cfs = allCfs.filter(c => String(c.id) !== String(id))
+    const cfs = getItem<CashFlow[]>('acct_cashflows', []).filter(c => String(c.id) !== String(id))
     setItem('acct_cashflows', cfs)
     setRefresh(r => r + 1)
   }
 
   const methods = useMemo(() => {
-    const allPM: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
-    const filtered = selectedBudgetCat
-      ? allPM.filter(p => String(p.budgetCatId) === String(selectedBudgetCat))
-      : allPM
-    if (filtered.length > 0) return filtered.map(p => p.name)
     const stored: string[] = getItem('acct_payment_methods', ['계좌이체', '현금', '카드', '법인카드', '기타'])
     return stored.length > 0 ? stored : ['계좌이체', '현금', '카드', '법인카드', '기타']
-  }, [refresh, selectedBudgetCat])
+  }, [refresh])
 
   return (
     <div className="space-y-4">
@@ -4600,25 +3120,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
               )}
             </div>
             <div>
-              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                <label className="text-[10.5px] font-bold text-[var(--text-muted)]">예산선택</label>
-                {selectedBudgetCat && (() => {
-                  const allBudgets: BudgetItem[] = getItem('acct_budgets', [])
-                  const catBudgets = allBudgets.filter(b => String(b.catId) === String(selectedBudgetCat))
-                  const tb = catBudgets.reduce((s, b) => s + (b.amount || 0), 0)
-                  const sp = catBudgets.reduce((s, b) => s + (b.spent || 0), 0)
-                  const rm = tb - sp
-                  const rt = tb > 0 ? Math.round(sp / tb * 100) : 0
-                  return (
-                    <>
-                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800"><span className="text-[7px] text-blue-500 font-bold">총예산</span><span className="text-[9px] font-extrabold text-blue-600">{tb.toLocaleString('ko-KR')}</span></div>
-                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800"><span className="text-[7px] text-amber-500 font-bold">기집행</span><span className="text-[9px] font-extrabold text-amber-600">{sp.toLocaleString('ko-KR')}</span></div>
-                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800"><span className="text-[7px] text-emerald-500 font-bold">잔액</span><span className="text-[9px] font-extrabold text-emerald-600">{rm.toLocaleString('ko-KR')}</span></div>
-                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-violet-50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800"><span className="text-[9px] font-extrabold text-violet-600">{rt}%</span></div>
-                    </>
-                  )
-                })()}
-              </div>
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">예산선택</label>
               <input
                 value={wdCatName || '예산구분 선택'}
                 readOnly
@@ -4637,161 +3139,77 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           {type === 'withdrawal' && (
           <>
             <div>
-              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                <label className="text-[10.5px] font-bold text-[var(--text-muted)]">예산항목</label>
-                {wdBudgetItem && (() => {
-                  const allBudgets: BudgetItem[] = getItem('acct_budgets', [])
-                  const itemBudgets = allBudgets.filter(b => String(b.catId) === String(selectedBudgetCat) && b.itemName === wdBudgetItem)
-                  const tb = itemBudgets.reduce((s, b) => s + (b.amount || 0), 0)
-                  const sp = itemBudgets.reduce((s, b) => s + (b.spent || 0), 0)
-                  const rm = tb - sp
-                  const rt = tb > 0 ? Math.round(sp / tb * 100) : 0
-                  return (
-                    <>
-                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800"><span className="text-[7px] text-blue-500 font-bold">총예산</span><span className="text-[9px] font-extrabold text-blue-600">{tb.toLocaleString('ko-KR')}</span></div>
-                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800"><span className="text-[7px] text-amber-500 font-bold">기집행</span><span className="text-[9px] font-extrabold text-amber-600">{sp.toLocaleString('ko-KR')}</span></div>
-                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800"><span className="text-[7px] text-emerald-500 font-bold">잔액</span><span className="text-[9px] font-extrabold text-emerald-600">{rm.toLocaleString('ko-KR')}</span></div>
-                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-violet-50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800"><span className="text-[9px] font-extrabold text-violet-600">{rt}%</span></div>
-                    </>
-                  )
-                })()}
-              </div>
-              <CustomSelect
-                value={wdBudgetItem}
-                onChange={v => {
-                  setWdBudgetItem(v)
-                  const budgets: BudgetItem[] = getItem('acct_budgets', [])
-                  const matched = budgets.filter(b =>
-                    String(b.catId) === String(selectedBudgetCat) && b.itemName === v
-                  )
-                  const totalAmt = matched.reduce((sum, b) => sum + ((b.amount || 0) - (b.spent || 0)), 0)
-                  setForm(f => ({ ...f, subItem: '', detailItem: '', amount: totalAmt > 0 ? totalAmt.toLocaleString('ko-KR') : '' }))
-                }}
-                placeholder="예산항목"
-                options={[
-                  { value: '', label: '예산항목' },
-                  ...wdBudgetItemNames.map(n => ({ value: n, label: n })),
-                ]}
-              />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                <label className="text-[10.5px] font-bold text-[var(--text-muted)]">세목</label>
-                {form.subItem && (() => {
-                  const allBudgets: BudgetItem[] = getItem('acct_budgets', [])
-                  const subBudgets = allBudgets.filter(b => String(b.catId) === String(selectedBudgetCat) && b.itemName === wdBudgetItem && b.subItemName === form.subItem)
-                  const tb = subBudgets.reduce((s, b) => s + (b.amount || 0), 0)
-                  const sp = subBudgets.reduce((s, b) => s + (b.spent || 0), 0)
-                  const rm = tb - sp
-                  const rt = tb > 0 ? Math.round(sp / tb * 100) : 0
-                  return (
-                    <>
-                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800"><span className="text-[7px] text-blue-500 font-bold">총예산</span><span className="text-[9px] font-extrabold text-blue-600">{tb.toLocaleString('ko-KR')}</span></div>
-                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800"><span className="text-[7px] text-amber-500 font-bold">기집행</span><span className="text-[9px] font-extrabold text-amber-600">{sp.toLocaleString('ko-KR')}</span></div>
-                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800"><span className="text-[7px] text-emerald-500 font-bold">잔액</span><span className="text-[9px] font-extrabold text-emerald-600">{rm.toLocaleString('ko-KR')}</span></div>
-                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-violet-50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800"><span className="text-[9px] font-extrabold text-violet-600">{rt}%</span></div>
-                    </>
-                  )
-                })()}
-              </div>
-              {wdSubItemNames.length > 0 ? (
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">예산항목 / 세목</label>
+              <div className="flex gap-1.5">
                 <CustomSelect
-                  value={form.subItem}
+                  value={wdBudgetItem}
                   onChange={v => {
+                    setWdBudgetItem(v)
                     const budgets: BudgetItem[] = getItem('acct_budgets', [])
-                    const matched = budgets.find(b =>
-                      String(b.catId) === String(selectedBudgetCat) &&
-                      b.itemName === wdBudgetItem &&
-                      b.subItemName === v
+                    const matched = budgets.filter(b =>
+                      String(b.catId) === String(selectedBudgetCat) && b.itemName === v
                     )
-                    const amt = matched ? ((matched.amount || 0) - (matched.spent || 0)) : 0
-                    setForm(f => ({
-                      ...f,
-                      subItem: v,
-                      detailItem: '',
-                      amount: amt > 0 ? amt.toLocaleString('ko-KR') : f.amount,
-                    }))
+                    const totalAmt = matched.reduce((sum, b) => sum + ((b.amount || 0) - (b.spent || 0)), 0)
+                    setForm(f => ({ ...f, subItem: '', amount: totalAmt > 0 ? totalAmt.toLocaleString('ko-KR') : '' }))
                   }}
-                  placeholder="예산세목"
+                  placeholder="예산항목"
                   options={[
-                    { value: '', label: '예산세목' },
-                    ...wdSubItemNames.map(n => ({ value: n, label: n })),
+                    { value: '', label: '예산항목' },
+                    ...wdBudgetItemNames.map(n => ({ value: n, label: n })),
                   ]}
                 />
-              ) : (
-                <input value={form.subItem || '세목 없음'} readOnly className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-muted)] cursor-not-allowed outline-none" />
-              )}
-            </div>
-            {/* 세세항목 드롭다운 (BudgetItemDef 기반) */}
-            {wdDetailItems.length > 0 && (
-            <div>
-              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                <label className="text-[10.5px] font-bold text-[var(--text-muted)] flex items-center gap-1">
-                  세세항목
-                  <span className="text-[8px] font-bold text-violet-500 bg-violet-50 dark:bg-violet-900/20 px-1.5 py-0.5 rounded">📋 선택</span>
-                </label>
-                {form.subItem && (() => {
-                  const allBudgets: BudgetItem[] = getItem('acct_budgets', [])
-                  let subBudgets = allBudgets.filter(b => String(b.catId) === String(selectedBudgetCat) && b.itemName === wdBudgetItem && b.subItemName === form.subItem)
-                  if (form.detailItem) subBudgets = subBudgets.filter(b => b.detailItemName === form.detailItem)
-                  const tb = subBudgets.reduce((s, b) => s + (b.amount || 0), 0)
-                  const sp = subBudgets.reduce((s, b) => s + (b.spent || 0), 0)
-                  const rm = tb - sp
-                  const rt = tb > 0 ? Math.round(sp / tb * 100) : 0
-                  return (
-                    <>
-                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800"><span className="text-[7px] text-blue-500 font-bold">총예산</span><span className="text-[9px] font-extrabold text-blue-600">{tb.toLocaleString('ko-KR')}</span></div>
-                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800"><span className="text-[7px] text-amber-500 font-bold">기집행</span><span className="text-[9px] font-extrabold text-amber-600">{sp.toLocaleString('ko-KR')}</span></div>
-                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800"><span className="text-[7px] text-emerald-500 font-bold">잔액</span><span className="text-[9px] font-extrabold text-emerald-600">{rm.toLocaleString('ko-KR')}</span></div>
-                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-violet-50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800"><span className="text-[9px] font-extrabold text-violet-600">{rt}%</span></div>
-                    </>
-                  )
-                })()}
+                {wdSubItemNames.length > 0 ? (
+                  <CustomSelect
+                    value={form.subItem}
+                    onChange={v => {
+                      const budgets: BudgetItem[] = getItem('acct_budgets', [])
+                      const matched = budgets.find(b =>
+                        String(b.catId) === String(selectedBudgetCat) &&
+                        b.itemName === wdBudgetItem &&
+                        b.subItemName === v
+                      )
+                      const amt = matched ? ((matched.amount || 0) - (matched.spent || 0)) : 0
+                      setForm(f => ({
+                        ...f,
+                        subItem: v,
+                        amount: amt > 0 ? amt.toLocaleString('ko-KR') : f.amount,
+                      }))
+                    }}
+                    placeholder="예산세목"
+                    options={[
+                      { value: '', label: '예산세목' },
+                      ...wdSubItemNames.map(n => ({ value: n, label: n })),
+                    ]}
+                  />
+                ) : (
+                  <input value={form.subItem || '세목 없음'} readOnly className="flex-1 px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-muted)] cursor-not-allowed outline-none" />
+                )}
               </div>
-              <CustomSelect
-                value={form.detailItem}
-                onChange={v => setForm(f => ({ ...f, detailItem: v }))}
-                placeholder="— 세세항목 선택 —"
-                options={[
-                  { value: '', label: '— 세세항목 선택 —' },
-                  ...wdDetailItems.map(d => ({ value: d.name, label: d.name })),
-                ]}
-              />
             </div>
-            )}
             <div>
               <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                 <label className="text-[10.5px] font-bold text-[var(--text-muted)]">금액 (원) *</label>
                 {wdBudgetItem && (() => {
                   const budgets: BudgetItem[] = getItem('acct_budgets', [])
-                  let matched = form.subItem
+                  const matched = form.subItem
                     ? budgets.filter(b => String(b.catId) === String(selectedBudgetCat) && b.itemName === wdBudgetItem && b.subItemName === form.subItem)
                     : budgets.filter(b => String(b.catId) === String(selectedBudgetCat) && b.itemName === wdBudgetItem)
-                  if (form.detailItem) matched = matched.filter(b => b.detailItemName === form.detailItem)
                   const totalBudget = matched.reduce((s, b) => s + (b.amount || 0), 0)
-                  const prevSpent = matched.reduce((s, b) => s + (b.spent || 0), 0)
-                  const inputAmt = Number((form.amount || '0').replace(/,/g, '')) || 0
-                  const afterSpent = prevSpent + inputAmt
-                  const afterRemain = totalBudget - afterSpent
-                  const afterPct = totalBudget > 0 ? Math.round(afterSpent / totalBudget * 100) : 0
-                  const isOver = afterRemain < 0
+                  const spent = matched.reduce((s, b) => s + (b.spent || 0), 0)
+                  const remaining = totalBudget - spent
                   return (
                     <>
                       <div className="flex items-center gap-0.5 px-1 py-px rounded bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800">
                         <span className="text-[7px] text-blue-500 font-bold">총예산</span>
                         <span className="text-[9px] font-extrabold text-blue-600">{totalBudget.toLocaleString('ko-KR')}</span>
                       </div>
-                      <div className={`flex items-center gap-0.5 px-1 py-px rounded border ${isOver ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800' : 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800'}`}>
-                        <span className={`text-[7px] font-bold ${isOver ? 'text-red-500' : 'text-amber-500'}`}>집행</span>
-                        <span className={`text-[9px] font-extrabold ${isOver ? 'text-red-600' : 'text-amber-600'}`}>{afterSpent.toLocaleString('ko-KR')}</span>
+                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
+                        <span className="text-[7px] text-amber-500 font-bold">기집행</span>
+                        <span className="text-[9px] font-extrabold text-amber-600">{spent.toLocaleString('ko-KR')}</span>
                       </div>
-                      <div className={`flex items-center gap-0.5 px-1 py-px rounded border ${isOver ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800' : 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800'}`}>
-                        <span className={`text-[7px] font-bold ${isOver ? 'text-red-500' : 'text-emerald-500'}`}>잔액</span>
-                        <span className={`text-[9px] font-extrabold ${isOver ? 'text-red-600' : 'text-emerald-600'}`}>{afterRemain.toLocaleString('ko-KR')}</span>
-                      </div>
-                      <div className={`flex items-center gap-0.5 px-1 py-px rounded border ${afterPct > 100 ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800' : afterPct > 80 ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800' : 'bg-violet-50 dark:bg-violet-900/10 border-violet-200 dark:border-violet-800'}`}>
-                        <span className={`text-[9px] font-extrabold ${afterPct > 100 ? 'text-red-600' : afterPct > 80 ? 'text-amber-600' : 'text-violet-600'}`}>{afterPct}%</span>
-                        {isOver && <span className="text-[9px]">⚠️</span>}
+                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800">
+                        <span className="text-[7px] text-emerald-500 font-bold">잔액</span>
+                        <span className="text-[9px] font-extrabold text-emerald-600">{remaining.toLocaleString('ko-KR')}</span>
                       </div>
                     </>
                   )
@@ -4802,40 +3220,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           </>
           )}
           {/* 금액 (출금전표 외) */}
-          {type === 'income' && (
-          <div>
-            <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-              <label className="text-[10.5px] font-bold text-[var(--text-muted)]">금액 (원) *</label>
-              {selectedBudgetCat && (() => {
-                const allBudgets: BudgetItem[] = getItem('acct_budgets', [])
-                const catBudgets = allBudgets.filter(b => String(b.catId) === String(selectedBudgetCat))
-                const totalBudget = catBudgets.reduce((s, b) => s + (b.amount || 0), 0)
-                const allCfs: any[] = getItem('acct_cashflows', [])
-                const incomeCfs = allCfs.filter((c: any) => c.type === 'income' && (!c.budgetCatId || String(c.budgetCatId) === String(selectedBudgetCat)))
-                const totalIncome = incomeCfs.reduce((s: number, c: any) => s + (typeof c.amount === 'number' ? c.amount : (Number(String(c.amount || '0').replace(/,/g, '')) || 0)), 0)
-                const inputAmt = Number((form.amount || '0').replace(/,/g, '')) || 0
-                const afterIncome = totalIncome + inputAmt
-                const remaining = totalBudget - afterIncome
-                const incomePct = totalBudget > 0 ? Math.round(afterIncome / totalBudget * 100) : 0
-                return (
-                  <>
-                    <div className="flex items-center gap-0.5 px-1 py-px rounded bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800"><span className="text-[7px] text-blue-500 font-bold">총예산</span><span className="text-[9px] font-extrabold text-blue-600">{totalBudget.toLocaleString('ko-KR')}</span></div>
-                    <div className="flex items-center gap-0.5 px-1 py-px rounded bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800"><span className="text-[7px] text-emerald-500 font-bold">총입금</span><span className="text-[9px] font-extrabold text-emerald-600">{afterIncome.toLocaleString('ko-KR')}</span></div>
-                    <div className={`flex items-center gap-0.5 px-1 py-px rounded border ${remaining < 0 ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800' : 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800'}`}>
-                      <span className={`text-[7px] font-bold ${remaining < 0 ? 'text-red-500' : 'text-amber-500'}`}>잔여</span>
-                      <span className={`text-[9px] font-extrabold ${remaining < 0 ? 'text-red-600' : 'text-amber-600'}`}>{remaining.toLocaleString('ko-KR')}</span>
-                    </div>
-                    <div className={`flex items-center gap-0.5 px-1 py-px rounded border ${incomePct >= 100 ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800' : 'bg-violet-50 dark:bg-violet-900/10 border-violet-200 dark:border-violet-800'}`}>
-                      <span className={`text-[9px] font-extrabold ${incomePct >= 100 ? 'text-emerald-600' : 'text-violet-600'}`}>{incomePct}%</span>
-                    </div>
-                  </>
-                )
-              })()}
-            </div>
-            <input value={form.amount} onChange={e => handleAmtInput(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm font-bold text-right focus:border-primary-500 outline-none" style={{ color: typeColors[type] }} />
-          </div>
-          )}
-          {type === 'expense' && (
+          {type !== 'withdrawal' && (
           <div>
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">금액 (원) *</label>
             <input value={form.amount} onChange={e => handleAmtInput(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm font-bold text-right focus:border-primary-500 outline-none" style={{ color: typeColors[type] }} />
@@ -4968,79 +3353,11 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           </div>
           <div>
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'income' ? '입금' : '지출'}수단</label>
-            {(() => {
-              // 지출수단 관리에서 등록된 수단만 사용 (예산구분별 필터)
-              const catIdVal = selectedBudgetCat
-              const payOpts: {value:string; label:string; group:string}[] = []
-              const allPayItems: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
-              const payItemsRaw = catIdVal
-                ? allPayItems.filter(p => String(p.budgetCatId) === String(catIdVal))
-                : allPayItems
-              // 같은 이름+카테고리 중복 제거
-              const seen = new Set<string>()
-              const payItems = payItemsRaw.filter(p => {
-                const key = `${p.category}:${p.name}`
-                if (seen.has(key)) return false
-                seen.add(key)
-                return true
-              })
-              // 계좌 + 연결 카드
-              payItems.filter(p => p.category === '계좌').forEach(p => {
-                payOpts.push({ value: `계좌:${p.name}`, label: `🏦 ${p.name}${p.accountNumber ? ' • ' + p.accountNumber : ''}`, group: '계좌' })
-                if (p.cards) p.cards.forEach(card => {
-                  payOpts.push({ value: `카드:${card.cardName || card.cardNumber}`, label: `💳 ${card.cardName || '카드'}${card.cardNumber ? ' ' + card.cardNumber : ''}`, group: '카드' })
-                })
-              })
-              payItems.filter(p => p.category === '현금').forEach(p => payOpts.push({ value: p.name, label: `💵 ${p.name}`, group: '현금' }))
-              payItems.filter(p => p.category === '어음').forEach(p => payOpts.push({ value: p.name, label: `📄 ${p.name}`, group: '어음' }))
-              payItems.filter(p => p.category === '상품권').forEach(p => payOpts.push({ value: p.name, label: `🎟️ ${p.name}`, group: '상품권' }))
-              // 등록된 수단이 없으면 안내 표시
-              if (payOpts.length === 0) {
-                return (
-                  <select
-                    value={form.method}
-                    onChange={e => setForm(f => ({ ...f, method: e.target.value }))}
-                    className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-muted)] focus:outline-none focus:border-primary-500"
-                  >
-                    <option value="">— 지출수단을 먼저 등록하세요 —</option>
-                  </select>
-                )
-              }
-              return (
-                <select
-                  value={form.method}
-                  onChange={e => setForm(f => ({ ...f, method: e.target.value }))}
-                  className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500"
-                >
-                  <option value="">— 선택 —</option>
-                  {payOpts.filter(o => o.group === '계좌').length > 0 && (
-                    <optgroup label="🏦 계좌">
-                      {payOpts.filter(o => o.group === '계좌').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </optgroup>
-                  )}
-                  {payOpts.filter(o => o.group === '카드').length > 0 && (
-                    <optgroup label="💳 카드">
-                      {payOpts.filter(o => o.group === '카드').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </optgroup>
-                  )}
-                  {payOpts.filter(o => o.group === '현금').length > 0 && (
-                    <optgroup label="💵 현금">
-                      {payOpts.filter(o => o.group === '현금').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </optgroup>
-                  )}
-                  {payOpts.filter(o => o.group === '어음').length > 0 && (
-                    <optgroup label="📄 어음">
-                      {payOpts.filter(o => o.group === '어음').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </optgroup>
-                  )}
-                  {payOpts.filter(o => o.group === '상품권').length > 0 && (
-                    <optgroup label="🎟️ 상품권">
-                      {payOpts.filter(o => o.group === '상품권').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </optgroup>
-                  )}
-                </select>
-              )
-            })()}
+            <CustomSelect
+              value={form.method}
+              onChange={v => setForm(f => ({ ...f, method: v }))}
+              options={methods.map(m => ({ value: m, label: m }))}
+            />
           </div>
           {type !== 'expense' && (
           <div>
@@ -5099,27 +3416,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
       {type === 'expense' && expenseTab === 'waiting' && (() => {
         const approvals = getItem<Approval[]>('acct_approvals', [])
         const cats: BudgetCat[] = getItem('acct_budget_cats', [])
-        // 사용자가 지출담당자로 등록된 모든 카테고리 (ID + 이름 매칭)
-        const userName = currentUserName
-        const userCatIds = new Set(cats.filter(c => c.users && c.users.includes(userName)).map(c => String(c.id)))
-        const userCatNames = new Set(cats.filter(c => c.users && c.users.includes(userName)).map(c => c.name))
-        const staffListData = getItem<any[]>('ws_users', [])
-        const curStaff = staffListData.find(s => s.name === userName)
-        const isApprover = curStaff?.approverType === 'approver'
-        const approved = approvals.filter(a => {
-          if (a.status !== 'approved') return false
-          // 예산구분이 없는 항목은 지출대기에 표시하지 않음
-          const aCatId = String((a as any).budgetCatId || '')
-          const aCatName = (a as any).budgetCatName || ''
-          if (!aCatId && !aCatName) return false
-          // ID로 매칭
-          if (aCatId && userCatIds.has(aCatId)) return true
-          // 이름으로 매칭
-          if (aCatName && userCatNames.has(aCatName)) return true
-          // 승인자는 모든 항목 볼 수 있음
-          if (isApprover) return true
-          return false
-        })
+        const approved = approvals.filter(a => a.status === 'approved')
         if (approved.length === 0) return null
         const getCatName = (a: any) => {
           if (a.budgetCatName) return a.budgetCatName
@@ -5156,20 +3453,6 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                       const bs = allBudgets.find(b => String(b.id) === String(aa.budgetSubId))
                       if (bs) budgetSubItemName = bs.subItemName || bs.itemName || budgetSubItemName
                     }
-                    // 예산 카테고리의 지출수단 자동 선택
-                    const budgetCatsAll: BudgetCat[] = getItem('acct_budget_cats', [])
-                    const matchedCat = aa.budgetCatId ? budgetCatsAll.find(c => String(c.id) === String(aa.budgetCatId)) : null
-                    let autoMethod = ''
-                    if (matchedCat?.accounts && matchedCat.accounts.length > 0) {
-                      // 모든 계좌+카드 옵션 수집
-                      const allPayOpts: string[] = []
-                      matchedCat.accounts.forEach(acct => {
-                        if (acct.bankName) allPayOpts.push(`계좌:${acct.bankName}`)
-                        if (acct.cards) acct.cards.forEach(card => allPayOpts.push(`카드:${card}`))
-                      })
-                      // 1개면 자동선택, 복수면 선택하도록 빈값
-                      if (allPayOpts.length === 1) autoMethod = allPayOpts[0]
-                    }
                     setForm(f => ({
                       ...f,
                       desc: budgetItemName || a.title || a.description || '',
@@ -5180,7 +3463,6 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                       inputDate: today,
                       manager: a.applicant || '',
                       expenseManager: user?.name || '',
-                      method: autoMethod,
                     }))
                     setIsFromApproval(true)
                     setSelectedApprovalId(String(a.id))
@@ -5205,7 +3487,6 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                       approvedDate: (aa.approvedAt?.slice(0,10) || '-'),
                       budgetCatName: getCatName(a) || '-',
                       accountCode: resolvedAcctCode,
-                      budgetCatId: aa.budgetCatId ? String(aa.budgetCatId) : undefined,
                     })
                     setDescMode('select')
                     setShowExpenseModal(true)
@@ -5458,67 +3739,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                 {/* 지출수단 */}
                 <div>
                   <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">지출수단</label>
-                  {(() => {
-                    // 품의 연동일 때 예산 카테고리의 실제 계좌/카드 목록 생성
-                    const catIdVal = isFromApproval ? approvalMeta.budgetCatId : selectedBudgetCat
-                    const payOptions: {value:string; label:string; group:string}[] = []
-                    // 지출수단 관리에서 등록된 수단만 사용 (예산구분별 필터)
-                    const allPM: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
-                    const filteredPMRaw = catIdVal
-                      ? allPM.filter(p => String(p.budgetCatId) === String(catIdVal))
-                      : allPM
-                    // 같은 이름+카테고리 중복 제거
-                    const seenPM = new Set<string>()
-                    const filteredPM = filteredPMRaw.filter(p => {
-                      const key = `${p.category}:${p.name}`
-                      if (seenPM.has(key)) return false
-                      seenPM.add(key)
-                      return true
-                    })
-                    filteredPM.filter(p => p.category === '계좌').forEach(p => {
-                      payOptions.push({ value: `계좌:${p.name}`, label: `🏦 ${p.name}${p.accountNumber ? ' • ' + p.accountNumber : ''}`, group: '계좌' })
-                      if (p.cards) p.cards.forEach(card => {
-                        payOptions.push({ value: `카드:${card.cardName || card.cardNumber}`, label: `💳 ${card.cardName || '카드'}${card.cardNumber ? ' ' + card.cardNumber : ''}`, group: '카드' })
-                      })
-                    })
-                    filteredPM.filter(p => p.category === '현금').forEach(p => payOptions.push({ value: p.name, label: `💵 ${p.name}`, group: '현금' }))
-                    filteredPM.filter(p => p.category === '어음').forEach(p => payOptions.push({ value: p.name, label: `📄 ${p.name}`, group: '어음' }))
-                    filteredPM.filter(p => p.category === '상품권').forEach(p => payOptions.push({ value: p.name, label: `🎟️ ${p.name}`, group: '상품권' }))
-                    return (
-                      <select
-                        value={form.method}
-                        onChange={e => setForm(f => ({ ...f, method: e.target.value }))}
-                        className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500"
-                      >
-                        <option value="">— 선택 —</option>
-                        {payOptions.filter(o => o.group === '계좌').length > 0 && (
-                          <optgroup label="🏦 계좌">
-                            {payOptions.filter(o => o.group === '계좌').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                          </optgroup>
-                        )}
-                        {payOptions.filter(o => o.group === '카드').length > 0 && (
-                          <optgroup label="💳 카드">
-                            {payOptions.filter(o => o.group === '카드').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                          </optgroup>
-                        )}
-                        {payOptions.filter(o => o.group === '현금').length > 0 && (
-                          <optgroup label="💵 현금">
-                            {payOptions.filter(o => o.group === '현금').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                          </optgroup>
-                        )}
-                        {payOptions.filter(o => o.group === '어음').length > 0 && (
-                          <optgroup label="📄 어음">
-                            {payOptions.filter(o => o.group === '어음').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                          </optgroup>
-                        )}
-                        {payOptions.filter(o => o.group === '상품권').length > 0 && (
-                          <optgroup label="🎟️ 상품권">
-                            {payOptions.filter(o => o.group === '상품권').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                          </optgroup>
-                        )}
-                      </select>
-                    )
-                  })()}
+                  <CustomSelect value={form.method} onChange={v => setForm(f => ({ ...f, method: v }))} options={methods.map(m => ({ value: m, label: m }))} />
                 </div>
                 {/* 실제거래일자 */}
                 <div>
@@ -7317,919 +5538,6 @@ function AcctHQVendor() {
           </div>
         </div>, document.body
       )}
-    </div>
-  )
-}
-
-/* ═══════════════════════════════════════════
-   지출수단 관리 (카테고리별)
-   ═══════════════════════════════════════════ */
-interface PayMethodCard {
-  id: number
-  cardName: string
-  cardCompany: string
-  cardNumber: string
-  cardType: '체크카드' | '신용카드'
-  cardUser: string
-  expiryDate?: string
-  cardLimit?: number
-  memo?: string
-}
-
-interface PayMethodNote {
-  id: number
-  noteNumber: string
-  issuer: string
-  receiver: string
-  amount: number
-  issueDate: string
-  maturityDate: string
-  endorsement: string
-  bank: string
-  status: '미결제' | '추심중' | '결제완료' | '부도'
-  memo?: string
-}
-
-interface PayMethodItem {
-  id: number
-  name: string
-  category: '계좌' | '현금' | '어음' | '상품권'
-  budgetCatId?: string | number  // 예산구분 연결
-  // 계좌 상세
-  bankName?: string
-  accountNumber?: string
-  accountHolder?: string
-  manager?: string
-  purpose?: string
-  memo?: string
-  cards?: PayMethodCard[]
-  // 현금 상세
-  storageLocation?: string
-  custodian?: string
-  cashLimit?: number
-  // 어음 상세
-  noteType?: '수신' | '발행'
-  noteBank?: string
-  noteManager?: string
-  defaultMaturity?: string
-  noteLimit?: number
-  notes?: PayMethodNote[]
-  // 상품권 상세
-  voucherAmount?: number
-  voucherQty?: number
-  voucherStorage?: string
-  voucherManager?: string
-}
-
-const PAY_CATEGORIES = [
-  { key: '계좌' as const, label: '계좌', icon: '🏦', color: '#3b82f6', bg: 'bg-blue-50 dark:bg-blue-900/10', border: 'border-blue-200 dark:border-blue-800', desc: '계좌이체, 자동이체 등' },
-  { key: '현금' as const, label: '현금', icon: '💵', color: '#22c55e', bg: 'bg-emerald-50 dark:bg-emerald-900/10', border: 'border-emerald-200 dark:border-emerald-800', desc: '현금, 소액현금 등' },
-  { key: '어음' as const, label: '어음', icon: '📄', color: '#f59e0b', bg: 'bg-amber-50 dark:bg-amber-900/10', border: 'border-amber-200 dark:border-amber-800', desc: '수신어음, 발행어음, 수표' },
-  { key: '상품권' as const, label: '상품권', icon: '🎟️', color: '#8b5cf6', bg: 'bg-violet-50 dark:bg-violet-900/10', border: 'border-violet-200 dark:border-violet-800', desc: '문화상품권, 백화점상품권 등' },
-]
-
-const DEFAULT_PAY_ITEMS: PayMethodItem[] = [
-  { id: 1, name: '계좌이체', category: '계좌' },
-  { id: 2, name: '자동이체', category: '계좌' },
-  { id: 3, name: '온라인뱅킹', category: '계좌' },
-  { id: 4, name: '현금', category: '현금' },
-  { id: 5, name: '소액현금', category: '현금' },
-  { id: 6, name: '수신어음', category: '어음', noteType: '수신' },
-  { id: 7, name: '발행어음', category: '어음', noteType: '발행' },
-  { id: 11, name: '수표', category: '어음' },
-  { id: 8, name: '문화상품권', category: '상품권' },
-  { id: 9, name: '백화점상품권', category: '상품권' },
-  { id: 10, name: '온누리상품권', category: '상품권' },
-]
-
-const DETAIL_FIELD_LABEL = 'text-[11px] font-bold text-[var(--text-muted)] mb-1 block'
-const DETAIL_INPUT = 'w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-white dark:bg-gray-900 text-[12px] text-[var(--text-primary)] outline-none focus:border-primary-400 transition-colors placeholder:text-[var(--text-muted)]'
-
-function AcctPayMethods({ catId }: { catId?: string | null }) {
-  const [refresh, setRefresh] = useState(0)
-  const [newName, setNewName] = useState('')
-  const [activeCategory, setActiveCategory] = useState<'계좌' | '현금' | '어음' | '상품권'>('계좌')
-  const [expandedId, setExpandedId] = useState<number | null>(null)
-  const addToast = useToastStore(s => s.add)
-
-  // 직원 목록
-  const staffList = useMemo(() => getItem<any[]>('ws_users', []), [])
-
-  // 현재 설정 회계년도
-  const currentYear = new Date().getFullYear()
-  const activeYear = parseInt(new URLSearchParams(window.location.hash.split('?')[1] || '').get('year') || '') || parseInt(localStorage.getItem('acct_active_year') || '') || currentYear
-
-  // 예산구분 목록 (설정 년도 기준)
-  const budgetCats = useMemo(() => {
-    const all = getItem<BudgetCat[]>('acct_budget_cats', [])
-    return all.filter(c => {
-      const cy = c.year || (c.periodFrom ? parseInt(c.periodFrom.substring(0, 4)) : currentYear)
-      return cy === activeYear
-    })
-  }, [refresh, activeYear])
-
-  // 상단 바에서 선택된 예산구분 ID 사용
-  const selectedPayCatId = catId || (budgetCats.length > 0 ? String(budgetCats[0].id) : '')
-  const selectedCatName = budgetCats.find(c => String(c.id) === selectedPayCatId)?.name || ''
-
-  // 초기화
-  useEffect(() => {
-    const raw = localStorage.getItem('acct_pay_methods_v2')
-    if (!raw) {
-      const oldMethods: string[] = getItem('acct_payment_methods', [])
-      if (oldMethods.length > 0) {
-        const migrated: PayMethodItem[] = oldMethods.map((name, i) => {
-          let cat: PayMethodItem['category'] = '상품권'
-          if (['계좌이체', '자동이체', '온라인뱅킹'].includes(name)) cat = '계좌'
-          else if (['현금', '소액현금'].includes(name)) cat = '현금'
-          else if (['약속어음', '환어음', '수표', '어음'].includes(name)) cat = '어음'
-          return { id: Date.now() + i, name, category: cat }
-        })
-        localStorage.setItem('acct_pay_methods_v2', JSON.stringify(migrated))
-      } else {
-        localStorage.setItem('acct_pay_methods_v2', JSON.stringify(DEFAULT_PAY_ITEMS))
-      }
-      setRefresh(r => r + 1)
-    }
-  }, [])
-
-  void refresh
-  const allItems: PayMethodItem[] = useMemo(() => {
-    try {
-      const raw = localStorage.getItem('acct_pay_methods_v2')
-      if (!raw) return DEFAULT_PAY_ITEMS
-      const parsed = JSON.parse(raw)
-      if (!Array.isArray(parsed)) return DEFAULT_PAY_ITEMS
-      if (parsed.length > 0 && typeof parsed[0] === 'string') return DEFAULT_PAY_ITEMS
-      return parsed as PayMethodItem[]
-    } catch { return DEFAULT_PAY_ITEMS }
-  }, [refresh])
-  // 선택된 예산구분의 항목만 표시
-  const filteredItems = selectedPayCatId
-    ? allItems.filter(i => String(i.budgetCatId) === selectedPayCatId)
-    : allItems
-  const catItems = filteredItems.filter(i => i.category === activeCategory)
-  const activeCatInfo = PAY_CATEGORIES.find(c => c.key === activeCategory)!
-
-  // 선택된 예산구분의 지출담당자 (기본값으로 사용)
-  const defaultManager = useMemo(() => {
-    const cat = budgetCats.find(c => String(c.id) === selectedPayCatId)
-    if (cat?.users && cat.users.length > 0) return cat.users[0]
-    return ''
-  }, [budgetCats, selectedPayCatId])
-
-  const saveAll = (updated: PayMethodItem[]) => {
-    localStorage.setItem('acct_pay_methods_v2', JSON.stringify(updated))
-    localStorage.setItem('acct_payment_methods', JSON.stringify(updated.map(i => i.name)))
-    setRefresh(r => r + 1)
-  }
-
-  const handleAdd = () => {
-    if (!newName.trim()) return
-    // 같은 예산구분 + 같은 카테고리 내에서만 중복 체크
-    const isDuplicate = allItems.some(i =>
-      i.name === newName.trim() &&
-      i.category === activeCategory &&
-      String(i.budgetCatId) === selectedPayCatId
-    )
-    if (isDuplicate) {
-      addToast('error', '이 예산구분에 이미 존재하는 지출수단입니다')
-      return
-    }
-    const newItem: PayMethodItem = {
-      id: Date.now(),
-      name: newName.trim(),
-      category: activeCategory,
-      budgetCatId: selectedPayCatId || undefined,
-      manager: activeCategory === '계좌' ? defaultManager : undefined,
-      custodian: activeCategory === '현금' ? defaultManager : undefined,
-      noteManager: activeCategory === '어음' ? defaultManager : undefined,
-      voucherManager: activeCategory === '상품권' ? defaultManager : undefined,
-    }
-    saveAll([...allItems, newItem])
-    addToast('success', `"${newName.trim()}" 추가됨`)
-    setNewName('')
-    setExpandedId(newItem.id)
-  }
-
-  const handleDelete = (id: number) => {
-    const item = allItems.find(i => i.id === id)
-    if (!item) return
-    if (!confirm(`"${item.name}"을(를) 삭제하시겠습니까?`)) return
-    saveAll(allItems.filter(i => i.id !== id))
-    addToast('warning', `"${item.name}" 삭제됨`)
-    if (expandedId === id) setExpandedId(null)
-  }
-
-  const updateField = (id: number, field: keyof PayMethodItem, value: string) => {
-    saveAll(allItems.map(i => i.id === id ? { ...i, [field]: value } : i))
-  }
-
-  // ── 카드 CRUD ──
-  const addCard = (itemId: number) => {
-    const newCard: PayMethodCard = {
-      id: Date.now(),
-      cardName: '',
-      cardCompany: '',
-      cardNumber: '',
-      cardType: '체크카드',
-      cardUser: defaultManager,
-    }
-    saveAll(allItems.map(i => i.id === itemId ? { ...i, cards: [...(i.cards || []), newCard] } : i))
-  }
-  const updateCard = (itemId: number, cardId: number, field: keyof PayMethodCard, value: string | number) => {
-    saveAll(allItems.map(i => i.id === itemId ? {
-      ...i,
-      cards: (i.cards || []).map(c => c.id === cardId ? { ...c, [field]: value } : c)
-    } : i))
-  }
-  const deleteCard = (itemId: number, cardId: number) => {
-    saveAll(allItems.map(i => i.id === itemId ? {
-      ...i,
-      cards: (i.cards || []).filter(c => c.id !== cardId)
-    } : i))
-  }
-
-  // ── 어음대장 CRUD ──
-  const addNote = (itemId: number) => {
-    const item = allItems.find(i => i.id === itemId)
-    const newNote: PayMethodNote = {
-      id: Date.now(),
-      noteNumber: '',
-      issuer: item?.noteType === '발행' ? '우리회사' : '',
-      receiver: item?.noteType === '수신' ? '우리회사' : '',
-      amount: 0,
-      issueDate: new Date().toISOString().slice(0, 10),
-      maturityDate: '',
-      endorsement: '',
-      bank: '',
-      status: '미결제',
-    }
-    saveAll(allItems.map(i => i.id === itemId ? { ...i, notes: [...(i.notes || []), newNote] } : i))
-  }
-  const updateNote = (itemId: number, noteId: number, field: keyof PayMethodNote, value: string | number) => {
-    saveAll(allItems.map(i => i.id === itemId ? {
-      ...i,
-      notes: (i.notes || []).map(n => n.id === noteId ? { ...n, [field]: value } : n)
-    } : i))
-  }
-  const deleteNote = (itemId: number, noteId: number) => {
-    saveAll(allItems.map(i => i.id === itemId ? {
-      ...i,
-      notes: (i.notes || []).filter(n => n.id !== noteId)
-    } : i))
-  }
-
-  return (
-    <div className="space-y-5">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-extrabold text-[var(--text-primary)] flex items-center gap-2">
-            💳 지출수단 관리
-          </h2>
-          <p className="text-[11px] text-[var(--text-muted)] mt-0.5">상단에서 예산구분을 선택하여 지출수단을 관리합니다</p>
-        </div>
-        <span className="text-xs font-bold text-white bg-primary-500 px-3 py-1.5 rounded-full">
-          {selectedCatName || '전체'} {filteredItems.length}건
-        </span>
-      </div>
-
-      {/* 카테고리 탭 */}
-      <div className="flex gap-2">
-        {PAY_CATEGORIES.map(cat => {
-          const count = filteredItems.filter(i => i.category === cat.key).length
-          const isActive = activeCategory === cat.key
-          return (
-            <button
-              key={cat.key}
-              onClick={() => { setActiveCategory(cat.key); setExpandedId(null) }}
-              className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all cursor-pointer ${
-                isActive
-                  ? `${cat.bg} ${cat.border} shadow-sm`
-                  : 'bg-[var(--bg-surface)] border-transparent hover:border-[var(--border-default)]'
-              }`}
-            >
-              <div className="text-center">
-                <span className="text-lg">{cat.icon}</span>
-                <div className={`text-[12px] font-extrabold mt-1 ${isActive ? '' : 'text-[var(--text-secondary)]'}`} style={isActive ? { color: cat.color } : undefined}>
-                  {cat.label}
-                </div>
-                <div className="text-[10px] font-bold text-[var(--text-muted)] mt-0.5">{count}건</div>
-              </div>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* 선택된 카테고리 영역 */}
-      <div className={`rounded-2xl border-2 ${activeCatInfo.border} ${activeCatInfo.bg} p-5`}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">{activeCatInfo.icon}</span>
-            <div>
-              <h3 className="text-sm font-extrabold" style={{ color: activeCatInfo.color }}>{activeCatInfo.label}</h3>
-              <p className="text-[10px] text-[var(--text-muted)]">{activeCatInfo.desc}</p>
-            </div>
-          </div>
-          <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ color: activeCatInfo.color, background: `${activeCatInfo.color}15` }}>
-            {catItems.length}건
-          </span>
-        </div>
-
-        {/* 추가 폼 */}
-        <div className="flex gap-2 mb-4">
-          <input
-            placeholder={`새 ${activeCatInfo.label} 수단 입력...`}
-            value={newName}
-            onChange={e => setNewName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            className="flex-1 px-3.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-white dark:bg-gray-900 text-sm text-[var(--text-primary)] outline-none focus:border-primary-400 transition-colors placeholder:text-[var(--text-muted)]"
-          />
-          <button
-            onClick={handleAdd}
-            className="px-4 py-2.5 rounded-xl text-white text-sm font-bold transition-all cursor-pointer hover:shadow-md flex items-center gap-1.5"
-            style={{ background: activeCatInfo.color }}
-          >
-            <Plus size={14} /> 추가
-          </button>
-        </div>
-
-        {/* 항목 리스트 */}
-        {catItems.length === 0 ? (
-          <div className="py-8 text-center text-sm text-[var(--text-muted)] rounded-xl border border-dashed border-[var(--border-default)] bg-white/50 dark:bg-gray-900/50">
-            등록된 {activeCatInfo.label} 수단이 없습니다
-          </div>
-        ) : (
-          <div className="space-y-1.5">
-            {catItems.map((item, idx) => {
-              const isOpen = expandedId === item.id
-              const hasDetail = activeCategory === '계좌' && (item.bankName || item.accountNumber || item.accountHolder || item.manager)
-              return (
-                <div key={item.id} className={`rounded-xl transition-all border ${isOpen ? 'border-[var(--border-default)] bg-white dark:bg-gray-900/60 shadow-sm' : 'border-transparent bg-white/70 dark:bg-gray-900/30 hover:bg-white dark:hover:bg-gray-800/50 hover:border-[var(--border-default)]'}`}>
-                  {/* 메인 행 */}
-                  <div
-                    className="flex items-center gap-3 px-3.5 py-2.5 cursor-pointer group"
-                    onClick={() => setExpandedId(isOpen ? null : item.id)}
-                  >
-                    <span className="text-[10px] font-bold w-5 text-center shrink-0 rounded-full py-0.5" style={{ color: activeCatInfo.color, background: `${activeCatInfo.color}15` }}>
-                      {idx + 1}
-                    </span>
-                    <span className="text-sm font-semibold text-[var(--text-primary)] flex-1">{item.name}</span>
-                    {/* 계좌 요약 표시 */}
-                    {activeCategory === '계좌' && item.bankName && !isOpen && (
-                      <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[200px]">
-                        {item.bankName} {item.accountNumber ? `• ${item.accountNumber}` : ''}
-                      </span>
-                    )}
-                    {hasDetail && !isOpen && <span className="text-[8px] text-primary-500 bg-primary-100 dark:bg-primary-900/20 px-1.5 py-0.5 rounded font-bold">상세</span>}
-                    <ChevronDown size={14} className={`text-[var(--text-muted)] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                    <button
-                      onClick={e => { e.stopPropagation(); handleDelete(item.id) }}
-                      className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-
-                  {/* 상세 필드 (계좌만) */}
-                  {isOpen && activeCategory === '계좌' && (
-                    <div className="px-4 pb-4 pt-1 border-t border-[var(--border-default)] mx-3">
-                      <div className="grid grid-cols-2 gap-3 mt-3">
-                        <div>
-                          <label className={DETAIL_FIELD_LABEL}>은행명 *</label>
-                          <input
-                            value={item.bankName || ''}
-                            onChange={e => updateField(item.id, 'bankName', e.target.value)}
-                            placeholder="국민은행"
-                            className={DETAIL_INPUT}
-                          />
-                        </div>
-                        <div>
-                          <label className={DETAIL_FIELD_LABEL}>계좌번호 *</label>
-                          <input
-                            value={item.accountNumber || ''}
-                            onChange={e => updateField(item.id, 'accountNumber', e.target.value)}
-                            placeholder="110-234-567890"
-                            className={DETAIL_INPUT}
-                          />
-                        </div>
-                        <div>
-                          <label className={DETAIL_FIELD_LABEL}>예금주 *</label>
-                          <input
-                            value={item.accountHolder || ''}
-                            onChange={e => updateField(item.id, 'accountHolder', e.target.value)}
-                            placeholder="(주)문화재청"
-                            className={DETAIL_INPUT}
-                          />
-                        </div>
-                        <div>
-                          <label className={DETAIL_FIELD_LABEL}>계좌관리자 *</label>
-                          <select
-                            value={item.manager || ''}
-                            onChange={e => updateField(item.id, 'manager', e.target.value)}
-                            className={DETAIL_INPUT}
-                          >
-                            <option value="">선택하세요</option>
-                            {staffList.map((s: any) => (
-                              <option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}{s.dept ? ` - ${s.dept}` : ''}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className={DETAIL_FIELD_LABEL}>계좌용도</label>
-                          <input
-                            value={item.purpose || ''}
-                            onChange={e => updateField(item.id, 'purpose', e.target.value)}
-                            placeholder="운영자금, 사업비 등"
-                            className={DETAIL_INPUT}
-                          />
-                        </div>
-                        <div>
-                          <label className={DETAIL_FIELD_LABEL}>메모</label>
-                          <input
-                            value={item.memo || ''}
-                            onChange={e => updateField(item.id, 'memo', e.target.value)}
-                            placeholder="참고사항"
-                            className={DETAIL_INPUT}
-                          />
-                        </div>
-                      </div>
-
-                      {/* ── 카드 관리 ── */}
-                      <div className="mt-5 pt-4 border-t border-dashed border-blue-200 dark:border-blue-800">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-1.5">
-                            <CreditCard size={14} className="text-blue-500" />
-                            <span className="text-[12px] font-extrabold text-[var(--text-primary)]">연결 카드</span>
-                            {(item.cards || []).length > 0 && (
-                              <span className="text-[9px] font-bold bg-blue-100 dark:bg-blue-900/20 text-blue-600 px-1.5 py-0.5 rounded">{(item.cards || []).length}장</span>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => addCard(item.id)}
-                            className="text-[11px] font-bold text-blue-500 hover:text-blue-700 cursor-pointer flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                          >
-                            <Plus size={12} /> 카드 추가
-                          </button>
-                        </div>
-
-                        {(!item.cards || item.cards.length === 0) ? (
-                          <div className="py-4 text-center text-[11px] text-[var(--text-muted)] rounded-lg border border-dashed border-[var(--border-default)] bg-white/50 dark:bg-gray-900/30">
-                            등록된 카드가 없습니다
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            {item.cards.map((card, ci) => (
-                              <div key={card.id} className="rounded-lg border border-blue-100 dark:border-blue-900/30 bg-blue-50/30 dark:bg-blue-900/5 p-3">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-[10px] font-bold text-blue-500">💳 카드 {ci + 1}</span>
-                                  <button
-                                    onClick={() => deleteCard(item.id, card.id)}
-                                    className="text-[10px] text-red-400 hover:text-red-600 cursor-pointer flex items-center gap-0.5"
-                                  >
-                                    <Trash2 size={10} /> 삭제
-                                  </button>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div>
-                                    <label className={DETAIL_FIELD_LABEL}>카드명 *</label>
-                                    <input
-                                      value={card.cardName}
-                                      onChange={e => updateCard(item.id, card.id, 'cardName', e.target.value)}
-                                      placeholder="법인카드1"
-                                      className={DETAIL_INPUT}
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className={DETAIL_FIELD_LABEL}>카드사 *</label>
-                                    <input
-                                      value={card.cardCompany}
-                                      onChange={e => updateCard(item.id, card.id, 'cardCompany', e.target.value)}
-                                      placeholder="국민카드"
-                                      className={DETAIL_INPUT}
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className={DETAIL_FIELD_LABEL}>카드번호 *</label>
-                                    <input
-                                      value={card.cardNumber}
-                                      onChange={e => {
-                                        const raw = e.target.value.replace(/[^0-9]/g, '').slice(0, 16)
-                                        const formatted = raw.replace(/(.{4})/g, '$1-').replace(/-$/, '')
-                                        updateCard(item.id, card.id, 'cardNumber', formatted)
-                                      }}
-                                      placeholder="1234-5678-9012-3456"
-                                      className={DETAIL_INPUT}
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className={DETAIL_FIELD_LABEL}>카드종류 *</label>
-                                    <select
-                                      value={card.cardType}
-                                      onChange={e => updateCard(item.id, card.id, 'cardType', e.target.value)}
-                                      className={DETAIL_INPUT}
-                                    >
-                                      <option value="체크카드">체크카드</option>
-                                      <option value="신용카드">신용카드</option>
-                                    </select>
-                                  </div>
-                                  <div>
-                                    <label className={DETAIL_FIELD_LABEL}>사용자 *</label>
-                                    <select
-                                      value={card.cardUser}
-                                      onChange={e => updateCard(item.id, card.id, 'cardUser', e.target.value)}
-                                      className={DETAIL_INPUT}
-                                    >
-                                      <option value="">선택하세요</option>
-                                      {staffList.map((s: any) => (
-                                        <option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}</option>
-                                      ))}
-                                    </select>
-                                  </div>
-                                  <div>
-                                    <label className={DETAIL_FIELD_LABEL}>유효기간</label>
-                                    <input
-                                      value={card.expiryDate || ''}
-                                      onChange={e => {
-                                        const raw = e.target.value.replace(/[^0-9]/g, '').slice(0, 4)
-                                        const formatted = raw.length > 2 ? `${raw.slice(0, 2)}/${raw.slice(2)}` : raw
-                                        updateCard(item.id, card.id, 'expiryDate', formatted)
-                                      }}
-                                      placeholder="MM/YY"
-                                      maxLength={5}
-                                      className={DETAIL_INPUT}
-                                    />
-                                  </div>
-                                  {card.cardType === '신용카드' && (
-                                    <div>
-                                      <label className={DETAIL_FIELD_LABEL}>한도</label>
-                                      <input
-                                        value={card.cardLimit ? card.cardLimit.toLocaleString() : ''}
-                                        onChange={e => updateCard(item.id, card.id, 'cardLimit', parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0)}
-                                        placeholder="5,000,000"
-                                        className={DETAIL_INPUT}
-                                      />
-                                    </div>
-                                  )}
-                                  <div className={card.cardType === '신용카드' ? '' : 'col-span-1'}>
-                                    <label className={DETAIL_FIELD_LABEL}>메모</label>
-                                    <input
-                                      value={card.memo || ''}
-                                      onChange={e => updateCard(item.id, card.id, 'memo', e.target.value)}
-                                      placeholder="참고사항"
-                                      className={DETAIL_INPUT}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 상세 필드 (현금) */}
-                  {isOpen && activeCategory === '현금' && (
-                    <div className="px-4 pb-4 pt-1 border-t border-[var(--border-default)] mx-3">
-                      <div className="grid grid-cols-2 gap-3 mt-3">
-                        <div>
-                          <label className={DETAIL_FIELD_LABEL}>보관처 *</label>
-                          <input
-                            value={item.storageLocation || ''}
-                            onChange={e => updateField(item.id, 'storageLocation' as any, e.target.value)}
-                            placeholder="사무실 금고, 현장사무소 등"
-                            className={DETAIL_INPUT}
-                          />
-                        </div>
-                        <div>
-                          <label className={DETAIL_FIELD_LABEL}>보관책임자 *</label>
-                          <select
-                            value={item.custodian || ''}
-                            onChange={e => updateField(item.id, 'custodian' as any, e.target.value)}
-                            className={DETAIL_INPUT}
-                          >
-                            <option value="">선택하세요</option>
-                            {staffList.map((s: any) => (
-                              <option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}{s.dept ? ` - ${s.dept}` : ''}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className={DETAIL_FIELD_LABEL}>한도액</label>
-                          <input
-                            value={item.cashLimit ? item.cashLimit.toLocaleString() : ''}
-                            onChange={e => {
-                              const num = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0
-                              saveAll(allItems.map(i => i.id === item.id ? { ...i, cashLimit: num } : i))
-                            }}
-                            placeholder="500,000"
-                            className={DETAIL_INPUT}
-                          />
-                        </div>
-                        <div>
-                          <label className={DETAIL_FIELD_LABEL}>용도</label>
-                          <input
-                            value={item.purpose || ''}
-                            onChange={e => updateField(item.id, 'purpose', e.target.value)}
-                            placeholder="소액경비, 현장경비 등"
-                            className={DETAIL_INPUT}
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <label className={DETAIL_FIELD_LABEL}>메모</label>
-                          <input
-                            value={item.memo || ''}
-                            onChange={e => updateField(item.id, 'memo', e.target.value)}
-                            placeholder="참고사항"
-                            className={DETAIL_INPUT}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 상세 필드 (어음) */}
-                  {isOpen && activeCategory === '어음' && (
-                    <div className="px-4 pb-4 pt-1 border-t border-[var(--border-default)] mx-3">
-                      <div className="grid grid-cols-2 gap-3 mt-3">
-                        <div>
-                          <label className={DETAIL_FIELD_LABEL}>구분 *</label>
-                          <select
-                            value={item.noteType || ''}
-                            onChange={e => updateField(item.id, 'noteType' as any, e.target.value)}
-                            className={DETAIL_INPUT}
-                          >
-                            <option value="">선택하세요</option>
-                            <option value="수신">수신 (받을어음)</option>
-                            <option value="발행">발행 (지급어음)</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className={DETAIL_FIELD_LABEL}>담당자 *</label>
-                          <select
-                            value={item.noteManager || ''}
-                            onChange={e => updateField(item.id, 'noteManager' as any, e.target.value)}
-                            className={DETAIL_INPUT}
-                          >
-                            <option value="">선택하세요</option>
-                            {staffList.map((s: any) => (
-                              <option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}{s.dept ? ` - ${s.dept}` : ''}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className={DETAIL_FIELD_LABEL}>기본만기 *</label>
-                          <select
-                            value={item.defaultMaturity || ''}
-                            onChange={e => updateField(item.id, 'defaultMaturity' as any, e.target.value)}
-                            className={DETAIL_INPUT}
-                          >
-                            <option value="">선택하세요</option>
-                            <option value="30일">30일</option>
-                            <option value="60일">60일</option>
-                            <option value="90일">90일</option>
-                            <option value="120일">120일</option>
-                          </select>
-                        </div>
-                        {item.noteType === '발행' && (
-                          <div>
-                            <label className={DETAIL_FIELD_LABEL}>발행한도</label>
-                            <input
-                              value={item.noteLimit ? item.noteLimit.toLocaleString() : ''}
-                              onChange={e => {
-                                const num = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0
-                                saveAll(allItems.map(i => i.id === item.id ? { ...i, noteLimit: num } : i))
-                              }}
-                              placeholder="50,000,000"
-                              className={DETAIL_INPUT}
-                            />
-                          </div>
-                        )}
-                        <div className={item.noteType === '발행' ? '' : 'col-span-2'}>
-                          <label className={DETAIL_FIELD_LABEL}>메모</label>
-                          <input
-                            value={item.memo || ''}
-                            onChange={e => updateField(item.id, 'memo', e.target.value)}
-                            placeholder="참고사항"
-                            className={DETAIL_INPUT}
-                          />
-                        </div>
-                      </div>
-
-                      {/* ── 어음대장 ── */}
-                      {item.noteType && (
-                        <div className="mt-5 pt-4 border-t border-dashed border-amber-200 dark:border-amber-800">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-1.5">
-                              <ScrollText size={14} className="text-amber-500" />
-                              <span className="text-[12px] font-extrabold text-[var(--text-primary)]">어음대장</span>
-                              {(item.notes || []).length > 0 && (
-                                <span className="text-[9px] font-bold bg-amber-100 dark:bg-amber-900/20 text-amber-600 px-1.5 py-0.5 rounded">{(item.notes || []).length}건</span>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => addNote(item.id)}
-                              className="text-[11px] font-bold text-amber-500 hover:text-amber-700 cursor-pointer flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
-                            >
-                              <Plus size={12} /> 어음 추가
-                            </button>
-                          </div>
-
-                          {(!item.notes || item.notes.length === 0) ? (
-                            <div className="py-4 text-center text-[11px] text-[var(--text-muted)] rounded-lg border border-dashed border-[var(--border-default)] bg-white/50 dark:bg-gray-900/30">
-                              등록된 어음이 없습니다
-                            </div>
-                          ) : (
-                            <div className="space-y-2">
-                              {item.notes.map((note, ni) => {
-                                const statusColors: Record<string, string> = { '미결제': '#f59e0b', '추심중': '#3b82f6', '결제완료': '#22c55e', '부도': '#ef4444' }
-                                return (
-                                  <div key={note.id} className="rounded-lg border border-amber-100 dark:border-amber-900/30 bg-amber-50/30 dark:bg-amber-900/5 p-3">
-                                    <div className="flex items-center justify-between mb-2">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-bold text-amber-500">📄 어음 {ni + 1}</span>
-                                        {note.status && (
-                                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ color: statusColors[note.status] || '#888', background: `${statusColors[note.status] || '#888'}15` }}>
-                                            {note.status}
-                                          </span>
-                                        )}
-                                      </div>
-                                      <button
-                                        onClick={() => deleteNote(item.id, note.id)}
-                                        className="text-[10px] text-red-400 hover:text-red-600 cursor-pointer flex items-center gap-0.5"
-                                      >
-                                        <Trash2 size={10} /> 삭제
-                                      </button>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-2">
-                                      <div>
-                                        <label className={DETAIL_FIELD_LABEL}>어음번호 *</label>
-                                        <input
-                                          value={note.noteNumber}
-                                          onChange={e => updateNote(item.id, note.id, 'noteNumber', e.target.value)}
-                                          placeholder="A-2026-001"
-                                          className={DETAIL_INPUT}
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className={DETAIL_FIELD_LABEL}>{item.noteType === '수신' ? '발행인' : '수취인'} *</label>
-                                        <input
-                                          value={item.noteType === '수신' ? note.issuer : note.receiver}
-                                          onChange={e => updateNote(item.id, note.id, item.noteType === '수신' ? 'issuer' : 'receiver', e.target.value)}
-                                          placeholder="거래처명"
-                                          className={DETAIL_INPUT}
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className={DETAIL_FIELD_LABEL}>금액 *</label>
-                                        <input
-                                          value={note.amount ? note.amount.toLocaleString() : ''}
-                                          onChange={e => updateNote(item.id, note.id, 'amount', parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0)}
-                                          placeholder="5,000,000"
-                                          className={DETAIL_INPUT}
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className={DETAIL_FIELD_LABEL}>발행일 *</label>
-                                        <input
-                                          type="date"
-                                          value={note.issueDate}
-                                          onChange={e => updateNote(item.id, note.id, 'issueDate', e.target.value)}
-                                          className={DETAIL_INPUT}
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className={DETAIL_FIELD_LABEL}>만기일 *</label>
-                                        <input
-                                          type="date"
-                                          value={note.maturityDate}
-                                          onChange={e => updateNote(item.id, note.id, 'maturityDate', e.target.value)}
-                                          className={DETAIL_INPUT}
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className={DETAIL_FIELD_LABEL}>{item.noteType === '수신' ? '추심은행' : '결제은행'} *</label>
-                                        <input
-                                          value={note.bank || ''}
-                                          onChange={e => updateNote(item.id, note.id, 'bank', e.target.value)}
-                                          placeholder="국민은행"
-                                          className={DETAIL_INPUT}
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className={DETAIL_FIELD_LABEL}>상태 *</label>
-                                        <select
-                                          value={note.status}
-                                          onChange={e => updateNote(item.id, note.id, 'status', e.target.value)}
-                                          className={DETAIL_INPUT}
-                                        >
-                                          <option value="미결제">미결제</option>
-                                          {item.noteType === '수신' && <option value="추심중">추심중</option>}
-                                          <option value="결제완료">결제완료</option>
-                                          <option value="부도">부도</option>
-                                        </select>
-                                      </div>
-                                      <div className="col-span-2">
-                                        <label className={DETAIL_FIELD_LABEL}>배서내용</label>
-                                        <input
-                                          value={note.endorsement}
-                                          onChange={e => updateNote(item.id, note.id, 'endorsement', e.target.value)}
-                                          placeholder="배서인, 배서일자 등"
-                                          className={DETAIL_INPUT}
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className={DETAIL_FIELD_LABEL}>메모</label>
-                                        <input
-                                          value={note.memo || ''}
-                                          onChange={e => updateNote(item.id, note.id, 'memo', e.target.value)}
-                                          placeholder="참고사항"
-                                          className={DETAIL_INPUT}
-                                        />
-                                      </div>
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* 상세 필드 (상품권) */}
-                  {isOpen && activeCategory === '상품권' && (
-                    <div className="px-4 pb-4 pt-1 border-t border-[var(--border-default)] mx-3">
-                      <div className="grid grid-cols-2 gap-3 mt-3">
-                        <div>
-                          <label className={DETAIL_FIELD_LABEL}>금액 *</label>
-                          <input
-                            value={item.voucherAmount ? item.voucherAmount.toLocaleString() : ''}
-                            onChange={e => {
-                              const num = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0
-                              saveAll(allItems.map(i => i.id === item.id ? { ...i, voucherAmount: num } : i))
-                            }}
-                            placeholder="50,000"
-                            className={DETAIL_INPUT}
-                          />
-                        </div>
-                        <div>
-                          <label className={DETAIL_FIELD_LABEL}>보유수량 *</label>
-                          <input
-                            type="number"
-                            value={item.voucherQty || ''}
-                            onChange={e => {
-                              const num = parseInt(e.target.value) || 0
-                              saveAll(allItems.map(i => i.id === item.id ? { ...i, voucherQty: num } : i))
-                            }}
-                            placeholder="10"
-                            min={0}
-                            className={DETAIL_INPUT}
-                          />
-                        </div>
-                        <div>
-                          <label className={DETAIL_FIELD_LABEL}>보관처 *</label>
-                          <input
-                            value={item.voucherStorage || ''}
-                            onChange={e => updateField(item.id, 'voucherStorage' as any, e.target.value)}
-                            placeholder="사무실 금고"
-                            className={DETAIL_INPUT}
-                          />
-                        </div>
-                        <div>
-                          <label className={DETAIL_FIELD_LABEL}>담당자 *</label>
-                          <select
-                            value={item.voucherManager || ''}
-                            onChange={e => updateField(item.id, 'voucherManager' as any, e.target.value)}
-                            className={DETAIL_INPUT}
-                          >
-                            <option value="">선택하세요</option>
-                            {staffList.map((s: any) => (
-                              <option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}{s.dept ? ` - ${s.dept}` : ''}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="col-span-2">
-                          <label className={DETAIL_FIELD_LABEL}>메모</label>
-                          <input
-                            value={item.memo || ''}
-                            onChange={e => updateField(item.id, 'memo', e.target.value)}
-                            placeholder="참고사항"
-                            className={DETAIL_INPUT}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
     </div>
   )
 }
