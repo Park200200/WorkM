@@ -3,7 +3,7 @@
    ══════════════════════════════════════════════ */
 import { getItem, setItem } from './storage'
 
-const SEED_VERSION = 'v7'
+const SEED_VERSION = 'v8'
 
 export function seedIfEmpty() {
   const prevVersion = getItem<string>('ws_seed_version', '')
@@ -123,8 +123,8 @@ export function seedIfEmpty() {
     ])
   }
 
-  // ── 직원 (사용자) ──
-  if (!getItem('ws_users', null)) {
+  // ── 직원 (사용자) ── v8: 직원명 갱신 시 강제 리셋
+  if (!getItem('ws_users', null) || prevVersion !== SEED_VERSION) {
     setItem('ws_users', [
       {
         id: 1, name: '최대표', role: 'admin', rank: '대표', dept: '경영지원팀', avatar: 'CD', color: '#4f6ef7',
