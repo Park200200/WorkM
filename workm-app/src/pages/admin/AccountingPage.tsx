@@ -3400,7 +3400,7 @@ export function AcctApproval({ year }: { year: number }) {
   // ── 통합 검색용 플랫 리스트 (최종단 예산 경로) ──
   const budgetFlatList = useMemo(() => {
     const acctList: { code: string; name: string }[] = getItem('acct_accounts', [])
-    const result: { catId: string; catName: string; itemId: string; itemName: string; subId?: string; subName?: string; detailId?: string; detailName?: string; accountCode?: string; accountName?: string; path: string; amount: number; spent: number; remaining: number }[] = []
+    const result: { catId: string; catName: string; itemId: string; itemName: string; subId?: string; subName?: string; detailId?: string; detailName?: string; accountCode?: string; accountName?: string; aliases: string; path: string; amount: number; spent: number; remaining: number }[] = []
     budgetCats.forEach(cat => {
       const catItems = budgetItems.filter(b => String(b.catId) === String(cat.id))
       // 고유 itemName별 그룹
@@ -3430,6 +3430,7 @@ export function AcctApproval({ year }: { year: number }) {
                   subId: `def_${sub.id}`, subName: sub.name,
                   detailId: detBudget ? String(detBudget.id) : undefined, detailName: det.name,
                   accountCode: det.accountCode || sub.accountCode, accountName: detAcct?.name || '',
+                  aliases: [...(def?.aliases || []), ...(sub.aliases || []), ...(det.aliases || [])].join(' '),
                   path: `${cat.name} > ${itemName} > ${sub.name} > ${det.name}`,
                   amount: amt, spent: sp, remaining: amt - sp,
                 })
@@ -3444,6 +3445,7 @@ export function AcctApproval({ year }: { year: number }) {
                 itemId: String(firstItem.id), itemName,
                 subId: `def_${sub.id}`, subName: sub.name,
                 accountCode: sub.accountCode, accountName: subAcct?.name || '',
+                aliases: [...(def?.aliases || []), ...(sub.aliases || [])].join(' '),
                 path: `${cat.name} > ${itemName} > ${sub.name}`,
                 amount: amt, spent: sp, remaining: amt - sp,
               })
@@ -3458,6 +3460,7 @@ export function AcctApproval({ year }: { year: number }) {
             catId: String(cat.id), catName: cat.name,
             itemId: String(firstItem.id), itemName,
             accountCode: def?.defaultAccountCode, accountName: defAcct?.name || '',
+            aliases: (def?.aliases || []).join(' '),
             path: `${cat.name} > ${itemName}`,
             amount: amt, spent: sp, remaining: amt - sp,
           })
@@ -3474,7 +3477,8 @@ export function AcctApproval({ year }: { year: number }) {
     return budgetFlatList.filter(r =>
       r.path.toLowerCase().includes(q) ||
       (r.accountCode && r.accountCode.includes(q)) ||
-      (r.accountName && r.accountName.toLowerCase().includes(q))
+      (r.accountName && r.accountName.toLowerCase().includes(q)) ||
+      (r.aliases && r.aliases.toLowerCase().includes(q))
     ).slice(0, 10)
   }, [budgetSearchText, budgetFlatList])
 
