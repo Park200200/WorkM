@@ -4612,6 +4612,10 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const [selectedBudgetCat, setSelectedBudgetCat] = useState('')
   const [wdBudgetItem, setWdBudgetItem] = useState('')
   const [wdCatName, setWdCatName] = useState('')
+  // 출금전표 통합 검색
+  const [wdSearchText, setWdSearchText] = useState('')
+  const [wdSearchFocused, setWdSearchFocused] = useState(false)
+  const [wdSearchSelected, setWdSearchSelected] = useState('')
 
   const user = useAuthStore(s => s.user)
 
@@ -4713,6 +4717,52 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const wdSelectedDef = useMemo(() => wdVoucherItemDefs.find(d => d.name === wdBudgetItem), [wdVoucherItemDefs, wdBudgetItem])
   const wdSelectedSub = useMemo(() => wdSelectedDef?.subItems.find(s => s.name === form.subItem), [wdSelectedDef, form.subItem])
   const wdDetailItems = useMemo(() => (wdSelectedSub?.detailItems || []).sort((a, b) => a.sortOrder - b.sortOrder), [wdSelectedSub])
+
+  // ── 출금전표 통합 검색용 플랫 리스트 ──
+  const wdBudgetFlatList = useMemo(() => {
+    const acctList: { code: string; name: string }[] = getItem('acct_accounts', [])
+    const allBudgets: BudgetItem[] = getItem('acct_budgets', [])
+    const defs: BudgetItemDef[] = getItem('acct_budget_item_defs', [])
+    const allCats: BudgetCat[] = getItem('acct_budget_cats', [])
+    const yearCats = allCats.filter(c => (c.year || year) === year)
+    const result: { catId: string; catName: string; itemName: string; subName?: string; detailName?: string; accountCode?: string; accountName?: string; aliases: string; path: string; amount: number; spent: number; remaining: number }[] = []
+    yearCats.forEach(cat => {
+      const catItems = allBudgets.filter(b => String(b.catId) === String(cat.id))
+      const itemGroups = new Map<string, BudgetItem[]>()
+      catItems.forEach(b => { const a = itemGroups.get(b.itemName) || []; a.push(b); itemGroups.set(b.itemName, a) })
+      itemGroups.forEach((items, itemName) => {
+        const def = defs.find(d => d.name === itemName || d.aliases?.includes(itemName))
+        if (def && def.subItems && def.subItems.length > 0) {
+          def.subItems.forEach(sub => {
+            const subAcct = sub.accountCode ? acctList.find(a => a.code === sub.accountCode) : null
+            if (sub.detailItems && sub.detailItems.length > 0) {
+              sub.detailItems.forEach(det => {
+                const db = items.find(b => b.subItemName === sub.name && b.detailItemName === det.name)
+                const amt = db?.amount || 0, sp = db?.spent || 0
+                const detAcct = det.accountCode ? acctList.find(a => a.code === det.accountCode) : subAcct
+                result.push({ catId: String(cat.id), catName: cat.name, itemName, subName: sub.name, detailName: det.name, accountCode: det.accountCode || sub.accountCode, accountName: detAcct?.name || '', aliases: [...(def?.aliases||[]),...(sub.aliases||[]),...(det.aliases||[])].join(' '), path: `${cat.name} > ${itemName} > ${sub.name} > ${det.name}`, amount: amt, spent: sp, remaining: amt - sp })
+              })
+            } else {
+              const sbs = items.filter(b => b.subItemName === sub.name)
+              const amt = sbs.reduce((s,b) => s+(b.amount||0),0), sp = sbs.reduce((s,b) => s+(b.spent||0),0)
+              result.push({ catId: String(cat.id), catName: cat.name, itemName, subName: sub.name, accountCode: sub.accountCode, accountName: subAcct?.name || '', aliases: [...(def?.aliases||[]),...(sub.aliases||[])].join(' '), path: `${cat.name} > ${itemName} > ${sub.name}`, amount: amt, spent: sp, remaining: amt - sp })
+            }
+          })
+        } else {
+          const amt = items.reduce((s,b) => s+(b.amount||0),0), sp = items.reduce((s,b) => s+(b.spent||0),0)
+          const defAcct = def?.defaultAccountCode ? acctList.find(a => a.code === def.defaultAccountCode) : null
+          result.push({ catId: String(cat.id), catName: cat.name, itemName, accountCode: def?.defaultAccountCode, accountName: defAcct?.name || '', aliases: (def?.aliases||[]).join(' '), path: `${cat.name} > ${itemName}`, amount: amt, spent: sp, remaining: amt - sp })
+        }
+      })
+    })
+    return result
+  }, [year, refresh])
+
+  const wdSearchResults = useMemo(() => {
+    const q = wdSearchText.trim().toLowerCase()
+    if (!q) return []
+    return wdBudgetFlatList.filter(r => r.path.toLowerCase().includes(q) || (r.accountCode && r.accountCode.includes(q)) || (r.accountName && r.accountName.toLowerCase().includes(q)) || (r.aliases && r.aliases.toLowerCase().includes(q))).slice(0, 10)
+  }, [wdSearchText, wdBudgetFlatList])
 
   /* 예산세목 (지출하기용: 선택된 예산목에 해당하는 세목 목록) */
   const subItemNames = useMemo(() => {
@@ -5089,9 +5139,50 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
             )}
           </>
           )}
-          {/* 예산항목/세목 (출금전표에서만) - 한 칸에 반반 + 금액은 오른쪽 */}
+          {/* 예산항목/세목 (출금전표에서만) - 통합 검색 + 기존 드롭다운 */}
           {type === 'withdrawal' && (
           <>
+            {/* ── 통합 검색 ── */}
+            <div className="md:col-span-2 relative">
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">🔍 예산 통합 검색</label>
+              {wdSearchSelected ? (
+                <div className="w-full px-3 py-2.5 rounded-lg border border-primary-400 bg-primary-50/30 text-[12px] flex items-center justify-between gap-1">
+                  <span className="text-[var(--text-primary)] font-bold truncate">{wdSearchSelected}</span>
+                  <button type="button" onClick={() => { setWdSearchSelected(''); setWdSearchText(''); setSelectedBudgetCat(''); setWdBudgetItem(''); setWdCatName(''); setForm(f => ({...f, subItem:'', detailItem:'', amount:''})) }} className="text-[var(--text-muted)] hover:text-[#ef4444] text-[14px] shrink-0 cursor-pointer">✕</button>
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={wdSearchText}
+                  onChange={e => setWdSearchText(e.target.value)}
+                  onFocus={() => setWdSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setWdSearchFocused(false), 200)}
+                  placeholder="예산항목, 세목, 계정과목명, 동의어 검색..."
+                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none placeholder:text-[var(--text-muted)]"
+                />
+              )}
+              {wdSearchFocused && wdSearchResults.length > 0 && (
+                <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg shadow-lg z-50 max-h-[240px] overflow-y-auto">
+                  {wdSearchResults.map((r, i) => (
+                    <button key={i} type="button"
+                      onMouseDown={e => { e.preventDefault(); setWdSearchSelected(r.path); setWdSearchText(''); setSelectedBudgetCat(r.catId); setWdCatName(r.catName); setWdBudgetItem(r.itemName); setForm(f => ({...f, subItem: r.subName||'', detailItem: r.detailName||''})); setWdSearchFocused(false) }}
+                      className="w-full text-left px-3 py-2.5 hover:bg-primary-50/50 border-b border-[var(--border-default)] last:border-b-0 cursor-pointer transition-colors"
+                    >
+                      <div className="text-[12px] font-bold text-[var(--text-primary)] leading-tight">{r.path}</div>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <span className="text-[10px] text-[var(--text-muted)]">{r.accountCode && `${r.accountCode} ${r.accountName}`}</span>
+                        <span className={`text-[10px] font-extrabold ${r.remaining < 0 ? 'text-[#ef4444]' : r.remaining > 0 ? 'text-[#22c55e]' : 'text-[var(--text-muted)]'}`}>잔액 {r.remaining.toLocaleString()}원</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {wdSearchFocused && wdSearchText.trim() && wdSearchResults.length === 0 && (
+                <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg shadow-lg z-50 p-3 text-center">
+                  <span className="text-[11px] text-[var(--text-muted)]">검색 결과가 없습니다</span>
+                </div>
+              )}
+            </div>
             <div>
               <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                 <label className="text-[10.5px] font-bold text-[var(--text-muted)]">예산항목</label>
