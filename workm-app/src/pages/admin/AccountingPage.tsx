@@ -3156,10 +3156,7 @@ export function AcctApproval({ year }: { year: number }) {
     }
     // 선지출이 아닌 경우만 예산 선택 검증
     if (!isPreExp) {
-      if (!approveBudgetCat) { setApprovePwError('예산구분을 선택해주세요'); return }
-      if (!approveBudgetItem) { setApprovePwError('예산항목을 선택해주세요'); return }
-      if (approveFilteredSubs.length > 0 && !approveBudgetSub) { setApprovePwError('예산세목을 선택해주세요'); return }
-      if (approveFilteredDetails.length > 0 && !approveBudgetDetail) { setApprovePwError('세세항을 선택해주세요'); return }
+      if (!approveBudgetCat || !approveBudgetItem) { setApprovePwError('예산을 검색하여 선택해주세요'); return }
     }
     if (!approvePw.trim()) { setApprovePwError('비밀번호를 입력해주세요'); return }
     const myStaff = staffList.find(s => s.name === currentUserName)
@@ -3373,6 +3370,9 @@ export function AcctApproval({ year }: { year: number }) {
   const [approveBudgetItem, setApproveBudgetItem] = useState('')
   const [approveBudgetSub, setApproveBudgetSub] = useState('')
   const [approveBudgetDetail, setApproveBudgetDetail] = useState('')
+  const [budgetSearchText, setBudgetSearchText] = useState('')
+  const [budgetSearchFocused, setBudgetSearchFocused] = useState(false)
+  const [budgetSearchSelected, setBudgetSearchSelected] = useState('')
   const [approveAmount, setApproveAmount] = useState('')
   const [approveMemo, setApproveMemo] = useState('')
   const [settleRejectMode, setSettleRejectMode] = useState(false)
@@ -3396,6 +3396,87 @@ export function AcctApproval({ year }: { year: number }) {
       return true
     })
   }, [approveBudgetCat, budgetItems])
+
+  // ── 통합 검색용 플랫 리스트 (최종단 예산 경로) ──
+  const budgetFlatList = useMemo(() => {
+    const acctList: { code: string; name: string }[] = getItem('acct_accounts', [])
+    const result: { catId: string; catName: string; itemId: string; itemName: string; subId?: string; subName?: string; detailId?: string; detailName?: string; accountCode?: string; accountName?: string; path: string; amount: number; spent: number; remaining: number }[] = []
+    budgetCats.forEach(cat => {
+      const catItems = budgetItems.filter(b => String(b.catId) === String(cat.id))
+      // 고유 itemName별 그룹
+      const itemGroups = new Map<string, BudgetItem[]>()
+      catItems.forEach(b => {
+        const arr = itemGroups.get(b.itemName) || []
+        arr.push(b)
+        itemGroups.set(b.itemName, arr)
+      })
+      itemGroups.forEach((items, itemName) => {
+        const firstItem = items[0]
+        const def = approveBudgetDefs.find(d => d.name === itemName || d.aliases?.includes(itemName))
+        // 세목/세세항이 있는 경우 각각 등록
+        if (def && def.subItems && def.subItems.length > 0) {
+          def.subItems.forEach(sub => {
+            const subAcct = sub.accountCode ? acctList.find(a => a.code === sub.accountCode) : null
+            // 세세항(detailItems)이 있으면 세세항 단위로
+            if (sub.detailItems && sub.detailItems.length > 0) {
+              sub.detailItems.forEach(det => {
+                const detBudget = items.find(b => b.subItemName === sub.name && b.detailItemName === det.name)
+                const amt = detBudget?.amount || 0
+                const sp = detBudget?.spent || 0
+                const detAcct = det.accountCode ? acctList.find(a => a.code === det.accountCode) : subAcct
+                result.push({
+                  catId: String(cat.id), catName: cat.name,
+                  itemId: String(firstItem.id), itemName,
+                  subId: `def_${sub.id}`, subName: sub.name,
+                  detailId: detBudget ? String(detBudget.id) : undefined, detailName: det.name,
+                  accountCode: det.accountCode || sub.accountCode, accountName: detAcct?.name || '',
+                  path: `${cat.name} > ${itemName} > ${sub.name} > ${det.name}`,
+                  amount: amt, spent: sp, remaining: amt - sp,
+                })
+              })
+            } else {
+              // 세목 단위
+              const subBudgets = items.filter(b => b.subItemName === sub.name)
+              const amt = subBudgets.reduce((s, b) => s + (b.amount || 0), 0)
+              const sp = subBudgets.reduce((s, b) => s + (b.spent || 0), 0)
+              result.push({
+                catId: String(cat.id), catName: cat.name,
+                itemId: String(firstItem.id), itemName,
+                subId: `def_${sub.id}`, subName: sub.name,
+                accountCode: sub.accountCode, accountName: subAcct?.name || '',
+                path: `${cat.name} > ${itemName} > ${sub.name}`,
+                amount: amt, spent: sp, remaining: amt - sp,
+              })
+            }
+          })
+        } else {
+          // 세목 없이 항목 단위
+          const amt = items.reduce((s, b) => s + (b.amount || 0), 0)
+          const sp = items.reduce((s, b) => s + (b.spent || 0), 0)
+          const defAcct = def?.defaultAccountCode ? acctList.find(a => a.code === def.defaultAccountCode) : null
+          result.push({
+            catId: String(cat.id), catName: cat.name,
+            itemId: String(firstItem.id), itemName,
+            accountCode: def?.defaultAccountCode, accountName: defAcct?.name || '',
+            path: `${cat.name} > ${itemName}`,
+            amount: amt, spent: sp, remaining: amt - sp,
+          })
+        }
+      })
+    })
+    return result
+  }, [budgetCats, budgetItems, approveBudgetDefs, refresh])
+
+  // 통합 검색 필터 결과
+  const budgetSearchResults = useMemo(() => {
+    const q = budgetSearchText.trim().toLowerCase()
+    if (!q) return []
+    return budgetFlatList.filter(r =>
+      r.path.toLowerCase().includes(q) ||
+      (r.accountCode && r.accountCode.includes(q)) ||
+      (r.accountName && r.accountName.toLowerCase().includes(q))
+    ).slice(0, 10)
+  }, [budgetSearchText, budgetFlatList])
 
   // 선택된 예산항목의 세목 목록 (budgetItemDefs 기반 + 실제 데이터 병합)
   const approveFilteredSubs = useMemo(() => {
@@ -3494,6 +3575,9 @@ export function AcctApproval({ year }: { year: number }) {
     setApproveBudgetItem('')
     setApproveBudgetSub('')
     setApproveBudgetDetail('')
+    setBudgetSearchText('')
+    setBudgetSearchSelected('')
+    setBudgetSearchFocused(false)
     setApproveAmount('')
     setApproveMemo('')
     setSettleRejectMode(false)
@@ -4170,42 +4254,54 @@ export function AcctApproval({ year }: { year: number }) {
                         )
                       })()
                     ) : (
-                      /* ── 일반 품의: 예산 선택 가능 ── */
+                      /* ── 일반 품의: 통합 검색 예산 선택 ── */
                       <>
-                    <div>
-                      <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-0.5">예산구분 *</label>
-                      <select value={approveBudgetCat} onChange={e => { setApproveBudgetCat(e.target.value); setApproveBudgetItem(''); setApproveBudgetSub(''); setApproveBudgetDetail('') }} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
-                        <option value="">선택하세요</option>
-                        {budgetCats.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
-                      </select>
+                    <div className="relative">
+                      <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-0.5">🔍 예산 검색 *</label>
+                      {budgetSearchSelected ? (
+                        <div className="w-full px-2.5 py-2 rounded-lg border border-primary-400 bg-primary-50/30 text-[11px] flex items-center justify-between gap-1">
+                          <span className="text-[var(--text-primary)] font-bold truncate">{budgetSearchSelected}</span>
+                          <button type="button" onClick={() => { setBudgetSearchSelected(''); setBudgetSearchText(''); setApproveBudgetCat(''); setApproveBudgetItem(''); setApproveBudgetSub(''); setApproveBudgetDetail('') }} className="text-[var(--text-muted)] hover:text-[#ef4444] text-[13px] shrink-0 cursor-pointer">✕</button>
+                        </div>
+                      ) : (
+                        <input
+                          type="text"
+                          value={budgetSearchText}
+                          onChange={e => setBudgetSearchText(e.target.value)}
+                          onFocus={() => setBudgetSearchFocused(true)}
+                          onBlur={() => setTimeout(() => setBudgetSearchFocused(false), 200)}
+                          placeholder="예산항목, 세목, 계정과목명 검색..."
+                          className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500 placeholder:text-[var(--text-muted)]"
+                        />
+                      )}
+                      {budgetSearchFocused && budgetSearchResults.length > 0 && (
+                        <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg shadow-lg z-50 max-h-[220px] overflow-y-auto">
+                          {budgetSearchResults.map((r, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onMouseDown={e => { e.preventDefault(); setBudgetSearchSelected(r.path); setBudgetSearchText(''); setApproveBudgetCat(r.catId); setApproveBudgetItem(r.itemId); setApproveBudgetSub(r.subId || ''); setApproveBudgetDetail(r.detailId || ''); setBudgetSearchFocused(false) }}
+                              className="w-full text-left px-3 py-2 hover:bg-primary-50/50 border-b border-[var(--border-default)] last:border-b-0 cursor-pointer transition-colors"
+                            >
+                              <div className="text-[11px] font-bold text-[var(--text-primary)] leading-tight">{r.path}</div>
+                              <div className="flex items-center justify-between mt-0.5">
+                                <span className="text-[9.5px] text-[var(--text-muted)]">
+                                  {r.accountCode && `${r.accountCode} ${r.accountName}`}
+                                </span>
+                                <span className={`text-[10px] font-extrabold ${r.remaining < 0 ? 'text-[#ef4444]' : r.remaining > 0 ? 'text-[#22c55e]' : 'text-[var(--text-muted)]'}`}>
+                                  잔액 {r.remaining.toLocaleString()}원
+                                </span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {budgetSearchFocused && budgetSearchText.trim() && budgetSearchResults.length === 0 && (
+                        <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg shadow-lg z-50 p-3 text-center">
+                          <span className="text-[11px] text-[var(--text-muted)]">검색 결과가 없습니다</span>
+                        </div>
+                      )}
                     </div>
-                    {approveBudgetCat && (
-                    <div>
-                      <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-0.5">예산항목 *</label>
-                      <select value={approveBudgetItem} onChange={e => { setApproveBudgetItem(e.target.value); setApproveBudgetSub(''); setApproveBudgetDetail('') }} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
-                        <option value="">선택하세요</option>
-                        {approveFilteredItems.map(b => <option key={b.id} value={String(b.id)}>{b.itemName}</option>)}
-                      </select>
-                    </div>
-                    )}
-                    {approveFilteredSubs.length > 0 && (
-                      <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-0.5">세목</label>
-                        <select value={approveBudgetSub} onChange={e => { setApproveBudgetSub(e.target.value); setApproveBudgetDetail('') }} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
-                          <option value="">선택하세요</option>
-                          {approveFilteredSubs.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                        </select>
-                      </div>
-                    )}
-                    {approveFilteredDetails.length > 0 && (
-                      <div>
-                        <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-0.5">세세항</label>
-                        <select value={approveBudgetDetail} onChange={e => setApproveBudgetDetail(e.target.value)} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
-                          <option value="">선택하세요</option>
-                          {approveFilteredDetails.map(b => <option key={b.id} value={String(b.id)}>{b.detailItemName}</option>)}
-                        </select>
-                      </div>
-                    )}
                     {approveRemainingBudget && (
                       <div className="flex items-center justify-between text-[11px] px-1 pt-1 border-t border-[var(--border-default)]">
                         <span className="text-[var(--text-muted)]">잔액</span>
