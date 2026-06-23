@@ -382,7 +382,7 @@ export function InstructionModal({ open, editTaskId, onClose }: { open: boolean;
                 <Layers size={12} /> 업무성격
               </label>
               <div className="flex gap-2">
-                <button onClick={() => setNature('일일업무')}
+                <button onClick={() => { setNature('일일업무'); if (startDate) setDueDate(startDate) }}
                   className={cn('flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-bold cursor-pointer transition-all border',
                     nature === '일일업무' ? 'bg-primary-500 text-white border-primary-500' : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-default)]')}>
                   <Clock size={13} /> 일일업무
@@ -454,7 +454,7 @@ export function InstructionModal({ open, editTaskId, onClose }: { open: boolean;
               <label className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1.5">
                 <CalendarCheck size={12} /> 업무시작일
               </label>
-              <DatePicker value={startDate} onChange={setStartDate} placeholder="날짜를 선택하세요" />
+              <DatePicker value={startDate} onChange={(v) => { setStartDate(v); if (nature === '일일업무') setDueDate(v) }} placeholder="날짜를 선택하세요" />
             </div>
             <div>
               <label className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1.5">
@@ -1356,7 +1356,7 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
                 <Layers size={12} /> 업무성격
               </label>
               <div className="flex gap-2">
-                <button onClick={() => setNature('일일업무')}
+                <button onClick={() => { setNature('일일업무'); if (startDate) setDueDate(startDate) }}
                   className={cn('flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-bold cursor-pointer transition-all border',
                     nature === '일일업무' ? 'bg-primary-500 text-white border-primary-500' : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-default)]')}>
                   <Clock size={13} /> 일일업무
@@ -1421,7 +1421,7 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
               <label className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1.5">
                 <CalendarCheck size={12} /> 업무시작일
               </label>
-              <DatePicker value={startDate} onChange={setStartDate} placeholder="날짜를 선택하세요" />
+              <DatePicker value={startDate} onChange={(v) => { setStartDate(v); if (nature === '일일업무') setDueDate(v) }} placeholder="날짜를 선택하세요" />
             </div>
             <div>
               <label className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1.5">
