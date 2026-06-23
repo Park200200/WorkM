@@ -476,8 +476,8 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
                       <button onClick={() => { if (!confirm('삭제하시겠습니까?')) return; const u = localAttachments.filter((_, i) => i !== fi); setLocalAttachments(u); onUpdateAttachments?.(u) }} style={{ fontSize: 10, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>삭제</button>
                     </div>
                   )}
-                  {/* 타이틀 (이미지 상단 가운데) */}
-                  {att.title && <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', marginBottom: 6, textAlign: 'center' }}>{att.title}</div>}
+                  {/* 타이틀 (이미지 좌측 상단) */}
+                  {att.title && <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', marginBottom: 6, textAlign: 'left' }}>{att.title}</div>}
                   {/* 이미지 또는 파일 */}
                   <div style={{ textAlign: 'center', marginBottom: 12 }}>
                     {att.dataUrl && att.type?.startsWith('image/') ? (
