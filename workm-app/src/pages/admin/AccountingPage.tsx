@@ -3132,16 +3132,16 @@ export function AcctApproval({ year }: { year: number }) {
   const [activeGroup, setActiveGroup] = useState<GroupKey>('inbox')
   const [subTab, setSubTab] = useState<string>('preExpense')
 
-  // ── 로그인 사용자 역할 판별 ──
+  // ── 로그인 사용자 역할 판별 (현재 연도 예산구분 기준) ──
   const userIsApprover = useMemo(() => {
-    const bCats: BudgetCat[] = getItem('acct_budget_cats', [])
-    return bCats.some(c => c.approvers?.includes(currentUserName)) || approvals.some(a => (a as any).approver === currentUserName)
-  }, [currentUserName, approvals, refresh])
+    const bCats: BudgetCat[] = getItem('acct_budget_cats', []).filter(c => c.year === year)
+    return bCats.some(c => (c as any).approvers?.includes(currentUserName)) || bCats.some(c => c.approver === currentUserName) || approvals.some(a => (a as any).approver === currentUserName)
+  }, [currentUserName, approvals, refresh, year])
 
   const userIsExpenseManager = useMemo(() => {
-    const bCats: BudgetCat[] = getItem('acct_budget_cats', [])
+    const bCats: BudgetCat[] = getItem('acct_budget_cats', []).filter(c => c.year === year)
     return bCats.some(c => c.users?.includes(currentUserName))
-  }, [currentUserName, refresh])
+  }, [currentUserName, refresh, year])
 
   // 결제함 서브탭을 역할에 따라 동적 필터링
   const currentGroup = useMemo(() => {
