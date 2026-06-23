@@ -3132,12 +3132,38 @@ export function AcctApproval({ year }: { year: number }) {
   const [activeGroup, setActiveGroup] = useState<GroupKey>('inbox')
   const [subTab, setSubTab] = useState<string>('preExpense')
 
-  const currentGroup = groupDefs.find(g => g.key === activeGroup)!
+  // ── 로그인 사용자 역할 판별 ──
+  const userIsApprover = useMemo(() => {
+    const bCats: BudgetCat[] = getItem('acct_budget_cats', [])
+    return bCats.some(c => c.approvers?.includes(currentUserName)) || approvals.some(a => (a as any).approver === currentUserName)
+  }, [currentUserName, approvals, refresh])
+
+  const userIsExpenseManager = useMemo(() => {
+    const bCats: BudgetCat[] = getItem('acct_budget_cats', [])
+    return bCats.some(c => c.users?.includes(currentUserName))
+  }, [currentUserName, refresh])
+
+  // 결제함 서브탭을 역할에 따라 동적 필터링
+  const currentGroup = useMemo(() => {
+    const g = groupDefs.find(g => g.key === activeGroup)!
+    if (activeGroup !== 'process') return g
+    const ft = g.subTabs.filter(t => {
+      if (t.key.startsWith('ap_')) return userIsApprover
+      if (t.key.startsWith('ex_')) return userIsExpenseManager
+      return true
+    })
+    return { ...g, subTabs: ft.length > 0 ? ft : g.subTabs }
+  }, [activeGroup, userIsApprover, userIsExpenseManager])
 
   const changeGroup = (gk: GroupKey) => {
     setActiveGroup(gk)
     const g = groupDefs.find(g => g.key === gk)!
-    setSubTab(g.subTabs[0].key)
+    let tabs = g.subTabs
+    if (gk === 'process') {
+      const ft = tabs.filter(t => { if (t.key.startsWith('ap_')) return userIsApprover; if (t.key.startsWith('ex_')) return userIsExpenseManager; return true })
+      if (ft.length > 0) tabs = ft
+    }
+    setSubTab(tabs[0].key)
   }
 
   const handleApproveConfirm = () => {
