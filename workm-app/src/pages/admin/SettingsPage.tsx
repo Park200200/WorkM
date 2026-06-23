@@ -1398,7 +1398,7 @@ export function BudgetTreePanel() {
                           <div className="flex flex-wrap gap-1 mt-0.5">
                             {item.accountPool.map(p => (
                               <span key={p.accountCode} className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600">
-                                {acctName(p.accountCode) || p.accountCode}
+                                {p.accountCode} {acctName(p.accountCode)}
                                 {item.defaultAccountCode === p.accountCode && ' ★'}
                               </span>
                             ))}
@@ -1497,7 +1497,7 @@ export function BudgetTreePanel() {
                                     </span>
                                     <span className="text-[11px] text-[var(--text-secondary)] truncate">
                                       {sub.accountCode
-                                        ? acctName(sub.accountCode)
+                                        ? <>{sub.accountCode} {acctName(sub.accountCode)}</>
                                         : <span className="text-[var(--text-muted)] italic">기본값</span>
                                       }
                                     </span>
@@ -1538,7 +1538,7 @@ export function BudgetTreePanel() {
                                           <span className="text-[10px] font-bold text-violet-400 text-center">{di + 1}</span>
                                           <span className="text-[11px] text-[var(--text-primary)] truncate pl-1">↳ {d.name}</span>
                                           <span className="text-[10px] text-[var(--text-secondary)] truncate">
-                                            {d.accountCode ? acctName(d.accountCode) : <span className="text-[var(--text-muted)] italic">상위값</span>}
+                                            {d.accountCode ? <>{d.accountCode} {acctName(d.accountCode)}</> : <span className="text-[var(--text-muted)] italic">상위값</span>}
                                           </span>
                                           <div className="flex flex-wrap gap-1">
                                             {d.aliases.map(a => (
