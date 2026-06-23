@@ -1584,7 +1584,16 @@ function AcctBudget({ year }: { year: number }) {
   const budgetCats = useMemo(() => {
     const cats = getItem<BudgetCat[]>('acct_budget_cats', [])
     const yearCats = cats.filter(cat => {
-      const catYear = cat.year || (cat.periodFrom ? parseInt(cat.periodFrom.substring(0, 4)) : new Date().getFullYear())
+      const pFrom = cat.periodFrom || ''
+      const pTo = cat.periodTo || ''
+      if (pFrom && pTo) {
+        // 사업기간이 해당 연도와 겹치는지 확인
+        const yearStart = `${year}-01-01`
+        const yearEnd = `${year}-12-31`
+        return pFrom <= yearEnd && pTo >= yearStart
+      }
+      // periodFrom/To 없으면 year 속성으로 폴백
+      const catYear = cat.year || (pFrom ? parseInt(pFrom.substring(0, 4)) : new Date().getFullYear())
       return catYear === year
     })
     // 예산승인자/관련자 필터
@@ -3067,7 +3076,7 @@ export function AcctApproval({ year }: { year: number }) {
   const [form, setForm] = useState({ title: '', amount: '', date: new Date().toISOString().slice(0, 10), accountCode: '', description: '', applicant: currentUserName, approver: '', budgetItem: '', budgetSubItem: '' })
   const staffList = useStaffStore(s => s.staff).filter(s => !s.resignedAt)
 
-  const budgetCats = useMemo(() => getItem<BudgetCat[]>('acct_budget_cats', []).filter(c => c.year === year), [year, refresh])
+  const budgetCats = useMemo(() => getItem<BudgetCat[]>('acct_budget_cats', []).filter(c => { const pf = c.periodFrom || ''; const pt = c.periodTo || ''; if (pf && pt) return pf <= `${year}-12-31` && pt >= `${year}-01-01`; return (c.year || year) === year }), [year, refresh])
   const budgetItems = useMemo(() => getItem<BudgetItem[]>('acct_budgets', []), [refresh])
   const approveBudgetDefs = useMemo(() => getItem<BudgetItemDef[]>('acct_budget_item_defs', []).sort((a, b) => a.sortOrder - b.sortOrder), [refresh])
 
@@ -3132,12 +3141,12 @@ export function AcctApproval({ year }: { year: number }) {
 
   // ── 로그인 사용자 역할 판별 (현재 연도 예산구분 기준) ──
   const userIsApprover = useMemo(() => {
-    const bCats: BudgetCat[] = getItem('acct_budget_cats', []).filter(c => c.year === year)
+    const bCats: BudgetCat[] = getItem('acct_budget_cats', []).filter((c: any) => { const pf = c.periodFrom || ''; const pt = c.periodTo || ''; if (pf && pt) return pf <= `${year}-12-31` && pt >= `${year}-01-01`; return (c.year || year) === year })
     return bCats.some(c => (c as any).approvers?.includes(currentUserName)) || bCats.some(c => c.approver === currentUserName) || approvals.some(a => (a as any).approver === currentUserName)
   }, [currentUserName, approvals, refresh, year])
 
   const userIsExpenseManager = useMemo(() => {
-    const bCats: BudgetCat[] = getItem('acct_budget_cats', []).filter(c => c.year === year)
+    const bCats: BudgetCat[] = getItem('acct_budget_cats', []).filter((c: any) => { const pf = c.periodFrom || ''; const pt = c.periodTo || ''; if (pf && pt) return pf <= `${year}-12-31` && pt >= `${year}-01-01`; return (c.year || year) === year })
     return bCats.some(c => c.users?.includes(currentUserName))
   }, [currentUserName, refresh, year])
 
@@ -3238,7 +3247,7 @@ export function AcctApproval({ year }: { year: number }) {
 
   // ── 지출담당자 판별 헬퍼 ──
   const isExpenseUser = (a: Approval) => {
-    const bCats: BudgetCat[] = getItem('acct_budget_cats', []).filter(c => c.year === year)
+    const bCats: BudgetCat[] = getItem('acct_budget_cats', []).filter((c: any) => { const pf = c.periodFrom || ''; const pt = c.periodTo || ''; if (pf && pt) return pf <= `${year}-12-31` && pt >= `${year}-01-01`; return (c.year || year) === year })
     const uCatIds = new Set(bCats.filter(c => c.users?.includes(currentUserName)).map(c => String(c.id)))
     const uCatNames = new Set(bCats.filter(c => c.users?.includes(currentUserName)).map(c => c.name))
     return ((a as any).budgetCatId && uCatIds.has(String((a as any).budgetCatId))) ||
@@ -4541,7 +4550,14 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const expBudgetCats = useMemo(() => {
     const cats: BudgetCat[] = getItem('acct_budget_cats', [])
     const yearCats = cats.filter(c => {
-      const cy = c.year || (c.periodFrom ? parseInt(c.periodFrom.substring(0, 4)) : year)
+      const pFrom = c.periodFrom || ''
+      const pTo = c.periodTo || ''
+      if (pFrom && pTo) {
+        const yearStart = `${year}-01-01`
+        const yearEnd = `${year}-12-31`
+        return pFrom <= yearEnd && pTo >= yearStart
+      }
+      const cy = c.year || (pFrom ? parseInt(pFrom.substring(0, 4)) : year)
       return cy === year
     })
     // 예산승인자(approverType=approver)인지 확인
@@ -4642,7 +4658,14 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
     const allBudgets: BudgetItem[] = getItem('acct_budgets', [])
     const defs: BudgetItemDef[] = getItem('acct_budget_item_defs', [])
     const allCats: BudgetCat[] = getItem('acct_budget_cats', [])
-    const yearCats = allCats.filter(c => (c.year || year) === year)
+    const yearCats = allCats.filter(c => {
+      const pFrom = c.periodFrom || ''
+      const pTo = c.periodTo || ''
+      if (pFrom && pTo) {
+        return pFrom <= `${year}-12-31` && pTo >= `${year}-01-01`
+      }
+      return (c.year || year) === year
+    })
     const result: { catId: string; catName: string; itemName: string; subName?: string; detailName?: string; accountCode?: string; accountName?: string; aliases: string; path: string; amount: number; spent: number; remaining: number }[] = []
     yearCats.forEach(cat => {
       const catItems = allBudgets.filter(b => String(b.catId) === String(cat.id))
