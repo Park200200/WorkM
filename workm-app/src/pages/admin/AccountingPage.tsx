@@ -3282,9 +3282,11 @@ export function AcctApproval({ year }: { year: number }) {
       }
     }
 
-    // ── 보관함: 완료된 건만 ──
+    // ── 보관함: 완료된 건 중 본인 관련만 ──
     if (group === 'archive') {
       if (!isCompleted) return false
+      const isMine = (a as any).applicant === currentUserName || (a as any).approver === currentUserName || isExpenseUser(a)
+      if (!isMine) return false
       if (tab === 'generalDone') return isGeneral
       if (tab === 'expenseDone') return !isGeneral
       return true
