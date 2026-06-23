@@ -979,6 +979,24 @@ export function AccountingPage() {
 
   useEffect(() => { initAccountingSeed() }, [])
 
+  // ── 권한 없는 탭 접근 시 리디렉트 ──
+  useEffect(() => {
+    const userName = JSON.parse(localStorage.getItem('ws_current_user') || '{}')?.name || ''
+    const staffList = JSON.parse(localStorage.getItem('ws_users') || '[]') as any[]
+    const currentStaff = staffList.find((s: any) => s.name === userName)
+    const isBudgetApprover = currentStaff?.approverType === 'approver'
+    const budgetCats = JSON.parse(localStorage.getItem('acct_budget_cats') || '[]') as any[]
+    const isBudgetHandler = budgetCats.some((c: any) =>
+      (c.users && c.users.includes(userName)) ||
+      (c.approvers && c.approvers.includes(userName))
+    )
+    const hasBudgetAccess = isBudgetApprover || isBudgetHandler
+    const restrictedTabs = ['overview', 'base_budget', 'income', 'withdrawal', 'payment', 'reports', 'vendors', 'budgetTree', 'accounts', 'hq_vendor', 'payMethods', 'acct_mgmt']
+    if (!hasBudgetAccess && restrictedTabs.includes(activeSub)) {
+      setActiveSub('approval')
+    }
+  }, [activeSub])
+
   return (
     <div className="animate-fadeIn">
       {/* ── 모바일 연도 선택 (데스크탑은 헤더에 표시) ── */}

@@ -163,7 +163,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             )
             const hasBudgetAccess = isBudgetApprover || isBudgetHandler
             // 예산관련자만 접근 가능한 탭
-            const restrictedTabs = ['base_budget', 'income', 'withdrawal', 'payment', 'reports', 'vendors', 'budgetTree', 'accounts', 'hq_vendor']
+            const restrictedTabs = ['overview', 'base_budget', 'income', 'withdrawal', 'payment', 'reports', 'vendors', 'budgetTree', 'accounts', 'hq_vendor', 'payMethods', 'acct_mgmt']
 
             return acctNav.map((entry) => {
               const Icon = entry.icon
