@@ -4414,7 +4414,22 @@ export function AcctApproval({ year }: { year: number }) {
               <>
               <div>
                 <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">예산구분</label>
-                <select value={(form as any).budgetCatId || ''} onChange={e => setForm(f => ({ ...f, budgetCatId: e.target.value } as any))} className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none">
+                <select value={(form as any).budgetCatId || ''} onChange={e => {
+                  const catId = e.target.value
+                  const cat = budgetCats.find(c => String(c.id) === catId) as any
+                  // 예산구분의 approvers에서 승인권자 자동 설정
+                  let autoApprover = ''
+                  if (cat) {
+                    if (cat.approvers && cat.approvers.length > 0) {
+                      autoApprover = cat.approvers[0]
+                    } else {
+                      // approvers가 없으면 approverType === 'approver' 인 직원
+                      const approverStaff = staffList.find(s => (s as any).approverType === 'approver')
+                      if (approverStaff) autoApprover = approverStaff.name
+                    }
+                  }
+                  setForm(f => ({ ...f, budgetCatId: catId, approver: autoApprover } as any))
+                }} className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none">
                   <option value="">— 예산구분 선택 —</option>
                   {budgetCats.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
                 </select>
@@ -4442,26 +4457,11 @@ export function AcctApproval({ year }: { year: number }) {
                         ...staffList.map(s => ({ value: s.name, label: `${s.name}${s.position ? ' (' + s.position + ')' : ''}` })),
                       ]}
                     />
-                  ) : (() => {
-                    const approvers = staffList.filter(s => (s as any).approverType === 'approver')
-                    if (approvers.length === 0) {
-                      return <div className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-muted)]">설정된 권한자 없음</div>
-                    } else if (approvers.length === 1) {
-                      return <div className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] font-bold">{approvers[0].name}</div>
-                    } else {
-                      return (
-                        <CustomSelect
-                          value={form.approver}
-                          onChange={v => setForm(f => ({ ...f, approver: v }))}
-                          placeholder="— 선택 —"
-                          options={[
-                            { value: '', label: '— 선택 —' },
-                            ...approvers.map(s => ({ value: s.name, label: `${s.name} (${s.position || ''})` })),
-                          ]}
-                        />
-                      )
-                    }
-                  })()}
+                  ) : (
+                    <div className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm font-bold text-[var(--text-primary)]">
+                      {form.approver || <span className="text-[var(--text-muted)] font-normal">예산구분을 선택하세요</span>}
+                    </div>
+                  )}
                 </div>
               </div>
               <div>
