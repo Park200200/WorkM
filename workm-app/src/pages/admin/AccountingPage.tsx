@@ -3221,8 +3221,9 @@ export function AcctApproval({ year }: { year: number }) {
     const approvedAmt = isPreExp ? (detailApproval.amount || 0) : (parseInt(approveAmount.replace(/[^0-9]/g, '')) || detailApproval.amount || 0)
     const updated = all.map(a => String(a.id) === String(detailApproval.id) ? {
       ...a,
-      // 선지출: 이미 지출 완료 → 바로 toResolve(결의할) / 일반: approved(승인됨)
-      status: isPreExp ? 'toResolve' : 'approved',
+      // 선지출: 담당자 본인 지출이면 바로 completed, 아니면 toResolve / 일반: approved
+      status: isPreExp ? ((detailApproval as any).selfExpense ? 'completed' : 'toResolve') : 'approved',
+      ...((isPreExp && (detailApproval as any).selfExpense) ? { completedAt: new Date().toISOString() } : {}),
       approver: currentUserName,
       ...(isPreExp ? {} : {
         budgetCatId: approveBudgetCat,
@@ -4528,6 +4529,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const currentUser = useAuthStore(s => s.user)
   const currentUserName = currentUser?.name || (() => { try { const u = JSON.parse(localStorage.getItem('ws_user') || '{}'); return u?.name } catch { return '' } })() || 'admin'
   const [form, setForm] = useState({ desc: '', subItem: '', detailItem: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, inputDate: today, manager: '', expenseManager: '', approvalStatus: '품의준비' })
+  const [wdAttachments, setWdAttachments] = useState<{name:string; data:string; size:number}[]>([])
   const staffList = useStaffStore(s => s.staff).filter(s => !s.resignedAt)
   const [counterSearch, setCounterSearch] = useState('')
   const [showCounterList, setShowCounterList] = useState(false)
@@ -4889,7 +4891,21 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
       const approvals = getItem<Approval[]>('acct_approvals', [])
       const budgetCats: BudgetCat[] = getItem('acct_budget_cats', [])
       const budgets: BudgetItem[] = getItem('acct_budgets', [])
-      const catName = budgetCats.find(c => String(c.id) === String(selectedBudgetCat))?.name || wdCatName || ''
+      const selectedCat = budgetCats.find(c => String(c.id) === String(selectedBudgetCat))
+      const catName = selectedCat?.name || wdCatName || ''
+      // 지출담당자 본인 여부 판별
+      const isSelfExpense = !!(selectedCat?.users && selectedCat.users.includes(currentUserName))
+      // 승인권자 자동 설정
+      let autoApprover = ''
+      if (selectedCat) {
+        if ((selectedCat as any).approvers && (selectedCat as any).approvers.length > 0) {
+          autoApprover = (selectedCat as any).approvers[0]
+        } else {
+          const staffData = getItem<any[]>('ws_users', [])
+          const approverStaff = staffData.find(s => s.approverType === 'approver')
+          if (approverStaff) autoApprover = approverStaff.name
+        }
+      }
       // 이름으로 budgetItemId, budgetSubId 매핑
       const matchedItem = budgets.find(b => String(b.catId) === String(selectedBudgetCat) && b.itemName === wdBudgetItem)
       const matchedSub = form.subItem ? budgets.find(b => String(b.catId) === String(selectedBudgetCat) && b.itemName === wdBudgetItem && b.subItemName === form.subItem) : null
@@ -4898,14 +4914,15 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
         id: preApprovalId,
         status: 'preExpense',
         isPreExpense: true,
+        selfExpense: isSelfExpense,
         title: `[선지출] ${form.desc || wdBudgetItem}`,
         amount: amt,
         date: form.tradeDate,
         createdAt: new Date().toISOString(),
         accountCode: '',
-        description: `출금전표 선지출 - ${wdBudgetItem}${form.subItem ? ' > ' + form.subItem : ''}`,
-        applicant: form.manager || currentUserName,
-        approver: '',
+        description: (form as any).memo || `출금전표 선지출 - ${wdBudgetItem}${form.subItem ? ' > ' + form.subItem : ''}`,
+        applicant: currentUserName,
+        approver: autoApprover,
         budgetItem: wdBudgetItem,
         budgetSubItem: form.subItem || '',
         budgetDetailItem: form.detailItem || '',
@@ -4913,6 +4930,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
         budgetCatName: catName,
         budgetItemId: matchedItem ? String(matchedItem.id) : '',
         budgetSubId: matchedSub ? String(matchedSub.id) : '',
+        attachments: wdAttachments.length > 0 ? wdAttachments : undefined,
       } as any)
       setItem('acct_approvals', approvals)
       // cashflow에 approvalId 연결
@@ -4925,6 +4943,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
     setCounterSearch('')
     setIsFromApproval(false)
     setWdBudgetItem('')
+    setWdAttachments([])
     setRefresh(r => r + 1)
   }
 
@@ -5028,7 +5047,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           <>
             {/* 출금/입금전표: 내용 + 예산선택 */}
             <div>
-              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'income' ? '계정과목' : '지출내용'} *</label>
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'income' ? '계정과목' : type === 'withdrawal' ? '품의명' : '지출내용'} *</label>
               {type === 'income' ? (
                 <CustomSelect
                   value={form.desc}
@@ -5462,15 +5481,45 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
         )}
         {
           <div>
-            <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">비고</label>
+            <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'withdrawal' ? '품의사유' : '비고'}</label>
             <textarea
               value={(form as any).memo || ''}
               onChange={e => setForm(f => ({ ...f, memo: e.target.value } as any))}
-              placeholder="참고 사항을 입력하세요"
+              placeholder={type === 'withdrawal' ? '품의 사유를 입력하세요' : '참고 사항을 입력하세요'}
               className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none resize-none h-[56px]"
             />
           </div>
         }
+        {/* 첨부파일 (출금전표) */}
+        {type === 'withdrawal' && (
+          <div className="pt-1">
+            <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">📎 첨부파일 (영수증/증빙)</label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {wdAttachments.map((f, i) => (
+                <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 text-[11px]">
+                  <span className="text-blue-600 font-bold truncate max-w-[120px]">{f.name}</span>
+                  <span className="text-[9px] text-[var(--text-muted)]">{(f.size / 1024).toFixed(0)}KB</span>
+                  <button type="button" onClick={() => setWdAttachments(prev => prev.filter((_, j) => j !== i))} className="text-[#ef4444] hover:text-[#dc2626] cursor-pointer text-[12px] ml-0.5">✕</button>
+                </div>
+              ))}
+            </div>
+            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-[var(--border-default)] text-[11px] font-bold text-[var(--text-muted)] hover:border-primary-400 hover:text-primary-500 cursor-pointer transition-colors">
+              <input type="file" multiple className="hidden" onChange={e => {
+                const files = e.target.files
+                if (!files) return
+                Array.from(files).forEach(file => {
+                  const reader = new FileReader()
+                  reader.onload = () => {
+                    setWdAttachments(prev => [...prev, { name: file.name, data: reader.result as string, size: file.size }])
+                  }
+                  reader.readAsDataURL(file)
+                })
+                e.target.value = ''
+              }} />
+              + 파일 첨부
+            </label>
+          </div>
+        )}
         <div className="flex justify-end">
           <button onClick={saveEntry} className={`flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-white text-sm font-bold cursor-pointer shadow-md bg-gradient-to-r ${typeGrads[type]}`}>
             <Save size={14} /> {type === 'income' ? '입금' : '지출'} 등록
