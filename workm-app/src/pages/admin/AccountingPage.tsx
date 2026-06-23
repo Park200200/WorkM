@@ -1539,7 +1539,7 @@ function AcctBudget({ year }: { year: number }) {
   /* ── 모달 상태 ── */
   const [catModalOpen, setCatModalOpen] = useState(false)
   const [catEditId, setCatEditId] = useState<string | number | null>(null)
-  const [catForm, setCatForm] = useState({ name: '', bank: '', accounts: [] as BudgetCatAccount[], periodFrom: `${year}-01-01`, periodTo: `${year}-12-31`, users: [] as string[], approver: '' })
+  const [catForm, setCatForm] = useState({ name: '', description: '', bank: '', accounts: [] as BudgetCatAccount[], periodFrom: `${year}-01-01`, periodTo: `${year}-12-31`, users: [] as string[], approver: '' })
 
   // 지출수단에서 등록된 계좌+카드 목록
   const registeredAccounts = useMemo(() => {
@@ -1685,11 +1685,11 @@ function AcctBudget({ year }: { year: number }) {
       const c = getItem<BudgetCat[]>('acct_budget_cats', []).find(x => String(x.id) === String(editId))
       if (c) {
         setCatEditId(editId)
-        setCatForm({ name: c.name || '', bank: c.bank || c.bankInfo || '', accounts: c.accounts || (c.bank ? [{ id: Date.now(), bankName: c.bank || c.bankInfo || '', cards: [] }] : []), periodFrom: c.periodFrom || `${year}-01-01`, periodTo: c.periodTo || `${year}-12-31`, users: c.users || [], approver: c.approver || '' })
+        setCatForm({ name: c.name || '', description: (c as any).description || '', bank: c.bank || c.bankInfo || '', accounts: c.accounts || (c.bank ? [{ id: Date.now(), bankName: c.bank || c.bankInfo || '', cards: [] }] : []), periodFrom: c.periodFrom || `${year}-01-01`, periodTo: c.periodTo || `${year}-12-31`, users: c.users || [], approver: c.approver || '' })
       }
     } else {
       setCatEditId(null)
-      setCatForm({ name: '', bank: '', accounts: [], periodFrom: `${year}-01-01`, periodTo: `${year}-12-31`, users: [], approver: '' })
+      setCatForm({ name: '', description: '', bank: '', accounts: [], periodFrom: `${year}-01-01`, periodTo: `${year}-12-31`, users: [], approver: '' })
     }
     setCatModalOpen(true)
   }
@@ -1701,7 +1701,7 @@ function AcctBudget({ year }: { year: number }) {
       const updated = all.map(c => {
         if (String(c.id) !== String(catEditId)) return c
         const y = catForm.periodFrom ? parseInt(catForm.periodFrom.substring(0, 4)) : year
-        return { ...c, name: catForm.name.trim(), bank: catForm.accounts[0]?.bankName || catForm.bank, bankInfo: catForm.accounts[0]?.bankName || catForm.bank, accounts: catForm.accounts, periodFrom: catForm.periodFrom, periodTo: catForm.periodTo, year: y, users: catForm.users, approver: catForm.approver }
+        return { ...c, name: catForm.name.trim(), description: catForm.description.trim(), bank: catForm.accounts[0]?.bankName || catForm.bank, bankInfo: catForm.accounts[0]?.bankName || catForm.bank, accounts: catForm.accounts, periodFrom: catForm.periodFrom, periodTo: catForm.periodTo, year: y, users: catForm.users, approver: catForm.approver }
       })
       localStorage.setItem('acct_budget_cats', JSON.stringify(updated))
     } else {
@@ -1709,6 +1709,7 @@ function AcctBudget({ year }: { year: number }) {
       const newCat: BudgetCat = {
         id: Date.now() + Math.floor(Math.random() * 1000),
         name: catForm.name.trim(),
+        description: catForm.description.trim(),
         bank: catForm.accounts[0]?.bankName || catForm.bank,
         bankInfo: catForm.accounts[0]?.bankName || catForm.bank,
         accounts: catForm.accounts,
@@ -2505,6 +2506,16 @@ function AcctBudget({ year }: { year: number }) {
                   placeholder="예) 문화재청, 자체예산"
                   className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors"
                   autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">예산설명</label>
+                <textarea
+                  value={catForm.description}
+                  onChange={e => setCatForm(f => ({ ...f, description: e.target.value }))}
+                  placeholder="예산구분에 대한 설명을 입력하세요"
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors resize-none"
                 />
               </div>
               {/* 통장/계좌 관리 */}
