@@ -5047,7 +5047,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           <>
             {/* 출금/입금전표: 내용 + 예산선택 */}
             <div>
-              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'income' ? '계정과목' : type === 'withdrawal' ? '품의명' : '지출내용'} *</label>
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'income' ? '계정과목' : (type === 'withdrawal' && (!form.manager || form.manager === currentUserName)) ? '품의명' : '지출내용'} *</label>
               {type === 'income' ? (
                 <CustomSelect
                   value={form.desc}
@@ -5480,18 +5480,23 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           </div>
         )}
         {
-          <div>
-            <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'withdrawal' ? '품의사유' : '비고'}</label>
-            <textarea
-              value={(form as any).memo || ''}
-              onChange={e => setForm(f => ({ ...f, memo: e.target.value } as any))}
-              placeholder={type === 'withdrawal' ? '품의 사유를 입력하세요' : '참고 사항을 입력하세요'}
-              className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none resize-none h-[56px]"
-            />
-          </div>
+          (() => {
+            const isSelfMode = type === 'withdrawal' && (!form.manager || form.manager === currentUserName)
+            return (
+              <div>
+                <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{isSelfMode ? '품의사유' : '비고'}</label>
+                <textarea
+                  value={(form as any).memo || ''}
+                  onChange={e => setForm(f => ({ ...f, memo: e.target.value } as any))}
+                  placeholder={isSelfMode ? '품의 사유를 입력하세요' : '참고 사항을 입력하세요'}
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none resize-none h-[56px]"
+                />
+              </div>
+            )
+          })()
         }
-        {/* 첨부파일 (출금전표) */}
-        {type === 'withdrawal' && (
+        {/* 첨부파일 (출금전표 - 담당자 본인일 때만) */}
+        {type === 'withdrawal' && (!form.manager || form.manager === currentUserName) && (
           <div className="pt-1">
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">📎 첨부파일 (영수증/증빙)</label>
             <div className="flex flex-wrap gap-2 mb-2">
