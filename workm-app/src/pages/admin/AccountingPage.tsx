@@ -991,7 +991,7 @@ export function AccountingPage() {
       (c.approvers && c.approvers.includes(userName))
     )
     const hasBudgetAccess = isBudgetApprover || isBudgetHandler
-    const restrictedTabs = ['overview', 'base_budget', 'income', 'withdrawal', 'payment', 'reports', 'vendors', 'budgetTree', 'accounts', 'hq_vendor', 'payMethods', 'acct_mgmt']
+    const restrictedTabs = ['overview', 'base_budget', 'expense', 'income', 'withdrawal', 'payment', 'reports', 'vendors', 'budgetTree', 'accounts', 'hq_vendor', 'payMethods', 'acct_mgmt']
     if (!hasBudgetAccess && restrictedTabs.includes(activeSub)) {
       setActiveSub('approval')
     }
