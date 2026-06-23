@@ -28,12 +28,14 @@ import {
 /* ─── 회계 시드 데이터 초기화 ── */
 export function initAccountingSeed() {
   // ── 시드 데이터 버전 관리: 기초자료만 갱신, 사용자 데이터 보존 ──
-  const ACCT_SEED_VER = 'v9'
+  const ACCT_SEED_VER = 'v10'
   if (localStorage.getItem('_acct_seed_ver') !== ACCT_SEED_VER) {
     // 기초자료 키만 삭제 (사용자 입력 데이터는 보존)
     const seedKeys = ['acct_accounts', 'acct_budget_item_defs', 'acct_vendors', 'acct_payment_methods']
     seedKeys.forEach(k => localStorage.removeItem(k))
     localStorage.removeItem('_acct_desc_patch_v1')
+    // 기초자료 삭제 시 시드 버전 플래그도 제거 → 재시드 허용
+    localStorage.removeItem('_acct_react_seed_v10')
     localStorage.setItem('_acct_seed_ver', ACCT_SEED_VER)
   }
   /* ── 기존 계정에 description이 누락된 경우 보충 패치 (early return 이전 실행) ── */
