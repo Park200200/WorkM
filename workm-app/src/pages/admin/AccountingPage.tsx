@@ -1525,7 +1525,10 @@ function AcctBaseBudget({ year: propYear }: { year: number }) {
 function AcctBudget({ year }: { year: number }) {
   const [selectedCatId, setSelectedCatId] = useState<string | number | null>(null)
   const [refresh, setRefresh] = useState(0)
-  const staffListForBudget = useStaffStore(s => s.staff).filter(s => !s.resignedAt)
+  const staffListForBudget = useMemo(() => {
+    const sl = getItem<any[]>('ws_users', [])
+    return sl.filter((s: any) => !s.resignedAt)
+  }, [refresh])
   const user = useAuthStore(s => s.user)
   const isBudgetApprover = useMemo(() => {
     const userName = user?.name || ''
