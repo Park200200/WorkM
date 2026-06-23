@@ -3093,43 +3093,43 @@ export function AcctApproval({ year }: { year: number }) {
     vouchered: { label: '완료됨', color: '#4f6ef7', bg: 'rgba(79,110,247,.1)' },
   }
 
-  type GroupKey = 'myRequest' | 'myApproval' | 'myExpense'
+  type GroupKey = 'inbox' | 'process' | 'archive'
   const groupDefs: { key: GroupKey; label: string; icon: string; color: string; subTabs: { key: string; label: string; color: string }[] }[] = [
     {
-      key: 'myRequest', label: '나의 품의리스트', icon: '📝', color: '#4f6ef7',
+      key: 'inbox', label: '품의함', icon: '📋', color: '#4f6ef7',
       subTabs: [
         { key: 'preExpense', label: '선지출', color: '#f97316' },
         { key: 'pending', label: '품의중', color: '#f59e0b' },
-        { key: 'rejected', label: '반려된', color: '#ef4444' },
-        { key: 'approved', label: '승인된', color: '#22c55e' },
+        { key: 'rejected', label: '반려됨', color: '#ef4444' },
+        { key: 'approved', label: '승인됨', color: '#22c55e' },
         { key: 'toResolve', label: '결의할', color: '#06b6d4' },
         { key: 'confirming', label: '정산중', color: '#8b5cf6' },
-        { key: 'completed', label: '완료됨', color: '#4f6ef7' },
       ],
     },
     {
-      key: 'myApproval', label: '나의 승인리스트', icon: '✅', color: '#22c55e',
+      key: 'process', label: '결제함', icon: '✅', color: '#22c55e',
       subTabs: [
-        { key: 'pending', label: '승인할', color: '#f59e0b' },
-        { key: 'approved', label: '승인한', color: '#22c55e' },
-        { key: 'rejected', label: '반려한', color: '#ef4444' },
-        { key: 'expensed', label: '지출된', color: '#3b82f6' },
-        { key: 'toResolve', label: '결의할', color: '#06b6d4' },
-        { key: 'confirming', label: '정산중', color: '#8b5cf6' },
-        { key: 'completed', label: '완료됨', color: '#4f6ef7' },
+        { key: 'ap_pending', label: '승인할', color: '#f59e0b' },
+        { key: 'ap_approved', label: '승인한', color: '#22c55e' },
+        { key: 'ap_rejected', label: '반려한', color: '#ef4444' },
+        { key: 'ap_toResolve', label: '결의할', color: '#06b6d4' },
+        { key: 'ap_confirming', label: '정산중', color: '#8b5cf6' },
+        { key: 'ex_pending', label: '지출할', color: '#3b82f6' },
+        { key: 'ex_done', label: '지출한', color: '#10b981' },
+        { key: 'ex_settle', label: '정산할', color: '#06b6d4' },
+        { key: 'ex_settled', label: '정산한', color: '#8b5cf6' },
       ],
     },
     {
-      key: 'myExpense', label: '나의 지출리스트', icon: '💰', color: '#f59e0b',
+      key: 'archive', label: '보관함', icon: '📦', color: '#6b7280',
       subTabs: [
-        { key: 'expensed', label: '지출할', color: '#3b82f6' },
-        { key: 'toResolve', label: '정산할', color: '#06b6d4' },
-        { key: 'completed', label: '완료됨', color: '#4f6ef7' },
+        { key: 'generalDone', label: '일반품의완료', color: '#4f6ef7' },
+        { key: 'expenseDone', label: '지출품의완료', color: '#f97316' },
       ],
     },
   ]
 
-  const [activeGroup, setActiveGroup] = useState<GroupKey>('myRequest')
+  const [activeGroup, setActiveGroup] = useState<GroupKey>('inbox')
   const [subTab, setSubTab] = useState<string>('preExpense')
 
   const currentGroup = groupDefs.find(g => g.key === activeGroup)!
@@ -3212,86 +3212,69 @@ export function AcctApproval({ year }: { year: number }) {
     setRefresh(r => r + 1)
   }
 
-  // 나의 품의리스트에서 반려된 탭: 내가 신청한 것 + 내가 승인자로서 반려한 것 모두 포함
-  const isMyRequestRejected = (a: Approval, groupKey: string, tabKey: string) => {
-    if (groupKey === 'myRequest' && tabKey === 'rejected' && a.status === 'rejected') {
-      return (a as any).applicant === currentUserName || (a as any).approver === currentUserName
+  // ── 지출담당자 판별 헬퍼 ──
+  const isExpenseUser = (a: Approval) => {
+    const bCats: BudgetCat[] = getItem('acct_budget_cats', [])
+    const uCatIds = new Set(bCats.filter(c => c.users?.includes(currentUserName)).map(c => String(c.id)))
+    const uCatNames = new Set(bCats.filter(c => c.users?.includes(currentUserName)).map(c => c.name))
+    return ((a as any).budgetCatId && uCatIds.has(String((a as any).budgetCatId))) ||
+           ((a as any).budgetCatName && uCatNames.has((a as any).budgetCatName))
+  }
+
+  // ── 통합 필터 ──
+  const matchFilter = (a: Approval, group: string, tab: string): boolean => {
+    const isCompleted = ['completed', 'vouchered'].includes(a.status)
+    const isGeneral = !!(a as any).isGeneral
+
+    // ── 품의함: 내가 신청한 품의 (완료 전) ──
+    if (group === 'inbox') {
+      if ((a as any).applicant !== currentUserName) {
+        if (tab === 'rejected' && a.status === 'rejected' && (a as any).approver === currentUserName) return true
+        return false
+      }
+      if (isCompleted) return false
+      return a.status === tab
+    }
+
+    // ── 결제함: 승인권자/지출담당자 역할별 ──
+    if (group === 'process') {
+      if (isCompleted) return false
+      // 승인권자 서브탭
+      if (tab.startsWith('ap_')) {
+        if ((a as any).approver !== currentUserName) return false
+        const realStatus = tab.replace('ap_', '')
+        return a.status === realStatus
+      }
+      // 지출담당자 서브탭
+      if (tab.startsWith('ex_')) {
+        if (!isExpenseUser(a) && (a as any).applicant !== currentUserName) return false
+        if (tab === 'ex_pending') return a.status === 'approved'
+        if (tab === 'ex_done') return a.status === 'expensed'
+        if (tab === 'ex_settle') return a.status === 'confirming'
+        if (tab === 'ex_settled') return a.status === 'toResolve' && !!(a as any)._settled
+        return false
+      }
+    }
+
+    // ── 보관함: 완료된 건만 ──
+    if (group === 'archive') {
+      if (!isCompleted) return false
+      if (tab === 'generalDone') return isGeneral
+      if (tab === 'expenseDone') return !isGeneral
+      return true
     }
     return false
   }
 
   const getSubTabCount = (tabKey: string) => {
-    const userFiltered = approvals.filter(a => {
-      // 반려된 탭 특수 처리: 내가 신청한 것 + 내가 반려한 것 모두 포함
-      if (isMyRequestRejected(a, activeGroup, tabKey)) return true
-      if (activeGroup === 'myRequest' && (a as any).applicant !== currentUserName) return false
-      if (activeGroup === 'myApproval' && (a as any).approver !== currentUserName) return false
-      if (activeGroup === 'myExpense') {
-        const bCats: BudgetCat[] = getItem('acct_budget_cats', [])
-        const uCatIds = new Set(bCats.filter(c => c.users && c.users.includes(currentUserName)).map(c => String(c.id)))
-        const uCatNames = new Set(bCats.filter(c => c.users && c.users.includes(currentUserName)).map(c => c.name))
-        const hasCatId = (a as any).budgetCatId && uCatIds.has(String((a as any).budgetCatId))
-        const hasCatName = (a as any).budgetCatName && uCatNames.has((a as any).budgetCatName)
-        if (!hasCatId && !hasCatName && (a as any).applicant !== currentUserName) return false
-      }
-      return true
-    })
-    if (tabKey === 'completed') return userFiltered.filter(a => ['completed', 'vouchered'].includes(a.status)).length
-    // 지출할 탭: approved + expensed
-    if (tabKey === 'expensed' && activeGroup === 'myExpense') return userFiltered.filter(a => a.status === 'approved' || a.status === 'expensed').length
-    // 정산할 탭: confirming
-    if (tabKey === 'toResolve' && activeGroup === 'myExpense') return userFiltered.filter(a => a.status === 'confirming').length
-    return userFiltered.filter(a => a.status === tabKey).length
+    return approvals.filter(a => matchFilter(a, activeGroup, tabKey)).length
   }
 
-  const filteredApprovals = approvals.filter(a => {
-    // 나의 품의리스트 → 반려된 탭: 내가 신청한 것 + 내가 승인자로서 반려한 것
-    if (isMyRequestRejected(a, activeGroup, subTab)) return true
-    // 그룹별 본인 기준 필터
-    if (activeGroup === 'myRequest' && (a as any).applicant !== currentUserName) return false
-    if (activeGroup === 'myApproval' && (a as any).approver !== currentUserName) return false
-    if (activeGroup === 'myExpense') {
-      const budgetCats: BudgetCat[] = getItem('acct_budget_cats', [])
-      const userCatIds = new Set(budgetCats.filter(c => c.users && c.users.includes(currentUserName)).map(c => String(c.id)))
-      const userCatNames = new Set(budgetCats.filter(c => c.users && c.users.includes(currentUserName)).map(c => c.name))
-      const hasCatId = (a as any).budgetCatId && userCatIds.has(String((a as any).budgetCatId))
-      const hasCatName = (a as any).budgetCatName && userCatNames.has((a as any).budgetCatName)
-      if (!hasCatId && !hasCatName && (a as any).applicant !== currentUserName) return false
-    }
-    // 상태 필터
-    if (subTab === 'completed') return ['completed', 'vouchered'].includes(a.status)
-    // 나의 지출리스트 지출할 탭: approved + expensed 상태 표시
-    if (subTab === 'expensed' && activeGroup === 'myExpense') return a.status === 'approved' || a.status === 'expensed'
-    // 나의 지출리스트 정산할 탭: confirming 상태만 표시
-    if (subTab === 'toResolve' && activeGroup === 'myExpense') return a.status === 'confirming'
-    return a.status === subTab
-  })
+  const filteredApprovals = approvals.filter(a => matchFilter(a, activeGroup, subTab))
 
   const groupCounts = groupDefs.map(g => {
-    const keys = [...new Set(g.subTabs.map(t => t.key))]
     return approvals.filter(a => {
-      // 반려된 항목 특수 처리
-      if (g.key === 'myRequest' && a.status === 'rejected' && keys.includes('rejected')) {
-        return (a as any).applicant === currentUserName || (a as any).approver === currentUserName
-      }
-      // 그룹별 본인 기준 필터
-      if (g.key === 'myRequest' && (a as any).applicant !== currentUserName) return false
-      if (g.key === 'myApproval' && (a as any).approver !== currentUserName) return false
-      if (g.key === 'myExpense') {
-        const budgetCats: BudgetCat[] = getItem('acct_budget_cats', [])
-        const userCatIds = new Set(budgetCats.filter(c => c.users && c.users.includes(currentUserName)).map(c => String(c.id)))
-        const userCatNames = new Set(budgetCats.filter(c => c.users && c.users.includes(currentUserName)).map(c => c.name))
-        const hasCatId = (a as any).budgetCatId && userCatIds.has(String((a as any).budgetCatId))
-        const hasCatName = (a as any).budgetCatName && userCatNames.has((a as any).budgetCatName)
-        if (!hasCatId && !hasCatName && (a as any).applicant !== currentUserName) return false
-      }
-      if (keys.includes('completed') && ['completed', 'vouchered'].includes(a.status)) return true
-      // myExpense: 지출할 탭은 approved + expensed 표시
-      if (g.key === 'myExpense' && a.status === 'approved' && keys.includes('expensed')) return true
-      // myExpense: 정산할 탭은 confirming만 표시, toResolve는 제외
-      if (g.key === 'myExpense' && a.status === 'toResolve') return false
-      if (g.key === 'myExpense' && keys.includes('toResolve') && a.status === 'confirming') return true
-      return keys.includes(a.status)
+      return g.subTabs.some(t => matchFilter(a, g.key, t.key))
     }).length
   })
 
@@ -3725,30 +3708,28 @@ export function AcctApproval({ year }: { year: number }) {
       </div>
 
       {/* ── 세부탭 ── */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-        {currentGroup.subTabs.map(t => {
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 flex-wrap">
+        {currentGroup.subTabs.map((t, ti) => {
           const cnt = getSubTabCount(t.key)
+          const showApLabel = activeGroup === 'process' && ti === 0
+          const showExLabel = activeGroup === 'process' && t.key === 'ex_pending'
           return (
-            <button
-              key={t.key}
-              onClick={() => {
-                // 나의 지출리스트 → 지출할 탭 클릭 시 지출하기 페이지로 이동
-                if (activeGroup === 'myExpense' && t.key === 'expensed') {
-                  setSearchParams(prev => { prev.set('tab', 'expense'); return prev })
-                  return
-                }
-                setSubTab(t.key)
-              }}
-              className={cn(
-                'text-[11px] font-bold px-3 py-1.5 rounded-full cursor-pointer transition-all border whitespace-nowrap',
-                subTab === t.key
-                  ? 'text-white border-transparent'
-                  : 'text-[var(--text-secondary)] border-[var(--border-default)] hover:border-primary-400'
-              )}
-              style={subTab === t.key ? { background: t.color, borderColor: t.color } : {}}
-            >
-              {t.label} {cnt}
-            </button>
+            <React.Fragment key={t.key}>
+              {showApLabel && <span className="text-[9px] font-bold text-[var(--text-muted)] mr-0.5 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-1 rounded border border-amber-200 dark:border-amber-800">👤 승인</span>}
+              {showExLabel && <><span className="w-px h-5 bg-[var(--border-default)] mx-1" /><span className="text-[9px] font-bold text-[var(--text-muted)] mr-0.5 bg-blue-50 dark:bg-blue-900/20 px-1.5 py-1 rounded border border-blue-200 dark:border-blue-800">💰 지출</span></>}
+              <button
+                onClick={() => setSubTab(t.key)}
+                className={cn(
+                  'text-[11px] font-bold px-3 py-1.5 rounded-full cursor-pointer transition-all border whitespace-nowrap',
+                  subTab === t.key
+                    ? 'text-white border-transparent'
+                    : 'text-[var(--text-secondary)] border-[var(--border-default)] hover:border-primary-400'
+                )}
+                style={subTab === t.key ? { background: t.color, borderColor: t.color } : {}}
+              >
+                {t.label} {cnt}
+              </button>
+            </React.Fragment>
           )
         })}
       </div>
@@ -3772,8 +3753,7 @@ export function AcctApproval({ year }: { year: number }) {
                 <span className="text-sm font-extrabold text-[var(--text-primary)]">
                   {(() => {
                     const titleDefaults: Record<string, Record<string, string>> = {
-                      myApproval: { pending:'승인할 품의목록', approved:'승인한 품의목록', rejected:'반려한 품의목록', expensed:'지출된 품의목록', toResolve:'결의할 품의목록', completed:'완료된 품의목록' },
-                      myRequest: { preExpense:'선지출 품의목록', pending:'품의중 품의목록', rejected:'반려된 품의목록', approved:'승인된 품의목록', expensed:'지출된 품의목록', toResolve:'결의할 품의목록', confirming:'확인중 품의목록', completed:'완료된 품의목록' },
+                      inbox: { preExpense:'선지출 목록', pending:'품의중 목록', rejected:'반려된 목록', approved:'승인된 목록', toResolve:'결의할 목록', confirming:'정산중 목록' }, process: { ap_pending:'승인할 목록', ap_approved:'승인한 목록', ap_rejected:'반려한 목록', ap_toResolve:'결의할 목록', ap_confirming:'정산중 목록', ex_pending:'지출할 목록', ex_done:'지출한 목록', ex_settle:'정산할 목록', ex_settled:'정산한 목록' }, archive: { generalDone:'일반품의 완료', expenseDone:'지출품의 완료' },
                     }
                     const def = titleDefaults[activeGroup]?.[subTab] || '품의 목록'
                     return getItem(`acct_title_${activeGroup}_${subTab}`, def)
@@ -3782,7 +3762,7 @@ export function AcctApproval({ year }: { year: number }) {
               )}
             </div>
             <div className="flex items-center gap-2">
-              {activeGroup === 'myRequest' && (
+              {activeGroup === 'inbox' && (
                 <button
                   onClick={() => setModalOpen(true)}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-500 text-white text-[12px] font-bold hover:bg-primary-600 transition-all cursor-pointer"
@@ -3799,14 +3779,12 @@ export function AcctApproval({ year }: { year: number }) {
                 setEditingBtnLabel(isEditing)
                 if (isEditing) {
                   const descDefaults: Record<string, Record<string, string>> = {
-                    myApproval: { pending:'나에게 승인 요청된 품의 목록입니다.', approved:'내가 승인한 품의 목록입니다.', rejected:'내가 반려한 품의 목록입니다.', expensed:'승인 후 지출이 집행된 목록입니다.', toResolve:'집행 후 결의를 작성해야 할 목록입니다.', completed:'회계처리가 완료된 목록입니다.' },
-                    myRequest: { preExpense:'선지출된 리스트로 사후품의를 해야하는 목록입니다.', pending:'품의중인 품의 리스트로 수정 삭제 가능합니다.', rejected:'반려된 품의 리스트로 재품의, 수정, 삭제 가능합니다.', approved:'승인된 품의 리스트로 지출담당자에게 지출을 요구하고 집행해야할 목록 입니다.', expensed:'지출이 집행된 품의 리스트입니다.', toResolve:'집행된 품의 리스트로 증빙서류 준비후 지출결의를 작성해야하는 목록 입니다.', confirming:'지출결의가 완료된 리스트로 자금집행자가 확인하고 최종 회계처리를 완료할 목록입니다.', completed:'자금집행자가 회계처리를 완료한 목록입니다.' },
+                    inbox: { preExpense:'선지출 후 사후품의가 필요한 목록입니다.', pending:'품의 중인 목록으로 수정/삭제 가능합니다.', rejected:'반려된 목록으로 수정 후 재품의 가능합니다.', approved:'승인된 목록입니다.', toResolve:'결의를 작성해야 할 목록입니다.', confirming:'정산 진행 중인 목록입니다.' }, process: { ap_pending:'승인 대기 중인 품의 목록입니다.', ap_approved:'승인 완료한 목록입니다.', ap_rejected:'반려한 목록입니다.', ap_toResolve:'결의 승인 대기 목록입니다.', ap_confirming:'정산 진행 중인 목록입니다.', ex_pending:'지출 실행 대기 목록입니다.', ex_done:'지출 완료 목록입니다.', ex_settle:'정산 처리 대기 목록입니다.', ex_settled:'정산 완료 목록입니다.' }, archive: { generalDone:'일반 품의가 완료된 목록입니다.', expenseDone:'지출 품의가 완료된 목록입니다.' },
                   }
                   const dDesc = descDefaults[activeGroup]?.[subTab] || ''
                   setEditingDescText(getItem(`acct_desc_${activeGroup}_${subTab}`, dDesc))
                   const titleDefaults: Record<string, Record<string, string>> = {
-                    myApproval: { pending:'승인할 품의목록', approved:'승인한 품의목록', rejected:'반려한 품의목록', expensed:'지출된 품의목록', toResolve:'결의할 품의목록', completed:'완료된 품의목록' },
-                    myRequest: { preExpense:'선지출 품의목록', pending:'품의중 품의목록', rejected:'반려된 품의목록', approved:'승인된 품의목록', expensed:'지출된 품의목록', toResolve:'결의할 품의목록', confirming:'확인중 품의목록', completed:'완료된 품의목록' },
+                    inbox: { preExpense:'선지출 목록', pending:'품의중 목록', rejected:'반려된 목록', approved:'승인된 목록', toResolve:'결의할 목록', confirming:'정산중 목록' }, process: { ap_pending:'승인할 목록', ap_approved:'승인한 목록', ap_rejected:'반려한 목록', ap_toResolve:'결의할 목록', ap_confirming:'정산중 목록', ex_pending:'지출할 목록', ex_done:'지출한 목록', ex_settle:'정산할 목록', ex_settled:'정산한 목록' }, archive: { generalDone:'일반품의 완료', expenseDone:'지출품의 완료' },
                   }
                   const dTitle = titleDefaults[activeGroup]?.[subTab] || '품의 목록'
                   setEditingTitleText(getItem(`acct_title_${activeGroup}_${subTab}`, dTitle))
@@ -3829,8 +3807,7 @@ export function AcctApproval({ year }: { year: number }) {
               <p className="text-[11px] text-[var(--text-muted)]">
                 {(() => {
                   const descDefaults: Record<string, Record<string, string>> = {
-                    myApproval: { pending:'나에게 승인 요청된 품의 목록입니다.', approved:'내가 승인한 품의 목록입니다.', rejected:'내가 반려한 품의 목록입니다.', expensed:'승인 후 지출이 집행된 목록입니다.', toResolve:'집행 후 결의를 작성해야 할 목록입니다.', completed:'회계처리가 완료된 목록입니다.' },
-                    myRequest: { preExpense:'선지출된 리스트로 사후품의를 해야하는 목록입니다.', pending:'품의중인 품의 리스트로 수정 삭제 가능합니다.', rejected:'반려된 품의 리스트로 재품의, 수정, 삭제 가능합니다.', approved:'승인된 품의 리스트로 지출담당자에게 지출을 요구하고 집행해야할 목록 입니다.', expensed:'지출이 집행된 품의 리스트입니다.', toResolve:'집행된 품의 리스트로 증빙서류 준비후 지출결의를 작성해야하는 목록 입니다.', confirming:'지출결의가 완료된 리스트로 자금집행자가 확인하고 최종 회계처리를 완료할 목록입니다.', completed:'자금집행자가 회계처리를 완료한 목록입니다.' },
+                    inbox: { preExpense:'선지출 후 사후품의가 필요한 목록입니다.', pending:'품의 중인 목록으로 수정/삭제 가능합니다.', rejected:'반려된 목록으로 수정 후 재품의 가능합니다.', approved:'승인된 목록입니다.', toResolve:'결의를 작성해야 할 목록입니다.', confirming:'정산 진행 중인 목록입니다.' }, process: { ap_pending:'승인 대기 중인 품의 목록입니다.', ap_approved:'승인 완료한 목록입니다.', ap_rejected:'반려한 목록입니다.', ap_toResolve:'결의 승인 대기 목록입니다.', ap_confirming:'정산 진행 중인 목록입니다.', ex_pending:'지출 실행 대기 목록입니다.', ex_done:'지출 완료 목록입니다.', ex_settle:'정산 처리 대기 목록입니다.', ex_settled:'정산 완료 목록입니다.' }, archive: { generalDone:'일반 품의가 완료된 목록입니다.', expenseDone:'지출 품의가 완료된 목록입니다.' },
                   }
                   const def = descDefaults[activeGroup]?.[subTab] || ''
                   return getItem(`acct_desc_${activeGroup}_${subTab}`, def)
