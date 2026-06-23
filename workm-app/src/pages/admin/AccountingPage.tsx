@@ -27,11 +27,12 @@ import {
 
 /* ─── 회계 시드 데이터 초기화 ── */
 function initAccountingSeed() {
-  // ── 시드 데이터 버전 관리: 버전 변경 시 모든 acct_ 데이터 초기화 ──
-  const ACCT_SEED_VER = 'v7'
+  // ── 시드 데이터 버전 관리: 기초자료만 갱신, 사용자 데이터 보존 ──
+  const ACCT_SEED_VER = 'v8'
   if (localStorage.getItem('_acct_seed_ver') !== ACCT_SEED_VER) {
-    const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith('acct_'))
-    keysToRemove.forEach(k => localStorage.removeItem(k))
+    // 기초자료 키만 삭제 (사용자 입력 데이터는 보존)
+    const seedKeys = ['acct_accounts', 'acct_budget_item_defs', 'acct_vendors', 'acct_payment_methods']
+    seedKeys.forEach(k => localStorage.removeItem(k))
     localStorage.removeItem('_acct_desc_patch_v1')
     localStorage.setItem('_acct_seed_ver', ACCT_SEED_VER)
   }
