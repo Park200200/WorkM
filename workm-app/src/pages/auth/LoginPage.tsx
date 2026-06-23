@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
 import { useToastStore } from '../../stores/toastStore'
@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Moon, Sun } from 'lucide-react'
 import { getItem } from '../../utils/storage'
+import { seedIfEmpty } from '../../utils/seedData'
 
 export function LoginPage() {
   const [userId, setUserId] = useState('')
@@ -16,6 +17,15 @@ export function LoginPage() {
   const addToast = useToastStore((s) => s.add)
   const { theme, toggle: toggleTheme } = useThemeStore()
   const navigate = useNavigate()
+
+  // ws_users가 비어있으면 시드 재실행 (데이터 유실 방어)
+  useEffect(() => {
+    const users = getItem<any[]>('ws_users', [])
+    if (users.length === 0) {
+      localStorage.removeItem('ws_seed_version')
+      seedIfEmpty()
+    }
+  }, [])
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
