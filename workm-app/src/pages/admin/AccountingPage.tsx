@@ -5154,7 +5154,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           {type === 'withdrawal' && (
           <>
             {/* ── 통합 검색 ── */}
-            <div className="md:col-span-2 relative">
+            <div className="relative">
               <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                 <label className="text-[10.5px] font-bold text-[var(--text-muted)]">🔍 예산 통합 검색</label>
                 {wdSearchSelected && (() => {
