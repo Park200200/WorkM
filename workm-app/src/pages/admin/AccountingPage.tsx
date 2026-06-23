@@ -3152,7 +3152,7 @@ export function AcctApproval({ year }: { year: number }) {
       if (t.key.startsWith('ex_')) return userIsExpenseManager
       return true
     })
-    return { ...g, subTabs: ft.length > 0 ? ft : g.subTabs }
+    return { ...g, subTabs: ft }
   }, [activeGroup, userIsApprover, userIsExpenseManager])
 
   const changeGroup = (gk: GroupKey) => {
@@ -3240,7 +3240,7 @@ export function AcctApproval({ year }: { year: number }) {
 
   // ── 지출담당자 판별 헬퍼 ──
   const isExpenseUser = (a: Approval) => {
-    const bCats: BudgetCat[] = getItem('acct_budget_cats', [])
+    const bCats: BudgetCat[] = getItem('acct_budget_cats', []).filter(c => c.year === year)
     const uCatIds = new Set(bCats.filter(c => c.users?.includes(currentUserName)).map(c => String(c.id)))
     const uCatNames = new Set(bCats.filter(c => c.users?.includes(currentUserName)).map(c => c.name))
     return ((a as any).budgetCatId && uCatIds.has(String((a as any).budgetCatId))) ||
