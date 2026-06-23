@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { initAccountingSeed } from './AccountingPage'
 import { PageHeader } from '../../components/common/PageHeader'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
@@ -1125,7 +1126,12 @@ export function BudgetTreePanel() {
 
   // ── 데이터 로드 (비어있으면 기본 시드 자동 생성) ──
   let items: BudgetItemDef[] = getItem('acct_budget_item_defs', [])
-  const accounts: AcctAccount[] = getItem('acct_accounts', [])
+  let accounts: AcctAccount[] = getItem('acct_accounts', [])
+  // 계정과목이 비어있으면 시드 트리거
+  if (accounts.length === 0) {
+    initAccountingSeed()
+    accounts = getItem('acct_accounts', [])
+  }
 
   // 시드가 아직 로드되지 않은 경우 기본 데이터 생성
   if (items.length === 0 && refresh === 0) {

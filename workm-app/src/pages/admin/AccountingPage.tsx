@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 
 /* ─── 회계 시드 데이터 초기화 ── */
-function initAccountingSeed() {
+export function initAccountingSeed() {
   // ── 시드 데이터 버전 관리: 기초자료만 갱신, 사용자 데이터 보존 ──
   const ACCT_SEED_VER = 'v9'
   if (localStorage.getItem('_acct_seed_ver') !== ACCT_SEED_VER) {
