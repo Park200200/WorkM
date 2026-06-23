@@ -2656,28 +2656,31 @@ function AcctBudget({ year }: { year: number }) {
                 </label>
                 {(() => {
                   const defaultApprover = staffListForBudget.find(s => (s as any).approverType === 'approver')
-                  return defaultApprover ? (
-                    <div className="flex items-center gap-2 px-3 py-2 mb-2 rounded-lg bg-primary-50 dark:bg-primary-900/10 border border-primary-200 dark:border-primary-800">
-                      <span className="text-[10px] font-bold text-primary-500 bg-primary-100 dark:bg-primary-900/20 px-1.5 py-0.5 rounded">기본</span>
-                      <span className="text-[13px] font-bold text-primary-600">{defaultApprover.name}</span>
-                      <span className="text-[10px] text-[var(--text-muted)]">{defaultApprover.position || ''} {defaultApprover.department || ''}</span>
-                    </div>
-                  ) : (
-                    <div className="text-[11px] text-[var(--text-muted)] px-3 py-2 mb-2 rounded-lg border border-dashed border-[var(--border-default)]">기본승인담당자가 설정되지 않았습니다</div>
+                  const defaultApproverName = defaultApprover?.name || ''
+                  return (
+                    <>
+                      {defaultApprover ? (
+                        <div className="flex items-center gap-2 px-3 py-2 mb-2 rounded-lg bg-primary-50 dark:bg-primary-900/10 border border-primary-200 dark:border-primary-800">
+                          <span className="text-[10px] font-bold text-primary-500 bg-primary-100 dark:bg-primary-900/20 px-1.5 py-0.5 rounded">기본</span>
+                          <span className="text-[13px] font-bold text-primary-600">{defaultApprover.name}</span>
+                          <span className="text-[10px] text-[var(--text-muted)]">{defaultApprover.position || ''} {(defaultApprover as any).department || ''}</span>
+                        </div>
+                      ) : (
+                        <div className="text-[11px] text-[var(--text-muted)] px-3 py-2 mb-2 rounded-lg border border-dashed border-[var(--border-default)]">기본승인담당자가 설정되지 않았습니다</div>
+                      )}
+                      <select
+                        value={catForm.approver}
+                        onChange={e => setCatForm(f => ({ ...f, approver: e.target.value }))}
+                        className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors"
+                      >
+                        <option value="">추가승인담당자를 선택하세요</option>
+                        {staffListForBudget.filter(s => s.name !== defaultApproverName).map(s => (
+                          <option key={s.id || s.name} value={s.name}>{s.name} {s.position || ''} {(s as any).department || ''}</option>
+                        ))}
+                      </select>
+                    </>
                   )
                 })()}
-                <select
-                  value={catForm.approver}
-                  onChange={e => {
-                    setCatForm(f => ({ ...f, approver: e.target.value }))
-                  }}
-                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors"
-                >
-                  <option value="">추가승인담당자를 선택하세요</option>
-                  {staffListForBudget.filter(s => (s as any).approverType !== 'approver').map(s => (
-                    <option key={s.id || s.name} value={s.name}>{s.name} {s.position || ''} {s.department || ''}</option>
-                  ))}
-                </select>
               </div>
             </div>
             <div className="flex justify-end gap-2 px-5 py-3 border-t border-[var(--border-default)]">
