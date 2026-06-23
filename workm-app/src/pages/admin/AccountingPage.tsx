@@ -27,6 +27,14 @@ import {
 
 /* ─── 회계 시드 데이터 초기화 ── */
 function initAccountingSeed() {
+  // ── 시드 데이터 버전 관리: 버전 변경 시 모든 acct_ 데이터 초기화 ──
+  const ACCT_SEED_VER = 'v7'
+  if (localStorage.getItem('_acct_seed_ver') !== ACCT_SEED_VER) {
+    const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith('acct_'))
+    keysToRemove.forEach(k => localStorage.removeItem(k))
+    localStorage.removeItem('_acct_desc_patch_v1')
+    localStorage.setItem('_acct_seed_ver', ACCT_SEED_VER)
+  }
   /* ── 기존 계정에 description이 누락된 경우 보충 패치 (early return 이전 실행) ── */
   if (!localStorage.getItem('_acct_desc_patch_v1')) {
     const descMap: Record<string, string> = {
