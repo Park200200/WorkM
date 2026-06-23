@@ -15,7 +15,7 @@ import {
   ClipboardList, PlayCircle, AlertTriangle, Zap, CheckCircle2,
   ChevronDown, ChevronUp, Star, Send as SendIcon, Download, Calendar as CalIcon,
   AlertCircle, MessageSquare, FileText, Lightbulb, ArrowRight,
-  FileCheck, Stamp, CreditCard, Receipt, CheckCircle,
+  FileCheck, Stamp, CreditCard, Receipt, CheckCircle, FileEdit,
 } from 'lucide-react'
 import { setItem as setStorageItem } from '../../utils/storage'
 import { formatDate } from '../../utils/format'
@@ -346,18 +346,23 @@ export function DashboardPage() {
           return false
         }
         const pendingApprove = isApprover ? approvals.filter(a => a.status === 'pending' && a.approver === userName).length : 0
+        const rejected = approvals.filter(a => a.status === 'rejected' && a.applicant === userName).length
+        const preExpense = approvals.filter(a => a.status === 'preExpense' && a.applicant === userName).length
         const toResolve = approvals.filter(a => a.status === 'toResolve' && a.applicant === userName).length
         const toExpense = isExpenseManager ? approvals.filter(a => a.status === 'approved' && isInMyCat(a)).length : 0
         const toSettle = isExpenseManager ? approvals.filter(a => a.status === 'confirming' && isInMyCat(a)).length : 0
         const completed = approvals.filter(a => ['completed', 'vouchered'].includes(a.status) && (a.applicant === userName || a.approver === userName || isInMyCat(a))).length
-        const total = pendingApprove + toResolve + toExpense + toSettle
-        const items = [
+        const total = pendingApprove + rejected + preExpense + toResolve + toExpense + toSettle
+        const allItems = [
           { label: '승인할', value: pendingApprove, icon: Stamp, color: '#f59e0b', bg: 'rgba(245,158,11,.12)', tab: 'approval' },
+          { label: '반려된', value: rejected, icon: AlertCircle, color: '#ef4444', bg: 'rgba(239,68,68,.12)', tab: 'approval' },
+          { label: '품의할', value: preExpense, icon: FileEdit, color: '#f97316', bg: 'rgba(249,115,22,.12)', tab: 'approval' },
           { label: '결의할', value: toResolve, icon: FileCheck, color: '#8b5cf6', bg: 'rgba(139,92,246,.12)', tab: 'approval' },
-          { label: '지출할', value: toExpense, icon: CreditCard, color: '#ef4444', bg: 'rgba(239,68,68,.12)', tab: 'expense' },
+          { label: '지출할', value: toExpense, icon: CreditCard, color: '#3b82f6', bg: 'rgba(59,130,246,.12)', tab: 'expense' },
           { label: '정산할', value: toSettle, icon: Receipt, color: '#06b6d4', bg: 'rgba(6,182,212,.12)', tab: 'approval' },
           { label: '완료됨', value: completed, icon: CheckCircle, color: '#22c55e', bg: 'rgba(34,197,94,.12)', tab: 'approval' },
         ]
+        const items = allItems.filter(i => i.value > 0)
         return (
           <div className="mb-4">
             <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4">
@@ -375,7 +380,10 @@ export function DashboardPage() {
                   품의하기 <ArrowRight size={12} />
                 </button>
               </div>
-              <div className="grid grid-cols-5 gap-2">
+              {items.length === 0 ? (
+                <div className="text-center py-3 text-[11px] text-[var(--text-muted)]">✅ 처리할 결제업무가 없습니다</div>
+              ) : (
+              <div className={`grid gap-2`} style={{ gridTemplateColumns: `repeat(${Math.min(items.length, 5)}, minmax(0, 1fr))` }}>
                 {items.map(item => {
                   const Icon = item.icon
                   return (
@@ -387,12 +395,13 @@ export function DashboardPage() {
                       <div className="w-7 h-7 rounded-lg mx-auto mb-1.5 flex items-center justify-center" style={{ background: item.bg, color: item.color }}>
                         <Icon size={14} />
                       </div>
-                      <div className="text-lg font-extrabold text-[var(--text-primary)] leading-none" style={item.value > 0 ? { color: item.color } : {}}>{item.value}</div>
+                      <div className="text-lg font-extrabold text-[var(--text-primary)] leading-none" style={{ color: item.color }}>{item.value}</div>
                       <div className="text-[10px] font-bold text-[var(--text-muted)] mt-0.5">{item.label}</div>
                     </div>
                   )
                 })}
               </div>
+              )}
             </div>
           </div>
         )
