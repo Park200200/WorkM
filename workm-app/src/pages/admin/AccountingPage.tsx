@@ -5155,31 +5155,31 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           <>
             {/* ── 통합 검색 ── */}
             <div className="md:col-span-2 relative">
-              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">🔍 예산 통합 검색</label>
+              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                <label className="text-[10.5px] font-bold text-[var(--text-muted)]">🔍 예산 통합 검색</label>
+                {wdSearchSelected && (() => {
+                  const allBudgets: BudgetItem[] = getItem('acct_budgets', [])
+                  let matched = allBudgets.filter(b => String(b.catId) === String(selectedBudgetCat) && b.itemName === wdBudgetItem)
+                  if (form.subItem) matched = matched.filter(b => b.subItemName === form.subItem)
+                  if (form.detailItem) matched = matched.filter(b => b.detailItemName === form.detailItem)
+                  const tb = matched.reduce((s, b) => s + (b.amount || 0), 0)
+                  const sp = matched.reduce((s, b) => s + (b.spent || 0), 0)
+                  const rm = tb - sp
+                  const rt = tb > 0 ? Math.round(sp / tb * 100) : 0
+                  return (
+                    <>
+                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800"><span className="text-[7px] text-blue-500 font-bold">총예산</span><span className="text-[9px] font-extrabold text-blue-600">{tb.toLocaleString('ko-KR')}</span></div>
+                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800"><span className="text-[7px] text-amber-500 font-bold">기집행</span><span className="text-[9px] font-extrabold text-amber-600">{sp.toLocaleString('ko-KR')}</span></div>
+                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800"><span className="text-[7px] text-emerald-500 font-bold">잔액</span><span className={`text-[9px] font-extrabold ${rm < 0 ? 'text-[#ef4444]' : 'text-emerald-600'}`}>{rm.toLocaleString('ko-KR')}</span></div>
+                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-violet-50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800"><span className="text-[9px] font-extrabold text-violet-600">{rt}%</span></div>
+                    </>
+                  )
+                })()}
+              </div>
               {wdSearchSelected ? (
-                <div className="w-full rounded-lg border border-primary-400 bg-primary-50/30 overflow-hidden">
-                  <div className="px-3 py-2.5 flex items-center justify-between gap-1">
-                    <span className="text-[12px] text-[var(--text-primary)] font-bold truncate">{wdSearchSelected}</span>
-                    <button type="button" onClick={() => { setWdSearchSelected(''); setWdSearchText(''); setSelectedBudgetCat(''); setWdBudgetItem(''); setWdCatName(''); setForm(f => ({...f, subItem:'', detailItem:'', amount:''})) }} className="text-[var(--text-muted)] hover:text-[#ef4444] text-[14px] shrink-0 cursor-pointer">✕</button>
-                  </div>
-                  {(() => {
-                    const allBudgets: BudgetItem[] = getItem('acct_budgets', [])
-                    let matched = allBudgets.filter(b => String(b.catId) === String(selectedBudgetCat) && b.itemName === wdBudgetItem)
-                    if (form.subItem) matched = matched.filter(b => b.subItemName === form.subItem)
-                    if (form.detailItem) matched = matched.filter(b => b.detailItemName === form.detailItem)
-                    const tb = matched.reduce((s, b) => s + (b.amount || 0), 0)
-                    const sp = matched.reduce((s, b) => s + (b.spent || 0), 0)
-                    const rm = tb - sp
-                    const rt = tb > 0 ? Math.round(sp / tb * 100) : 0
-                    return (
-                      <div className="px-3 py-1.5 bg-[var(--bg-surface)] border-t border-primary-200 dark:border-primary-800 flex flex-wrap items-center gap-1.5">
-                        <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800"><span className="text-[7px] text-blue-500 font-bold">총예산</span><span className="text-[9px] font-extrabold text-blue-600">{tb.toLocaleString('ko-KR')}</span></div>
-                        <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800"><span className="text-[7px] text-amber-500 font-bold">기집행</span><span className="text-[9px] font-extrabold text-amber-600">{sp.toLocaleString('ko-KR')}</span></div>
-                        <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800"><span className="text-[7px] text-emerald-500 font-bold">잔액</span><span className={`text-[9px] font-extrabold ${rm < 0 ? 'text-[#ef4444]' : 'text-emerald-600'}`}>{rm.toLocaleString('ko-KR')}</span></div>
-                        <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800"><span className="text-[7px] text-violet-500 font-bold">집행률</span><span className="text-[9px] font-extrabold text-violet-600">{rt}%</span></div>
-                      </div>
-                    )
-                  })()}
+                <div className="w-full px-3 py-2.5 rounded-lg border border-primary-400 bg-primary-50/30 text-[12px] flex items-center justify-between gap-1">
+                  <span className="text-[var(--text-primary)] font-bold truncate">{wdSearchSelected}</span>
+                  <button type="button" onClick={() => { setWdSearchSelected(''); setWdSearchText(''); setSelectedBudgetCat(''); setWdBudgetItem(''); setWdCatName(''); setForm(f => ({...f, subItem:'', detailItem:'', amount:''})) }} className="text-[var(--text-muted)] hover:text-[#ef4444] text-[14px] shrink-0 cursor-pointer">✕</button>
                 </div>
               ) : (
                 <input
