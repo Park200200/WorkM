@@ -9,9 +9,10 @@ import { HpBoardMgmt } from '../../components/homepage/HpBoardMgmt'
 import { HpMediaMgmt } from '../../components/homepage/HpMediaMgmt'
 import { HpTermsMgmt } from '../../components/homepage/HpTermsMgmt'
 import { HpWorkshopMgmt } from '../../components/homepage/HpWorkshopMgmt'
+import { HpFormBuilder } from '../../components/homepage/HpFormBuilder'
 import {
   Settings2, MenuSquare, LayoutPanelLeft, ClipboardList, Film,
-  ScrollText, FileText, Globe,
+  ScrollText, FileText, Globe, PenLine,
 } from 'lucide-react'
 
 /* ─── 서브 페이지 정의 (레거시 homepageNav 매칭) ── */
@@ -23,6 +24,7 @@ const SUB_PAGES = [
   { key: 'media',     label: '미디어자료',        icon: Film,             emoji: '🖼️',  desc: '이미지, 동영상 미디어를 관리합니다' },
   { key: 'terms',     label: '약관관리',          icon: ScrollText,       emoji: '📜',  desc: '이용약관, 개인정보처리방침을 관리합니다' },
   { key: 'workshop',  label: '신청서', icon: FileText,        emoji: '📝',  desc: '워크샵/대관 신청서를 관리합니다' },
+  { key: 'formBuilder', label: '신청서작성', icon: PenLine, emoji: '✏️', desc: '커스텀 신청서 양식을 만들고 관리합니다' },
 ]
 
 /* ═══════════════════════════════════════════
@@ -95,7 +97,8 @@ export function HomepageMgmtPage() {
           {activeSub === 'media' && <HpMediaMgmt />}
           {activeSub === 'terms' && <HpTermsMgmt />}
           {activeSub === 'workshop' && <HpWorkshopMgmt />}
-          {!['basic','menu','content','board','media','terms','workshop'].includes(activeSub) && (
+          {activeSub === 'formBuilder' && <HpFormBuilder />}
+          {!['basic','menu','content','board','media','terms','workshop','formBuilder'].includes(activeSub) && (
             <div className="py-16 text-center">
               <p className="text-4xl mb-3">{currentPage.emoji}</p>
               <p className="text-base font-bold text-[var(--text-primary)]">{currentPage.label}</p>

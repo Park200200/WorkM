@@ -12,7 +12,7 @@ import {
   LayoutDashboard, Wallet, Landmark, FileCheck, CreditCard,
   ArrowDownCircle, ArrowUpCircle, ScrollText, ContactRound,
   /* 홈페이지 전용 아이콘 (레거시 매칭) */
-  Settings2, MenuSquare, LayoutPanelLeft, ClipboardList, Film, FileText,
+  Settings2, MenuSquare, LayoutPanelLeft, ClipboardList, Film, FileText, PenLine,
 } from 'lucide-react'
 
 interface NavEntry {
@@ -97,6 +97,7 @@ const hpNav: { tab: string; label: string; icon: React.ElementType }[] = [
   { tab: 'media',    label: '미디어자료',        icon: Film },
   { tab: 'terms',    label: '약관관리',          icon: ScrollText },
   { tab: 'workshop', label: '신청서', icon: FileText },
+  { tab: 'formBuilder', label: '신청서작성', icon: PenLine },
 ]
 
 interface SidebarProps {
