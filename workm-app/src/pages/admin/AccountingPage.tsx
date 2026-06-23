@@ -357,7 +357,7 @@ export function initAccountingSeed() {
                   "accountCode": "5190",
                   "description": "1분기 사무용품 일괄 구매 품의",
                   "applicant": "최대표",
-                  "approver": "박팀장",
+                  "approver": "최대표",
                   "createdAt": "2026-01-14T09:00:00Z"
             },
             {
@@ -393,7 +393,7 @@ export function initAccountingSeed() {
                   "accountCode": "5190",
                   "description": "2025년도 연간보고서 인쇄",
                   "applicant": "강선임",
-                  "approver": "박팀장",
+                  "approver": "최대표",
                   "createdAt": "2026-03-09T11:00:00Z"
             },
             {
@@ -441,7 +441,7 @@ export function initAccountingSeed() {
                   "accountCode": "5340",
                   "description": "인터넷/전화 연간계약 갱신",
                   "applicant": "임기획",
-                  "approver": "박팀장",
+                  "approver": "최대표",
                   "createdAt": "2026-04-28T15:00:00Z"
             },
             {
@@ -759,7 +759,7 @@ export function initAccountingSeed() {
                   "accountCode": "",
                   "description": "연습",
                   "applicant": "한경리",
-                  "approver": "박팀장",
+                  "approver": "최대표",
                   "isGeneral": true,
                   "budgetItem": "",
                   "budgetSubItem": "",
