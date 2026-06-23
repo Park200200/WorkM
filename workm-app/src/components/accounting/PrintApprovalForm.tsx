@@ -417,13 +417,13 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
       </div>
 
       {/* ═══ 증빙서류 영역 — 드래그앤드롭으로 같은줄/새줄 배치 ═══ */}
-      {localAttachments.length > 0 && (
-        <div className="print-page-wrapper">
+      {localAttachments.length > 0 && attachmentRows.map((row, ri) => (
+        <div className="print-page-wrapper" key={ri}>
           <div className="print-evidence-page" style={{ width: `${printWidth}mm`, maxWidth: '100%' }}>
-            {/* 증빙서류 헤더 */}
+            {/* 증빙서류 헤더 (모든 페이지) */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <h1 className="pf-title" style={{ margin: 0, flex: 1 }}>증 빙 서 류</h1>
-              {canEdit && (
+              {ri === 0 && canEdit && (
                 <div className="no-print" style={{ display: 'flex', gap: 6 }}>
                   <button onClick={() => setEvidencePreview(false)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: !evidencePreview ? '2px solid #4f6ef7' : '1px solid #cbd5e1', background: !evidencePreview ? '#eef2ff' : '#f8fafc', color: !evidencePreview ? '#4f6ef7' : '#64748b' }}>
                     <Edit3 size={12} /> 편집
@@ -435,8 +435,8 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
               )}
             </div>
 
-            {/* 첫 번째 드롭 존 (첫 줄 위) */}
-            {canEdit && !evidencePreview && dragIdx !== null && (
+            {/* 첫 페이지 상단 드롭 존 */}
+            {ri === 0 && canEdit && !evidencePreview && dragIdx !== null && (
               <div
                 onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget({ type: 'new-row', rowIdx: 0 }) }}
                 onDragLeave={() => setDropTarget(p => p?.type === 'new-row' && p.rowIdx === 0 ? null : p)}
@@ -447,68 +447,63 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
               </div>
             )}
 
-            {/* 행별 렌더링 */}
-            {attachmentRows.map((row, ri) => (
-              <div key={ri}>
-                {/* 행 내용 (같은 줄 드롭존) */}
+            {/* 행 내용 (같은 줄 드롭존) */}
+            <div
+              onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (dragIdx !== null) setDropTarget({ type: 'same-row', rowIdx: ri }) }}
+              onDragLeave={() => setDropTarget(p => p?.type === 'same-row' && p.rowIdx === ri ? null : p)}
+              onDrop={e => { e.preventDefault(); handleEvidenceDrop(ri, 'same-row') }}
+              style={{ display: 'flex', gap: 12, padding: 8, borderRadius: 10, transition: 'all 0.15s', border: dropTarget?.type === 'same-row' && dropTarget.rowIdx === ri ? '2px dashed #22c55e' : '2px solid transparent', background: dropTarget?.type === 'same-row' && dropTarget.rowIdx === ri ? '#f0fdf4' : 'transparent', position: 'relative' }}
+            >
+              {dropTarget?.type === 'same-row' && dropTarget.rowIdx === ri && (
+                <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 8px', borderRadius: 4, border: '1px solid #bbf7d0', zIndex: 2 }}>같은 줄에 놓기</div>
+              )}
+              {row.map(({ att, fi }) => (
                 <div
-                  onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (dragIdx !== null) setDropTarget({ type: 'same-row', rowIdx: ri }) }}
-                  onDragLeave={() => setDropTarget(p => p?.type === 'same-row' && p.rowIdx === ri ? null : p)}
-                  onDrop={e => { e.preventDefault(); handleEvidenceDrop(ri, 'same-row') }}
-                  style={{ display: 'flex', gap: 12, padding: 8, borderRadius: 10, transition: 'all 0.15s', border: dropTarget?.type === 'same-row' && dropTarget.rowIdx === ri ? '2px dashed #22c55e' : '2px solid transparent', background: dropTarget?.type === 'same-row' && dropTarget.rowIdx === ri ? '#f0fdf4' : 'transparent', position: 'relative' }}
+                  key={fi}
+                  draggable={canEdit && !evidencePreview}
+                  onDragStart={e => { if (!canEdit) return; setDragIdx(fi); e.dataTransfer.effectAllowed = 'move' }}
+                  onDragEnd={() => { setDragIdx(null); setDropTarget(null) }}
+                  style={{ flex: 1, textAlign: 'center', cursor: canEdit && !evidencePreview ? 'grab' : 'default', opacity: dragIdx === fi ? 0.4 : 1, transition: 'opacity 0.15s' }}
                 >
-                  {dropTarget?.type === 'same-row' && dropTarget.rowIdx === ri && (
-                    <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#f0fdf4', padding: '1px 8px', borderRadius: 4, border: '1px solid #bbf7d0', zIndex: 2 }}>같은 줄에 놓기</div>
-                  )}
-                  {row.map(({ att, fi }) => (
-                    <div
-                      key={fi}
-                      draggable={canEdit && !evidencePreview}
-                      onDragStart={e => { if (!canEdit) return; setDragIdx(fi); e.dataTransfer.effectAllowed = 'move' }}
-                      onDragEnd={() => { setDragIdx(null); setDropTarget(null) }}
-                      style={{ flex: 1, textAlign: 'center', cursor: canEdit && !evidencePreview ? 'grab' : 'default', opacity: dragIdx === fi ? 0.4 : 1, transition: 'opacity 0.15s' }}
-                    >
-                      {/* 편집 컨트롤 */}
-                      {canEdit && !evidencePreview && (
-                        <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, padding: '4px 8px', background: '#f1f5f9', borderRadius: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 10, color: '#94a3b8', cursor: 'grab' }}>⠿</span>
-                          <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b' }}>타이틀</span>
-                          <input value={att.title} onChange={e => { const u = [...localAttachments]; u[fi] = { ...u[fi], title: e.target.value }; setLocalAttachments(u); onUpdateAttachments?.(u) }} className="pf-header-input" style={{ width: 120, fontSize: 11 }} />
-                          <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b' }}>가로</span>
-                          <input type="number" value={att.printWidth} onChange={e => { const u = [...localAttachments]; u[fi] = { ...u[fi], printWidth: Number(e.target.value) || 150 }; setLocalAttachments(u); onUpdateAttachments?.(u) }} className="pf-header-input" style={{ width: 50, textAlign: 'center', fontSize: 11 }} min={50} max={800} />
-                          <button onClick={() => { if (!confirm('삭제하시겠습니까?')) return; const u = localAttachments.filter((_, i) => i !== fi); setLocalAttachments(u); onUpdateAttachments?.(u) }} style={{ fontSize: 10, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>삭제</button>
-                        </div>
-                      )}
-                      {/* 타이틀 (이미지 상단 가운데) */}
-                      {att.title && <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', marginBottom: 6, textAlign: 'center' }}>{att.title}</div>}
-                      {/* 이미지 또는 파일 */}
-                      <div style={{ textAlign: 'center', marginBottom: 12 }}>
-                        {att.dataUrl && att.type?.startsWith('image/') ? (
-                          <img src={att.dataUrl} alt={att.title} style={{ width: att.printWidth, maxWidth: '100%', objectFit: 'contain', border: '1px solid #e2e8f0', borderRadius: 4 }} />
-                        ) : (
-                          <div style={{ display: 'inline-block', padding: '10px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#64748b' }}>📎 {att.name}</div>
-                        )}
-                      </div>
+                  {/* 편집 컨트롤 */}
+                  {canEdit && !evidencePreview && (
+                    <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, padding: '4px 8px', background: '#f1f5f9', borderRadius: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 10, color: '#94a3b8', cursor: 'grab' }}>⠿</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b' }}>타이틀</span>
+                      <input value={att.title} onChange={e => { const u = [...localAttachments]; u[fi] = { ...u[fi], title: e.target.value }; setLocalAttachments(u); onUpdateAttachments?.(u) }} className="pf-header-input" style={{ width: 120, fontSize: 11 }} />
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#64748b' }}>가로</span>
+                      <input type="number" value={att.printWidth} onChange={e => { const u = [...localAttachments]; u[fi] = { ...u[fi], printWidth: Number(e.target.value) || 150 }; setLocalAttachments(u); onUpdateAttachments?.(u) }} className="pf-header-input" style={{ width: 50, textAlign: 'center', fontSize: 11 }} min={50} max={800} />
+                      <button onClick={() => { if (!confirm('삭제하시겠습니까?')) return; const u = localAttachments.filter((_, i) => i !== fi); setLocalAttachments(u); onUpdateAttachments?.(u) }} style={{ fontSize: 10, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>삭제</button>
                     </div>
-                  ))}
-                </div>
-
-                {/* 행 사이 드롭 존 (새 줄) */}
-                {canEdit && !evidencePreview && dragIdx !== null && (
-                  <div
-                    onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget({ type: 'new-row', rowIdx: ri + 1 }) }}
-                    onDragLeave={() => setDropTarget(p => p?.type === 'new-row' && p.rowIdx === ri + 1 ? null : p)}
-                    onDrop={e => { e.preventDefault(); handleEvidenceDrop(ri + 1, 'new-row') }}
-                    style={{ height: 28, margin: '2px 0', borderRadius: 8, border: dropTarget?.type === 'new-row' && dropTarget.rowIdx === ri + 1 ? '2px dashed #4f6ef7' : '2px dashed transparent', background: dropTarget?.type === 'new-row' && dropTarget.rowIdx === ri + 1 ? '#eef2ff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
-                  >
-                    {dropTarget?.type === 'new-row' && dropTarget.rowIdx === ri + 1 && <span style={{ fontSize: 11, color: '#4f6ef7', fontWeight: 700 }}>📌 새 줄에 놓기</span>}
+                  )}
+                  {/* 타이틀 (이미지 상단 가운데) */}
+                  {att.title && <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', marginBottom: 6, textAlign: 'center' }}>{att.title}</div>}
+                  {/* 이미지 또는 파일 */}
+                  <div style={{ textAlign: 'center', marginBottom: 12 }}>
+                    {att.dataUrl && att.type?.startsWith('image/') ? (
+                      <img src={att.dataUrl} alt={att.title} style={{ width: att.printWidth, maxWidth: '100%', objectFit: 'contain', border: '1px solid #e2e8f0', borderRadius: 4 }} />
+                    ) : (
+                      <div style={{ display: 'inline-block', padding: '10px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#64748b' }}>📎 {att.name}</div>
+                    )}
                   </div>
-                )}
+                </div>
+              ))}
+            </div>
+
+            {/* 행 사이 드롭 존 (새 줄) */}
+            {canEdit && !evidencePreview && dragIdx !== null && (
+              <div
+                onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget({ type: 'new-row', rowIdx: ri + 1 }) }}
+                onDragLeave={() => setDropTarget(p => p?.type === 'new-row' && p.rowIdx === ri + 1 ? null : p)}
+                onDrop={e => { e.preventDefault(); handleEvidenceDrop(ri + 1, 'new-row') }}
+                style={{ height: 28, margin: '2px 0', borderRadius: 8, border: dropTarget?.type === 'new-row' && dropTarget.rowIdx === ri + 1 ? '2px dashed #4f6ef7' : '2px dashed transparent', background: dropTarget?.type === 'new-row' && dropTarget.rowIdx === ri + 1 ? '#eef2ff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+              >
+                {dropTarget?.type === 'new-row' && dropTarget.rowIdx === ri + 1 && <span style={{ fontSize: 11, color: '#4f6ef7', fontWeight: 700 }}>📌 새 줄에 놓기</span>}
               </div>
-            ))}
+            )}
           </div>
         </div>
-      )}
+      ))}
 
       {/* 하단 액션 버튼 바 (인쇄 시 숨김) */}
       {actions && (
