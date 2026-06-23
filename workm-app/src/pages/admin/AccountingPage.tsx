@@ -1214,48 +1214,7 @@ function AcctOverview({ year, selectedCatId }: { year: number; selectedCatId: st
       <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4">
         <div className="flex items-center gap-2 text-sm font-extrabold text-[var(--text-primary)] mb-3">
           <PieChart size={16} className="text-primary-500" /> 예산 집행 현황
-        </div>
-        {/* 예산구분 서브탭 */}
-        <div className="flex items-center gap-1 mb-4">
-          <button
-            onClick={isBudgetApprover ? () => setOverviewCat(null) : undefined}
-            className={cn(
-              'px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all border',
-              !isBudgetApprover ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
-              !selectedOverviewCatId
-                ? 'bg-primary-500 text-white border-primary-500 shadow-sm'
-                : 'bg-transparent text-[var(--text-muted)] border-[var(--border-default)]' + (isBudgetApprover ? ' hover:border-primary-400' : '')
-            )}
-            title={!isBudgetApprover ? '지출승인권자만 사용 가능' : undefined}
-          >
-            전체
-          </button>
-          {yearCats.map(cat => {
-            const userName = user?.name || ''
-            const canAccess = isBudgetApprover ||
-              (cat.users && cat.users.includes(userName)) ||
-              ((cat as any).approvers && (cat as any).approvers.includes(userName))
-            return (
-              <button
-                key={cat.id}
-                onClick={canAccess ? () => setOverviewCat(String(cat.id)) : undefined}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all border',
-                  !canAccess ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
-                  String(selectedOverviewCatId) === String(cat.id)
-                    ? 'bg-primary-500 text-white border-primary-500 shadow-sm'
-                    : 'bg-transparent text-[var(--text-muted)] border-[var(--border-default)]' + (canAccess ? ' hover:border-primary-400' : '')
-                )}
-                title={!canAccess ? '예산담당자 또는 지출승인권자만 사용 가능' : undefined}
-              >
-                {cat.name}
-              </button>
-            )
-          })}
-        </div>
-
-
-        <div className="grid grid-cols-3 gap-4 mb-3">
+        </div>        <div className="grid grid-cols-3 gap-4 mb-3">
           <div className="text-center">
             <div className="text-[11px] text-[var(--text-muted)] mb-1">총 편성 예산</div>
             <div className="text-base font-extrabold text-[var(--text-primary)]">{formatNumber(totalBudgetAmt)}원</div>
