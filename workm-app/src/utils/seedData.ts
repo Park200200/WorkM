@@ -4,7 +4,7 @@
    ══════════════════════════════════════════════ */
 import { getItem, setItem } from './storage'
 
-const SEED_VERSION = 'v9'
+const SEED_VERSION = 'v10'  // v10: 사용자명-품의 데이터 정합성 보장을 위한 전체 리셋
 
 export function seedIfEmpty() {
   const prevVersion = getItem<string>('ws_seed_version', '')

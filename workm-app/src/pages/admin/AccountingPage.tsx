@@ -186,10 +186,10 @@ export function initAccountingSeed() {
   }
 
   /* ── 시드 버전 변경 시 회계 데이터 초기화 후 재시드 ── */
-  const currentSeedVer = '_acct_react_seed_v10'
-  if (localStorage.getItem(currentSeedVer)) return
+  const currentSeedVer = '_acct_react_seed_v11'
+  const acctSeedDone = !!localStorage.getItem(currentSeedVer)  // early return 제거: 개별 키 체크로 복구
   // 이전 버전 데이터가 있으면 클리어 후 재시드
-  const oldKeys = ['_acct_react_seed_v1','_acct_react_seed_v2','_acct_react_seed_v3','_acct_react_seed_v4','_acct_react_seed_v5','_acct_react_seed_v6','_acct_react_seed_v7','_acct_react_seed_v8','_acct_react_seed_v9']
+  const oldKeys = ['_acct_react_seed_v1','_acct_react_seed_v2','_acct_react_seed_v3','_acct_react_seed_v4','_acct_react_seed_v5','_acct_react_seed_v6','_acct_react_seed_v7','_acct_react_seed_v8','_acct_react_seed_v9','_acct_react_seed_v10']
   const hadOldSeed = oldKeys.some(k => localStorage.getItem(k))
   if (hadOldSeed) {
     // 이전 시드 버전 키 제거 + 회계 데이터 클리어
