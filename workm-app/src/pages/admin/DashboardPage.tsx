@@ -360,7 +360,6 @@ export function DashboardPage() {
           { label: '결의할', value: toResolve, icon: FileCheck, color: '#8b5cf6', bg: 'rgba(139,92,246,.12)', tab: 'approval' },
           { label: '지출할', value: toExpense, icon: CreditCard, color: '#3b82f6', bg: 'rgba(59,130,246,.12)', tab: 'expense' },
           { label: '정산할', value: toSettle, icon: Receipt, color: '#06b6d4', bg: 'rgba(6,182,212,.12)', tab: 'approval' },
-          { label: '완료됨', value: completed, icon: CheckCircle, color: '#22c55e', bg: 'rgba(34,197,94,.12)', tab: 'approval' },
         ]
         const items = allItems.filter(i => i.value > 0)
         return (
