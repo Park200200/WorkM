@@ -21,7 +21,7 @@ import {
   BookOpen, PieChart, ScrollText, Settings2, ContactRound, Building2,
   TrendingDown, TrendingUp, Banknote, Clock, Search, ChevronDown,
   Plus, Edit3, Trash2, Save, X, Check, Ban, MoreHorizontal,
-  Lock, ShieldCheck, RefreshCw, Printer, Paperclip, Send,
+  Lock, ShieldCheck, RefreshCw, Printer, Paperclip, Send, Eye,
   CreditCard, Settings, Smartphone, User, Phone, Mail,
 } from 'lucide-react'
 
@@ -4529,7 +4529,9 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const currentUser = useAuthStore(s => s.user)
   const currentUserName = currentUser?.name || (() => { try { const u = JSON.parse(localStorage.getItem('ws_user') || '{}'); return u?.name } catch { return '' } })() || 'admin'
   const [form, setForm] = useState({ desc: '', subItem: '', detailItem: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, inputDate: today, manager: '', expenseManager: '', approvalStatus: '품의준비' })
-  const [wdAttachments, setWdAttachments] = useState<{name:string; data:string; size:number}[]>([])
+  const [wdAttachments, setWdAttachments] = useState<{name:string; data:string; size:number; title:string; printWidth:number}[]>([])
+  const [wdEvidenceOpen, setWdEvidenceOpen] = useState(false)
+  const [wdEvidenceEdit, setWdEvidenceEdit] = useState(true)
   const staffList = useStaffStore(s => s.staff).filter(s => !s.resignedAt)
   const [counterSearch, setCounterSearch] = useState('')
   const [showCounterList, setShowCounterList] = useState(false)
@@ -5498,33 +5500,102 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
         {/* 첨부파일 (출금전표 - 담당자 본인일 때만) */}
         {type === 'withdrawal' && (!form.manager || form.manager === currentUserName) && (
           <div className="pt-1">
-            <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">📎 첨부파일 (영수증/증빙)</label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {wdAttachments.map((f, i) => (
-                <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 text-[11px]">
-                  <span className="text-blue-600 font-bold truncate max-w-[120px]">{f.name}</span>
-                  <span className="text-[9px] text-[var(--text-muted)]">{(f.size / 1024).toFixed(0)}KB</span>
-                  <button type="button" onClick={() => setWdAttachments(prev => prev.filter((_, j) => j !== i))} className="text-[#ef4444] hover:text-[#dc2626] cursor-pointer text-[12px] ml-0.5">✕</button>
-                </div>
-              ))}
+            <div className="flex items-center gap-2">
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)]">📎 첨부파일 (영수증/증빙)</label>
+              {wdAttachments.length > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-bold">{wdAttachments.length}건</span>}
             </div>
-            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-[var(--border-default)] text-[11px] font-bold text-[var(--text-muted)] hover:border-primary-400 hover:text-primary-500 cursor-pointer transition-colors">
-              <input type="file" multiple className="hidden" onChange={e => {
-                const files = e.target.files
-                if (!files) return
-                Array.from(files).forEach(file => {
-                  const reader = new FileReader()
-                  reader.onload = () => {
-                    setWdAttachments(prev => [...prev, { name: file.name, data: reader.result as string, size: file.size }])
-                  }
-                  reader.readAsDataURL(file)
-                })
-                e.target.value = ''
-              }} />
-              + 파일 첨부
-            </label>
+            <div className="flex items-center gap-2 mt-1.5">
+              <button type="button" onClick={() => { setWdEvidenceOpen(true); setWdEvidenceEdit(true) }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-[var(--border-default)] text-[11px] font-bold text-[var(--text-muted)] hover:border-primary-400 hover:text-primary-500 cursor-pointer transition-colors">
+                <Paperclip size={12} /> {wdAttachments.length > 0 ? '증빙 편집' : '증빙 첨부'}
+              </button>
+              {wdAttachments.length > 0 && (
+                <button type="button" onClick={() => { setWdEvidenceOpen(true); setWdEvidenceEdit(false) }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-[11px] font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer transition-colors">
+                  <Eye size={12} /> 미리보기
+                </button>
+              )}
+            </div>
           </div>
         )}
+        {/* 증빙서류 모달 */}
+        {wdEvidenceOpen && createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={() => setWdEvidenceOpen(false)}>
+            <div className="bg-[#e8ecf4] rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="text-center py-6 px-6">
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <h2 className="text-2xl font-black tracking-[0.4em] text-[var(--text-primary)]">증 빙 서 류</h2>
+                  <button type="button" onClick={() => setWdEvidenceEdit(!wdEvidenceEdit)} className="px-3 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[11px] font-bold text-[var(--text-secondary)] hover:border-primary-400 cursor-pointer flex items-center gap-1">
+                    {wdEvidenceEdit ? <><Eye size={12} /> 미리보기</> : <><Edit3 size={12} /> 편집</>}
+                  </button>
+                </div>
+                {/* 증빙 목록 */}
+                {wdAttachments.length === 0 ? (
+                  <div className="py-12 text-[var(--text-muted)] text-sm">첨부된 증빙이 없습니다. 아래 버튼으로 첨부하세요.</div>
+                ) : (
+                  <div className="flex flex-wrap justify-center gap-6 mb-6">
+                    {wdAttachments.map((att, i) => (
+                      <div key={i} className="inline-block">
+                        {wdEvidenceEdit && (
+                          <div className="flex items-center gap-1.5 mb-1.5 justify-center">
+                            <span className="text-[9px] font-bold text-[var(--text-muted)]">타이틀</span>
+                            <input value={att.title} onChange={e => setWdAttachments(prev => prev.map((a, j) => j === i ? {...a, title: e.target.value} : a))} className="px-2 py-1 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[11px] w-[120px] outline-none focus:border-primary-400" />
+                            <span className="text-[9px] font-bold text-[var(--text-muted)]">가로</span>
+                            <input type="number" value={att.printWidth} onChange={e => setWdAttachments(prev => prev.map((a, j) => j === i ? {...a, printWidth: parseInt(e.target.value)||150} : a))} className="px-2 py-1 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[11px] w-[50px] outline-none focus:border-primary-400" />
+                            <button type="button" onClick={() => setWdAttachments(prev => prev.filter((_, j) => j !== i))} className="px-2 py-1 rounded bg-[#ef4444] text-white text-[10px] font-bold hover:bg-[#dc2626] cursor-pointer">삭제</button>
+                          </div>
+                        )}
+                        <div className="text-center text-[12px] font-bold text-[var(--text-primary)] mb-1">{att.title}</div>
+                        {att.data && att.data.startsWith('data:image') ? (
+                          <img src={att.data} alt={att.title} style={{width: att.printWidth + 'px', maxWidth: '300px'}} className="rounded-lg border border-[var(--border-default)] shadow-sm" />
+                        ) : (
+                          <div className="flex items-center justify-center w-[150px] h-[100px] rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-muted)] text-[11px]">
+                            📄 {att.name}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* 하단 버튼 */}
+                <div className="flex items-center justify-center gap-3 pt-3 border-t border-[var(--border-default)]">
+                  <label className="px-5 py-2.5 rounded-xl bg-[#4f6ef7] text-white text-sm font-bold hover:bg-[#3b5de7] cursor-pointer flex items-center gap-1.5 shadow-md">
+                    <Paperclip size={14} /> 증빙첨부
+                    <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.hwp" className="hidden" onChange={e => {
+                      const files = e.target.files
+                      if (!files) return
+                      Array.from(files).forEach(file => {
+                        const reader = new FileReader()
+                        reader.onload = () => {
+                          if (file.type.startsWith('image/')) {
+                            const img = new Image()
+                            img.onload = () => {
+                              const MAX = 800; let w = img.width, h = img.height
+                              if (w > MAX || h > MAX) { if (w > h) { h = Math.round(h * MAX / w); w = MAX } else { w = Math.round(w * MAX / h); h = MAX } }
+                              const c = document.createElement('canvas'); c.width = w; c.height = h
+                              const ctx = c.getContext('2d'); ctx?.drawImage(img, 0, 0, w, h)
+                              const compressed = c.toDataURL('image/jpeg', 0.7)
+                              setWdAttachments(prev => [...prev, { name: file.name, data: compressed, size: file.size, title: file.name.replace(/\.[^/.]+$/, ''), printWidth: 180 }])
+                            }
+                            img.src = reader.result as string
+                          } else {
+                            setWdAttachments(prev => [...prev, { name: file.name, data: reader.result as string, size: file.size, title: file.name.replace(/\.[^/.]+$/, ''), printWidth: 150 }])
+                          }
+                        }
+                        reader.readAsDataURL(file)
+                      })
+                      e.target.value = ''
+                    }} />
+                  </label>
+                  {wdAttachments.length > 0 && (
+                    <button type="button" onClick={() => setWdEvidenceOpen(false)} className="px-5 py-2.5 rounded-xl bg-[#8b5cf6] text-white text-sm font-bold hover:bg-[#7c3aed] cursor-pointer flex items-center gap-1.5 shadow-md">
+                      <Check size={14} /> 증빙완료
+                    </button>
+                  )}
+                  <button type="button" onClick={() => setWdEvidenceOpen(false)} className="px-4 py-2.5 rounded-xl border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer">닫기</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        , document.body)}
         <div className="flex justify-end">
           <button onClick={saveEntry} className={`flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-white text-sm font-bold cursor-pointer shadow-md bg-gradient-to-r ${typeGrads[type]}`}>
             <Save size={14} /> {type === 'income' ? '입금' : '지출'} 등록
