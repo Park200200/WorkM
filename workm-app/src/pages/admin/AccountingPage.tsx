@@ -3679,162 +3679,75 @@ export function AcctApproval({ year }: { year: number }) {
   }
 
   return (
-    <div className="space-y-4">
-      {/* ── 3개 그룹 카드 ── */}
-      <div className={`grid gap-3 ${(!userIsApprover && !userIsExpenseManager) ? 'grid-cols-2' : 'grid-cols-3'}`}>
-        {groupDefs.filter(g => g.key !== 'process' || userIsApprover || userIsExpenseManager).map((g, gi) => {
+    <div className="space-y-3">
+      {/* ── 세그먼트 탭 바 ── */}
+      <div className="bg-[var(--bg-muted)] rounded-xl p-1 inline-flex gap-1">
+        {groupDefs.filter(g => g.key !== 'process' || userIsApprover || userIsExpenseManager).map((g) => {
           const isActive = activeGroup === g.key
+          const cnt = groupCounts[groupDefs.indexOf(g)]
           return (
-            <div key={g.key}
+            <button key={g.key}
               onClick={() => changeGroup(g.key)}
               className={cn(
-                'rounded-xl p-3 cursor-pointer transition-all border-2 select-none',
+                'flex items-center gap-2 px-4 py-2 rounded-lg text-[12px] font-bold transition-all cursor-pointer select-none',
                 isActive
-                  ? 'shadow-md bg-[var(--bg-surface)]'
-                  : 'bg-[var(--bg-surface)] border-[var(--border-default)] opacity-65 hover:opacity-100 hover:shadow-sm'
+                  ? 'bg-[var(--bg-surface)] shadow-md text-[var(--text-primary)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]/50'
               )}
-              style={isActive ? { borderColor: g.color } : {}}
             >
-              {/* 상단: 아이콘 + 제목 + 총 건수 */}
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[15px]">{g.icon}</span>
-                  <span className="text-[11px] font-extrabold text-[var(--text-primary)]">{g.label}</span>
-                </div>
-                <span className="text-[18px] font-black leading-none" style={{ color: g.color }}>{groupCounts[gi]}</span>
-              </div>
-              {/* 하단: 서브탭별 미니 카운트 배지 (역할별 필터) */}
-              <div className="flex flex-wrap gap-1">
-                {(g.key === 'process' ? g.subTabs.filter(t => {
-                  if (t.key.startsWith('ap_')) return userIsApprover
-                  if (t.key.startsWith('ex_')) return userIsExpenseManager
-                  return true
-                }) : g.subTabs).map(t => {
-                  const cnt = approvals.filter(a => matchFilter(a, g.key, t.key)).length
-                  return (
-                    <span key={t.key}
-                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold"
-                      style={{ background: `${t.color}18`, color: t.color }}
-                    >
-                      {t.label}<span className="font-black">{cnt}</span>
-                    </span>
-                  )
-                })}
-              </div>
-            </div>
+              <span className="text-[14px]">{g.icon}</span>
+              <span>{g.label}</span>
+              {cnt > 0 && (
+                <span className={cn(
+                  'min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-black',
+                  isActive ? 'text-white' : 'bg-[var(--bg-surface)] text-[var(--text-muted)]'
+                )}
+                  style={isActive ? { background: g.color } : {}}
+                >{cnt}</span>
+              )}
+            </button>
           )
         })}
       </div>
 
-      {/* ── 세부탭 ── */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 flex-wrap">
-        {currentGroup.subTabs.map((t, ti) => {
-          const cnt = getSubTabCount(t.key)
-          const showApLabel = activeGroup === 'process' && ti === 0
-          const showExLabel = activeGroup === 'process' && t.key === 'ex_pending'
-          return (
-            <React.Fragment key={t.key}>
-              {showApLabel && <span className="text-[9px] font-bold text-[var(--text-muted)] mr-0.5 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-1 rounded border border-amber-200 dark:border-amber-800">👤 승인</span>}
-              {showExLabel && <><span className="w-px h-5 bg-[var(--border-default)] mx-1" /><span className="text-[9px] font-bold text-[var(--text-muted)] mr-0.5 bg-blue-50 dark:bg-blue-900/20 px-1.5 py-1 rounded border border-blue-200 dark:border-blue-800">💰 지출</span></>}
-              <button
+      {/* ── 인라인 필터 칩 + 액션 버튼 ── */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 overflow-x-auto flex-wrap">
+          {currentGroup.subTabs.map((t) => {
+            const cnt = getSubTabCount(t.key)
+            const isActive = subTab === t.key
+            return (
+              <button key={t.key}
                 onClick={() => setSubTab(t.key)}
                 className={cn(
-                  'text-[11px] font-bold px-3 py-1.5 rounded-full cursor-pointer transition-all border whitespace-nowrap',
-                  subTab === t.key
-                    ? 'text-white border-transparent'
-                    : 'text-[var(--text-secondary)] border-[var(--border-default)] hover:border-primary-400'
+                  'inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all cursor-pointer border whitespace-nowrap',
+                  isActive
+                    ? 'text-white border-transparent shadow-sm'
+                    : 'text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--text-muted)]'
                 )}
-                style={subTab === t.key ? { background: t.color, borderColor: t.color } : {}}
+                style={isActive ? { background: t.color, borderColor: t.color } : {}}
               >
-                {t.label} {cnt}
+                {t.label}
+                <span className={cn(
+                  'min-w-[16px] h-[16px] flex items-center justify-center rounded-full text-[9px] font-black',
+                  isActive ? 'bg-white/25' : 'bg-[var(--bg-muted)]'
+                )}>{cnt}</span>
               </button>
-            </React.Fragment>
-          )
-        })}
+            )
+          })}
+        </div>
+        {activeGroup === 'inbox' && (
+          <button
+            onClick={() => setModalOpen(true)}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-500 text-white text-[12px] font-bold hover:bg-primary-600 transition-all cursor-pointer shadow-sm shrink-0"
+          >
+            <Plus size={13} /> {approvalBtnLabel}
+          </button>
+        )}
       </div>
 
       {/* ── 목록 ── */}
       <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-[var(--border-default)]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileCheck size={14} className="text-primary-500" />
-              {editingBtnLabel ? (
-                <input
-                  autoFocus
-                  value={editingTitleText}
-                  onChange={e => setEditingTitleText(e.target.value)}
-                  onBlur={() => setItem(`acct_title_${activeGroup}_${subTab}`, editingTitleText)}
-                  onKeyDown={e => { if (e.key === 'Enter') { setItem(`acct_title_${activeGroup}_${subTab}`, editingTitleText); setEditingBtnLabel(false) } }}
-                  className="text-sm font-extrabold text-[var(--text-primary)] px-1 py-0.5 rounded border border-primary-300 bg-[var(--bg-surface)] outline-none w-[180px]"
-                />
-              ) : (
-                <span className="text-sm font-extrabold text-[var(--text-primary)]">
-                  {(() => {
-                    const titleDefaults: Record<string, Record<string, string>> = {
-                      inbox: { preExpense:'선지출 목록', pending:'품의중 목록', rejected:'반려된 목록', approved:'승인된 목록', toResolve:'결의할 목록', confirming:'정산중 목록' }, process: { ap_pending:'승인할 목록', ap_approved:'승인한 목록', ap_rejected:'반려한 목록', ap_toResolve:'결의할 목록', ap_confirming:'정산중 목록', ex_pending:'지출할 목록', ex_done:'지출한 목록', ex_settle:'정산할 목록', ex_settled:'정산한 목록' }, archive: { generalDone:'일반품의 완료', expenseDone:'지출품의 완료' },
-                    }
-                    const def = titleDefaults[activeGroup]?.[subTab] || '품의 목록'
-                    return getItem(`acct_title_${activeGroup}_${subTab}`, def)
-                  })()}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {activeGroup === 'inbox' && (
-                <button
-                  onClick={() => setModalOpen(true)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-500 text-white text-[12px] font-bold hover:bg-primary-600 transition-all cursor-pointer"
-                >
-                  <Plus size={13} /> {approvalBtnLabel}
-                </button>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-1 mt-1">
-            <button
-              onClick={() => {
-                const isEditing = !editingBtnLabel
-                setEditingBtnLabel(isEditing)
-                if (isEditing) {
-                  const descDefaults: Record<string, Record<string, string>> = {
-                    inbox: { preExpense:'선지출 후 사후품의가 필요한 목록입니다.', pending:'품의 중인 목록으로 수정/삭제 가능합니다.', rejected:'반려된 목록으로 수정 후 재품의 가능합니다.', approved:'승인된 목록입니다.', toResolve:'결의를 작성해야 할 목록입니다.', confirming:'정산 진행 중인 목록입니다.' }, process: { ap_pending:'승인 대기 중인 품의 목록입니다.', ap_approved:'승인 완료한 목록입니다.', ap_rejected:'반려한 목록입니다.', ap_toResolve:'결의 승인 대기 목록입니다.', ap_confirming:'정산 진행 중인 목록입니다.', ex_pending:'지출 실행 대기 목록입니다.', ex_done:'지출 완료 목록입니다.', ex_settle:'정산 처리 대기 목록입니다.', ex_settled:'정산 완료 목록입니다.' }, archive: { generalDone:'일반 품의가 완료된 목록입니다.', expenseDone:'지출 품의가 완료된 목록입니다.' },
-                  }
-                  const dDesc = descDefaults[activeGroup]?.[subTab] || ''
-                  setEditingDescText(getItem(`acct_desc_${activeGroup}_${subTab}`, dDesc))
-                  const titleDefaults: Record<string, Record<string, string>> = {
-                    inbox: { preExpense:'선지출 목록', pending:'품의중 목록', rejected:'반려된 목록', approved:'승인된 목록', toResolve:'결의할 목록', confirming:'정산중 목록' }, process: { ap_pending:'승인할 목록', ap_approved:'승인한 목록', ap_rejected:'반려한 목록', ap_toResolve:'결의할 목록', ap_confirming:'정산중 목록', ex_pending:'지출할 목록', ex_done:'지출한 목록', ex_settle:'정산할 목록', ex_settled:'정산한 목록' }, archive: { generalDone:'일반품의 완료', expenseDone:'지출품의 완료' },
-                  }
-                  const dTitle = titleDefaults[activeGroup]?.[subTab] || '품의 목록'
-                  setEditingTitleText(getItem(`acct_title_${activeGroup}_${subTab}`, dTitle))
-                }
-              }}
-              className="p-0.5 rounded hover:bg-[var(--bg-muted)] text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-all cursor-pointer"
-              title="텍스트 편집"
-            >
-              <Settings2 size={12} />
-            </button>
-            {editingBtnLabel ? (
-              <input
-                value={editingDescText}
-                onChange={e => setEditingDescText(e.target.value)}
-                onBlur={() => setItem(`acct_desc_${activeGroup}_${subTab}`, editingDescText)}
-                onKeyDown={e => { if (e.key === 'Enter') { setItem(`acct_desc_${activeGroup}_${subTab}`, editingDescText); setEditingBtnLabel(false) } }}
-                className="flex-1 text-[11px] text-[var(--text-muted)] px-1 py-0.5 rounded border border-primary-300 bg-[var(--bg-surface)] outline-none"
-              />
-            ) : (
-              <p className="text-[11px] text-[var(--text-muted)]">
-                {(() => {
-                  const descDefaults: Record<string, Record<string, string>> = {
-                    inbox: { preExpense:'선지출 후 사후품의가 필요한 목록입니다.', pending:'품의 중인 목록으로 수정/삭제 가능합니다.', rejected:'반려된 목록으로 수정 후 재품의 가능합니다.', approved:'승인된 목록입니다.', toResolve:'결의를 작성해야 할 목록입니다.', confirming:'정산 진행 중인 목록입니다.' }, process: { ap_pending:'승인 대기 중인 품의 목록입니다.', ap_approved:'승인 완료한 목록입니다.', ap_rejected:'반려한 목록입니다.', ap_toResolve:'결의 승인 대기 목록입니다.', ap_confirming:'정산 진행 중인 목록입니다.', ex_pending:'지출 실행 대기 목록입니다.', ex_done:'지출 완료 목록입니다.', ex_settle:'정산 처리 대기 목록입니다.', ex_settled:'정산 완료 목록입니다.' }, archive: { generalDone:'일반 품의가 완료된 목록입니다.', expenseDone:'지출 품의가 완료된 목록입니다.' },
-                  }
-                  const def = descDefaults[activeGroup]?.[subTab] || ''
-                  return getItem(`acct_desc_${activeGroup}_${subTab}`, def)
-                })()}
-              </p>
-            )}
-          </div>
-        </div>
 
         {filteredApprovals.length === 0 ? (
           <div className="p-6"><EmptyState emoji="📋" title="해당 상태의 품의가 없습니다" /></div>
