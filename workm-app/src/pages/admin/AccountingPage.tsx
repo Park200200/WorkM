@@ -3701,23 +3701,14 @@ export function AcctApproval({ year }: { year: number }) {
                 </div>
                 <span className="text-[18px] font-black leading-none" style={{ color: g.color }}>{groupCounts[gi]}</span>
               </div>
-              {/* 하단: 서브탭별 미니 카운트 배지 */}
+              {/* 하단: 서브탭별 미니 카운트 배지 (역할별 필터) */}
               <div className="flex flex-wrap gap-1">
-                {g.subTabs.map(t => {
-                  const cnt = approvals.filter(a => {
-                    if (g.key === 'myRequest' && a.status === 'rejected' && t.key === 'rejected') return (a as any).applicant === currentUserName || (a as any).approver === currentUserName
-                    if (g.key === 'myRequest' && (a as any).applicant !== currentUserName) return false
-                    if (g.key === 'myApproval' && (a as any).approver !== currentUserName) return false
-                    if (g.key === 'myExpense') {
-                      const bc: BudgetCat[] = getItem('acct_budget_cats', [])
-                      const ids = new Set(bc.filter(c => c.users?.includes(currentUserName)).map(c => String(c.id)))
-                      const nms = new Set(bc.filter(c => c.users?.includes(currentUserName)).map(c => c.name))
-                      if (!((a as any).budgetCatId && ids.has(String((a as any).budgetCatId))) && !((a as any).budgetCatName && nms.has((a as any).budgetCatName)) && (a as any).applicant !== currentUserName) return false
-                    }
-                    if (t.key === 'completed') return ['completed', 'vouchered'].includes(a.status)
-                    if (t.key === 'toResolve' && g.key === 'myExpense') return a.status === 'confirming'
-                    return a.status === t.key
-                  }).length
+                {(g.key === 'process' ? g.subTabs.filter(t => {
+                  if (t.key.startsWith('ap_')) return userIsApprover
+                  if (t.key.startsWith('ex_')) return userIsExpenseManager
+                  return true
+                }) : g.subTabs).map(t => {
+                  const cnt = approvals.filter(a => matchFilter(a, g.key, t.key)).length
                   return (
                     <span key={t.key}
                       className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold"
