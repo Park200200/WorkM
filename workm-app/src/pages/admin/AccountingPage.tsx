@@ -4529,7 +4529,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const currentUser = useAuthStore(s => s.user)
   const currentUserName = currentUser?.name || (() => { try { const u = JSON.parse(localStorage.getItem('ws_user') || '{}'); return u?.name } catch { return '' } })() || 'admin'
   const [form, setForm] = useState({ desc: '', subItem: '', detailItem: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, inputDate: today, manager: '', expenseManager: '', approvalStatus: '품의준비' })
-  const [wdAttachments, setWdAttachments] = useState<{name:string; data:string; size:number; title:string; printWidth:number}[]>([])
+  const [wdAttachments, setWdAttachments] = useState<{name:string; data:string; size:number; title:string; printWidth:number; row?:number}[]>([])
   const [wdEvidenceOpen, setWdEvidenceOpen] = useState(false)
   const [wdEvidenceEdit, setWdEvidenceEdit] = useState(true)
   const staffList = useStaffStore(s => s.staff).filter(s => !s.resignedAt)
@@ -5556,6 +5556,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                   dataUrl: a.data,
                   title: a.title,
                   printWidth: a.printWidth,
+                  row: a.row,
                 })),
                 approvalType: '선지출',
                 department: (applicantStaff as any)?.department || (applicantStaff as any)?.dept || '',
@@ -5568,6 +5569,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                   size: 0,
                   title: a.title,
                   printWidth: a.printWidth,
+                  row: a.row,
                 })))
               }}
               actions={
