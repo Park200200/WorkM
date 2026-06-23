@@ -5579,7 +5579,9 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                     <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.hwp" style={{ display: 'none' }} onChange={e => {
                       const files = e.target.files
                       if (!files) return
+                      let fileIdx = 0
                       Array.from(files).forEach(file => {
+                        const currentFileIdx = fileIdx++
                         const reader = new FileReader()
                         reader.onload = () => {
                           if (file.type.startsWith('image/')) {
@@ -5590,11 +5592,17 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                               const c = document.createElement('canvas'); c.width = w; c.height = h
                               const ctx = c.getContext('2d'); ctx?.drawImage(img, 0, 0, w, h)
                               const compressed = c.toDataURL('image/jpeg', 0.7)
-                              setWdAttachments(prev => [...prev, { name: file.name, data: compressed, size: file.size, title: file.name.replace(/\.[^/.]+$/, ''), printWidth: 180 }])
+                              setWdAttachments(prev => {
+                                const maxRow = prev.reduce((m, a) => Math.max(m, a.row ?? 0), -1)
+                                return [...prev, { name: file.name, data: compressed, size: file.size, title: file.name.replace(/\.[^/.]+$/, ''), printWidth: 180, row: maxRow + 1 + currentFileIdx }]
+                              })
                             }
                             img.src = reader.result as string
                           } else {
-                            setWdAttachments(prev => [...prev, { name: file.name, data: reader.result as string, size: file.size, title: file.name.replace(/\.[^/.]+$/, ''), printWidth: 150 }])
+                            setWdAttachments(prev => {
+                              const maxRow = prev.reduce((m, a) => Math.max(m, a.row ?? 0), -1)
+                              return [...prev, { name: file.name, data: reader.result as string, size: file.size, title: file.name.replace(/\.[^/.]+$/, ''), printWidth: 150, row: maxRow + 1 + currentFileIdx }]
+                            })
                           }
                         }
                         reader.readAsDataURL(file)

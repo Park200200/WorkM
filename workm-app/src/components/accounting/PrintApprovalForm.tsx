@@ -90,6 +90,12 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
   })
   const [printWidth, setPrintWidth] = useState(() => Number(localStorage.getItem('pf_width')) || 210)
   const [localAttachments, setLocalAttachments] = useState<PrintAttachment[]>(data.attachments || [])
+  // 외부에서 첨부파일이 변경되면 동기화
+  useEffect(() => {
+    if (data.attachments && data.attachments.length !== localAttachments.length) {
+      setLocalAttachments(data.attachments)
+    }
+  }, [data.attachments?.length])
   const [evidencePreview, setEvidencePreview] = useState(false)
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [dropTarget, setDropTarget] = useState<{ type: 'same-row' | 'new-row'; rowIdx: number } | null>(null)
