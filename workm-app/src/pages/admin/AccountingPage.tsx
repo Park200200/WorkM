@@ -1998,8 +1998,8 @@ function AcctBudget({ year }: { year: number }) {
             <PieChart size={16} className="text-primary-500" /> 예산구분 관리
           </div>
           <button
-            onClick={guardClick(() => openCatModal())}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] font-bold text-[var(--text-secondary)] ${isBudgetApprover ? 'hover:border-primary-400 hover:text-primary-500' : ''} transition-all${guardBtnClass}`}
+            onClick={isBudgetApprover ? () => openCatModal() : undefined}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] font-bold text-[var(--text-secondary)] ${isBudgetApprover ? 'hover:border-primary-400 hover:text-primary-500 cursor-pointer' : 'opacity-50 cursor-not-allowed'} transition-all`}
             title={!isBudgetApprover ? '지출승인권자만 사용 가능' : undefined}
           >
             <Plus size={12} /> 구분 추가
