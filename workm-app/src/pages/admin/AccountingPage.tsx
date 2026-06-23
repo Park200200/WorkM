@@ -3681,8 +3681,8 @@ export function AcctApproval({ year }: { year: number }) {
   return (
     <div className="space-y-4">
       {/* ── 3개 그룹 카드 ── */}
-      <div className="grid grid-cols-3 gap-3">
-        {groupDefs.map((g, gi) => {
+      <div className={`grid gap-3 ${(!userIsApprover && !userIsExpenseManager) ? 'grid-cols-2' : 'grid-cols-3'}`}>
+        {groupDefs.filter(g => g.key !== 'process' || userIsApprover || userIsExpenseManager).map((g, gi) => {
           const isActive = activeGroup === g.key
           return (
             <div key={g.key}
