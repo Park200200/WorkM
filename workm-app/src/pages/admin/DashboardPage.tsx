@@ -15,7 +15,7 @@ import {
   ClipboardList, PlayCircle, AlertTriangle, Zap, CheckCircle2,
   ChevronDown, ChevronUp, Star, Send as SendIcon, Download, Calendar as CalIcon,
   AlertCircle, MessageSquare, FileText, Lightbulb, ArrowRight,
-  FileCheck, Stamp, CreditCard, Receipt, CheckCircle, FileEdit,
+  FileCheck, Stamp, CreditCard, Receipt, CheckCircle, FileEdit, Plus,
 } from 'lucide-react'
 import { setItem as setStorageItem } from '../../utils/storage'
 import { formatDate } from '../../utils/format'
@@ -366,30 +366,41 @@ export function DashboardPage() {
           <div className="mb-4">
             <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#4f6ef7] to-[#8b5cf6] flex items-center justify-center">
-                    <FileCheck size={16} className="text-white" />
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#4f6ef7] to-[#8b5cf6] flex items-center justify-center shadow-sm">
+                    <FileCheck size={17} className="text-white" />
                   </div>
                   <div>
-                    <div className="text-[13px] font-extrabold text-[var(--text-primary)]">결제업무</div>
-                    <div className="text-[10px] text-[var(--text-muted)]">미처리 {total}건</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-extrabold text-[var(--text-primary)]">결제업무</span>
+                      {total > 0 && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-sm animate-pulse">
+                          {total}건 미처리
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-[var(--text-muted)]">품의·승인·지출·정산 업무</div>
                   </div>
                 </div>
-                <button onClick={() => navigate('/accounting?tab=approval')} className="text-[10px] font-bold text-primary-500 hover:text-primary-600 cursor-pointer flex items-center gap-0.5">
-                  품의하기 <ArrowRight size={12} />
+                <button
+                  onClick={() => navigate('/accounting?tab=approval')}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-[#4f6ef7] to-[#8b5cf6] text-white text-[11px] font-bold hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer shadow-md"
+                >
+                  <Plus size={14} />
+                  품의하기
                 </button>
               </div>
               {items.length === 0 ? (
-                <div className="text-center py-3 text-[11px] text-[var(--text-muted)]">✅ 처리할 결제업무가 없습니다</div>
+                <div className="text-center py-4 text-[11px] text-[var(--text-muted)] bg-[var(--bg-muted)] rounded-lg">✅ 처리할 결제업무가 없습니다</div>
               ) : (
-              <div className={`grid gap-2`} style={{ gridTemplateColumns: `repeat(${Math.min(items.length, 5)}, minmax(0, 1fr))` }}>
+              <div className={`grid gap-2`} style={{ gridTemplateColumns: `repeat(${Math.min(items.length, 6)}, minmax(0, 1fr))` }}>
                 {items.map(item => {
                   const Icon = item.icon
                   return (
                     <div
                       key={item.label}
                       onClick={() => navigate(`/accounting?tab=${item.tab}`)}
-                      className="bg-[var(--bg-muted)] rounded-lg p-2.5 text-center cursor-pointer hover:border-primary-400 border border-transparent transition-all group"
+                      className="bg-[var(--bg-muted)] rounded-lg p-2.5 text-center cursor-pointer hover:border-primary-400 border border-transparent transition-all group hover:shadow-sm"
                     >
                       <div className="w-7 h-7 rounded-lg mx-auto mb-1.5 flex items-center justify-center" style={{ background: item.bg, color: item.color }}>
                         <Icon size={14} />
