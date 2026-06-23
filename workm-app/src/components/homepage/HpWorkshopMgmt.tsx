@@ -210,8 +210,8 @@ export function HpWorkshopMgmt() {
               {filtered.map(it => (
                 <tr key={it.id} onClick={() => setDetailId(it.id)}
                   className="border-b border-[var(--border-default)] cursor-pointer hover:bg-[var(--bg-muted)] transition-colors">
-                  <td className="px-3 py-2.5">
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold text-white" style={{ background: STATUS_COLOR[it.status]||'#888' }}>
+                  <td className="px-3 py-2.5 whitespace-nowrap">
+                    <span className="inline-block px-2.5 py-0.5 rounded-md text-[10px] font-extrabold text-white whitespace-nowrap" style={{ background: STATUS_COLOR[it.status]||'#888' }}>
                       {it.status}
                     </span>
                   </td>
