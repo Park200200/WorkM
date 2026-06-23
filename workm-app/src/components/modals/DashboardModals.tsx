@@ -456,11 +456,11 @@ export function InstructionModal({ open, editTaskId, onClose }: { open: boolean;
               </label>
               <DatePicker value={startDate} onChange={(v) => { setStartDate(v); if (nature === '일일업무') setDueDate(v) }} placeholder="날짜를 선택하세요" />
             </div>
-            <div>
+            <div className={nature === '일일업무' ? 'opacity-50 pointer-events-none' : ''}>
               <label className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1.5">
-                <Calendar size={12} /> 완료 계획일 *
+                <Calendar size={12} /> 완료 계획일 * {nature === '일일업무' && <span className="text-[9px] text-primary-500">(시작일과 동일)</span>}
               </label>
-              <DatePicker value={dueDate} onChange={setDueDate} placeholder="날짜를 선택하세요" />
+              <DatePicker value={nature === '일일업무' ? startDate : dueDate} onChange={setDueDate} placeholder="날짜를 선택하세요" />
             </div>
           </div>
 
@@ -1423,11 +1423,11 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
               </label>
               <DatePicker value={startDate} onChange={(v) => { setStartDate(v); if (nature === '일일업무') setDueDate(v) }} placeholder="날짜를 선택하세요" />
             </div>
-            <div>
+            <div className={nature === '일일업무' ? 'opacity-50 pointer-events-none' : ''}>
               <label className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1.5">
-                <Calendar size={12} /> 완료 계획일 *
+                <Calendar size={12} /> 완료 계획일 * {nature === '일일업무' && <span className="text-[9px] text-primary-500">(시작일과 동일)</span>}
               </label>
-              <DatePicker value={dueDate} onChange={setDueDate} placeholder="날짜를 선택하세요" />
+              <DatePicker value={nature === '일일업무' ? startDate : dueDate} onChange={setDueDate} placeholder="날짜를 선택하세요" />
             </div>
           </div>
 
