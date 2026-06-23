@@ -1,5 +1,6 @@
 /* ══════════════════════════════════════════════
    기존 앱과 동일한 샘플 데이터 시드
+   - 버전이 같아도 개별 키가 비어있으면 자동 복구
    ══════════════════════════════════════════════ */
 import { getItem, setItem } from './storage'
 
@@ -7,8 +8,8 @@ const SEED_VERSION = 'v9'
 
 export function seedIfEmpty() {
   const prevVersion = getItem<string>('ws_seed_version', '')
-  // 이미 시드된 경우 스킵
-  if (prevVersion === SEED_VERSION) return
+  const isUpgrade = prevVersion !== SEED_VERSION
+  // ⚠️ early return 제거: 버전이 같더라도 데이터 유실 시 개별 복구
 
   // 버전 업그레이드 시에도 기존 데이터 유지 (삭제 없이 새 시드만 추가)
   // v7: 상세업무 시드 추가
@@ -124,7 +125,7 @@ export function seedIfEmpty() {
   }
 
   // ── 직원 (사용자) ── v8: 직원명 갱신 시 강제 리셋
-  if (!getItem('ws_users', null) || prevVersion !== SEED_VERSION) {
+  if (!getItem('ws_users', null) || getItem('ws_users', []).length === 0 || isUpgrade) {
     setItem('ws_users', [
       {
         id: 1, name: '최대표', role: 'admin', rank: '대표', dept: '경영지원팀', avatar: 'CD', color: '#4f6ef7',
@@ -230,7 +231,7 @@ export function seedIfEmpty() {
   }
 
   // ── 게시판 데이터 갱신 (v4: 50개 샘플) ──
-  localStorage.removeItem('board_items')
+  if (isUpgrade) localStorage.removeItem('board_items')
 
   setItem('ws_seed_version', SEED_VERSION)
 }

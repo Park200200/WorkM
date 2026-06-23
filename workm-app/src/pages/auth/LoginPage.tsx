@@ -18,13 +18,9 @@ export function LoginPage() {
   const { theme, toggle: toggleTheme } = useThemeStore()
   const navigate = useNavigate()
 
-  // ws_users가 비어있으면 시드 재실행 (데이터 유실 방어)
+  // 데이터 유실 방어: 로그인 페이지 진입 시 누락 데이터 자동 복구
   useEffect(() => {
-    const users = getItem<any[]>('ws_users', [])
-    if (users.length === 0) {
-      localStorage.removeItem('ws_seed_version')
-      seedIfEmpty()
-    }
+    seedIfEmpty()  // early return 없이 항상 누락 키를 체크/복구
   }, [])
 
   const handleLogin = (e: React.FormEvent) => {
