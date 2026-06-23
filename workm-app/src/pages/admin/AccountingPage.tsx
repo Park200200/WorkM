@@ -984,13 +984,17 @@ export function AccountingPage() {
     const userName = JSON.parse(localStorage.getItem('ws_current_user') || '{}')?.name || ''
     const staffList = JSON.parse(localStorage.getItem('ws_users') || '[]') as any[]
     const currentStaff = staffList.find((s: any) => s.name === userName)
+    const isAdmin = currentStaff?.role === 'admin'
     const isBudgetApprover = currentStaff?.approverType === 'approver'
     const budgetCats = JSON.parse(localStorage.getItem('acct_budget_cats') || '[]') as any[]
     const isBudgetHandler = budgetCats.some((c: any) =>
       (c.users && c.users.includes(userName)) ||
-      (c.approvers && c.approvers.includes(userName))
+      (c.approvers && c.approvers.includes(userName)) ||
+      (c.approver === userName)
     )
-    const hasBudgetAccess = isBudgetApprover || isBudgetHandler
+    const approvals = JSON.parse(localStorage.getItem('acct_approvals') || '[]') as any[]
+    const isApproverInApprovals = approvals.some((a: any) => a.approver === userName)
+    const hasBudgetAccess = isAdmin || isBudgetApprover || isBudgetHandler || isApproverInApprovals
     const restrictedTabs = ['overview', 'base_budget', 'expense', 'income', 'withdrawal', 'payment', 'reports', 'vendors', 'budgetTree', 'accounts', 'hq_vendor', 'payMethods', 'acct_mgmt']
     if (!hasBudgetAccess && restrictedTabs.includes(activeSub)) {
       setActiveSub('approval')
