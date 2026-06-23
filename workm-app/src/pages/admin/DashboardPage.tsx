@@ -334,19 +334,22 @@ export function DashboardPage() {
       {(() => {
         const userName = user?.name || ''
         const approvals: any[] = getItem('acct_approvals', [])
-        const budgetCats: any[] = getItem('acct_budget_cats', [])
+        const currentYear = new Date().getFullYear()
+        const budgetCats: any[] = getItem('acct_budget_cats', []).filter((c: any) => c.year === currentYear)
+        const isApprover = budgetCats.some((c: any) => (c.approvers || []).includes(userName)) || budgetCats.some((c: any) => c.approver === userName) || approvals.some((a: any) => a.approver === userName)
         const userCatIds = new Set(budgetCats.filter((c: any) => c.users && c.users.includes(userName)).map((c: any) => String(c.id)))
         const userCatNames = new Set(budgetCats.filter((c: any) => c.users && c.users.includes(userName)).map((c: any) => c.name))
+        const isExpenseManager = userCatIds.size > 0
         const isInMyCat = (a: any) => {
           if (a.budgetCatId && userCatIds.has(String(a.budgetCatId))) return true
           if (a.budgetCatName && userCatNames.has(a.budgetCatName)) return true
           return false
         }
-        const pendingApprove = approvals.filter(a => a.status === 'pending' && a.approver === userName).length
+        const pendingApprove = isApprover ? approvals.filter(a => a.status === 'pending' && a.approver === userName).length : 0
         const toResolve = approvals.filter(a => a.status === 'toResolve' && a.applicant === userName).length
-        const toExpense = approvals.filter(a => a.status === 'approved' && (isInMyCat(a) || a.applicant === userName)).length
-        const toSettle = approvals.filter(a => a.status === 'confirming' && isInMyCat(a)).length
-        const completed = approvals.filter(a => ['completed', 'vouchered'].includes(a.status) && (isInMyCat(a) || a.applicant === userName)).length
+        const toExpense = isExpenseManager ? approvals.filter(a => a.status === 'approved' && isInMyCat(a)).length : 0
+        const toSettle = isExpenseManager ? approvals.filter(a => a.status === 'confirming' && isInMyCat(a)).length : 0
+        const completed = approvals.filter(a => ['completed', 'vouchered'].includes(a.status) && (a.applicant === userName || a.approver === userName || isInMyCat(a))).length
         const total = pendingApprove + toResolve + toExpense + toSettle
         const items = [
           { label: '승인할', value: pendingApprove, icon: Stamp, color: '#f59e0b', bg: 'rgba(245,158,11,.12)', tab: 'approval' },
