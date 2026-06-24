@@ -10602,10 +10602,10 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
           <h2 className="text-lg font-extrabold text-[var(--text-primary)] flex items-center gap-2">
             💳 수단등록
           </h2>
-          <p className="text-[11px] text-[var(--text-muted)] mt-0.5">예산구분별 지출수단과 입금계정을 통합 관리합니다</p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-0.5">예산구분별 지출수단과 수익계정을 관리합니다</p>
         </div>
         <span className="text-xs font-bold text-white px-3 py-1.5 rounded-full" style={{ background: direction === 'expense' ? '#f97316' : '#22c55e' }}>
-          {selectedCatName || '전체'} • {dirLabel} {filteredItems.length}건
+          {selectedCatName || '전체'} • {direction === 'expense' ? `지출수단 ${filteredItems.length}건` : `수익계정`}
         </span>
       </div>
 
@@ -10625,9 +10625,98 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
             direction === 'income' ? 'bg-emerald-500 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
           )}
         >
-          <ArrowDownCircle size={12} /> 입금
+          <ArrowDownCircle size={12} /> 수익계정
         </button>
       </div>
+
+      {/* 입금 방향: 공통 수익계정 관리 */}
+      {direction === 'income' ? (
+        <div className="rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 bg-emerald-50/30 dark:bg-emerald-900/10 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">📈</span>
+              <div>
+                <h3 className="text-sm font-extrabold text-emerald-600">공통 수익계정</h3>
+                <p className="text-[10px] text-[var(--text-muted)]">입금전표 작성 시 선택할 수익계정을 관리합니다</p>
+              </div>
+            </div>
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full text-emerald-600 bg-emerald-100 dark:bg-emerald-900/20">
+              {(() => {
+                const codes: string[] = getItem(`acct_revenue_accounts_${selectedCatId}`, [])
+                return `${codes.length}건`
+              })()}
+            </span>
+          </div>
+
+          {/* 수익계정 추가 */}
+          <div className="flex gap-2 mb-4">
+            <select
+              id="new-revenue-acct"
+              className="flex-1 px-3.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-white dark:bg-gray-900 text-sm text-[var(--text-primary)] outline-none focus:border-emerald-400 transition-colors"
+            >
+              <option value="">— 수익계정 선택 —</option>
+              {allAccounts.filter(a => a.active !== false && a.type === 'revenue').map(a => (
+                <option key={a.code} value={`${a.code} ${a.name}`}>{a.code} {a.name}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => {
+                const sel = document.getElementById('new-revenue-acct') as HTMLSelectElement
+                if (!sel.value) return addToast('warning', '수익계정을 선택해주세요')
+                const codes: string[] = getItem(`acct_revenue_accounts_${selectedCatId}`, [])
+                if (codes.includes(sel.value)) return addToast('warning', '이미 등록된 수익계정입니다')
+                codes.push(sel.value)
+                setItem(`acct_revenue_accounts_${selectedCatId}`, codes)
+                setRefresh(r => r + 1)
+                sel.value = ''
+                addToast('success', '수익계정이 추가되었습니다')
+              }}
+              className="px-4 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-bold transition-all cursor-pointer hover:shadow-md flex items-center gap-1.5"
+            >
+              <Plus size={14} /> 추가
+            </button>
+          </div>
+
+          {/* 등록된 수익계정 목록 */}
+          {(() => {
+            const codes: string[] = getItem(`acct_revenue_accounts_${selectedCatId}`, [])
+            if (codes.length === 0) return (
+              <div className="py-8 text-center text-sm text-[var(--text-muted)] rounded-xl border border-dashed border-[var(--border-default)] bg-white/50 dark:bg-gray-900/50">
+                등록된 수익계정이 없습니다. 위에서 추가해주세요.
+              </div>
+            )
+            return (
+              <div className="space-y-1.5">
+                {codes.map((code, idx) => (
+                  <div key={idx} className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white/70 dark:bg-gray-900/30 border border-transparent hover:border-[var(--border-default)] transition-all group">
+                    <span className="text-[10px] font-bold w-5 text-center shrink-0 rounded-full py-0.5 text-emerald-600 bg-emerald-100 dark:bg-emerald-900/20">{idx + 1}</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap">수익</span>
+                    <span className="text-sm font-semibold text-[var(--text-primary)] flex-1">{code}</span>
+                    <button
+                      onClick={() => {
+                        if (!confirm(`"${code}"을(를) 삭제하시겠습니까?`)) return
+                        const newCodes = codes.filter((_, i) => i !== idx)
+                        setItem(`acct_revenue_accounts_${selectedCatId}`, newCodes)
+                        setRefresh(r => r + 1)
+                        addToast('warning', `"${code}" 삭제됨`)
+                      }}
+                      className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
+
+          <div className="mt-4 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800">
+            <p className="text-[10px] text-blue-600 font-bold">💡 입금전표 작성 시</p>
+            <p className="text-[10px] text-[var(--text-muted)] mt-0.5">입금수단은 <b>지출수단</b>(계좌, 현금 등)에서 선택하고, 여기 등록된 수익계정 중 하나를 선택합니다.</p>
+          </div>
+        </div>
+      ) : (
+      <>
 
       {/* 카테고리 탭 */}
       <div className="flex gap-2">
@@ -11565,6 +11654,8 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   )
 }
