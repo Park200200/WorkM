@@ -6122,9 +6122,9 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                   <option value="">— 선택 —</option>
                   {bankGroups.map(bg => (
                     <optgroup key={bg.bank.name} label={`🏦 ${bg.bank.name}${bg.bank.bankName ? ' (' + bg.bank.bankName + ')' : ''}`}>
-                      <option value={`계좌:${bg.bank.name}`}>🏦 {bg.bank.name}{bg.bank.accountNumber ? ' • ' + bg.bank.accountNumber : ''}</option>
+                      <option value={`계좌:${bg.bank.name}`}>계좌이체{bg.bank.accountNumber ? ' • ' + bg.bank.accountNumber : ''}</option>
                       {bg.cards.map((card: any) => (
-                        <option key={card.id || card.cardNumber} value={`카드:${card.cardName || card.cardNumber}`}>{'　'}💳 {card.cardName || '카드'}{card.cardNumber ? ' ' + card.cardNumber : ''}</option>
+                        <option key={card.id || card.cardNumber} value={`카드:${card.cardName || card.cardNumber}`}>💳 {card.cardName || '카드'}{card.cardNumber ? ' ' + card.cardNumber : ''}</option>
                       ))}
                     </optgroup>
                   ))}
@@ -6763,9 +6763,9 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                         <option value="">— 선택 —</option>
                         {bankGroups2.map(bg => (
                           <optgroup key={bg.bank.name} label={`🏦 ${bg.bank.name}${bg.bank.bankName ? ' (' + bg.bank.bankName + ')' : ''}`}>
-                            <option value={`계좌:${bg.bank.name}`}>🏦 {bg.bank.name}{bg.bank.accountNumber ? ' • ' + bg.bank.accountNumber : ''}</option>
+                            <option value={`계좌:${bg.bank.name}`}>계좌이체{bg.bank.accountNumber ? ' • ' + bg.bank.accountNumber : ''}</option>
                             {bg.cards.map((card: any) => (
-                              <option key={card.id || card.cardNumber} value={`카드:${card.cardName || card.cardNumber}`}>{'　'}💳 {card.cardName || '카드'}{card.cardNumber ? ' ' + card.cardNumber : ''}</option>
+                              <option key={card.id || card.cardNumber} value={`카드:${card.cardName || card.cardNumber}`}>💳 {card.cardName || '카드'}{card.cardNumber ? ' ' + card.cardNumber : ''}</option>
                             ))}
                           </optgroup>
                         ))}
