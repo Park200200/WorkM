@@ -5864,13 +5864,35 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                 return (
                   <div className="mt-1.5">
                     <CustomSelect value={transferForm.debitDetail} onChange={v => setTransferForm(f => ({ ...f, debitDetail: v }))} placeholder="— 세부 선택 —"
-                      options={[{ value: '', label: '— 세부 선택 —' }, ...items.map(p => ({
-                        value: p.name,
-                        label: transferForm.debit === '계좌' ? `${p.name} (${p.bankName || ''} ${p.accountNumber || ''})` :
-                               transferForm.debit === '현금' ? `${p.name} (${p.custodian || ''} · ${p.storageLocation || ''})` :
-                               transferForm.debit === '상품권' ? `${p.name} (${p.voucherManager || ''} · ${(p.voucherAmount||0).toLocaleString()}원)` :
-                               transferForm.debit === '어음' ? `${p.name} (${p.noteBank || ''} · ${p.noteManager || ''})` : p.name
-                      }))]}
+                      options={[{ value: '', label: '— 세부 선택 —' }, ...items.map(p => {
+                        const cfs: CashFlow[] = getItem('acct_cashflows', [])
+                        let balText = ''
+                        if (transferForm.debit === '계좌') {
+                          const acctIn = cfs.filter(cf => cf.type === 'income' && (cf as any).payMethod === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const acctInT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '계좌' && (cf as any).debitDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const acctOut = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '계좌' && (cf as any).payDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const acctOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '계좌' && (cf as any).creditDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const bal = (p.initialBalance || 0) + acctIn + acctInT - acctOut - acctOutT
+                          balText = ` [잔액 ${bal.toLocaleString()}원]`
+                        } else if (transferForm.debit === '현금') {
+                          const cashIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const cashOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '현금' && (cf as any).creditDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const cashOutE = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '현금' && (cf as any).payDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const bal = cashIn - cashOutT - cashOutE
+                          balText = ` [잔액 ${bal.toLocaleString()}원]`
+                        } else if (transferForm.debit === '상품권') {
+                          const qty = p.voucherQty || 0
+                          const usedQty = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '상품권' && (cf as any).payDetail === p.name).length
+                          balText = ` [잔여 ${qty - usedQty}매/${qty}매]`
+                        }
+                        return {
+                          value: p.name,
+                          label: transferForm.debit === '계좌' ? `${p.name} (${p.bankName || ''} ${p.accountNumber || ''})${balText}` :
+                                 transferForm.debit === '현금' ? `${p.name} (${p.custodian || ''} · ${p.storageLocation || ''})${balText}` :
+                                 transferForm.debit === '상품권' ? `${p.name} (${p.voucherManager || ''} · ${(p.voucherAmount||0).toLocaleString()}원)${balText}` :
+                                 transferForm.debit === '어음' ? `${p.name} (${p.noteBank || ''} · ${p.noteManager || ''})` : p.name
+                        }
+                      })]}
                     />
                   </div>
                 )
@@ -5885,13 +5907,35 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                 return (
                   <div className="mt-1.5">
                     <CustomSelect value={transferForm.creditDetail} onChange={v => setTransferForm(f => ({ ...f, creditDetail: v }))} placeholder="— 세부 선택 —"
-                      options={[{ value: '', label: '— 세부 선택 —' }, ...items.map(p => ({
-                        value: p.name,
-                        label: transferForm.credit === '계좌' ? `${p.name} (${p.bankName || ''} ${p.accountNumber || ''})` :
-                               transferForm.credit === '현금' ? `${p.name} (${p.custodian || ''} · ${p.storageLocation || ''})` :
-                               transferForm.credit === '상품권' ? `${p.name} (${p.voucherManager || ''} · ${(p.voucherAmount||0).toLocaleString()}원)` :
-                               transferForm.credit === '어음' ? `${p.name} (${p.noteBank || ''} · ${p.noteManager || ''})` : p.name
-                      }))]}
+                      options={[{ value: '', label: '— 세부 선택 —' }, ...items.map(p => {
+                        const cfs: CashFlow[] = getItem('acct_cashflows', [])
+                        let balText = ''
+                        if (transferForm.credit === '계좌') {
+                          const acctIn = cfs.filter(cf => cf.type === 'income' && (cf as any).payMethod === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const acctInT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '계좌' && (cf as any).debitDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const acctOut = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '계좌' && (cf as any).payDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const acctOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '계좌' && (cf as any).creditDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const bal = (p.initialBalance || 0) + acctIn + acctInT - acctOut - acctOutT
+                          balText = ` [잔액 ${bal.toLocaleString()}원]`
+                        } else if (transferForm.credit === '현금') {
+                          const cashIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const cashOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '현금' && (cf as any).creditDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const cashOutE = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '현금' && (cf as any).payDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const bal = cashIn - cashOutT - cashOutE
+                          balText = ` [잔액 ${bal.toLocaleString()}원]`
+                        } else if (transferForm.credit === '상품권') {
+                          const qty = p.voucherQty || 0
+                          const usedQty = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '상품권' && (cf as any).payDetail === p.name).length
+                          balText = ` [잔여 ${qty - usedQty}매/${qty}매]`
+                        }
+                        return {
+                          value: p.name,
+                          label: transferForm.credit === '계좌' ? `${p.name} (${p.bankName || ''} ${p.accountNumber || ''})${balText}` :
+                                 transferForm.credit === '현금' ? `${p.name} (${p.custodian || ''} · ${p.storageLocation || ''})${balText}` :
+                                 transferForm.credit === '상품권' ? `${p.name} (${p.voucherManager || ''} · ${(p.voucherAmount||0).toLocaleString()}원)${balText}` :
+                                 transferForm.credit === '어음' ? `${p.name} (${p.noteBank || ''} · ${p.noteManager || ''})` : p.name
+                        }
+                      })]}
                     />
                   </div>
                 )
