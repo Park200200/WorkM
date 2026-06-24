@@ -3106,7 +3106,7 @@ export function AcctApproval({ year }: { year: number }) {
       key: 'inbox', label: '품의함', icon: '📋', color: '#4f6ef7',
       subTabs: [
         { key: 'preExpense', label: '선지출', color: '#f97316' },
-        { key: 'pending', label: '품의중', color: '#f59e0b' },
+        { key: 'pending', label: '품의함', color: '#f59e0b' },
         { key: 'rejected', label: '반려됨', color: '#ef4444' },
         { key: 'approved', label: '승인됨', color: '#22c55e' },
         { key: 'toResolve', label: '결의할', color: '#06b6d4' },
@@ -3277,6 +3277,7 @@ export function AcctApproval({ year }: { year: number }) {
       if (tab.startsWith('ap_')) {
         if ((a as any).approver !== currentUserName) return false
         const realStatus = tab.replace('ap_', '')
+        if (realStatus === 'pending') return a.status === 'pending' || a.status === 'preExpense'
         return a.status === realStatus
       }
       // 지출담당자 서브탭
@@ -6102,7 +6103,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                       // 연결된 품의의 실제 진행상태 자동 표시
                       const sMap: Record<string, { label: string; color: string; bg: string }> = {
                         preExpense: { label: (c as any).type === 'transfer' ? '전대체' : type === 'income' ? '전입금' : '전지출', color: '#f97316', bg: 'rgba(249,115,22,.12)' },
-                        pending: { label: '품의중', color: '#3b82f6', bg: 'rgba(59,130,246,.12)' },
+                        pending: { label: '품의함', color: '#3b82f6', bg: 'rgba(59,130,246,.12)' },
                         approved: { label: '승인', color: '#22c55e', bg: 'rgba(34,197,94,.12)' },
                         rejected: { label: '반려', color: '#ef4444', bg: 'rgba(239,68,68,.12)' },
                         expensed: { label: '지출', color: '#8b5cf6', bg: 'rgba(139,92,246,.12)' },
