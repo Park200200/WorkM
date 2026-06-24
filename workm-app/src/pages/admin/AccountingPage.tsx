@@ -4652,13 +4652,13 @@ export function AcctApproval({ year }: { year: number }) {
                             setApproveBudgetItem(r.itemId)
                             setApproveBudgetSub(r.subId || '')
                             setApproveBudgetDetail(r.detailId || '')
-                            setBudgetSearchText(r.path + (r.subName ? ` > ${r.subName}` : '') + (r.detailName ? ` > ${r.detailName}` : ''))
-                            setBudgetSearchSelected(r.path + (r.subName ? ` > ${r.subName}` : '') + (r.detailName ? ` > ${r.detailName}` : ''))
+                            setBudgetSearchText(r.path)
+                            setBudgetSearchSelected(r.path)
                             setBudgetSearchFocused(false)
                           }}
                           className="w-full text-left px-3 py-2 hover:bg-[var(--bg-muted)] transition-colors cursor-pointer border-b border-[var(--border-default)] last:border-0"
                         >
-                          <div className="text-[11px] font-bold text-[var(--text-primary)]">{r.path}{r.subName ? ` > ${r.subName}` : ''}{r.detailName ? ` > ${r.detailName}` : ''}</div>
+                          <div className="text-[11px] font-bold text-[var(--text-primary)]">{r.path}</div>
                           <div className="text-[10px] text-[var(--text-muted)]">
                             예산 ₩{r.amount.toLocaleString()} | 잔액 ₩{r.remaining.toLocaleString()}
                             {r.accountCode && ` | ${r.accountCode} ${r.accountName || ''}`}
