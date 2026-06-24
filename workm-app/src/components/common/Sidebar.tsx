@@ -157,7 +157,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             const staffList = JSON.parse(localStorage.getItem('ws_users') || '[]') as any[]
             const currentStaff = staffList.find((s: any) => s.name === userName)
             const isAdmin = currentStaff?.role === 'admin'
-            const isBudgetApprover = currentStaff?.approverType === 'approver'
             // 예산담당자 여부: 어떤 예산구분의 users 또는 approvers에 포함
             const budgetCats = JSON.parse(localStorage.getItem('acct_budget_cats') || '[]') as any[]
             const isBudgetHandler = budgetCats.some((c: any) =>
@@ -168,7 +167,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             // 품의에서 승인자로 지정된 경우도 관련자
             const approvals = JSON.parse(localStorage.getItem('acct_approvals') || '[]') as any[]
             const isApproverInApprovals = approvals.some((a: any) => a.approver === userName)
-            const hasBudgetAccess = isAdmin || isBudgetApprover || isBudgetHandler || isApproverInApprovals
+            const hasBudgetAccess = isAdmin || isBudgetHandler || isApproverInApprovals
             // 예산관련자만 접근 가능한 탭
             const restrictedTabs = ['overview', 'base_budget', 'expense', 'income', 'withdrawal', 'payment', 'reports', 'vendors', 'budgetTree', 'accounts', 'hq_vendor', 'payMethods', 'acct_mgmt']
 

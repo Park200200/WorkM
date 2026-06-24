@@ -1102,7 +1102,6 @@ export function AccountingPage() {
     const staffList = JSON.parse(localStorage.getItem('ws_users') || '[]') as any[]
     const currentStaff = staffList.find((s: any) => s.name === userName)
     const isAdmin = currentStaff?.role === 'admin'
-    const isBudgetApprover = currentStaff?.approverType === 'approver'
     const budgetCats = JSON.parse(localStorage.getItem('acct_budget_cats') || '[]') as any[]
     const isBudgetHandler = budgetCats.some((c: any) =>
       (c.users && c.users.includes(userName)) ||
@@ -1111,7 +1110,7 @@ export function AccountingPage() {
     )
     const approvals = JSON.parse(localStorage.getItem('acct_approvals') || '[]') as any[]
     const isApproverInApprovals = approvals.some((a: any) => a.approver === userName)
-    const hasBudgetAccess = isAdmin || isBudgetApprover || isBudgetHandler || isApproverInApprovals
+    const hasBudgetAccess = isAdmin || isBudgetHandler || isApproverInApprovals
     const restrictedTabs = ['overview', 'base_budget', 'expense', 'income', 'withdrawal', 'payment', 'cashflow_list', 'reports', 'vendors', 'budgetTree', 'accounts', 'hq_vendor', 'methodReg', 'acct_mgmt']
     if (!hasBudgetAccess && restrictedTabs.includes(activeSub)) {
       setActiveSub('approval')
