@@ -5964,9 +5964,10 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                   setForm(f => ({ ...f, desc: '', subItem: '' }))
                 }
               }}
-              placeholder="— 예산구분 선택 —"
+              placeholder={selectedBudgetCat ? '예산구분 선택' : '예산을 먼저 선택하세요'}
+              placeholderStyle={!selectedBudgetCat ? { color: '#ef4444', fontWeight: 700 } : undefined}
               options={[
-                { value: '', label: '— 예산구분 선택 —' },
+                { value: '', label: selectedBudgetCat ? '— 예산구분 선택 —' : '⚠️ 예산을 먼저 선택하세요' },
                 ...expBudgetCats.map(c => ({ value: String(c.id), label: c.name })),
               ]}
             />
