@@ -6580,6 +6580,8 @@ function AcctPaymentLedger({ year }: { year: number }) {
   ])
 
   const accounts = useMemo(() => getItem<{ code: string; name: string; type: string }[]>('acct_accounts', []), [])
+  const budgetCats = useMemo(() => getItem<any[]>('acct_budget_cats', []), [])
+  const cashflows = useMemo(() => getItem<any[]>('acct_cashflows', []), [refresh])
 
   const vouchers = useMemo(() => {
     const all = getItem<Voucher[]>('acct_vouchers', [])
@@ -6590,6 +6592,34 @@ function AcctPaymentLedger({ year }: { year: number }) {
   const incCnt = vouchers.filter(v => v.type === 'income').length
   const expCnt = vouchers.filter(v => v.type === 'expense').length
   const etcCnt = vouchers.length - incCnt - expCnt
+  const [voucherTypeFilter, setVoucherTypeFilter] = useState<string>('')
+  const [voucherBudgetFilter, setVoucherBudgetFilter] = useState<string>('')
+
+  const filteredVouchers = useMemo(() => {
+    let list = vouchers
+    if (voucherTypeFilter) {
+      list = list.filter(v => {
+        if (voucherTypeFilter === 'income') return v.type === 'income'
+        if (voucherTypeFilter === 'expense') return v.type === 'expense'
+        if (voucherTypeFilter === 'transfer') return v.type !== 'income' && v.type !== 'expense'
+        return true
+      })
+    }
+    if (voucherBudgetFilter) {
+      // cashflow에서 해당 예산의 날짜+금액 셋 생성
+      const cfSet = new Set(
+        cashflows
+          .filter((c: any) => String(c.budgetCatId) === voucherBudgetFilter)
+          .map((c: any) => `${c.date || c.writeDate || ''}_${c.amount || 0}`)
+      )
+      list = list.filter(v => {
+        // 전표 entries의 금액과 날짜로 매칭
+        const totalAmt = (v.entries || []).reduce((s, e) => e.side === 'debit' ? s + e.amount : s, 0)
+        return cfSet.has(`${v.date}_${totalAmt}`)
+      })
+    }
+    return list
+  }, [vouchers, voucherTypeFilter, voucherBudgetFilter, cashflows])
 
   const openModal = (id?: string | number) => {
     if (id) {
@@ -6678,12 +6708,12 @@ function AcctPaymentLedger({ year }: { year: number }) {
         </div>
         <div className="grid grid-cols-4 gap-2">
           {[
-            { label: '총 전표', value: vouchers.length, bg: 'rgba(255,255,255,.18)' },
-            { label: '입금', value: incCnt, bg: 'rgba(34,197,94,.2)' },
-            { label: '출금', value: expCnt, bg: 'rgba(239,68,68,.2)' },
-            { label: '대체', value: etcCnt, bg: 'rgba(245,158,11,.2)' },
+            { label: '총 전표', value: vouchers.length, bg: 'rgba(255,255,255,.18)', filter: '' },
+            { label: '입금', value: incCnt, bg: 'rgba(34,197,94,.2)', filter: 'income' },
+            { label: '출금', value: expCnt, bg: 'rgba(239,68,68,.2)', filter: 'expense' },
+            { label: '대체', value: etcCnt, bg: 'rgba(245,158,11,.2)', filter: 'transfer' },
           ].map(s => (
-            <div key={s.label} className="rounded-xl p-2 text-center" style={{ background: s.bg }}>
+            <div key={s.label} onClick={() => setVoucherTypeFilter(voucherTypeFilter === s.filter ? '' : s.filter)} className={`rounded-xl p-2 text-center cursor-pointer transition-all ${voucherTypeFilter === s.filter ? 'ring-2 ring-white shadow-lg scale-[1.02]' : 'hover:bg-white/10'}`} style={{ background: s.bg }}>
               <div className="text-[9px] opacity-80">{s.label}</div>
               <div className="text-[16px] font-extrabold">{s.value}</div>
             </div>
@@ -6691,14 +6721,27 @@ function AcctPaymentLedger({ year }: { year: number }) {
         </div>
       </div>
 
+      {/* 예산 필터 */}
+      <div className="flex items-center gap-2">
+        <select value={voucherBudgetFilter} onChange={e => setVoucherBudgetFilter(e.target.value)} className="flex-1 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)]">
+          <option value="">전체 예산</option>
+          {budgetCats.filter((c: any) => { const pf = c.periodFrom || ''; const pt = c.periodTo || ''; if (pf && pt) return pf <= `${year}-12-31` && pt >= `${year}-01-01`; return true }).map((c: any) => (
+            <option key={c.id} value={String(c.id)}>{c.name}</option>
+          ))}
+        </select>
+        {(voucherTypeFilter || voucherBudgetFilter) && (
+          <button onClick={() => { setVoucherTypeFilter(''); setVoucherBudgetFilter('') }} className="px-2.5 py-2 rounded-lg bg-[var(--bg-muted)] text-[11px] font-bold text-[var(--text-muted)] hover:bg-primary-100 hover:text-primary-600 cursor-pointer transition-all whitespace-nowrap">✕ 초기화</button>
+        )}
+      </div>
+
       {/* 전표 목록 */}
-      {vouchers.length === 0 ? (
+      {filteredVouchers.length === 0 ? (
         <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-8">
-          <EmptyState emoji="📒" title="등록된 전표가 없습니다" />
+          <EmptyState emoji="📒" title={voucherTypeFilter || voucherBudgetFilter ? '해당 조건의 전표가 없습니다' : '등록된 전표가 없습니다'} />
         </div>
       ) : (
         <div className="space-y-2.5">
-          {vouchers.map(v => {
+          {filteredVouchers.map(v => {
             let ds = 0, cs = 0
             ;(v.entries || []).forEach(e => { if (e.side === 'debit') ds += e.amount; else cs += e.amount })
             const tc = typeColors[v.type || ''] || '#8b5cf6'
