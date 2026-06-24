@@ -6129,10 +6129,9 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                       const matchNote = (matchItem.notes || []).find((n: any) => n.id === noteId)
                       if (matchNote) {
                         const vendor = matchItem.noteType === '발행' ? (matchNote.receiver || '') : (matchNote.issuer || '')
-                        if (vendor) {
-                          setForm(f => ({ ...f, counter: vendor }))
-                          setCounterSearch('')
-                        }
+                        const amt = matchNote.amount ? Number(matchNote.amount).toLocaleString() : ''
+                        setForm(f => ({ ...f, ...(vendor ? { counter: vendor } : {}), ...(amt ? { amount: amt } : {}) }))
+                        if (vendor) setCounterSearch('')
                       }
                     }
                   }
@@ -6787,10 +6786,9 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                             const matchNote = (matchItem.notes || []).find((n: any) => n.id === noteId)
                             if (matchNote) {
                               const vendor = matchItem.noteType === '발행' ? (matchNote.receiver || '') : (matchNote.issuer || '')
-                              if (vendor) {
-                                setForm(f => ({ ...f, counter: vendor }))
-                                setCounterSearch('')
-                              }
+                              const amt = matchNote.amount ? Number(matchNote.amount).toLocaleString() : ''
+                              setForm(f => ({ ...f, ...(vendor ? { counter: vendor } : {}), ...(amt ? { amount: amt } : {}) }))
+                              if (vendor) setCounterSearch('')
                             }
                           }
                         }
