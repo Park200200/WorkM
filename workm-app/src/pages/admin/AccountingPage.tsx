@@ -4679,12 +4679,12 @@ export function AcctApproval({ year }: { year: number }) {
               <div>
                 <label className="block text-[11px] font-extrabold text-[var(--text-primary)] mb-1">💰 승인 금액</label>
                 <input
-                  value={approveAmount}
-                  onChange={e => setApproveAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                  value={approveAmount ? Number(approveAmount.replace(/[^0-9]/g, '')).toLocaleString() : ''}
+                  onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ''); setApproveAmount(raw) }}
                   className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm font-bold text-[var(--text-primary)] focus:outline-none focus:border-primary-500 text-right"
                   placeholder={(detailApproval.amount || 0).toLocaleString()}
                 />
-                {approveAmount && parseInt(approveAmount) !== (detailApproval.amount || 0) && (
+                {approveAmount && parseInt(approveAmount.replace(/[^0-9]/g, '')) !== (detailApproval.amount || 0) && (
                   <p className="text-[10px] text-amber-500 font-bold mt-0.5">⚠️ 신청금액과 다릅니다 (신청: ₩{(detailApproval.amount || 0).toLocaleString()})</p>
                 )}
               </div>
