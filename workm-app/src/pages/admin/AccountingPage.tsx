@@ -11276,6 +11276,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
 
                       {/* 계좌 상세 */}
                       {activeCategory === '계좌' && (
+                        <>
                         <div className="grid grid-cols-2 gap-3">
                           <div><label className={DETAIL_FIELD_LABEL}>은행명 *</label><input value={item.bankName || ''} onChange={e => updateField(item.id, 'bankName', e.target.value)} placeholder="국민은행" className={DETAIL_INPUT} /></div>
                           <div><label className={DETAIL_FIELD_LABEL}>계좌번호 *</label><input value={item.accountNumber || ''} onChange={e => updateField(item.id, 'accountNumber', e.target.value)} placeholder="110-234-567890" className={DETAIL_INPUT} /></div>
@@ -11339,6 +11340,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                             })()}
                           </div>
                         </div>
+                        </>
                       )}
 
                       {/* 현금 상세 */}
