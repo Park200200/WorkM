@@ -9041,6 +9041,9 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
                     {activeCategory === '현금' && (
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap">1-01-01 현금</span>
                     )}
+                    {activeCategory === '상품권' && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-pink-50 dark:bg-pink-900/20 text-pink-600 whitespace-nowrap">1-01-08 상품권</span>
+                    )}
                     {/* 계좌 요약 표시 */}
                     {activeCategory === '계좌' && item.bankName && !isOpen && (
                       <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[200px]">
@@ -9833,6 +9836,9 @@ function AcctIncomeMethods({ catId }: { catId?: string | null }) {
                     {activeCategory === '현금' && (
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap">1-01-01 현금</span>
                     )}
+                    {activeCategory === '상품권' && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-pink-50 dark:bg-pink-900/20 text-pink-600 whitespace-nowrap">1-01-08 상품권</span>
+                    )}
                     {activeCategory === '계좌' && item.bankName && !isOpen && (
                       <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[200px]">
                         {item.bankName} {item.accountNumber ? `• ${item.accountNumber}` : ''}
@@ -10469,11 +10475,14 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                     {activeCategory === '현금' && (
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap">1-01-01 현금</span>
                     )}
+                    {activeCategory === '상품권' && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-pink-50 dark:bg-pink-900/20 text-pink-600 whitespace-nowrap">1-01-08 상품권</span>
+                    )}
                     {activeCategory === '계좌' && item.bankName && !isOpen && (
                       <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[200px]">{item.bankName} {item.accountNumber ? `• ${item.accountNumber}` : ''}</span>
                     )}
                     {/* 연결된 계정과목 표시 */}
-                    {activeCategory !== '현금' && (item as any).accountCode && !isOpen && (
+                    {activeCategory !== '현금' && activeCategory !== '상품권' && (item as any).accountCode && !isOpen && (
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-900/20 text-violet-600">{(item as any).accountCode}</span>
                     )}
                     <ChevronDown size={14} className={`text-[var(--text-muted)] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -10485,8 +10494,8 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                   {/* 상세 필드 */}
                   {isOpen && (
                     <div className="px-4 pb-4 pt-1 border-t border-[var(--border-default)] mx-3">
-                      {/* 계정과목 연결 (어음/현금은 자동연결이므로 제외) */}
-                      {activeCategory !== '어음' && activeCategory !== '현금' && (
+                      {/* 계정과목 연결 (어음/현금/상품권은 자동연결이므로 제외) */}
+                      {activeCategory !== '어음' && activeCategory !== '현금' && activeCategory !== '상품권' && (
                       <div className="mb-3 mt-3 p-3 rounded-lg bg-violet-50/50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800">
                         {direction === 'income' ? (
                           <>
