@@ -170,6 +170,16 @@ export function initAccountingSeed() {
     localStorage.setItem('_acct_desc_patch_v1', '1')
   }
 
+  /* ── 보조금수익 계정과목 패치 ── */
+  if (!localStorage.getItem('_acct_subsidy_patch_v1')) {
+    const existing = getItem<any[]>('acct_accounts', [])
+    if (existing.length > 0 && !existing.some(a => a.code === '4-02-08')) {
+      existing.push({ code: '4-02-08', name: '보조금수익', type: 'revenue', group: '영업외수익', description: '국가·지자체 등으로부터 받은 보조금 수익', active: true })
+      setItem('acct_accounts', existing)
+    }
+    localStorage.setItem('_acct_subsidy_patch_v1', '1')
+  }
+
   /* ── 선지출 품의가 approved 상태인 경우 toResolve로 자동 마이그레이션 ── */
   if (!localStorage.getItem('_acct_preexp_resolve_v1')) {
     const existingApprovals = getItem<any[]>('acct_approvals', [])
@@ -272,6 +282,7 @@ export function initAccountingSeed() {
       { code: '4-02-05', name: '외화환산이익', type: 'revenue', group: '영업외수익', description: '외화 자산·부채 환산 시 평가 이익' },
       { code: '4-02-06', name: '유형자산처분이익', type: 'revenue', group: '영업외수익', description: '유형자산 장부가 초과 매각 이익' },
       { code: '4-02-07', name: '잡이익', type: 'revenue', group: '영업외수익', description: '기타 소액·비경상적 영업외 수익' },
+      { code: '4-02-08', name: '보조금수익', type: 'revenue', group: '영업외수익', description: '국가·지자체 등으로부터 받은 보조금 수익' },
       { code: '5-01-01', name: '상품매출원가', type: 'expense', group: '매출원가', description: '판매된 상품의 매입 원가' },
       { code: '5-01-02', name: '제품매출원가', type: 'expense', group: '매출원가', description: '판매된 제품의 제조 원가' },
       { code: '5-01-03', name: '원재료비', type: 'expense', group: '매출원가', description: '제품 제조에 투입된 원재료 비용' },
