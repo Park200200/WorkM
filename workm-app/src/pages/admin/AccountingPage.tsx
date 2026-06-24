@@ -3964,7 +3964,14 @@ export function AcctApproval({ year }: { year: number }) {
         }
       })
     })
-    return result
+    // path 기준 중복 제거
+    const seen = new Set<string>()
+    return result.filter(r => {
+      const key = `${r.catId}_${r.path}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
   }, [budgetCats, budgetItems, approveBudgetDefs, refresh, currentUserName])
 
   // 통합 검색 필터 결과
