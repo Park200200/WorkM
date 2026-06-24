@@ -5943,7 +5943,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                 </label>
                 {isPayable && (
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400">지급예정일</span>
+                    <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 whitespace-nowrap">지급예정일</span>
                     <DatePicker value={expectedDate} onChange={v => setExpectedDate(v)} />
                   </div>
                 )}
