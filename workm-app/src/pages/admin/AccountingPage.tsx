@@ -6095,8 +6095,8 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                 bankGroups.push({ bank: p, cards: p.cards || [] })
               })
               payItems.filter(p => p.category === '현금').forEach(p => payOpts.push({ value: p.name, label: `💵 ${p.name}`, group: '현금' }))
-              // 어음: 개별 발행 노트 리스트
-              payItems.filter(p => p.category === '어음').forEach(p => {
+              // 어음: 발행어음만 (수신어음은 출금 불가)
+              payItems.filter(p => p.category === '어음' && p.noteType !== '수신').forEach(p => {
                 if (p.notes && p.notes.length > 0) {
                   p.notes.forEach((note: any) => {
                     const typeLabel = p.noteType === '발행' ? '발행' : '수신'
@@ -6745,7 +6745,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                     })
                     filteredPM.filter(p => p.category === '현금').forEach(p => payOptions.push({ value: p.name, label: `💵 ${p.name}`, group: '현금' }))
                     // 어음: 개별 발행 노트 리스트
-                    filteredPM.filter(p => p.category === '어음').forEach(p => {
+                    filteredPM.filter(p => p.category === '어음' && p.noteType !== '수신').forEach(p => {
                       if (p.notes && p.notes.length > 0) {
                         p.notes.forEach((note: any) => {
                           const typeLabel = p.noteType === '발행' ? '발행' : '수신'
