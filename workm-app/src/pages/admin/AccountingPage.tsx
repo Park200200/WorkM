@@ -4046,7 +4046,7 @@ export function AcctApproval({ year }: { year: number }) {
             approvedMemo: (detailApproval as any).approvedMemo || '',
             attachments: (detailApproval as any).attachments || [],
             isGeneral: !!(detailApproval as any).isGeneral,
-            approvalType: (detailApproval as any).isGeneral ? '일반품의' : '지출품의',
+            approvalType: (detailApproval as any).isGeneral ? '일반품의' : ['toResolve','confirming','completed'].includes(detailApproval.status) ? '선지출' : '지출품의',
             approvedDate: (detailApproval as any).approvedAt ? (detailApproval as any).approvedAt.slice(0, 10) : '',
             department: (() => {
               const staff = staffList.find(s => s.name === (detailApproval as any).applicant)
