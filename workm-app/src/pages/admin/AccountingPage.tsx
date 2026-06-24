@@ -10419,7 +10419,7 @@ function AcctCashflowList({ year }: { year: number }) {
               <option key={c.id} value={String(c.id)}>{c.name}</option>
             ))}
           </select>
-          <span className="text-transparent text-center text-[11px] select-none">~</span>
+          <span className="text-[var(--border-default)] text-center text-[11px]">|</span>
           <select value={filterManager} onChange={e => setFilterManager(e.target.value)} className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)]">
             <option value="">전체 담당자</option>
             {managers.map(m => <option key={m} value={m}>{m}</option>)}
