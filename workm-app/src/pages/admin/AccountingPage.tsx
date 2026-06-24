@@ -10978,24 +10978,36 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                   {/* 상세 필드 */}
                   {isOpen && (
                     <div className="px-4 pb-4 pt-1 border-t border-[var(--border-default)] mx-3">
-                      {/* 계정과목 연결 (어음/현금/상품권은 자동연결이므로 제외) */}
-                      {activeCategory !== '어음' && activeCategory !== '현금' && activeCategory !== '상품권' && (
+                      {/* 계정과목 연결 */}
+                      {(activeCategory !== '어음' && activeCategory !== '현금' && activeCategory !== '상품권' || direction === 'income') && (
                       <div className="mb-3 mt-3 p-3 rounded-lg bg-violet-50/50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800">
                         {direction === 'income' ? (
                           <>
                             <label className="text-[11px] font-bold text-violet-600 mb-2 block">📋 계정과목 연결 (입금전표 자동 설정)</label>
                             <div className="mb-3">
                               <label className="text-[10px] font-bold text-blue-500 mb-1 block">💰 차변 (입금처 - 자산계정) — 고정</label>
-                              <select
-                                value={(item as any).accountCode || ''}
-                                onChange={e => updateField(item.id, 'accountCode', e.target.value)}
-                                className={DETAIL_INPUT}
-                              >
-                                <option value="">— 입금계정 선택 —</option>
-                                {allAccounts.filter(a => a.active !== false && (a as any).incomeEnabled === true).map(a => (
-                                  <option key={a.code} value={`${a.code} ${a.name}`}>{a.code} {a.name}</option>
-                                ))}
-                              </select>
+                              {activeCategory === '현금' ? (
+                                <div className={`${DETAIL_INPUT} !bg-[var(--bg-muted)] flex items-center gap-1.5`}>
+                                  <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">자산</span>
+                                  <span className="text-xs font-bold">1-01-01 현금</span>
+                                </div>
+                              ) : activeCategory === '상품권' ? (
+                                <div className={`${DETAIL_INPUT} !bg-[var(--bg-muted)] flex items-center gap-1.5`}>
+                                  <span className="text-[10px] font-bold text-pink-500 bg-pink-50 dark:bg-pink-900/20 px-1.5 py-0.5 rounded">자산</span>
+                                  <span className="text-xs font-bold">1-01-08 상품권</span>
+                                </div>
+                              ) : (
+                                <select
+                                  value={(item as any).accountCode || ''}
+                                  onChange={e => updateField(item.id, 'accountCode', e.target.value)}
+                                  className={DETAIL_INPUT}
+                                >
+                                  <option value="">— 입금계정 선택 —</option>
+                                  {allAccounts.filter(a => a.active !== false && (a as any).incomeEnabled === true).map(a => (
+                                    <option key={a.code} value={`${a.code} ${a.name}`}>{a.code} {a.name}</option>
+                                  ))}
+                                </select>
+                              )}
                             </div>
                             <div>
                               <div className="flex items-center justify-between mb-1">
