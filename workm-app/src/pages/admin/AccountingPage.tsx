@@ -4848,7 +4848,7 @@ export function AcctApproval({ year }: { year: number }) {
                     {/* ── 증빙첨부 ── */}
                     <div className="pt-1">
                       <div className="flex items-center gap-2">
-                        <label className="text-[10.5px] font-bold text-[var(--text-muted)]">📎 증빙서류</label>
+                        <label className="text-[10.5px] font-bold text-[var(--text-muted)] flex items-center gap-1"><Paperclip size={11} /> 증빙서류</label>
                         {((resubmitForm as any).attachments || []).length > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-bold">{((resubmitForm as any).attachments || []).length}건</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-1.5">
@@ -6703,7 +6703,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
         {type === 'withdrawal' && (!form.manager || form.manager === currentUserName) && (
           <div className="pt-1">
             <div className="flex items-center gap-2">
-              <label className="text-[10.5px] font-bold text-[var(--text-muted)]">📎 첨부파일 (영수증/증빙)</label>
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] flex items-center gap-1"><Paperclip size={11} /> 첨부파일 (영수증/증빙)</label>
               {wdAttachments.length > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-bold">{wdAttachments.length}건</span>}
             </div>
             <div className="flex items-center gap-2 mt-1.5">
@@ -9125,7 +9125,7 @@ function AcctHQVendor() {
                     ) : (<div className="flex flex-col items-center gap-2 py-4 text-[var(--text-muted)]"><span className="text-3xl">📄</span><span className="text-[11px]">등록된 사업자등록증이 없습니다</span></div>)}
                   </div>
                   <label className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-muted)] cursor-pointer hover:border-primary-400 transition-colors mt-2">
-                    <span className="text-[12px] text-[var(--text-muted)]">📎 파일로드</span>
+                    <span className="text-[12px] text-[var(--text-muted)] flex items-center gap-1"><Paperclip size={11} /> 파일로드</span>
                     <input type="file" accept="image/*" className="hidden" onChange={e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>upd('bizDocImg',r.result as string);r.readAsDataURL(f)}} />
                   </label>
                 </div>
