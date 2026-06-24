@@ -6561,10 +6561,10 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           {type === 'income' && (
             <div className="bg-orange-50/60 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800 rounded-lg p-2.5 col-span-2">
               <div className="flex items-center gap-3 flex-wrap">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={isReceivable} onChange={e => { setIsReceivable(e.target.checked); if (!e.target.checked) setExpectedDate('') }} className="w-4 h-4 rounded border-orange-300 text-orange-500 accent-orange-500" />
-                  <span className="text-[11px] font-bold text-orange-700 dark:text-orange-400">📥 미수금</span>
-                </label>
+                <button type="button" onClick={() => { setIsReceivable(!isReceivable); if (isReceivable) setExpectedDate('') }} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${isReceivable ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                    <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transform transition-transform ${isReceivable ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                  </button>
+                  <span className="text-[11px] font-bold text-orange-700 dark:text-orange-400 flex items-center gap-1"><ArrowDownCircle size={12} /> 미수금</span>
                 <div className={`flex items-center gap-1.5 transition-opacity ${isReceivable ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                   <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 whitespace-nowrap">입금예정일</span>
                   <DatePicker value={expectedDate} onChange={v => setExpectedDate(v)} />
@@ -6576,10 +6576,10 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           {type === 'withdrawal' && (
             <div className="bg-violet-50/60 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800 rounded-lg p-2.5 col-span-2">
               <div className="flex items-center gap-3 flex-wrap">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={isPayable} onChange={e => { setIsPayable(e.target.checked); if (!e.target.checked) setExpectedDate('') }} className="w-4 h-4 rounded border-violet-300 text-violet-500 accent-violet-500" />
-                  <span className="text-[11px] font-bold text-violet-700 dark:text-violet-400">📤 미지급금</span>
-                </label>
+                <button type="button" onClick={() => { setIsPayable(!isPayable); if (isPayable) setExpectedDate('') }} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${isPayable ? 'bg-violet-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                    <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transform transition-transform ${isPayable ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                  </button>
+                  <span className="text-[11px] font-bold text-violet-700 dark:text-violet-400 flex items-center gap-1"><ArrowUpCircle size={12} /> 미지급금</span>
                 <div className={`flex items-center gap-1.5 transition-opacity ${isPayable ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                   <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 whitespace-nowrap">지급예정일</span>
                   <DatePicker value={expectedDate} onChange={v => setExpectedDate(v)} />
