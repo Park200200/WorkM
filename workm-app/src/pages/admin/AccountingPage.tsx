@@ -5964,13 +5964,13 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           </div>
           {transferForm.debit && transferForm.credit && (
             <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-700 dark:text-amber-400 font-bold">
-              🔄 {transferForm.creditDetail ? `${transferForm.credit}(${transferForm.creditDetail})` : transferForm.credit} → {transferForm.debitDetail ? `${transferForm.debit}(${transferForm.debitDetail})` : transferForm.debit} 대체전표가 생성됩니다.
+              <RefreshCw size={12} className="inline text-amber-600" /> {transferForm.creditDetail ? `${transferForm.credit}(${transferForm.creditDetail})` : transferForm.credit} → {transferForm.debitDetail ? `${transferForm.debit}(${transferForm.debitDetail})` : transferForm.debit} 대체전표가 생성됩니다.
             </div>
           )}
           {/* ── 증빙 첨부 / 미리보기 ── */}
           <div className="mt-1">
             <div className="flex items-center gap-2">
-              <label className="text-[10.5px] font-bold text-[var(--text-muted)]">📎 첨부파일 (영수증/증빙)</label>
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] flex items-center gap-1"><Paperclip size={11} /> 첨부파일 (영수증/증빙)</label>
               {transferAttachments.length > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-bold">{transferAttachments.length}건</span>}
             </div>
             <div className="flex items-center gap-2 mt-1.5">
@@ -7004,7 +7004,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                 {cashflows.map(c => (
                   <tr key={c.id} className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors">
                     <td className="py-2.5 px-3.5 text-[12px] text-[var(--text-secondary)]">{c.date || ''}</td>
-                    <td className="py-2.5 px-3.5 text-[12px] font-bold text-[var(--text-primary)]">{(c as any).type === 'transfer' ? '🔄 ' : ''}{c.description || '-'}{(c as any).type === 'transfer' && (c as any).counter && <span className="text-[10px] text-amber-600 ml-1">({(c as any).counter})</span>}</td>
+                    <td className="py-2.5 px-3.5 text-[12px] font-bold text-[var(--text-primary)]">{(c as any).type === 'transfer' ? <><RefreshCw size={11} className="inline text-amber-500 mr-1" /></> : ''}{c.description || '-'}{(c as any).type === 'transfer' && (c as any).counter && <span className="text-[10px] text-amber-600 ml-1">({(c as any).counter})</span>}</td>
                     {type === 'income' && (
                       <td className="py-2.5 px-3.5 text-[12px] text-[var(--text-secondary)]">{(c as any).incomeNote || '-'}</td>
                     )}
