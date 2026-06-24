@@ -19,7 +19,7 @@ import { DatePicker } from '../../components/ui/DatePicker'
 import {
   LayoutDashboard, Wallet, FileCheck, ArrowDownCircle, ArrowUpCircle,
   BookOpen, PieChart, ScrollText, Settings2, ContactRound, Building2,
-  TrendingDown, TrendingUp, Banknote, Clock, Search, ChevronDown,
+  TrendingDown, TrendingUp, Banknote, Clock, Search, ChevronDown, ChevronUp,
   Plus, Edit3, Trash2, Save, X, Check, Ban, MoreHorizontal,
   Lock, ShieldCheck, RefreshCw, Printer, Paperclip, Send, Eye,
   CreditCard, Settings, Smartphone, User, Phone, Mail, Landmark,
@@ -36,6 +36,7 @@ const SYNC_KEYS = [
   'acct_desc_myRequest_pending', 'acct_desc_myRequest_preExpense',
   'acct_title_myRequest_pending', 'acct_title_myRequest_preExpense',
   'acct_title_myRequest_approved', 'acct_title_myApproval_approved',
+  'acct_company_accounts',
 ]
 
 export async function loadSettingsFromServer() {
@@ -1653,6 +1654,7 @@ function AcctBudget({ year }: { year: number }) {
   /* ── 모달 상태 ── */
   const [catModalOpen, setCatModalOpen] = useState(false)
   const [catEditId, setCatEditId] = useState<string | number | null>(null)
+  const [bankModalOpen, setBankModalOpen] = useState(false)
   const [catForm, setCatForm] = useState({ name: '', description: '', bank: '', accounts: [] as BudgetCatAccount[], periodFrom: `${year}-01-01`, periodTo: `${year}-12-31`, users: [] as string[], approver: '' })
 
   // 지출수단에서 등록된 계좌+카드 목록
@@ -2130,13 +2132,21 @@ function AcctBudget({ year }: { year: number }) {
           <div className="flex items-center gap-2 text-sm font-extrabold text-[var(--text-primary)]">
             <PieChart size={16} className="text-primary-500" /> 예산구분 관리
           </div>
-          <button
-            onClick={isBudgetApprover ? () => openCatModal() : undefined}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] font-bold text-[var(--text-secondary)] ${isBudgetApprover ? 'hover:border-primary-400 hover:text-primary-500 cursor-pointer' : 'opacity-50 cursor-not-allowed'} transition-all`}
-            title={!isBudgetApprover ? '지출승인권자만 사용 가능' : undefined}
-          >
-            <Plus size={12} /> 구분 추가
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setBankModalOpen(true)}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] font-bold text-[var(--text-secondary)] hover:border-blue-400 hover:text-blue-500 cursor-pointer transition-all"
+            >
+              <Landmark size={12} /> 계좌관리
+            </button>
+            <button
+              onClick={isBudgetApprover ? () => openCatModal() : undefined}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] font-bold text-[var(--text-secondary)] ${isBudgetApprover ? 'hover:border-primary-400 hover:text-primary-500 cursor-pointer' : 'opacity-50 cursor-not-allowed'} transition-all`}
+              title={!isBudgetApprover ? '지출승인권자만 사용 가능' : undefined}
+            >
+              <Plus size={12} /> 구분 추가
+            </button>
+          </div>
         </div>
         {budgetCats.length === 0 ? (
           <EmptyState emoji="📁" title={`${year}년 등록된 예산구분이 없습니다. "구분 추가" 버튼으로 먼저 등록하세요.`} />
@@ -2827,6 +2837,202 @@ function AcctBudget({ year }: { year: number }) {
               <button onClick={() => setCatModalOpen(false)} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer">취소</button>
               <button onClick={saveCat} className="px-4 py-2 rounded-lg bg-primary-500 text-white text-sm font-bold hover:bg-primary-600 transition-colors cursor-pointer">저장</button>
             </div>
+          </div>
+        </div>
+      , document.body)}
+
+      {/* ═══════════════════════════════════════════
+         모달: 회사 계좌·카드 관리
+         ═══════════════════════════════════════════ */}
+      {bankModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={() => setBankModalOpen(false)}>
+          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-3xl mx-4 border border-[var(--border-default)] max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            {/* 헤더 */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-default)] rounded-t-2xl" style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%)' }}>
+              <h3 className="text-base font-extrabold text-white flex items-center gap-2"><Landmark size={18} /> 회사 계좌·카드 관리</h3>
+              <button onClick={() => setBankModalOpen(false)} className="text-white/80 hover:text-white text-lg cursor-pointer transition-colors">✕</button>
+            </div>
+            {/* 본문 + 하단 */}
+            {(() => {
+                const [accounts, setAccounts] = React.useState<Array<{
+                  id: string | number; bankName: string; accountNumber: string; accountHolder: string;
+                  purpose: string; manager: string; memo: string;
+                  cards: Array<{ id: string | number; cardName: string; cardCompany: string; cardNumber: string; cardType: string; cardUser: string; expiryDate: string }>
+                }>>(getItem('acct_company_accounts', []))
+                const [editId, setEditId] = React.useState<string | number | null>(null)
+                const emptyForm = { bankName: '', accountNumber: '', accountHolder: '', purpose: '', manager: '', memo: '', cards: [] as any[] }
+                const [form, setForm] = React.useState(emptyForm)
+                const [adding, setAdding] = React.useState(false)
+                const [expandedCards, setExpandedCards] = React.useState<Record<string, boolean>>({})
+                const [addingCardFor, setAddingCardFor] = React.useState<string | number | null>(null)
+                const emptyCard = { cardName: '', cardCompany: '', cardNumber: '', cardType: '체크카드', cardUser: '', expiryDate: '' }
+                const [cardForm, setCardForm] = React.useState(emptyCard)
+
+                const save = (list: typeof accounts) => { setAccounts(list); setItem('acct_company_accounts', list) }
+                const toggleCards = (id: string | number) => setExpandedCards(p => ({ ...p, [String(id)]: !p[String(id)] }))
+                const startAdd = () => { setAdding(true); setEditId(null); setForm(emptyForm) }
+                const startEdit = (acc: typeof accounts[0]) => { setEditId(acc.id); setAdding(false); setForm({ bankName: acc.bankName, accountNumber: acc.accountNumber, accountHolder: acc.accountHolder, purpose: acc.purpose, manager: acc.manager, memo: acc.memo, cards: acc.cards || [] }) }
+                const cancelEdit = () => { setEditId(null); setAdding(false); setForm(emptyForm) }
+
+                const saveAccount = () => {
+                  if (!form.bankName.trim() || !form.accountNumber.trim()) return
+                  if (editId !== null) {
+                    save(accounts.map(a => String(a.id) === String(editId) ? { ...a, ...form } : a))
+                  } else {
+                    save([...accounts, { id: Date.now(), ...form }])
+                  }
+                  cancelEdit()
+                }
+                const deleteAccount = (id: string | number) => { if (confirm('이 계좌를 삭제하시겠습니까?')) save(accounts.filter(a => String(a.id) !== String(id))) }
+
+                const addCard = (acctId: string | number) => {
+                  if (!cardForm.cardName.trim() || !cardForm.cardNumber.trim()) return
+                  save(accounts.map(a => String(a.id) === String(acctId) ? { ...a, cards: [...(a.cards || []), { id: Date.now(), ...cardForm }] } : a))
+                  setCardForm(emptyCard); setAddingCardFor(null)
+                }
+                const deleteCard = (acctId: string | number, cardId: string | number) => {
+                  save(accounts.map(a => String(a.id) === String(acctId) ? { ...a, cards: (a.cards || []).filter(c => String(c.id) !== String(cardId)) } : a))
+                }
+
+                const renderForm = (isNew: boolean) => (
+                  <div className="bg-[var(--bg-muted)] border border-[var(--border-default)] rounded-xl p-4 space-y-3">
+                    <div className="text-sm font-extrabold text-[var(--text-primary)] mb-2">{isNew ? '새 계좌 추가' : '계좌 수정'}</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">은행명 *</label>
+                        <input value={form.bankName} onChange={e => setForm(f => ({ ...f, bankName: e.target.value }))} placeholder="예) 국민은행" className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors" />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">계좌번호 *</label>
+                        <input value={form.accountNumber} onChange={e => setForm(f => ({ ...f, accountNumber: e.target.value }))} placeholder="000-000-000000" className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors" />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">예금주</label>
+                        <input value={form.accountHolder} onChange={e => setForm(f => ({ ...f, accountHolder: e.target.value }))} placeholder="예금주명" className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors" />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">용도</label>
+                        <input value={form.purpose} onChange={e => setForm(f => ({ ...f, purpose: e.target.value }))} placeholder="운영비, 인건비 등" className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors" />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">담당자</label>
+                        <input value={form.manager} onChange={e => setForm(f => ({ ...f, manager: e.target.value }))} placeholder="담당자명" className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors" />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">메모</label>
+                        <input value={form.memo} onChange={e => setForm(f => ({ ...f, memo: e.target.value }))} placeholder="비고" className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors" />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button onClick={cancelEdit} className="px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer">취소</button>
+                      <button onClick={saveAccount} className="px-3 py-1.5 rounded-lg bg-primary-500 text-white text-xs font-bold hover:bg-primary-600 transition-colors cursor-pointer">저장</button>
+                    </div>
+                  </div>
+                )
+
+                return (
+                  <>
+                    <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                      {accounts.length === 0 && !adding && (
+                        <div className="text-center py-10 text-[var(--text-muted)] text-sm">
+                          <Landmark size={32} className="mx-auto mb-2 opacity-40" />
+                          등록된 계좌가 없습니다
+                        </div>
+                      )}
+
+                      {accounts.map(acc => (
+                        editId !== null && String(editId) === String(acc.id) ? (
+                          <div key={acc.id}>{renderForm(false)}</div>
+                        ) : (
+                          <div key={acc.id} className="border border-[var(--border-default)] rounded-xl overflow-hidden bg-[var(--bg-surface)] hover:border-blue-300 transition-colors">
+                            {/* 계좌 정보 */}
+                            <div className="p-4">
+                              <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center text-white"><Landmark size={14} /></div>
+                                  <div>
+                                    <div className="text-sm font-extrabold text-[var(--text-primary)]">{acc.bankName}</div>
+                                    <div className="text-xs text-[var(--text-muted)] font-mono">{acc.accountNumber}</div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <button onClick={() => startEdit(acc)} className="p-1.5 rounded-lg hover:bg-[var(--bg-muted)] text-[var(--text-muted)] hover:text-blue-500 cursor-pointer transition-colors"><Edit3 size={13} /></button>
+                                  <button onClick={() => deleteAccount(acc.id)} className="p-1.5 rounded-lg hover:bg-[var(--bg-muted)] text-[var(--text-muted)] hover:text-red-500 cursor-pointer transition-colors"><Trash2 size={13} /></button>
+                                </div>
+                              </div>
+                              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-secondary)]">
+                                {acc.accountHolder && <span>예금주: <b>{acc.accountHolder}</b></span>}
+                                {acc.purpose && <span>용도: {acc.purpose}</span>}
+                                {acc.manager && <span>담당자: {acc.manager}</span>}
+                                {acc.memo && <span className="text-[var(--text-muted)]">({acc.memo})</span>}
+                              </div>
+                            </div>
+                            {/* 연결카드 아코디언 */}
+                            <div className="border-t border-[var(--border-default)]">
+                              <button onClick={() => toggleCards(acc.id)} className="w-full flex items-center justify-between px-4 py-2 text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer transition-colors">
+                                <span className="flex items-center gap-1"><CreditCard size={12} /> 연결 카드 ({(acc.cards || []).length})</span>
+                                {expandedCards[String(acc.id)] ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                              </button>
+                              {expandedCards[String(acc.id)] && (
+                                <div className="px-4 pb-3 space-y-2">
+                                  {(acc.cards || []).length === 0 && String(addingCardFor) !== String(acc.id) && (
+                                    <div className="text-xs text-[var(--text-muted)] text-center py-2">연결된 카드가 없습니다</div>
+                                  )}
+                                  {(acc.cards || []).map(card => (
+                                    <div key={card.id} className="flex items-center justify-between bg-[var(--bg-muted)] rounded-lg px-3 py-2">
+                                      <div className="flex items-center gap-2 text-xs flex-wrap">
+                                        <CreditCard size={12} className="text-violet-500" />
+                                        <span className="font-bold text-[var(--text-primary)]">{card.cardName}</span>
+                                        <span className="text-[var(--text-muted)] font-mono">{card.cardNumber}</span>
+                                        <span className="text-[var(--text-secondary)]">{card.cardCompany}</span>
+                                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${card.cardType === '신용카드' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}`}>{card.cardType}</span>
+                                        {card.cardUser && <span className="text-[var(--text-muted)]">({card.cardUser})</span>}
+                                        {card.expiryDate && <span className="text-[var(--text-muted)]">{card.expiryDate}</span>}
+                                      </div>
+                                      <button onClick={() => deleteCard(acc.id, card.id)} className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-[var(--text-muted)] hover:text-red-500 cursor-pointer transition-colors"><Trash2 size={11} /></button>
+                                    </div>
+                                  ))}
+                                  {String(addingCardFor) === String(acc.id) ? (
+                                    <div className="bg-[var(--bg-surface)] border border-dashed border-[var(--border-default)] rounded-lg p-3 space-y-2">
+                                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                        <input value={cardForm.cardName} onChange={e => setCardForm(f => ({ ...f, cardName: e.target.value }))} placeholder="카드명 *" className="px-2 py-1.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+                                        <input value={cardForm.cardCompany} onChange={e => setCardForm(f => ({ ...f, cardCompany: e.target.value }))} placeholder="카드사" className="px-2 py-1.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+                                        <input value={cardForm.cardNumber} onChange={e => setCardForm(f => ({ ...f, cardNumber: e.target.value }))} placeholder="카드번호 *" className="px-2 py-1.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+                                        <select value={cardForm.cardType} onChange={e => setCardForm(f => ({ ...f, cardType: e.target.value }))} className="px-2 py-1.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs text-[var(--text-primary)] focus:border-primary-500 outline-none">
+                                          <option>체크카드</option><option>신용카드</option>
+                                        </select>
+                                        <input value={cardForm.cardUser} onChange={e => setCardForm(f => ({ ...f, cardUser: e.target.value }))} placeholder="사용자" className="px-2 py-1.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+                                        <input value={cardForm.expiryDate} onChange={e => setCardForm(f => ({ ...f, expiryDate: e.target.value }))} placeholder="유효기간" className="px-2 py-1.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+                                      </div>
+                                      <div className="flex justify-end gap-2">
+                                        <button onClick={() => { setAddingCardFor(null); setCardForm(emptyCard) }} className="px-2 py-1 rounded text-[11px] font-bold text-[var(--text-secondary)] border border-[var(--border-default)] hover:bg-[var(--bg-muted)] cursor-pointer transition-colors">취소</button>
+                                        <button onClick={() => addCard(acc.id)} className="px-2 py-1 rounded text-[11px] font-bold text-white bg-violet-500 hover:bg-violet-600 cursor-pointer transition-colors">추가</button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <button onClick={() => { setAddingCardFor(acc.id); setCardForm(emptyCard) }} className="w-full flex items-center justify-center gap-1 py-2 rounded-lg border border-dashed border-[var(--border-default)] text-xs font-bold text-[var(--text-muted)] hover:border-violet-400 hover:text-violet-500 cursor-pointer transition-colors">
+                                      <Plus size={12} /> 카드 추가
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      ))}
+
+                      {adding && renderForm(true)}
+                    </div>
+                    {/* 하단 */}
+                    <div className="flex justify-between items-center px-5 py-3 border-t border-[var(--border-default)]">
+                      <button onClick={startAdd} className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-dashed border-violet-400 text-xs font-bold text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 cursor-pointer transition-colors">
+                        <Plus size={12} /> 계좌 추가
+                      </button>
+                      <button onClick={() => setBankModalOpen(false)} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer">닫기</button>
+                    </div>
+                  </>
+                )
+              })()}
           </div>
         </div>
       , document.body)}
