@@ -11806,7 +11806,7 @@ function AcctCashflowList({ year }: { year: number }) {
         if (!haystack.includes(q)) return false
       }
       return true
-    }).sort((a: any, b: any) => (b.date || b.writeDate || '').localeCompare(a.date || a.writeDate || '') || (b.createdAt || '').localeCompare(a.createdAt || ''))
+    }).sort((a: any, b: any) => (b.date || b.writeDate || '').localeCompare(a.date || a.writeDate || '') || (Number(b.id) || 0) - (Number(a.id) || 0))
   }, [cashflows, dateFrom, dateTo, filterCat, filterManager, filterType, searchText])
 
   // ── 집계 ──
