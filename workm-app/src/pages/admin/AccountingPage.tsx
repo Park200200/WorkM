@@ -6102,7 +6102,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                   )
                 })()}
               </div>
-              <input value={wdCatName || '예산구분 선택'} readOnly className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] cursor-not-allowed outline-none font-bold" />
+              <input value={wdCatName || '예산을 먼저 선택해주세요'} readOnly className={`w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm cursor-not-allowed outline-none font-bold ${wdCatName ? 'text-[var(--text-primary)]' : 'text-red-500'}`} />
             </div>
             {/* 출금전표: 2) 품의명/지출내용 */}
             <div>
