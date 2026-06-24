@@ -347,7 +347,17 @@ export function DashboardPage() {
         }
         const pendingApprove = isApprover ? approvals.filter(a => a.status === 'pending' && a.approver === userName).length : 0
         const rejected = approvals.filter(a => a.status === 'rejected' && a.applicant === userName).length
-        const preExpense = approvals.filter(a => a.status === 'preExpense' && a.applicant === userName).length
+        const cashflows: any[] = getItem('acct_cashflows', [])
+        const preExpense = approvals.filter(a => {
+          if (a.status !== 'preExpense') return false
+          if (a.applicant === userName) return true
+          // 출금전표 담당자
+          const linkedCf = cashflows.find((cf: any) => String(cf.approvalId) === String(a.id))
+          if (linkedCf && (linkedCf.manager === userName || linkedCf.createdBy === userName)) return true
+          // 지출담당자
+          if (isInMyCat(a)) return true
+          return false
+        }).length
         const toResolve = approvals.filter(a => a.status === 'toResolve' && a.applicant === userName).length
         const toExpense = isExpenseManager ? approvals.filter(a => a.status === 'approved' && isInMyCat(a)).length : 0
         const toSettle = isExpenseManager ? approvals.filter(a => a.status === 'confirming' && isInMyCat(a)).length : 0
