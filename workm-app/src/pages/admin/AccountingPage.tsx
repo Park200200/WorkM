@@ -9842,8 +9842,8 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                   onChange={e => updateField(item.id, 'accountCode', e.target.value)}
                                   className={DETAIL_INPUT}
                                 >
-                                  <option value="">— 자산계정 선택 —</option>
-                                  {allAccounts.filter(a => a.active !== false && a.type === 'asset').map(a => (
+                                  <option value="">— 입금계정 선택 —</option>
+                                  {allAccounts.filter(a => a.active !== false && a.type === 'asset' && /현금|예금/.test(a.name)).map(a => (
                                     <option key={a.code} value={`${a.code} ${a.name}`}>{a.code} {a.name}</option>
                                   ))}
                                 </select>
