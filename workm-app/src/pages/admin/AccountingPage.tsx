@@ -4281,228 +4281,40 @@ export function AcctApproval({ year }: { year: number }) {
               <span className="text-sm font-extrabold text-[#22c55e] flex items-center gap-1.5">✅ {isPreExp ? '선지출 승인' : '품의 승인'}</span>
               <button onClick={() => { setApproveMode(false); setApprovePwError('') }} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer"><X size={18} /></button>
             </div>
-            <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
-              {/* 예산 할당 */}
-              {!(detailApproval as any).isGeneral && (
-                <div className="space-y-2">
-                  <div className="text-[11px] font-extrabold text-[var(--text-primary)] flex items-center gap-1">📋 {isPreExp ? '예산 정보 (선지출)' : '예산 할당'}</div>
-                  <div className="bg-[var(--bg-muted)] rounded-lg p-3 space-y-2">
-                    {isPreExp ? (
-                      /* ── 선지출: 예산 읽기전용 표시 (최대한 상세) ── */
-                      (() => {
-                        const allCfs: any[] = getItem('acct_cashflows', [])
-                        const linkedCf = allCfs.find((c: any) => c.approvalId && String(c.approvalId) === String(detailApproval.id))
-                        const da = detailApproval as any
-                        const allBudgets: any[] = getItem('acct_budgets', [])
-                        const catName = budgetCats.find(c => String(c.id) === String(approveBudgetCat || da.budgetCatId))?.name || da.budgetCatName || '-'
-                        const foundItem = allBudgets.find(b => String(b.id) === String(approveBudgetItem || da.budgetItemId)) || budgetItems.find(b => String(b.id) === String(approveBudgetItem || da.budgetItemId))
-                        const itemName = foundItem?.itemName || da.budgetItem || linkedCf?.accountName || linkedCf?.desc || '-'
-                        const subItemName = (() => {
-                          if (da.budgetSubItem) return da.budgetSubItem
-                          if (approveBudgetSub) {
-                            const s = approveFilteredSubs.find((b: any) => String(b.id) === String(approveBudgetSub))
-                            if ((s as any)?.name) return (s as any).name
-                            const bi = allBudgets.find(b => String(b.id) === String(approveBudgetSub))
-                            if (bi?.subItemName) return bi.subItemName
-                          }
-                          if (da.budgetSubId) {
-                            const bi = allBudgets.find(b => String(b.id) === String(da.budgetSubId))
-                            if (bi?.subItemName) return bi.subItemName
-                          }
-                          // cashflow에서 subItem 가져오기
-                          if (linkedCf?.subItem) return linkedCf.subItem
-                          return ''
-                        })()
-                        const detailItemName = (() => {
-                          if (da.budgetDetailItem) return da.budgetDetailItem
-                          if (approveBudgetDetail) {
-                            const d = approveFilteredDetails.find((b: any) => String(b.id) === String(approveBudgetDetail))
-                            if ((d as any)?.detailItemName) return (d as any).detailItemName
-                          }
-                          // cashflow에서 detailItem 가져오기
-                          if (linkedCf?.detailItem) return linkedCf.detailItem
-                          return ''
-                        })()
-                        const expDate = linkedCf?.tradeDate || (da.date || da.createdAt || '').slice(0, 10)
-                        const vendor = linkedCf?.counter || da.vendor || ''
-                        const manager = linkedCf?.manager || da.applicant || ''
-                        // 지출수단
-                        const payMethod = linkedCf?.method || ''
-                        // 메모
-                        const memo = linkedCf?.memo || da.description || ''
-                        return (
-                      <>
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-[var(--text-muted)]">예산구분</span>
-                          <span className="font-bold text-[var(--text-primary)]">{catName}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-[var(--text-muted)]">예산항목</span>
-                          <span className="font-bold text-[var(--text-primary)]">{itemName}</span>
-                        </div>
-                        {subItemName && (
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-[var(--text-muted)]">세항</span>
-                            <span className="font-bold text-[var(--text-primary)]">{subItemName}</span>
-                          </div>
-                        )}
-                        {detailItemName && (
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-[var(--text-muted)]">세세항</span>
-                            <span className="font-bold text-[var(--text-primary)]">{detailItemName}</span>
-                          </div>
-                        )}
-                        {expDate && (
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-[var(--text-muted)]">지출일자</span>
-                            <span className="font-bold text-[var(--text-primary)]">{expDate}</span>
-                          </div>
-                        )}
-                        {vendor && (
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-[var(--text-muted)]">거래처</span>
-                            <span className="font-bold text-[var(--text-primary)]">{vendor}</span>
-                          </div>
-                        )}
-                        {manager && (
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-[var(--text-muted)]">담당자</span>
-                            <span className="font-bold text-[var(--text-primary)]">{manager}</span>
-                          </div>
-                        )}
-                        {payMethod && (
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-[var(--text-muted)]">지출수단</span>
-                            <span className="font-bold text-[var(--text-primary)]">{payMethod}</span>
-                          </div>
-                        )}
-                        {approveRemainingBudget && (
-                          <div className="flex items-center justify-between text-[11px] px-1 pt-1 border-t border-[var(--border-default)]">
-                            <span className="text-[var(--text-muted)]">잔액</span>
-                            <span className={`font-extrabold ${approveRemainingBudget.remaining < 0 ? 'text-[#ef4444]' : 'text-[#22c55e]'}`}>
-                              {approveRemainingBudget.remaining.toLocaleString()}원
-                            </span>
-                          </div>
-                        )}
-                      </>
-                        )
-                      })()
-                    ) : (
-                      /* ── 일반 품의: 통합 검색 예산 선택 ── */
-                      <>
-                    <div className="relative">
-                      <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-0.5">🔍 예산 검색 *</label>
-                      {budgetSearchSelected ? (
-                        <div className="w-full px-2.5 py-2 rounded-lg border border-primary-400 bg-primary-50/30 text-[11px] flex items-center justify-between gap-1">
-                          <span className="text-[var(--text-primary)] font-bold truncate">{budgetSearchSelected}</span>
-                          <button type="button" onClick={() => { setBudgetSearchSelected(''); setBudgetSearchText(''); setApproveBudgetCat(''); setApproveBudgetItem(''); setApproveBudgetSub(''); setApproveBudgetDetail('') }} className="text-[var(--text-muted)] hover:text-[#ef4444] text-[13px] shrink-0 cursor-pointer">✕</button>
-                        </div>
-                      ) : (
-                        <input
-                          type="text"
-                          value={budgetSearchText}
-                          onChange={e => setBudgetSearchText(e.target.value)}
-                          onFocus={() => setBudgetSearchFocused(true)}
-                          onBlur={() => setTimeout(() => setBudgetSearchFocused(false), 200)}
-                          placeholder="예산항목, 세목, 계정과목명 검색..."
-                          className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500 placeholder:text-[var(--text-muted)]"
-                        />
-                      )}
-                      {budgetSearchFocused && budgetSearchResults.length > 0 && (
-                        <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg shadow-lg z-50 max-h-[220px] overflow-y-auto">
-                          {budgetSearchResults.map((r, i) => (
-                            <button
-                              key={i}
-                              type="button"
-                              onMouseDown={e => { e.preventDefault(); setBudgetSearchSelected(r.path); setBudgetSearchText(''); setApproveBudgetCat(r.catId); setApproveBudgetItem(r.itemId); setApproveBudgetSub(r.subId || ''); setApproveBudgetDetail(r.detailId || ''); setBudgetSearchFocused(false) }}
-                              className="w-full text-left px-3 py-2 hover:bg-primary-50/50 border-b border-[var(--border-default)] last:border-b-0 cursor-pointer transition-colors"
-                            >
-                              <div className="text-[11px] font-bold text-[var(--text-primary)] leading-tight">{r.path}</div>
-                              <div className="flex items-center justify-between mt-0.5">
-                                <span className="text-[9.5px] text-[var(--text-muted)]">
-                                  {r.accountCode && `${r.accountCode} ${r.accountName}`}
-                                </span>
-                                <span className={`text-[10px] font-extrabold ${r.remaining < 0 ? 'text-[#ef4444]' : r.remaining > 0 ? 'text-[#22c55e]' : 'text-[var(--text-muted)]'}`}>
-                                  잔액 {r.remaining.toLocaleString()}원
-                                </span>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      {budgetSearchFocused && budgetSearchText.trim() && budgetSearchResults.length === 0 && (
-                        <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg shadow-lg z-50 p-3 text-center">
-                          <span className="text-[11px] text-[var(--text-muted)]">검색 결과가 없습니다</span>
-                        </div>
-                      )}
-                    </div>
-                    {approveRemainingBudget && (
-                      <div className="flex items-center justify-between text-[11px] px-1 pt-1 border-t border-[var(--border-default)]">
-                        <span className="text-[var(--text-muted)]">잔액</span>
-                        <span className={`font-extrabold ${approveRemainingBudget.remaining < 0 ? 'text-[#ef4444]' : 'text-[#22c55e]'}`}>
-                          {approveRemainingBudget.remaining.toLocaleString()}원
-                        </span>
-                      </div>
-                    )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 금액 확인/수정 */}
+            <div className="p-5 space-y-4">
+              {/* 품의 내용 확인 */}
               <div className="space-y-2">
-                <div className="text-[11px] font-extrabold text-[var(--text-primary)] flex items-center gap-1">💰 {isPreExp ? '지출금액 확인' : '금액 확인/수정'}</div>
+                <div className="text-[11px] font-extrabold text-[var(--text-primary)] flex items-center gap-1">📋 품의 내용 확인</div>
                 <div className="bg-[var(--bg-muted)] rounded-lg p-3 space-y-2">
-                  {isPreExp ? (
-                    /* ── 선지출: 금액 수정 불가 ── */
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-[var(--text-muted)]">지출금액</span>
-                      <span className="font-extrabold text-[var(--text-primary)] text-[14px]">₩ {(detailApproval.amount || 0).toLocaleString()}</span>
-                    </div>
-                  ) : (
-                    /* ── 일반 품의: 금액 수정 가능 ── */
-                    <>
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-[var(--text-muted)]">요청금액</span>
-                    <span className="font-bold text-[var(--text-primary)]">₩ {(detailApproval.amount || 0).toLocaleString()}</span>
+                    <span className="text-[var(--text-muted)]">품의명</span>
+                    <span className="font-bold text-[var(--text-primary)]">{detailApproval.title}</span>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-[var(--text-muted)] mb-0.5">승인금액 *</label>
-                    <input
-                      value={approveAmount}
-                      onChange={e => { const d = e.target.value.replace(/[^\d]/g, ''); setApproveAmount(d ? Number(d).toLocaleString('ko-KR') : '') }}
-                      className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[13px] font-bold text-[var(--text-primary)] text-right focus:outline-none focus:border-primary-500"
-                      placeholder="승인금액"
-                    />
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-[var(--text-muted)]">신청자</span>
+                    <span className="font-bold text-[var(--text-primary)]">{(detailApproval as any).applicant || ''}</span>
                   </div>
-                  {approveRemainingBudget && approveAmount && (() => {
-                    const amt = parseInt(approveAmount.replace(/[^0-9]/g, '')) || 0
-                    const afterBalance = approveRemainingBudget.remaining - amt
-                    return (
-                      <div className="flex items-center justify-between text-[11px] px-1 pt-1 border-t border-[var(--border-default)]">
-                        <span className="text-[var(--text-muted)]">승인 후 잔액</span>
-                        <span className={`font-extrabold ${afterBalance < 0 ? 'text-[#ef4444]' : 'text-[#22c55e]'}`}>
-                          {afterBalance.toLocaleString()}원
-                          {afterBalance < 0 && <span className="text-[9px] ml-1">⚠ 예산 초과</span>}
-                        </span>
-                      </div>
-                    )
-                  })()}
-                    </>
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-[var(--text-muted)]">금액</span>
+                    <span className="font-extrabold text-[var(--text-primary)] text-[14px]">₩ {(detailApproval.amount || 0).toLocaleString()}</span>
+                  </div>
+                  {(detailApproval as any).budgetCatName && (
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-[var(--text-muted)]">예산구분</span>
+                      <span className="font-bold text-[var(--text-primary)]">{(detailApproval as any).budgetCatName}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-[var(--text-muted)]">일자</span>
+                    <span className="font-bold text-[var(--text-primary)]">{(detailApproval.date || detailApproval.createdAt || '').slice(0, 10)}</span>
+                  </div>
+                  {detailApproval.description && (
+                    <div className="text-[11px] pt-1 border-t border-[var(--border-default)]">
+                      <span className="text-[var(--text-muted)]">사유: </span>
+                      <span className="text-[var(--text-primary)]">{detailApproval.description}</span>
+                    </div>
                   )}
                 </div>
-              </div>
-
-              {/* 승인 메모 */}
-              <div>
-                <label className="block text-[11px] font-extrabold text-[var(--text-primary)] mb-1">📝 승인 메모</label>
-                <input
-                  value={approveMemo}
-                  onChange={e => setApproveMemo(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-500"
-                  placeholder="승인 코멘트 (선택)"
-                />
               </div>
 
               {/* 비밀번호 */}
@@ -4521,7 +4333,7 @@ export function AcctApproval({ year }: { year: number }) {
             </div>
             <div className="flex justify-end gap-2 px-5 py-3 border-t border-[var(--border-default)]">
               <button onClick={() => { setApproveMode(false); setApprovePwError('') }} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer">취소</button>
-              <button onClick={handleApproveConfirm} className="px-4 py-2 rounded-lg bg-[#22c55e] text-white text-sm font-bold hover:bg-[#16a34a] cursor-pointer flex items-center gap-1"><Check size={14} /> 승인 완료</button>
+              <button onClick={handleApproveConfirm} className="px-4 py-2 rounded-lg bg-[#22c55e] text-white text-sm font-bold hover:bg-[#16a34a] cursor-pointer flex items-center gap-1"><Check size={14} /> 승인</button>
             </div>
           </div>
         </div>
