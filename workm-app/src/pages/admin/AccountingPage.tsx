@@ -2845,7 +2845,7 @@ function AcctBudget({ year }: { year: number }) {
                         className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors"
                       >
                         <option value="">추가승인담당자를 선택하세요</option>
-                        {staffListForBudget.filter(s => s.name !== defaultApproverName).map(s => (
+                        {staffListForBudget.filter(s => s.name !== defaultApproverName && (s as any).approverType !== 'approver').map(s => (
                           <option key={s.id || s.name} value={s.name}>{s.name} {s.position || ''} {(s as any).department || ''}</option>
                         ))}
                       </select>
