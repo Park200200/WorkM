@@ -9696,6 +9696,37 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
                             className={DETAIL_INPUT}
                           />
                         </div>
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>💰 현금잔액</label>
+                          {(() => {
+                            const cfs: CashFlow[] = getItem('acct_cashflows', [])
+                            // 현금 입금(대체 차변이 이 현금수단)
+                            const cashIn = cfs.filter(cf =>
+                              (cf as any).type === 'transfer' &&
+                              (cf as any).debitAccount === '현금' &&
+                              (cf as any).debitDetail === item.name
+                            ).reduce((s, cf) => s + (cf.amount || 0), 0)
+                            // 현금 출금(대체 대변이 이 현금수단)
+                            const cashOutTransfer = cfs.filter(cf =>
+                              (cf as any).type === 'transfer' &&
+                              (cf as any).creditAccount === '현금' &&
+                              (cf as any).creditDetail === item.name
+                            ).reduce((s, cf) => s + (cf.amount || 0), 0)
+                            // 현금 지출(출금전표에서 이 현금수단 사용)
+                            const cashOutExpense = cfs.filter(cf =>
+                              cf.type === 'withdrawal' &&
+                              (cf as any).payMethod === '현금' &&
+                              (cf as any).payDetail === item.name
+                            ).reduce((s, cf) => s + (cf.amount || 0), 0)
+                            const balance = cashIn - cashOutTransfer - cashOutExpense
+                            const isOver = item.cashLimit && balance > item.cashLimit
+                            return (
+                              <div className={`w-full px-3 py-2.5 rounded-lg border text-sm font-extrabold text-right ${balance < 0 ? 'border-red-300 bg-red-50 dark:bg-red-900/10 text-red-600' : isOver ? 'border-amber-300 bg-amber-50 dark:bg-amber-900/10 text-amber-600' : 'border-emerald-300 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600'}`}>
+                                {balance.toLocaleString('ko-KR')}원
+                              </div>
+                            )
+                          })()}
+                        </div>
                         <div className="col-span-2">
                           <label className={DETAIL_FIELD_LABEL}>메모</label>
                           <input
