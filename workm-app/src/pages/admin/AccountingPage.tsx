@@ -10147,26 +10147,18 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
             {activeCategory === '계좌' ? (
               <div className="flex-1 relative">
                 <input
-                  placeholder="계좌관리에서 선택 또는 직접 입력..."
+                  readOnly
+                  placeholder="▼ 계좌관리에서 등록된 계좌를 선택하세요"
                   value={newName}
-                  onChange={e => setNewName(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') { handleAdd(); const dd = document.getElementById('method-acct-dropdown'); if (dd) dd.style.display = 'none' }
-                    if (e.key === 'Escape') { const dd = document.getElementById('method-acct-dropdown'); if (dd) dd.style.display = 'none' }
-                  }}
-                  onFocus={() => { const dd = document.getElementById('method-acct-dropdown'); if (dd) dd.style.display = 'block' }}
+                  onClick={() => { const dd = document.getElementById('method-acct-dropdown'); if (dd) dd.style.display = dd.style.display === 'block' ? 'none' : 'block' }}
                   onBlur={() => setTimeout(() => { const dd = document.getElementById('method-acct-dropdown'); if (dd) dd.style.display = 'none' }, 200)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-white dark:bg-gray-900 text-sm text-[var(--text-primary)] outline-none focus:border-primary-400 transition-colors placeholder:text-[var(--text-muted)]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-white dark:bg-gray-900 text-sm text-[var(--text-primary)] outline-none focus:border-primary-400 transition-colors placeholder:text-[var(--text-muted)] cursor-pointer"
                 />
                 <div id="method-acct-dropdown" style={{ display: 'none' }} className="absolute z-50 top-full left-0 right-0 mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl shadow-xl max-h-48 overflow-y-auto">
                   {(() => {
                     const companyAccts = getItem<any[]>('acct_company_accounts', [])
                     if (companyAccts.length === 0) return <div className="px-3 py-3 text-xs text-[var(--text-muted)] text-center">계좌관리에서 계좌를 먼저 등록하세요</div>
-                    const filtered = companyAccts.filter((a: any) => {
-                      const label = `${a.bankName || ''} ${a.accountNumber || ''}`.trim()
-                      return !newName || label.includes(newName)
-                    })
-                    if (filtered.length === 0) return <div className="px-3 py-2 text-xs text-[var(--text-muted)]">직접 입력 후 추가하세요</div>
+                    const filtered = companyAccts
                     return filtered.map((a: any) => {
                       const label = `${a.bankName || ''} ${a.accountNumber || ''}`.trim()
                       const alreadyAdded = catItems.some(ci => ci.name === label)
@@ -10241,9 +10233,11 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
               className="flex-1 px-3.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-white dark:bg-gray-900 text-sm text-[var(--text-primary)] outline-none focus:border-primary-400 transition-colors placeholder:text-[var(--text-muted)]"
             />
             )}
+            {activeCategory !== '계좌' && (
             <button onClick={() => { handleAdd(); setShowExpenseList(false) }} className="px-4 py-2.5 rounded-xl text-white text-sm font-bold transition-all cursor-pointer hover:shadow-md flex items-center gap-1.5" style={{ background: activeCatInfo.color }}>
               <Plus size={14} /> 추가
             </button>
+            )}
           </div>
 
           {/* 입금 모드: 지출수단 복수선택 드롭다운 */}
