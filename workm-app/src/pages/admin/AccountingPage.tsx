@@ -9036,7 +9036,7 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
                     <span className="text-[10px] font-bold w-5 text-center shrink-0 rounded-full py-0.5" style={{ color: activeCatInfo.color, background: `${activeCatInfo.color}15` }}>
                       {idx + 1}
                     </span>
-                    <span className="text-sm font-semibold text-[var(--text-primary)] flex-1">{item.name}</span>
+                    <input value={item.name} onChange={e => { e.stopPropagation(); updateField(item.id, 'name', e.target.value) }} onClick={e => e.stopPropagation()} placeholder="이름 입력" className="text-sm font-semibold text-[var(--text-primary)] flex-1 bg-transparent border-none outline-none focus:bg-[var(--bg-muted)] focus:px-2 focus:rounded-md transition-all" />
                     {/* 계좌 요약 표시 */}
                     {activeCategory === '계좌' && item.bankName && !isOpen && (
                       <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[200px]">
@@ -9825,7 +9825,7 @@ function AcctIncomeMethods({ catId }: { catId?: string | null }) {
                     <span className="text-[10px] font-bold w-5 text-center shrink-0 rounded-full py-0.5" style={{ color: activeCatInfo.color, background: `${activeCatInfo.color}15` }}>
                       {idx + 1}
                     </span>
-                    <span className="text-sm font-semibold text-[var(--text-primary)] flex-1">{item.name}</span>
+                    <input value={item.name} onChange={e => { e.stopPropagation(); updateField(item.id, 'name', e.target.value) }} onClick={e => e.stopPropagation()} placeholder="이름 입력" className="text-sm font-semibold text-[var(--text-primary)] flex-1 bg-transparent border-none outline-none focus:bg-[var(--bg-muted)] focus:px-2 focus:rounded-md transition-all" />
                     {activeCategory === '계좌' && item.bankName && !isOpen && (
                       <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[200px]">
                         {item.bankName} {item.accountNumber ? `• ${item.accountNumber}` : ''}
@@ -10458,17 +10458,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                   {/* 메인 행 */}
                   <div className="flex items-center gap-3 px-3.5 py-2.5 cursor-pointer group" onClick={() => setExpandedId(isOpen ? null : item.id)}>
                     <span className="text-[10px] font-bold w-5 text-center shrink-0 rounded-full py-0.5" style={{ color: activeCatInfo.color, background: `${activeCatInfo.color}15` }}>{idx + 1}</span>
-                    {activeCategory === '어음' ? (
-                      <input
-                        value={item.name}
-                        onChange={e => { e.stopPropagation(); updateField(item.id, 'name', e.target.value) }}
-                        onClick={e => e.stopPropagation()}
-                        placeholder="어음명 입력"
-                        className="text-sm font-semibold text-[var(--text-primary)] flex-1 bg-transparent border-none outline-none focus:bg-[var(--bg-muted)] focus:px-2 focus:rounded-md transition-all"
-                      />
-                    ) : (
-                      <span className="text-sm font-semibold text-[var(--text-primary)] flex-1">{item.name}</span>
-                    )}
+                    <input value={item.name} onChange={e => { e.stopPropagation(); updateField(item.id, 'name', e.target.value) }} onClick={e => e.stopPropagation()} placeholder="이름 입력" className="text-sm font-semibold text-[var(--text-primary)] flex-1 bg-transparent border-none outline-none focus:bg-[var(--bg-muted)] focus:px-2 focus:rounded-md transition-all" />
                     {activeCategory === '계좌' && item.bankName && !isOpen && (
                       <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[200px]">{item.bankName} {item.accountNumber ? `• ${item.accountNumber}` : ''}</span>
                     )}
