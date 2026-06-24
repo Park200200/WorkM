@@ -4918,11 +4918,24 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
       if (!(c.type === type || (type === 'withdrawal' && (c.type === 'expense' || c.type === 'transfer' as any)))) return false
       // 모든 전표: 내가 작성한 것만 표시 (승인권자는 전체)
       if (!isApprover) {
-        const cfCreator = (c as any).createdBy || ''
-        const cfManager = (c as any).manager || ''
-        // createdBy 또는 manager가 나와 일치하는 경우만 표시
-        if (cfCreator && cfCreator !== userName && cfManager !== userName) return false
-        if (!cfCreator && cfManager && cfManager !== userName) return false
+        // 출금전표: 해당 예산의 담당자(users)는 모든 건 표시
+        if (type === 'withdrawal') {
+          const cfCatId = String((c as any).budgetCatId || '')
+          const isBudgetHandler = cfCatId && cats.some(ct => String(ct.id) === cfCatId && ct.users && ct.users.includes(userName))
+          if (isBudgetHandler) { /* 예산 담당자는 통과 */ }
+          else {
+            const cfCreator = (c as any).createdBy || ''
+            const cfManager = (c as any).manager || ''
+            if (cfCreator && cfCreator !== userName && cfManager !== userName) return false
+            if (!cfCreator && cfManager && cfManager !== userName) return false
+          }
+        } else {
+          const cfCreator = (c as any).createdBy || ''
+          const cfManager = (c as any).manager || ''
+          // createdBy 또는 manager가 나와 일치하는 경우만 표시
+          if (cfCreator && cfCreator !== userName && cfManager !== userName) return false
+          if (!cfCreator && cfManager && cfManager !== userName) return false
+        }
       }
       // 관련 예산 필터
       if (myCatIds !== null) {
