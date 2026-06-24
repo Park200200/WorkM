@@ -4536,6 +4536,9 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const transferAccounts = ['현금', '상품권', '어음', '계좌'] as const
   const [transferForm, setTransferForm] = useState({ debit: '', debitDetail: '', credit: '', creditDetail: '', amount: '', tradeDate: today, description: '', memo: '', reason: '' })
   const transferPayMethods: any[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
+  const [transferAttachments, setTransferAttachments] = useState<{name:string; data:string; size:number; title:string; printWidth:number; row?:number}[]>([])
+  const [transferEvidenceOpen, setTransferEvidenceOpen] = useState(false)
+  const [transferEvidenceEdit, setTransferEvidenceEdit] = useState(true)
   const staffList = useStaffStore(s => s.staff).filter(s => !s.resignedAt)
   const [counterSearch, setCounterSearch] = useState('')
   const [showCounterList, setShowCounterList] = useState(false)
@@ -4876,6 +4879,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
         debitDetail: transferForm.debitDetail,
         creditAccount: transferForm.credit,
         creditDetail: transferForm.creditDetail,
+        attachments: transferAttachments.length > 0 ? transferAttachments.map(a => ({ name: a.name, type: a.data?.startsWith('data:image') ? 'image/jpeg' : 'application/octet-stream', dataUrl: a.data, title: a.title, printWidth: a.printWidth, row: a.row })) : undefined,
       } as any)
       setItem('acct_approvals', approvals)
       // cashflow에 approvalId 연결
@@ -4883,6 +4887,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
       const cfIdx2 = allCfs2.findIndex(x => String(x.id) === String(tId))
       if (cfIdx2 >= 0) { (allCfs2[cfIdx2] as any).approvalId = String(preApprovalId); setItem('acct_cashflows', allCfs2) }
       setTransferForm({ debit: '', debitDetail: '', credit: '', creditDetail: '', amount: '', tradeDate: today, description: '', memo: '', reason: '' })
+      setTransferAttachments([])
       setRefresh(r => r + 1)
       return
     }
@@ -5191,6 +5196,100 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
               🔄 {transferForm.creditDetail ? `${transferForm.credit}(${transferForm.creditDetail})` : transferForm.credit} → {transferForm.debitDetail ? `${transferForm.debit}(${transferForm.debitDetail})` : transferForm.debit} 대체전표가 생성됩니다.
             </div>
           )}
+          {/* ── 증빙 첨부 / 미리보기 ── */}
+          <div className="mt-1">
+            <div className="flex items-center gap-2">
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)]">📎 첨부파일 (영수증/증빙)</label>
+              {transferAttachments.length > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-bold">{transferAttachments.length}건</span>}
+            </div>
+            <div className="flex items-center gap-2 mt-1.5">
+              <button type="button" onClick={() => { setTransferEvidenceOpen(true); setTransferEvidenceEdit(true) }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-[var(--border-default)] text-[11px] font-bold text-[var(--text-muted)] hover:border-primary-400 hover:text-primary-500 cursor-pointer transition-colors">
+                <Paperclip size={12} /> {transferAttachments.length > 0 ? '증빙 편집' : '증빙 첨부'}
+              </button>
+              {transferAttachments.length > 0 && (
+                <button type="button" onClick={() => { setTransferEvidenceOpen(true); setTransferEvidenceEdit(false) }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-[11px] font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer transition-colors">
+                  <Eye size={12} /> 미리보기
+                </button>
+              )}
+            </div>
+          </div>
+          {/* 증빙서류 문서 뷰 (PrintApprovalForm) */}
+          {transferEvidenceOpen && (() => {
+            const staffListData = getItem<any[]>('ws_users', [])
+            const applicantStaff = staffListData.find(s => s.name === currentUserName)
+            const debitLabel = transferForm.debitDetail ? `${transferForm.debit}(${transferForm.debitDetail})` : transferForm.debit
+            const creditLabel = transferForm.creditDetail ? `${transferForm.credit}(${transferForm.creditDetail})` : transferForm.credit
+            return (
+            <PrintApprovalForm
+              editMode={transferEvidenceEdit}
+              data={{
+                title: `[대체] ${transferForm.description || (creditLabel + ' → ' + debitLabel)}`,
+                amount: parseInt(transferForm.amount.replace(/,/g, '')) || 0,
+                applicant: currentUserName,
+                approver: '',
+                date: transferForm.tradeDate,
+                expenseDate: transferForm.tradeDate,
+                description: transferForm.reason || `대체전표 - ${creditLabel} → ${debitLabel}`,
+                counter: `${creditLabel} → ${debitLabel}`,
+                method: '대체',
+                attachments: transferAttachments.map(a => ({
+                  name: a.name,
+                  type: a.data?.startsWith('data:image') ? 'image/jpeg' : 'application/octet-stream',
+                  dataUrl: a.data,
+                  title: a.title,
+                  printWidth: a.printWidth,
+                  row: a.row,
+                })),
+                approvalType: '선지출',
+                department: (applicantStaff as any)?.department || (applicantStaff as any)?.dept || '',
+              }}
+              onClose={() => setTransferEvidenceOpen(false)}
+              onUpdateAttachments={(updated) => {
+                setTransferAttachments(updated.map(a => ({
+                  name: a.name,
+                  data: (a as any).dataUrl || '',
+                  size: 0,
+                  title: a.title,
+                  printWidth: a.printWidth,
+                  row: a.row,
+                })))
+              }}
+              actions={
+                <>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 12, background: '#4f6ef7', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(0,0,0,.1)' }}>
+                    <Paperclip size={14} /> 증빙첨부
+                    <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.hwp" style={{ display: 'none' }} onChange={e => {
+                      const files = e.target.files
+                      if (!files) return
+                      Array.from(files).forEach(file => {
+                        const reader = new FileReader()
+                        reader.onload = () => {
+                          if (file.type.startsWith('image/')) {
+                            const img = new Image()
+                            img.onload = () => {
+                              const MAX = 800; let w = img.width, h = img.height
+                              if (w > MAX || h > MAX) { if (w > h) { h = Math.round(h * MAX / w); w = MAX } else { w = Math.round(w * MAX / h); h = MAX } }
+                              const c = document.createElement('canvas'); c.width = w; c.height = h
+                              const ctx = c.getContext('2d'); ctx?.drawImage(img, 0, 0, w, h)
+                              const resized = c.toDataURL('image/jpeg', 0.85)
+                              setTransferAttachments(prev => [...prev, { name: file.name, data: resized, size: file.size, title: '', printWidth: 100 }])
+                            }
+                            img.src = reader.result as string
+                          } else {
+                            setTransferAttachments(prev => [...prev, { name: file.name, data: reader.result as string, size: file.size, title: '', printWidth: 100 }])
+                          }
+                        }
+                        reader.readAsDataURL(file)
+                      })
+                    }} />
+                  </label>
+                  <button onClick={() => { setTransferEvidenceOpen(false) }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 12, background: '#ef4444', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,.1)' }}>
+                    <Check size={14} /> 증빙완료
+                  </button>
+                </>
+              }
+            />
+          )})()}
           <div className="flex justify-end">
             <button onClick={saveEntry} className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-white text-sm font-bold cursor-pointer shadow-md bg-gradient-to-r from-[#f59e0b] to-[#d97706]">
               <Save size={14} /> 대체 등록
