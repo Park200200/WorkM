@@ -6570,7 +6570,9 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
               })
               // 어음: notes(실제 어음 리스트)가 있는 항목만 표시
               payItems.filter(p => p.category === '어음' && p.notes && p.notes.length > 0).forEach(p => {
-                p.notes.forEach((note: any) => {
+                const validNotes = p.notes.filter((note: any) => note.noteNumber || note.amount)
+                if (validNotes.length === 0) return
+                validNotes.forEach((note: any) => {
                   const typeLabel = p.noteType === '발행' ? '발행' : '수신'
                   const amt = note.amount ? Number(note.amount).toLocaleString() + '원' : ''
                   const label = `${p.name} - ${typeLabel} ${note.noteNumber || ''} ${amt}`.trim()
@@ -7292,7 +7294,9 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                     filteredPM.filter(p => p.category === '현금').forEach(p => payOptions.push({ value: p.name, label: `💵 ${p.name}`, group: '현금' }))
                     // 어음: notes(실제 어음 리스트)가 있는 항목만 표시
                     filteredPM.filter(p => p.category === '어음' && p.notes && p.notes.length > 0).forEach(p => {
-                      p.notes.forEach((note: any) => {
+                      const validNotes = p.notes.filter((note: any) => note.noteNumber || note.amount)
+                      if (validNotes.length === 0) return
+                      validNotes.forEach((note: any) => {
                         const typeLabel = p.noteType === '발행' ? '발행' : '수신'
                         const amt = note.amount ? Number(note.amount).toLocaleString() + '원' : ''
                         const label = `📄 ${p.name} - ${typeLabel} ${note.noteNumber || ''} ${amt}`.trim()
