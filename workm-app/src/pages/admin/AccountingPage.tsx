@@ -10349,21 +10349,25 @@ function AcctCashflowList({ year }: { year: number }) {
         {/* 1행: 실적 */}
         <div className={cardStyle('#22c55e', 'from-emerald-50/80 to-emerald-100/40 dark:from-emerald-900/20 dark:to-emerald-800/10')}>
           <div className="text-[9px] sm:text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mb-0.5 sm:mb-1">💵 총 입금</div>
-          <div className="text-[14px] sm:text-[18px] font-extrabold text-emerald-700 dark:text-emerald-300">₩{stats.totalIn.toLocaleString()}</div>
+          <div className="text-[13px] sm:text-[16px] font-extrabold text-emerald-700 dark:text-emerald-300">₩{stats.totalIn.toLocaleString()}</div>
+          <div className="text-[9px] sm:text-[10px] text-transparent mt-0.5 select-none">-</div>
         </div>
         <div className={cardStyle('#ef4444', 'from-red-50/80 to-red-100/40 dark:from-red-900/20 dark:to-red-800/10')}>
           <div className="text-[9px] sm:text-[10px] font-bold text-red-500 dark:text-red-400 mb-0.5 sm:mb-1">💸 총 출금</div>
-          <div className="text-[14px] sm:text-[18px] font-extrabold text-red-600 dark:text-red-300">₩{stats.totalOut.toLocaleString()}</div>
+          <div className="text-[13px] sm:text-[16px] font-extrabold text-red-600 dark:text-red-300">₩{stats.totalOut.toLocaleString()}</div>
+          <div className="text-[9px] sm:text-[10px] text-transparent mt-0.5 select-none">-</div>
         </div>
         <div className={cardStyle('#3b82f6', 'from-blue-50/80 to-blue-100/40 dark:from-blue-900/20 dark:to-blue-800/10')}>
           <div className="text-[9px] sm:text-[10px] font-bold text-blue-500 dark:text-blue-400 mb-0.5 sm:mb-1">📈 순 증감</div>
-          <div className={`text-[14px] sm:text-[18px] font-extrabold ${stats.net >= 0 ? 'text-blue-600 dark:text-blue-300' : 'text-red-600 dark:text-red-300'}`}>
+          <div className={`text-[13px] sm:text-[16px] font-extrabold ${stats.net >= 0 ? 'text-blue-600 dark:text-blue-300' : 'text-red-600 dark:text-red-300'}`}>
             {stats.net >= 0 ? '+' : ''}₩{stats.net.toLocaleString()}
           </div>
+          <div className="text-[9px] sm:text-[10px] text-transparent mt-0.5 select-none">-</div>
         </div>
         <div className={cardStyle('#1e293b', 'from-slate-50/80 to-slate-100/40 dark:from-slate-800/30 dark:to-slate-700/20')}>
           <div className="text-[9px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">🏦 현재 잔액</div>
-          <div className="text-[14px] sm:text-[18px] font-extrabold text-slate-700 dark:text-slate-200">₩{stats.net.toLocaleString()}</div>
+          <div className="text-[13px] sm:text-[16px] font-extrabold text-slate-700 dark:text-slate-200">₩{stats.net.toLocaleString()}</div>
+          <div className="text-[9px] sm:text-[10px] text-transparent mt-0.5 select-none">-</div>
         </div>
         {/* 2행: 미수·미지급·예정 (클릭 가능) */}
         <div onClick={() => setCardFilter(cardFilter === 'receivable' ? '' : 'receivable')} className={cardStyle('#f97316', 'from-orange-50/80 to-orange-100/40 dark:from-orange-900/20 dark:to-orange-800/10', cardFilter === 'receivable') + ' cursor-pointer'}>
