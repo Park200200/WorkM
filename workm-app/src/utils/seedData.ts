@@ -135,7 +135,7 @@ export function seedIfEmpty() {
         position: 'CEO', approverType: 'approver'
       },
       {
-        id: 2, name: '박팀장', role: 'admin', rank: '팀장', dept: '개발팀', avatar: 'PT', color: '#8b5cf6',
+        id: 2, name: '박팀장', role: 'user', rank: '팀장', dept: '개발팀', avatar: 'PT', color: '#8b5cf6',
         email: '박팀장@workm.kr', phone: '010-1000-0002', birthday: '1982-07-20',
         hiredAt: '2018-03-01', resignedAt: null, address: '경기도 성남시 분당구 판교로 200',
         loginId: '박팀장', pw: '1234', status: '근무', note: '개발팀 팀장', photo: '',
@@ -198,6 +198,17 @@ export function seedIfEmpty() {
         position: '팀원', approverType: 'requester'
       },
     ])
+  }
+
+  // ── 박팀장 role 패치: admin → user (일회성) ──
+  if (!localStorage.getItem('_fix_park_role_v1')) {
+    const users = getItem<any[]>('ws_users', [])
+    const park = users.find((u: any) => u.name === '박팀장')
+    if (park && park.role === 'admin') {
+      park.role = 'user'
+      setItem('ws_users', users)
+    }
+    localStorage.setItem('_fix_park_role_v1', '1')
   }
 
   // ── 업무 (tasks)// ── 업무 (tasks) ── v2: 20개 샘플
