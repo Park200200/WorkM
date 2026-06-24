@@ -10503,21 +10503,19 @@ function AcctCashflowList({ year }: { year: number }) {
               <tr className="bg-[var(--bg-muted)] text-[var(--text-muted)] font-bold border-b border-[var(--border-default)]">
                 <th className="px-3 py-2 text-left whitespace-nowrap w-[100px]">날짜</th>
                 <th className="px-2 py-2 text-center whitespace-nowrap w-[52px]">구분</th>
-                {cardFilter && <th className="px-2 py-2 text-center whitespace-nowrap w-[60px]">상태</th>}
                 <th className="px-3 py-2 text-left whitespace-nowrap w-[90px]">예산구분</th>
-                <th className="px-3 py-2 text-left whitespace-nowrap w-[120px]">{cardFilter ? '신청자/거래처' : '거래처'}</th>
+                <th className="px-3 py-2 text-left whitespace-nowrap w-[120px]">거래처</th>
                 <th className="px-3 py-2 text-left whitespace-nowrap">적요</th>
                 <th className="px-3 py-2 text-right whitespace-nowrap w-[110px]">금액</th>
-                {!cardFilter && <th className="px-3 py-2 text-right whitespace-nowrap w-[110px]">잔액</th>}
+                <th className="px-3 py-2 text-right whitespace-nowrap w-[110px]">잔액</th>
                 <th className="px-3 py-2 text-left whitespace-nowrap w-[70px]">담당자</th>
-                {(cardFilter === 'receivable' || cardFilter === 'payable') && <th className="px-2 py-2 text-center whitespace-nowrap w-[70px]">처리</th>}
               </tr>
             </thead>
             <tbody>
               {(() => {
                 const displayList = cardFilter ? cardFilteredList : withBalance
                 if (displayList.length === 0) return (
-                  <tr><td colSpan={cardFilter ? 8 : 9} className="px-4 py-12 text-center text-[var(--text-muted)]">
+                  <tr><td colSpan={8} className="px-4 py-12 text-center text-[var(--text-muted)]">
                     <div className="flex flex-col items-center gap-2">
                       <ArrowLeftRight size={32} className="text-[var(--border-default)]" />
                       <span>{cardFilter ? '해당 항목이 없습니다' : '해당 기간의 입출금 내역이 없습니다'}</span>
@@ -10535,63 +10533,40 @@ function AcctCashflowList({ year }: { year: number }) {
                           {isIncome ? '입금' : '출금'}
                         </span>
                       </td>
-                      {cardFilter && (
-                        <td className="px-2 py-2 text-center">
-                          <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                            c._cardType === '미수금' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
-                            c._cardType === '미지급금' ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' :
-                            c._cardType === '입금예정' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' :
-                            'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
-                          }`}>{c._cardType}</span>
-                        </td>
-                      )}
                       <td className="px-3 py-2 whitespace-nowrap">
                         {catName && <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-[9px] font-bold">{catName}</span>}
                       </td>
                       <td className="px-3 py-2 text-[var(--text-primary)] whitespace-nowrap max-w-[120px] truncate">{c.counter || '-'}</td>
                       <td className="px-3 py-2 text-[var(--text-secondary)] max-w-[180px] truncate" title={c.description || c.incomeNote || ''}>{c.description || c.incomeNote || '-'}</td>
                       <td className={`px-3 py-2 text-right font-bold whitespace-nowrap ${isIncome ? 'text-emerald-600' : 'text-red-500'}`}>₩{(c.amount||0).toLocaleString()}</td>
-                      {!cardFilter && <td className={`px-3 py-2 text-right font-extrabold whitespace-nowrap ${(c._balance||0) >= 0 ? 'text-[var(--text-primary)]' : 'text-red-500'}`}>₩{(c._balance||0).toLocaleString()}</td>}
+                      <td className={`px-3 py-2 text-right font-extrabold whitespace-nowrap ${!cardFilter ? ((c._balance||0) >= 0 ? 'text-[var(--text-primary)]' : 'text-red-500') : 'text-transparent select-none'}`}>
+                        {!cardFilter ? `₩${(c._balance||0).toLocaleString()}` : '-'}
+                      </td>
                       <td className="px-3 py-2 text-[var(--text-muted)] whitespace-nowrap">{c.manager || c.createdBy || '-'}</td>
-                      {(cardFilter === 'receivable' || cardFilter === 'payable') && !c._isApproval && (
-                        <td className="px-2 py-2 text-center">
-                          <button
-                            onClick={() => handleSettlement(c.id, cardFilter === 'receivable' ? 'received' : 'paid')}
-                            className={`px-2 py-1 rounded text-[9px] font-bold cursor-pointer transition-all ${
-                              cardFilter === 'receivable'
-                                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                : 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400'
-                            }`}
-                          >
-                            {cardFilter === 'receivable' ? '✅ 수금완료' : '✅ 지급완료'}
-                          </button>
-                        </td>
-                      )}
                     </tr>
                   )
                 })
               })()}
             </tbody>
-            {!cardFilter && withBalance.length > 0 && (
-              <tfoot>
+            <tfoot>
+              {!cardFilter && withBalance.length > 0 && (
                 <tr className="bg-[var(--bg-muted)] font-bold border-t-2 border-[var(--border-default)]">
-                  <td colSpan={5} className="px-3 py-2 text-[var(--text-primary)]">합계</td>
+                  <td colSpan={4} className="px-3 py-2 text-[var(--text-primary)]">합계</td>
+                  <td className="px-3 py-2 text-right text-emerald-600"></td>
                   <td className="px-3 py-2 text-right text-emerald-600">₩{stats.totalIn.toLocaleString()}</td>
-                  <td className="px-3 py-2 text-right text-red-500">₩{stats.totalOut.toLocaleString()}</td>
                   <td className="px-3 py-2 text-right text-[var(--text-primary)]">₩{stats.net.toLocaleString()}</td>
                   <td></td>
                 </tr>
-              </tfoot>
-            )}
-            {cardFilter && cardFilteredList.length > 0 && (
-              <tfoot>
+              )}
+              {cardFilter && cardFilteredList.length > 0 && (
                 <tr className="bg-[var(--bg-muted)] font-bold border-t-2 border-[var(--border-default)]">
-                  <td colSpan={cardFilter ? 6 : 5} className="px-3 py-2 text-[var(--text-primary)]">합계 ({cardFilteredList.length}건)</td>
+                  <td colSpan={5} className="px-3 py-2 text-[var(--text-primary)]">합계 ({cardFilteredList.length}건)</td>
                   <td className="px-3 py-2 text-right font-extrabold text-[var(--text-primary)]">₩{cardFilteredList.reduce((s: number, c: any) => s + (c.amount || 0), 0).toLocaleString()}</td>
                   <td></td>
+                  <td></td>
                 </tr>
-              </tfoot>
-            )}
+              )}
+            </tfoot>
           </table>
         </div>
       </div>
