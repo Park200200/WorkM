@@ -9843,7 +9843,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                   className={DETAIL_INPUT}
                                 >
                                   <option value="">— 입금계정 선택 —</option>
-                                  {allAccounts.filter(a => a.active !== false && a.type === 'asset' && /현금|예금/.test(a.name)).map(a => (
+                                  {allAccounts.filter(a => a.active !== false && (a as any).incomeEnabled === true).map(a => (
                                     <option key={a.code} value={`${a.code} ${a.name}`}>{a.code} {a.name}</option>
                                   ))}
                                 </select>
