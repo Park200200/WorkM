@@ -10496,21 +10496,21 @@ function AcctCashflowList({ year }: { year: number }) {
       )}
 
       {/* ── 데스크톱 테이블 (sm 이상) ── */}
-      <div className="hidden sm:block bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+      <div className="hidden sm:block bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden min-h-[400px]">
         <div className="overflow-x-auto">
-          <table className="w-full text-[11px]">
+          <table className="w-full text-[11px] table-fixed">
             <thead>
               <tr className="bg-[var(--bg-muted)] text-[var(--text-muted)] font-bold border-b border-[var(--border-default)]">
-                <th className="px-3 py-2 text-left whitespace-nowrap">날짜</th>
-                <th className="px-2 py-2 text-center whitespace-nowrap">구분</th>
-                {cardFilter && <th className="px-2 py-2 text-center whitespace-nowrap">상태</th>}
-                <th className="px-3 py-2 text-left whitespace-nowrap">예산구분</th>
-                <th className="px-3 py-2 text-left whitespace-nowrap">{cardFilter ? '신청자/거래처' : '거래처'}</th>
+                <th className="px-3 py-2 text-left whitespace-nowrap w-[100px]">날짜</th>
+                <th className="px-2 py-2 text-center whitespace-nowrap w-[52px]">구분</th>
+                {cardFilter && <th className="px-2 py-2 text-center whitespace-nowrap w-[60px]">상태</th>}
+                <th className="px-3 py-2 text-left whitespace-nowrap w-[90px]">예산구분</th>
+                <th className="px-3 py-2 text-left whitespace-nowrap w-[120px]">{cardFilter ? '신청자/거래처' : '거래처'}</th>
                 <th className="px-3 py-2 text-left whitespace-nowrap">적요</th>
-                <th className="px-3 py-2 text-right whitespace-nowrap">금액</th>
-                {!cardFilter && <th className="px-3 py-2 text-right whitespace-nowrap">잔액</th>}
-                <th className="px-3 py-2 text-left whitespace-nowrap">담당자</th>
-                {(cardFilter === 'receivable' || cardFilter === 'payable') && <th className="px-2 py-2 text-center whitespace-nowrap">처리</th>}
+                <th className="px-3 py-2 text-right whitespace-nowrap w-[110px]">금액</th>
+                {!cardFilter && <th className="px-3 py-2 text-right whitespace-nowrap w-[110px]">잔액</th>}
+                <th className="px-3 py-2 text-left whitespace-nowrap w-[70px]">담당자</th>
+                {(cardFilter === 'receivable' || cardFilter === 'payable') && <th className="px-2 py-2 text-center whitespace-nowrap w-[70px]">처리</th>}
               </tr>
             </thead>
             <tbody>
