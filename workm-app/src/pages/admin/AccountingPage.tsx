@@ -5358,7 +5358,14 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
               {type === 'income' ? (
                 <CustomSelect
                   value={form.desc}
-                  onChange={v => setForm(f => ({ ...f, desc: v }))}
+                  onChange={v => {
+                    // 선택한 입금계정의 수익계정(revenueAccountCode)을 자동 세팅
+                    const allIM: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_income_methods') || '[]') } catch { return [] } })()
+                    const selectedIM = allIM.find(a => a.name === v)
+                    const revenueAcct = (selectedIM as any)?.revenueAccountCode || ''
+                    const assetAcct = (selectedIM as any)?.accountCode || ''
+                    setForm(f => ({ ...f, desc: v, accountCode: revenueAcct, incomeAssetAccount: assetAcct } as any))
+                  }}
                   placeholder="— 입금계정 선택 —"
                   options={[
                     { value: '', label: '— 입금계정 선택 —' },
@@ -5369,7 +5376,8 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                         : allIM
                       return filtered.map(a => {
                         const detail = a.category === '계좌' && a.bankName ? ` (${a.bankName} ${a.accountNumber || ''})` : a.category === '현금' ? ` (현금)` : ''
-                        return { value: a.name, label: `${a.category} • ${a.name}${detail}` }
+                        const revAcct = (a as any).revenueAccountCode ? ` → ${(a as any).revenueAccountCode}` : ''
+                        return { value: a.name, label: `${a.category} • ${a.name}${detail}${revAcct}` }
                       })
                     })(),
                   ]}
@@ -9795,19 +9803,55 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                   {/* 상세 필드 */}
                   {isOpen && (
                     <div className="px-4 pb-4 pt-1 border-t border-[var(--border-default)] mx-3">
-                      {/* 계정과목 연결 (공통) */}
+                      {/* 계정과목 연결 */}
                       <div className="mb-3 mt-3 p-3 rounded-lg bg-violet-50/50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800">
-                        <label className="text-[11px] font-bold text-violet-600 mb-1 block">📋 계정과목 연결</label>
-                        <select
-                          value={(item as any).accountCode || ''}
-                          onChange={e => updateField(item.id, 'accountCode', e.target.value)}
-                          className={DETAIL_INPUT}
-                        >
-                          <option value="">— 계정과목 선택 —</option>
-                          {allAccounts.filter(a => a.active !== false).map(a => (
-                            <option key={a.code} value={`${a.code} ${a.name}`}>{a.code} {a.name}</option>
-                          ))}
-                        </select>
+                        {direction === 'income' ? (
+                          <>
+                            <label className="text-[11px] font-bold text-violet-600 mb-2 block">📋 계정과목 연결 (입금전표 자동 설정)</label>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="text-[10px] font-bold text-blue-500 mb-1 block">💰 차변 (입금처 - 자산계정)</label>
+                                <select
+                                  value={(item as any).accountCode || ''}
+                                  onChange={e => updateField(item.id, 'accountCode', e.target.value)}
+                                  className={DETAIL_INPUT}
+                                >
+                                  <option value="">— 자산계정 선택 —</option>
+                                  {allAccounts.filter(a => a.active !== false && a.type === 'asset').map(a => (
+                                    <option key={a.code} value={`${a.code} ${a.name}`}>{a.code} {a.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-bold text-emerald-500 mb-1 block">📈 대변 (수익계정)</label>
+                                <select
+                                  value={(item as any).revenueAccountCode || ''}
+                                  onChange={e => updateField(item.id, 'revenueAccountCode', e.target.value)}
+                                  className={DETAIL_INPUT}
+                                >
+                                  <option value="">— 수익계정 선택 —</option>
+                                  {allAccounts.filter(a => a.active !== false && a.type === 'revenue').map(a => (
+                                    <option key={a.code} value={`${a.code} ${a.name}`}>{a.code} {a.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <label className="text-[11px] font-bold text-violet-600 mb-1 block">📋 계정과목 연결</label>
+                            <select
+                              value={(item as any).accountCode || ''}
+                              onChange={e => updateField(item.id, 'accountCode', e.target.value)}
+                              className={DETAIL_INPUT}
+                            >
+                              <option value="">— 계정과목 선택 —</option>
+                              {allAccounts.filter(a => a.active !== false).map(a => (
+                                <option key={a.code} value={`${a.code} ${a.name}`}>{a.code} {a.name}</option>
+                              ))}
+                            </select>
+                          </>
+                        )}
                       </div>
 
                       {/* 계좌 상세 */}
