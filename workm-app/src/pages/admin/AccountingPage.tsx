@@ -2221,8 +2221,8 @@ function AcctBudget({ year }: { year: number }) {
                         </span>
                       )}
                     </div>
-                    <div className="text-[10px] text-[var(--text-muted)] mb-1">🏦 {cat.bankInfo || cat.bank || '-'}</div>
-                    <div className="text-[10px] text-[var(--text-muted)] mb-2">📅 {cat.periodFrom || ''} ~ {cat.periodTo || ''}</div>
+                    <div className="text-[10px] text-[var(--text-muted)] mb-1 flex items-center gap-1"><Landmark size={10} /> {cat.bankInfo || cat.bank || '-'}</div>
+                    <div className="text-[10px] text-[var(--text-muted)] mb-2 flex items-center gap-1"><Calendar size={10} /> {cat.periodFrom || ''} ~ {cat.periodTo || ''}</div>
                     <div className="flex justify-between text-[10px] mb-1">
                       <span className="text-[var(--text-secondary)]">{catBudgets.length}건</span>
                       <span className="font-bold">{formatNumber(amt)}원</span>
