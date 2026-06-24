@@ -6132,6 +6132,11 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                         const amt = matchNote.amount ? Number(matchNote.amount).toLocaleString() : ''
                         setForm(f => ({ ...f, ...(vendor ? { counter: vendor } : {}), ...(amt ? { amount: amt } : {}) }))
                         if (vendor) setCounterSearch('')
+                        // 만기일 → 지급예정일 연동
+                        if (matchNote.maturityDate) {
+                          setIsPayable(true)
+                          setExpectedDate(matchNote.maturityDate)
+                        }
                       }
                     }
                   }
@@ -6789,6 +6794,10 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                               const amt = matchNote.amount ? Number(matchNote.amount).toLocaleString() : ''
                               setForm(f => ({ ...f, ...(vendor ? { counter: vendor } : {}), ...(amt ? { amount: amt } : {}) }))
                               if (vendor) setCounterSearch('')
+                              if (matchNote.maturityDate) {
+                                setIsPayable(true)
+                                setExpectedDate(matchNote.maturityDate)
+                              }
                             }
                           }
                         }
