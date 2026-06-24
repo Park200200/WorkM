@@ -5002,8 +5002,9 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
     vouchers.push({
       id: vId, date: form.tradeDate, type: type === 'withdrawal' ? 'expense' : type,
       description: form.desc, entries: vEntries,
+      budgetCatId: selectedBudgetCat || '',
       createdAt: new Date().toISOString(),
-    })
+    } as any)
     setItem('acct_vouchers', vouchers)
 
     // 캐시플로 등록
@@ -6595,6 +6596,30 @@ function AcctPaymentLedger({ year }: { year: number }) {
   const [voucherTypeFilter, setVoucherTypeFilter] = useState<string>('')
   const [voucherBudgetFilter, setVoucherBudgetFilter] = useState<string>('')
 
+  // 기존 전표에 budgetCatId 마이그레이션
+  useEffect(() => {
+    const all = getItem<any[]>('acct_vouchers', [])
+    const cfs = getItem<any[]>('acct_cashflows', [])
+    let changed = false
+    all.forEach((v: any) => {
+      if (!v.budgetCatId && v.date && v.entries) {
+        const totalAmt = (v.entries || []).reduce((s: number, e: any) => e.side === 'debit' ? s + e.amount : s, 0)
+        const match = cfs.find((c: any) =>
+          (c.date === v.date || c.writeDate === v.date) &&
+          c.amount === totalAmt &&
+          c.budgetCatId
+        )
+        if (match) {
+          v.budgetCatId = match.budgetCatId
+          changed = true
+        }
+      }
+    })
+    if (changed) {
+      setItem('acct_vouchers', all)
+      setRefresh(r => r + 1)
+    }
+  }, [])
   const filteredVouchers = useMemo(() => {
     let list = vouchers
     if (voucherTypeFilter) {
@@ -6606,16 +6631,10 @@ function AcctPaymentLedger({ year }: { year: number }) {
       })
     }
     if (voucherBudgetFilter) {
-      // cashflow에서 해당 예산의 날짜+금액 셋 생성
-      const cfSet = new Set(
-        cashflows
-          .filter((c: any) => String(c.budgetCatId) === voucherBudgetFilter)
-          .map((c: any) => `${c.date || c.writeDate || ''}_${c.amount || 0}`)
-      )
+      // 전표에 직접 저장된 budgetCatId로 필터링
       list = list.filter(v => {
-        // 전표 entries의 금액과 날짜로 매칭
-        const totalAmt = (v.entries || []).reduce((s, e) => e.side === 'debit' ? s + e.amount : s, 0)
-        return cfSet.has(`${v.date}_${totalAmt}`)
+        const catId = String((v as any).budgetCatId || '')
+        return catId === voucherBudgetFilter
       })
     }
     return list
