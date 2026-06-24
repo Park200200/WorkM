@@ -10,7 +10,7 @@ import {
   ChevronDown, ArrowLeft,
   /* 회계 전용 아이콘 (레거시 매칭) */
   LayoutDashboard, Wallet, Landmark, FileCheck, CreditCard,
-  ArrowDownCircle, ArrowUpCircle, ScrollText, ContactRound,
+  ArrowDownCircle, ArrowUpCircle, ScrollText, ContactRound, ArrowLeftRight,
   /* 홈페이지 전용 아이콘 (레거시 매칭) */
   Settings2, MenuSquare, LayoutPanelLeft, ClipboardList, Film, FileText, PenLine,
 } from 'lucide-react'
@@ -78,6 +78,7 @@ const acctNav: { tab: string; label: string; icon: React.ElementType }[] = [
   { tab: 'income',       label: '입금전표',   icon: ArrowDownCircle },
   { tab: 'withdrawal',   label: '출금전표',   icon: ArrowUpCircle },
   { tab: 'payment',      label: '전표장부',   icon: ScrollText },
+  { tab: 'cashflow_list', label: '입출금내역', icon: ArrowLeftRight },
   { tab: 'reports',      label: '회계현황',   icon: BarChart3 },
   { tab: 'vendors',      label: '거래처관리',   icon: ContactRound },
   { tab: 'methodReg',    label: '수단등록',   icon: CreditCard },
