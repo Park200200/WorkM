@@ -4265,21 +4265,24 @@ export function AcctApproval({ year }: { year: number }) {
                         const allCfs: any[] = getItem('acct_cashflows', [])
                         const linkedCf = allCfs.find((c: any) => c.approvalId && String(c.approvalId) === String(detailApproval.id))
                         const da = detailApproval as any
+                        const allBudgets: any[] = getItem('acct_budgets', [])
                         const catName = budgetCats.find(c => String(c.id) === String(approveBudgetCat || da.budgetCatId))?.name || da.budgetCatName || '-'
-                        const foundItem = budgetItems.find(b => String(b.id) === String(approveBudgetItem || da.budgetItemId))
+                        const foundItem = allBudgets.find(b => String(b.id) === String(approveBudgetItem || da.budgetItemId)) || budgetItems.find(b => String(b.id) === String(approveBudgetItem || da.budgetItemId))
                         const itemName = foundItem?.itemName || da.budgetItem || '-'
                         const subItemName = (() => {
                           if (da.budgetSubItem) return da.budgetSubItem
                           if (approveBudgetSub) {
                             const s = approveFilteredSubs.find((b: any) => String(b.id) === String(approveBudgetSub))
                             if ((s as any)?.name) return (s as any).name
-                            const bi = budgetItems.find(b => String(b.id) === String(approveBudgetSub))
+                            const bi = allBudgets.find(b => String(b.id) === String(approveBudgetSub))
                             if (bi?.subItemName) return bi.subItemName
                           }
                           if (da.budgetSubId) {
-                            const bi = budgetItems.find(b => String(b.id) === String(da.budgetSubId))
+                            const bi = allBudgets.find(b => String(b.id) === String(da.budgetSubId))
                             if (bi?.subItemName) return bi.subItemName
                           }
+                          // cashflow에서 subItem 가져오기
+                          if (linkedCf?.subItem) return linkedCf.subItem
                           return ''
                         })()
                         const detailItemName = (() => {
@@ -4288,11 +4291,17 @@ export function AcctApproval({ year }: { year: number }) {
                             const d = approveFilteredDetails.find((b: any) => String(b.id) === String(approveBudgetDetail))
                             if ((d as any)?.detailItemName) return (d as any).detailItemName
                           }
+                          // cashflow에서 detailItem 가져오기
+                          if (linkedCf?.detailItem) return linkedCf.detailItem
                           return ''
                         })()
                         const expDate = linkedCf?.tradeDate || (da.date || da.createdAt || '').slice(0, 10)
                         const vendor = linkedCf?.counter || da.vendor || ''
                         const manager = linkedCf?.manager || da.applicant || ''
+                        // 지출수단
+                        const payMethod = linkedCf?.method || ''
+                        // 메모
+                        const memo = linkedCf?.memo || da.description || ''
                         return (
                       <>
                         <div className="flex items-center justify-between text-[11px]">
@@ -4331,6 +4340,12 @@ export function AcctApproval({ year }: { year: number }) {
                           <div className="flex items-center justify-between text-[11px]">
                             <span className="text-[var(--text-muted)]">담당자</span>
                             <span className="font-bold text-[var(--text-primary)]">{manager}</span>
+                          </div>
+                        )}
+                        {payMethod && (
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-[var(--text-muted)]">지출수단</span>
+                            <span className="font-bold text-[var(--text-primary)]">{payMethod}</span>
                           </div>
                         )}
                         {approveRemainingBudget && (
