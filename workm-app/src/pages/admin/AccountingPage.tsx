@@ -10701,7 +10701,10 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                         </div>
 
                                         {/* 수신어음: 이서(배서) 리스트 */}
-                                        {item.noteType === '수신' && (
+                                        {item.noteType === '수신' && (() => {
+                                          // eslint-disable-next-line react-hooks/rules-of-hooks
+                                          const [endDropIdx, setEndDropIdx] = React.useState<number | null>(null)
+                                          return (
                                           <div className="mt-2 pt-2 border-t border-dashed border-amber-200 dark:border-amber-800/40">
                                             <div className="flex items-center justify-between mb-1.5">
                                               <div className="flex items-center gap-1.5">
@@ -10747,18 +10750,17 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                                             const updated = [...(note.endorsements || [])]
                                                             updated[ei] = { ...updated[ei], endorser: e.target.value }
                                                             updateNote(item.id, note.id, 'endorsements', updated)
-                                                            updateNote(item.id, note.id, `_endVendorOpen_${ei}`, true)
+                                                            setEndDropIdx(ei)
                                                           }}
-                                                          onFocus={() => updateNote(item.id, note.id, `_endVendorOpen_${ei}`, true)}
-                                                          onBlur={() => setTimeout(() => updateNote(item.id, note.id, `_endVendorOpen_${ei}`, false), 200)}
+                                                          onFocus={() => setEndDropIdx(ei)}
+                                                          onBlur={() => setTimeout(() => setEndDropIdx(null), 200)}
                                                           placeholder="거래처 검색..."
                                                           className="w-full text-[11px] px-2 py-1.5 rounded-md border border-[var(--border-default)] bg-white dark:bg-gray-900 outline-none"
                                                         />
-                                                        {note[`_endVendorOpen_${ei}`] && (() => {
+                                                        {endDropIdx === ei && (() => {
                                                           const vendorList: any[] = getItem('acct_vendors', [])
                                                           const sv = (ed.endorser || '').toLowerCase()
                                                           const flt = vendorList.filter(v => !sv || v.name.toLowerCase().includes(sv))
-
                                                           return (
                                                             <div className="absolute z-50 top-full left-0 right-0 mt-0.5 bg-white dark:bg-gray-900 border border-[var(--border-default)] rounded-lg shadow-lg max-h-[160px] overflow-y-auto">
                                                               {flt.map((v: any) => (
@@ -10767,7 +10769,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                                                   const updated = [...(note.endorsements || [])]
                                                                   updated[ei] = { ...updated[ei], endorser: v.name }
                                                                   updateNote(item.id, note.id, 'endorsements', updated)
-                                                                  updateNote(item.id, note.id, `_endVendorOpen_${ei}`, false)
+                                                                  setEndDropIdx(null)
                                                                 }} className="w-full text-left px-2.5 py-1.5 text-[11px] hover:bg-[var(--bg-muted)] cursor-pointer flex items-center gap-1.5">
                                                                   <span className="text-[10px]">🏢</span>
                                                                   <span className="font-semibold">{v.name}</span>
@@ -10777,7 +10779,6 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                                               {flt.length === 0 && (
                                                                 <div className="px-2.5 py-1.5 text-[10px] text-[var(--text-muted)]">검색 결과가 없습니다</div>
                                                               )}
-
                                                             </div>
                                                           )
                                                         })()}
@@ -10809,7 +10810,8 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                               </div>
                                             )}
                                           </div>
-                                        )}
+                                        )
+                                        })()}
 
                                         {/* 수신어음: 스캔본 첨부 */}
                                         {item.noteType === '수신' && (
