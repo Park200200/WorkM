@@ -93,14 +93,25 @@ export function downloadSettingsJson() {
 export function importSettingsFromJson(json: string, overwrite = true): number {
   try {
     const data = JSON.parse(json)
-    let count = 0
+    const keysToSet: { key: string; value: string }[] = []
     for (const key of Object.keys(data)) {
       if (overwrite || !localStorage.getItem(key)) {
-        localStorage.setItem(key, typeof data[key] === 'string' ? data[key] : JSON.stringify(data[key]))
-        count++
+        keysToSet.push({ key, value: typeof data[key] === 'string' ? data[key] : JSON.stringify(data[key]) })
       }
     }
-    return count
+    // 원자성 보장: 기존 값 백업 후 일괄 적용
+    const backup = keysToSet.map(({ key }) => ({ key, prev: localStorage.getItem(key) }))
+    try {
+      keysToSet.forEach(({ key, value }) => localStorage.setItem(key, value))
+    } catch (e) {
+      // 적용 중 오류 시 롤백
+      backup.forEach(({ key, prev }) => {
+        if (prev === null) localStorage.removeItem(key)
+        else localStorage.setItem(key, prev)
+      })
+      return 0
+    }
+    return keysToSet.length
   } catch { return 0 }
 }
 
