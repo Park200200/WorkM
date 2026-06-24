@@ -10394,8 +10394,9 @@ function AcctCashflowList({ year }: { year: number }) {
 
       {/* ── 필터 바 ── */}
       <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-2.5 sm:p-3 space-y-2">
-        {/* 기간 행 */}
-        <div className="hidden sm:grid sm:grid-cols-[50px_1fr_auto_1fr_auto] items-center gap-2">
+        {/* 데스크톱: 기간+필터 통합 grid (열 공유) */}
+        <div className="hidden sm:grid sm:grid-cols-[50px_1fr_auto_1fr_auto] items-center gap-x-2 gap-y-2">
+          {/* 1행: 기간 */}
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--text-muted)]">
             <Calendar size={13} /> 기간
           </div>
@@ -10407,9 +10408,7 @@ function AcctCashflowList({ year }: { year: number }) {
               <button key={p.key} onClick={() => setPreset(p.key)} className="px-2.5 py-2 rounded-lg text-[11px] font-bold border border-[var(--border-default)] text-[var(--text-muted)] hover:bg-primary-50 hover:text-primary-600 hover:border-primary-300 transition-all cursor-pointer whitespace-nowrap">{p.label}</button>
             ))}
           </div>
-        </div>
-        {/* 필터 행 */}
-        <div className="hidden sm:grid sm:grid-cols-[50px_1fr_auto_1fr_auto] items-center gap-2">
+          {/* 2행: 필터 */}
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--text-muted)]">
             <Filter size={13} /> 필터
           </div>
