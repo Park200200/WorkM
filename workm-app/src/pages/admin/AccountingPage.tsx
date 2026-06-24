@@ -4448,7 +4448,7 @@ export function AcctApproval({ year }: { year: number }) {
               })()}
               {/* 정산완료 비밀번호 모달 */}
               {settleCompleteMode && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={() => setSettleCompleteMode(false)}>
+                <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/40" onClick={() => setSettleCompleteMode(false)}>
                   <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-[380px] p-5 space-y-3" onClick={e => e.stopPropagation()}>
                     <div className="text-sm font-extrabold text-[#22c55e] flex items-center gap-1.5"><Check size={16} /> 정산완료</div>
                     <p className="text-[11px] text-[var(--text-muted)]">본인 확인을 위해 비밀번호를 입력해주세요.</p>
@@ -4488,7 +4488,7 @@ export function AcctApproval({ year }: { year: number }) {
               )}
               {/* 정산반려 사유 입력 모달 */}
               {settleRejectMode && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={() => setSettleRejectMode(false)}>
+                <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/40" onClick={() => setSettleRejectMode(false)}>
                   <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-[400px] p-5 space-y-3" onClick={e => e.stopPropagation()}>
                     <div className="text-sm font-extrabold text-[#ef4444] flex items-center gap-1.5"><Ban size={16} /> 정산반려</div>
                     <p className="text-[11px] text-[var(--text-muted)]">반려 사유를 입력하세요. 결의자가 확인할 수 있습니다.</p>
