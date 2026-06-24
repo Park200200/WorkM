@@ -3208,7 +3208,7 @@ function AcctBudget({ year }: { year: number }) {
    품의 (Approval) — CRUD
    ═══════════════════════════════════════════ */
 export function AcctApproval({ year }: { year: number }) {
-  const [, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [refresh, setRefresh] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
