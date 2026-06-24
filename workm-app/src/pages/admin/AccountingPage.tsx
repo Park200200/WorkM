@@ -3910,40 +3910,48 @@ export function AcctApproval({ year }: { year: number }) {
       itemGroups.forEach((items, itemName) => {
         const firstItem = items[0]
         const def = approveBudgetDefs.find(d => d.name === itemName || d.aliases?.includes(itemName))
-        // 세목/세세항이 있는 경우 각각 등록
-        if (def && def.subItems && def.subItems.length > 0) {
-          def.subItems.forEach(sub => {
-            const subAcct = sub.accountCode ? acctList.find(a => a.code === sub.accountCode) : null
-            // 세세항(detailItems)이 있으면 세세항 단위로
-            if (sub.detailItems && sub.detailItems.length > 0) {
-              sub.detailItems.forEach(det => {
-                const detBudget = items.find(b => b.subItemName === sub.name && b.detailItemName === det.name)
-                const amt = detBudget?.amount || 0
-                const sp = detBudget?.spent || 0
-                const detAcct = det.accountCode ? acctList.find(a => a.code === det.accountCode) : subAcct
+        // 세목/세세항이 있는 경우: 실제 편성된 항목만 표시
+        const hasSubItems = items.some(b => b.subItemName)
+        if (hasSubItems) {
+          // subItemName별 그룹
+          const subGroups = new Map<string, BudgetItem[]>()
+          items.forEach(b => {
+            if (!b.subItemName) return
+            const arr = subGroups.get(b.subItemName) || []
+            arr.push(b)
+            subGroups.set(b.subItemName, arr)
+          })
+          subGroups.forEach((subBudgets, subName) => {
+            const sub = def?.subItems?.find(s => s.name === subName)
+            const subAcct = (sub?.accountCode || subBudgets[0]?.accountCode) ? acctList.find(a => a.code === (sub?.accountCode || subBudgets[0]?.accountCode)) : null
+            // 세세항이 있는 경우
+            const hasDetail = subBudgets.some(b => b.detailItemName)
+            if (hasDetail) {
+              subBudgets.filter(b => b.detailItemName).forEach(b => {
+                const det = sub?.detailItems?.find(d => d.name === b.detailItemName)
+                const detAcct = (det?.accountCode || b.accountCode) ? acctList.find(a => a.code === (det?.accountCode || b.accountCode)) : subAcct
                 result.push({
                   catId: String(cat.id), catName: cat.name,
                   itemId: String(firstItem.id), itemName,
-                  subId: `def_${sub.id}`, subName: sub.name,
-                  detailId: detBudget ? String(detBudget.id) : undefined, detailName: det.name,
-                  accountCode: det.accountCode || sub.accountCode, accountName: detAcct?.name || '',
-                  aliases: [...(def?.aliases || []), ...(sub.aliases || []), ...(det.aliases || [])].join(' '),
-                  path: `${cat.name} > ${itemName}${sub.name !== itemName ? ` > ${sub.name}` : ''}${det.name !== sub.name ? ` > ${det.name}` : ''}`,
-                  amount: amt, spent: sp, remaining: amt - sp,
+                  subId: sub ? `def_${sub.id}` : String(b.id), subName,
+                  detailId: String(b.id), detailName: b.detailItemName!,
+                  accountCode: det?.accountCode || b.accountCode || sub?.accountCode, accountName: detAcct?.name || '',
+                  aliases: [...(def?.aliases || []), ...(sub?.aliases || []), ...(det?.aliases || [])].join(' '),
+                  path: `${cat.name} > ${itemName}${subName !== itemName ? ` > ${subName}` : ''}${b.detailItemName !== subName ? ` > ${b.detailItemName}` : ''}`,
+                  amount: b.amount || 0, spent: b.spent || 0, remaining: (b.amount || 0) - (b.spent || 0),
                 })
               })
             } else {
               // 세목 단위
-              const subBudgets = items.filter(b => b.subItemName === sub.name)
               const amt = subBudgets.reduce((s, b) => s + (b.amount || 0), 0)
               const sp = subBudgets.reduce((s, b) => s + (b.spent || 0), 0)
               result.push({
                 catId: String(cat.id), catName: cat.name,
                 itemId: String(firstItem.id), itemName,
-                subId: `def_${sub.id}`, subName: sub.name,
-                accountCode: sub.accountCode, accountName: subAcct?.name || '',
-                aliases: [...(def?.aliases || []), ...(sub.aliases || [])].join(' '),
-                path: sub.name === itemName ? `${cat.name} > ${itemName}` : `${cat.name} > ${itemName} > ${sub.name}`,
+                subId: sub ? `def_${sub.id}` : String(subBudgets[0].id), subName,
+                accountCode: sub?.accountCode || subBudgets[0]?.accountCode, accountName: subAcct?.name || '',
+                aliases: [...(def?.aliases || []), ...(sub?.aliases || [])].join(' '),
+                path: subName === itemName ? `${cat.name} > ${itemName}` : `${cat.name} > ${itemName} > ${subName}`,
                 amount: amt, spent: sp, remaining: amt - sp,
               })
             }
