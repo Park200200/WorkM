@@ -10657,71 +10657,76 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
             </span>
           </div>
 
-          {/* 수익계정 추가 */}
-          <div className="flex gap-2 mb-4">
-            <select
-              id="new-revenue-acct"
-              className="flex-1 px-3.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-white dark:bg-gray-900 text-sm text-[var(--text-primary)] outline-none focus:border-emerald-400 transition-colors"
-            >
-              <option value="">— 수익계정 선택 —</option>
-              {allAccounts.filter(a => a.active !== false && (a as any).incomeEnabled === true).map(a => (
-                <option key={a.code} value={`${a.code} ${a.name}`}>{a.code} {a.name}</option>
-              ))}
-            </select>
-            <button
-              onClick={() => {
-                const sel = document.getElementById('new-revenue-acct') as HTMLSelectElement
-                if (!sel.value) return addToast('warning', '수익계정을 선택해주세요')
-                const codes: string[] = getItem(`acct_revenue_accounts_${selectedCatId}`, [])
-                if (codes.includes(sel.value)) return addToast('warning', '이미 등록된 수익계정입니다')
-                codes.push(sel.value)
-                setItem(`acct_revenue_accounts_${selectedCatId}`, codes)
-                setRefresh(r => r + 1)
-                sel.value = ''
-                addToast('success', '수익계정이 추가되었습니다')
-              }}
-              className="px-4 py-2.5 rounded-xl bg-emerald-500 text-white text-sm font-bold transition-all cursor-pointer hover:shadow-md flex items-center gap-1.5"
-            >
-              <Plus size={14} /> 추가
-            </button>
-          </div>
-
-          {/* 등록된 수익계정 목록 */}
-          {(() => {
-            const codes: string[] = getItem(`acct_revenue_accounts_${selectedCatId}`, [])
-            if (codes.length === 0) return (
-              <div className="py-8 text-center text-sm text-[var(--text-muted)] rounded-xl border border-dashed border-[var(--border-default)] bg-white/50 dark:bg-gray-900/50">
-                등록된 수익계정이 없습니다. 위에서 추가해주세요.
-              </div>
-            )
-            return (
-              <div className="space-y-1.5">
-                {codes.map((code, idx) => (
-                  <div key={idx} className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white/70 dark:bg-gray-900/30 border border-transparent hover:border-[var(--border-default)] transition-all group">
-                    <span className="text-[10px] font-bold w-5 text-center shrink-0 rounded-full py-0.5 text-emerald-600 bg-emerald-100 dark:bg-emerald-900/20">{idx + 1}</span>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap">수익</span>
-                    <span className="text-sm font-semibold text-[var(--text-primary)] flex-1">{code}</span>
-                    <button
-                      onClick={() => {
-                        if (!confirm(`"${code}"을(를) 삭제하시겠습니까?`)) return
-                        const newCodes = codes.filter((_, i) => i !== idx)
-                        setItem(`acct_revenue_accounts_${selectedCatId}`, newCodes)
-                        setRefresh(r => r + 1)
-                        addToast('warning', `"${code}" 삭제됨`)
-                      }}
-                      className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Trash2 size={13} />
-                    </button>
+          {/* 수익계정 목록 — 스위치 토글 */}
+          <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+            {/* 헤더 */}
+            <div className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--border-default)] bg-[var(--bg-muted)]">
+              <span className="w-[40px] text-[10px] font-bold text-[var(--text-muted)] text-center">사용</span>
+              <span className="w-[80px] text-[10px] font-bold text-[var(--text-muted)]">코드</span>
+              <span className="flex-1 text-[10px] font-bold text-[var(--text-muted)]">계정과목명</span>
+              <span className="w-[60px] text-[10px] font-bold text-[var(--text-muted)]">구분</span>
+              <span className="w-[100px] text-[10px] font-bold text-[var(--text-muted)]">그룹</span>
+            </div>
+            {/* 목록 */}
+            <div className="max-h-[400px] overflow-y-auto">
+              {(() => {
+                const incomeAccounts = allAccounts.filter(a => a.active !== false && (a as any).incomeEnabled === true)
+                const enabledCodes: string[] = getItem(`acct_revenue_accounts_${selectedCatId}`, [])
+                if (incomeAccounts.length === 0) return (
+                  <div className="py-8 text-center text-sm text-[var(--text-muted)]">
+                    입금계정에서 활성화된 계정이 없습니다.<br/>계정관리 &gt; 입금계정 탭에서 먼저 활성화해주세요.
                   </div>
-                ))}
-              </div>
-            )
-          })()}
+                )
+                // 활성화된 것 우선, 그다음 코드순
+                const sorted = [...incomeAccounts].sort((a, b) => {
+                  const aOn = enabledCodes.some(c => c.startsWith(a.code))
+                  const bOn = enabledCodes.some(c => c.startsWith(b.code))
+                  if (aOn && !bOn) return -1
+                  if (!aOn && bOn) return 1
+                  return a.code.localeCompare(b.code)
+                })
+                const ACCT_TYPE_MAP: Record<string, { label: string; color: string }> = {
+                  asset: { label: '자산', color: '#4f6ef7' },
+                  liability: { label: '부채', color: '#ef4444' },
+                  equity: { label: '자본', color: '#8b5cf6' },
+                  revenue: { label: '수익', color: '#22c55e' },
+                  expense: { label: '비용', color: '#f59e0b' },
+                }
+                return sorted.map(a => {
+                  const codeStr = `${a.code} ${a.name}`
+                  const isOn = enabledCodes.includes(codeStr)
+                  const typeInfo = ACCT_TYPE_MAP[a.type] || { label: a.type, color: '#888' }
+                  return (
+                    <div key={a.code} className={cn("flex items-center gap-3 px-4 py-2.5 border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors", !isOn && 'opacity-50')}>
+                      <button
+                        onClick={() => {
+                          let codes: string[] = getItem(`acct_revenue_accounts_${selectedCatId}`, [])
+                          if (isOn) {
+                            codes = codes.filter(c => c !== codeStr)
+                          } else {
+                            codes.push(codeStr)
+                          }
+                          setItem(`acct_revenue_accounts_${selectedCatId}`, codes)
+                          setRefresh(r => r + 1)
+                        }}
+                        className={cn('w-[36px] h-[18px] rounded-full transition-colors shrink-0 cursor-pointer relative', isOn ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600')}
+                      >
+                        <span className={cn('absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white shadow transition-all', isOn ? 'left-[19px]' : 'left-[2px]')} />
+                      </button>
+                      <span className="w-[80px] text-xs font-bold text-[var(--text-primary)]">{a.code}</span>
+                      <span className="flex-1 text-sm font-semibold text-[var(--text-primary)]">{a.name}</span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ color: typeInfo.color, background: `${typeInfo.color}15` }}>{typeInfo.label}</span>
+                      <span className="w-[100px] text-[10px] text-[var(--text-muted)]">{a.group || '-'}</span>
+                    </div>
+                  )
+                })
+              })()}
+            </div>
+          </div>
 
           <div className="mt-4 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800">
             <p className="text-[10px] text-blue-600 font-bold">💡 입금전표 작성 시</p>
-            <p className="text-[10px] text-[var(--text-muted)] mt-0.5">입금수단은 <b>지출수단</b>(계좌, 현금 등)에서 선택하고, 여기 등록된 수익계정 중 하나를 선택합니다.</p>
+            <p className="text-[10px] text-[var(--text-muted)] mt-0.5">입금수단은 <b>지출수단</b>(계좌, 현금 등)에서 선택하고, 여기서 활성화한 수익계정 중 하나를 선택합니다.</p>
           </div>
         </div>
       ) : (
