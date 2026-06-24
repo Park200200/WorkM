@@ -950,8 +950,7 @@ const SUB_PAGES = [
   { key: 'payment',      label: '전표장부',   icon: BookOpen },
   { key: 'reports',      label: '회계현황',   icon: ScrollText },
   { key: 'vendors',      label: '거래처관리',   icon: ContactRound },
-  { key: 'payMethods',   label: '지출수단',   icon: CreditCard },
-  { key: 'incomeMethods', label: '입금계정',   icon: Landmark },
+  { key: 'methodReg',    label: '수단등록',   icon: CreditCard },
   { key: 'budgetTree',   label: '예산과목',   icon: Settings },
   { key: 'hq_vendor',    label: '본사거래처',   icon: Building2 },
   { key: 'acct_mgmt',    label: '계정관리',   icon: Settings2 },
@@ -996,7 +995,7 @@ export function AccountingPage() {
     const approvals = JSON.parse(localStorage.getItem('acct_approvals') || '[]') as any[]
     const isApproverInApprovals = approvals.some((a: any) => a.approver === userName)
     const hasBudgetAccess = isAdmin || isBudgetApprover || isBudgetHandler || isApproverInApprovals
-    const restrictedTabs = ['overview', 'base_budget', 'expense', 'income', 'withdrawal', 'payment', 'reports', 'vendors', 'budgetTree', 'accounts', 'hq_vendor', 'payMethods', 'acct_mgmt']
+    const restrictedTabs = ['overview', 'base_budget', 'expense', 'income', 'withdrawal', 'payment', 'reports', 'vendors', 'budgetTree', 'accounts', 'hq_vendor', 'methodReg', 'acct_mgmt']
     if (!hasBudgetAccess && restrictedTabs.includes(activeSub)) {
       setActiveSub('approval')
     }
@@ -1042,12 +1041,11 @@ export function AccountingPage() {
       {activeSub === 'payment' && <AcctPaymentLedger year={year} />}
       {activeSub === 'reports' && <AcctReports year={year} />}
       {activeSub === 'vendors' && <AcctVendors />}
-      {activeSub === 'payMethods' && <AcctPayMethods catId={selectedOverviewCatId} />}
-      {activeSub === 'incomeMethods' && <AcctIncomeMethods catId={selectedOverviewCatId} />}
+      {activeSub === 'methodReg' && <AcctMethodReg catId={selectedOverviewCatId} />}
       {activeSub === 'hq_vendor' && <AcctHQVendor />}
       {activeSub === 'budgetTree' && <BudgetTreePanel />}
       {activeSub === 'acct_mgmt' && <AcctAccountsMgmt />}
-      {!['overview','base_budget','budget','balance','approval','expense','income','withdrawal','payment','reports','vendors','payMethods','incomeMethods','hq_vendor','budgetTree','acct_mgmt'].includes(activeSub) && (
+      {!['overview','base_budget','budget','balance','approval','expense','income','withdrawal','payment','reports','vendors','methodReg','hq_vendor','budgetTree','acct_mgmt'].includes(activeSub) && (
         <AcctSubPlaceholder
           pageKey={activeSub}
           label={SUB_PAGES.find(s => s.key === activeSub)?.label || ''}
@@ -9400,6 +9398,458 @@ function AcctIncomeMethods({ catId }: { catId?: string | null }) {
                           <input value={item.memo || ''} onChange={e => updateField(item.id, 'memo', e.target.value)} placeholder="참고사항" className={DETAIL_INPUT} />
                         </div>
                       </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ═══ 수단등록 (지출수단 + 입금계정 통합) ═══ */
+function AcctMethodReg({ catId }: { catId?: string | null }) {
+  const [refresh, setRefresh] = useState(0)
+  const [direction, setDirection] = useState<'expense' | 'income'>('expense')
+  const [newName, setNewName] = useState('')
+  const [activeCategory, setActiveCategory] = useState<'계좌' | '현금' | '어음' | '상품권'>('계좌')
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const addToast = useToastStore(s => s.add)
+  const staffList = useMemo(() => getItem<any[]>('ws_users', []), [])
+  const allAccounts: AcctAccount[] = useMemo(() => getItem('acct_accounts', []), [refresh])
+
+  const currentYear = new Date().getFullYear()
+  const activeYear = parseInt(new URLSearchParams(window.location.hash.split('?')[1] || '').get('year') || '') || parseInt(localStorage.getItem('acct_active_year') || '') || currentYear
+
+  const budgetCats = useMemo(() => {
+    const all = getItem<BudgetCat[]>('acct_budget_cats', [])
+    return all.filter(c => {
+      const cy = c.year || (c.periodFrom ? parseInt(c.periodFrom.substring(0, 4)) : currentYear)
+      return cy === activeYear
+    })
+  }, [refresh, activeYear])
+
+  const selectedCatId = catId || (budgetCats.length > 0 ? String(budgetCats[0].id) : '')
+  const selectedCatName = budgetCats.find(c => String(c.id) === selectedCatId)?.name || ''
+
+  // 데이터 키: 지출은 acct_pay_methods_v2, 입금은 acct_income_methods
+  const storageKey = direction === 'expense' ? 'acct_pay_methods_v2' : 'acct_income_methods'
+
+  void refresh
+  const allItems: PayMethodItem[] = useMemo(() => {
+    try {
+      const raw = localStorage.getItem(storageKey)
+      if (!raw) return direction === 'expense' ? DEFAULT_PAY_ITEMS : []
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed)) return direction === 'expense' ? DEFAULT_PAY_ITEMS : []
+      return parsed as PayMethodItem[]
+    } catch { return direction === 'expense' ? DEFAULT_PAY_ITEMS : [] }
+  }, [refresh, direction, storageKey])
+
+  const filteredItems = selectedCatId
+    ? allItems.filter(i => String(i.budgetCatId) === selectedCatId)
+    : allItems
+  const catItems = filteredItems.filter(i => i.category === activeCategory)
+  const activeCatInfo = PAY_CATEGORIES.find(c => c.key === activeCategory)!
+
+  const defaultManager = useMemo(() => {
+    const cat = budgetCats.find(c => String(c.id) === selectedCatId)
+    if (cat?.users && cat.users.length > 0) return cat.users[0]
+    return ''
+  }, [budgetCats, selectedCatId])
+
+  const saveAll = (updated: PayMethodItem[]) => {
+    localStorage.setItem(storageKey, JSON.stringify(updated))
+    if (direction === 'expense') {
+      localStorage.setItem('acct_payment_methods', JSON.stringify(updated.map(i => i.name)))
+    }
+    setRefresh(r => r + 1)
+  }
+
+  const handleAdd = () => {
+    if (!newName.trim()) return
+    const isDuplicate = allItems.some(i =>
+      i.name === newName.trim() &&
+      i.category === activeCategory &&
+      String(i.budgetCatId) === selectedCatId
+    )
+    if (isDuplicate) {
+      addToast('error', `이 예산구분에 이미 존재하는 ${direction === 'expense' ? '지출수단' : '입금계정'}입니다`)
+      return
+    }
+    const newItem: PayMethodItem = {
+      id: Date.now(),
+      name: newName.trim(),
+      category: activeCategory,
+      budgetCatId: selectedCatId || undefined,
+      manager: activeCategory === '계좌' ? defaultManager : undefined,
+      custodian: activeCategory === '현금' ? defaultManager : undefined,
+      noteManager: activeCategory === '어음' ? defaultManager : undefined,
+      voucherManager: activeCategory === '상품권' ? defaultManager : undefined,
+    }
+    saveAll([...allItems, newItem])
+    addToast('success', `"${newName.trim()}" 추가됨`)
+    setNewName('')
+    setExpandedId(newItem.id)
+  }
+
+  const handleDelete = (id: number) => {
+    const item = allItems.find(i => i.id === id)
+    if (!item) return
+    if (!confirm(`"${item.name}"을(를) 삭제하시겠습니까?`)) return
+    saveAll(allItems.filter(i => i.id !== id))
+    addToast('warning', `"${item.name}" 삭제됨`)
+    if (expandedId === id) setExpandedId(null)
+  }
+
+  const updateField = (id: number, field: string, value: any) => {
+    saveAll(allItems.map(i => i.id === id ? { ...i, [field]: value } : i))
+  }
+
+  // ── 카드 CRUD (지출수단 계좌만) ──
+  const addCard = (itemId: number) => {
+    const newCard: PayMethodCard = { id: Date.now(), cardName: '', cardCompany: '', cardNumber: '', cardType: '체크카드', cardUser: defaultManager }
+    saveAll(allItems.map(i => i.id === itemId ? { ...i, cards: [...(i.cards || []), newCard] } : i))
+  }
+  const updateCard = (itemId: number, cardId: number, field: keyof PayMethodCard, value: string | number) => {
+    saveAll(allItems.map(i => i.id === itemId ? { ...i, cards: (i.cards || []).map(c => c.id === cardId ? { ...c, [field]: value } : c) } : i))
+  }
+  const deleteCard = (itemId: number, cardId: number) => {
+    saveAll(allItems.map(i => i.id === itemId ? { ...i, cards: (i.cards || []).filter(c => c.id !== cardId) } : i))
+  }
+
+  // ── 어음 CRUD ──
+  const addNote = (itemId: number) => {
+    const item = allItems.find(i => i.id === itemId)
+    const newNote: PayMethodNote = { id: Date.now(), noteNumber: '', issuer: item?.noteType === '발행' ? '우리회사' : '', receiver: item?.noteType === '수신' ? '우리회사' : '', amount: 0, issueDate: new Date().toISOString().slice(0, 10), maturityDate: '', endorsement: '', bank: '', status: '미결제' }
+    saveAll(allItems.map(i => i.id === itemId ? { ...i, notes: [...(i.notes || []), newNote] } : i))
+  }
+  const updateNote = (itemId: number, noteId: number, field: keyof PayMethodNote, value: string | number) => {
+    saveAll(allItems.map(i => i.id === itemId ? { ...i, notes: (i.notes || []).map(n => n.id === noteId ? { ...n, [field]: value } : n) } : i))
+  }
+  const deleteNote = (itemId: number, noteId: number) => {
+    saveAll(allItems.map(i => i.id === itemId ? { ...i, notes: (i.notes || []).filter(n => n.id !== noteId) } : i))
+  }
+
+  const dirLabel = direction === 'expense' ? '지출수단' : '입금계정'
+
+  return (
+    <div className="space-y-5">
+      {/* 헤더 */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-extrabold text-[var(--text-primary)] flex items-center gap-2">
+            💳 수단등록
+          </h2>
+          <p className="text-[11px] text-[var(--text-muted)] mt-0.5">예산구분별 지출수단과 입금계정을 통합 관리합니다</p>
+        </div>
+        <span className="text-xs font-bold text-white px-3 py-1.5 rounded-full" style={{ background: direction === 'expense' ? '#f97316' : '#22c55e' }}>
+          {selectedCatName || '전체'} • {dirLabel} {filteredItems.length}건
+        </span>
+      </div>
+
+      {/* 예산구분 + 지출/입금 탭 */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {/* 예산구분 */}
+        <div className="flex items-center gap-1 bg-[var(--bg-muted)] rounded-lg px-1 py-0.5 border border-[var(--border-default)]">
+          <span className="px-2 py-1 text-[10px] font-bold text-[var(--text-muted)]">예산</span>
+          {budgetCats.map(c => (
+            <button
+              key={c.id}
+              onClick={() => {
+                const params = new URLSearchParams(window.location.hash.split('?')[1] || '')
+                params.set('tab', 'methodReg')
+                params.set('cat', String(c.id))
+                window.location.hash = `#/admin/accounting?${params.toString()}`
+              }}
+              className={cn('px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer',
+                selectedCatId === String(c.id) ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              )}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+
+        {/* 지출/입금 전환 */}
+        <div className="flex items-center gap-1 bg-[var(--bg-muted)] rounded-lg px-1 py-0.5 border border-[var(--border-default)]">
+          <button
+            onClick={() => { setDirection('expense'); setExpandedId(null); setNewName('') }}
+            className={cn('px-3 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1',
+              direction === 'expense' ? 'bg-orange-500 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+            )}
+          >
+            <ArrowUpCircle size={12} /> 지출
+          </button>
+          <button
+            onClick={() => { setDirection('income'); setExpandedId(null); setNewName('') }}
+            className={cn('px-3 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1',
+              direction === 'income' ? 'bg-emerald-500 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+            )}
+          >
+            <ArrowDownCircle size={12} /> 입금
+          </button>
+        </div>
+      </div>
+
+      {/* 카테고리 탭 */}
+      <div className="flex gap-2">
+        {PAY_CATEGORIES.map(cat => {
+          const count = filteredItems.filter(i => i.category === cat.key).length
+          const isActive = activeCategory === cat.key
+          return (
+            <button
+              key={cat.key}
+              onClick={() => { setActiveCategory(cat.key); setExpandedId(null) }}
+              className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all cursor-pointer ${
+                isActive ? `${cat.bg} ${cat.border} shadow-sm` : 'bg-[var(--bg-surface)] border-transparent hover:border-[var(--border-default)]'
+              }`}
+            >
+              <div className="text-center">
+                <span className="text-lg">{cat.icon}</span>
+                <div className={`text-[12px] font-extrabold mt-1 ${isActive ? '' : 'text-[var(--text-secondary)]'}`} style={isActive ? { color: cat.color } : undefined}>{cat.label}</div>
+                <div className="text-[10px] font-bold text-[var(--text-muted)] mt-0.5">{count}건</div>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* 선택된 카테고리 영역 */}
+      <div className={`rounded-2xl border-2 ${activeCatInfo.border} ${activeCatInfo.bg} p-5`}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">{activeCatInfo.icon}</span>
+            <div>
+              <h3 className="text-sm font-extrabold" style={{ color: activeCatInfo.color }}>{activeCatInfo.label} {dirLabel}</h3>
+              <p className="text-[10px] text-[var(--text-muted)]">{activeCatInfo.desc}</p>
+            </div>
+          </div>
+          <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ color: activeCatInfo.color, background: `${activeCatInfo.color}15` }}>{catItems.length}건</span>
+        </div>
+
+        {/* 추가 폼 */}
+        <div className="flex gap-2 mb-4">
+          <input
+            placeholder={`새 ${activeCatInfo.label} ${dirLabel} 입력...`}
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+            className="flex-1 px-3.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-white dark:bg-gray-900 text-sm text-[var(--text-primary)] outline-none focus:border-primary-400 transition-colors placeholder:text-[var(--text-muted)]"
+          />
+          <button onClick={handleAdd} className="px-4 py-2.5 rounded-xl text-white text-sm font-bold transition-all cursor-pointer hover:shadow-md flex items-center gap-1.5" style={{ background: activeCatInfo.color }}>
+            <Plus size={14} /> 추가
+          </button>
+        </div>
+
+        {/* 항목 리스트 */}
+        {catItems.length === 0 ? (
+          <div className="py-8 text-center text-sm text-[var(--text-muted)] rounded-xl border border-dashed border-[var(--border-default)] bg-white/50 dark:bg-gray-900/50">
+            등록된 {activeCatInfo.label} {dirLabel}이 없습니다
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            {catItems.map((item, idx) => {
+              const isOpen = expandedId === item.id
+              return (
+                <div key={item.id} className={`rounded-xl transition-all border ${isOpen ? 'border-[var(--border-default)] bg-white dark:bg-gray-900/60 shadow-sm' : 'border-transparent bg-white/70 dark:bg-gray-900/30 hover:bg-white dark:hover:bg-gray-800/50 hover:border-[var(--border-default)]'}`}>
+                  {/* 메인 행 */}
+                  <div className="flex items-center gap-3 px-3.5 py-2.5 cursor-pointer group" onClick={() => setExpandedId(isOpen ? null : item.id)}>
+                    <span className="text-[10px] font-bold w-5 text-center shrink-0 rounded-full py-0.5" style={{ color: activeCatInfo.color, background: `${activeCatInfo.color}15` }}>{idx + 1}</span>
+                    <span className="text-sm font-semibold text-[var(--text-primary)] flex-1">{item.name}</span>
+                    {activeCategory === '계좌' && item.bankName && !isOpen && (
+                      <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[200px]">{item.bankName} {item.accountNumber ? `• ${item.accountNumber}` : ''}</span>
+                    )}
+                    {/* 연결된 계정과목 표시 */}
+                    {(item as any).accountCode && !isOpen && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-900/20 text-violet-600">{(item as any).accountCode}</span>
+                    )}
+                    <ChevronDown size={14} className={`text-[var(--text-muted)] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    <button onClick={e => { e.stopPropagation(); handleDelete(item.id) }} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+
+                  {/* 상세 필드 */}
+                  {isOpen && (
+                    <div className="px-4 pb-4 pt-1 border-t border-[var(--border-default)] mx-3">
+                      {/* 계정과목 연결 (공통) */}
+                      <div className="mb-3 mt-3 p-3 rounded-lg bg-violet-50/50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800">
+                        <label className="text-[11px] font-bold text-violet-600 mb-1 block">📋 계정과목 연결</label>
+                        <select
+                          value={(item as any).accountCode || ''}
+                          onChange={e => updateField(item.id, 'accountCode', e.target.value)}
+                          className={DETAIL_INPUT}
+                        >
+                          <option value="">— 계정과목 선택 —</option>
+                          {allAccounts.filter(a => a.active !== false).map(a => (
+                            <option key={a.code} value={`${a.code} ${a.name}`}>{a.code} {a.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* 계좌 상세 */}
+                      {activeCategory === '계좌' && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div><label className={DETAIL_FIELD_LABEL}>은행명 *</label><input value={item.bankName || ''} onChange={e => updateField(item.id, 'bankName', e.target.value)} placeholder="국민은행" className={DETAIL_INPUT} /></div>
+                          <div><label className={DETAIL_FIELD_LABEL}>계좌번호 *</label><input value={item.accountNumber || ''} onChange={e => updateField(item.id, 'accountNumber', e.target.value)} placeholder="110-234-567890" className={DETAIL_INPUT} /></div>
+                          <div><label className={DETAIL_FIELD_LABEL}>예금주 *</label><input value={item.accountHolder || ''} onChange={e => updateField(item.id, 'accountHolder', e.target.value)} placeholder="(주)문화재청" className={DETAIL_INPUT} /></div>
+                          <div>
+                            <label className={DETAIL_FIELD_LABEL}>계좌관리자 *</label>
+                            <select value={item.manager || ''} onChange={e => updateField(item.id, 'manager', e.target.value)} className={DETAIL_INPUT}>
+                              <option value="">선택하세요</option>
+                              {staffList.map((s: any) => (<option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}{s.dept ? ` - ${s.dept}` : ''}</option>))}
+                            </select>
+                          </div>
+                          <div><label className={DETAIL_FIELD_LABEL}>용도</label><input value={item.purpose || ''} onChange={e => updateField(item.id, 'purpose', e.target.value)} placeholder="운영자금 등" className={DETAIL_INPUT} /></div>
+                          <div><label className={DETAIL_FIELD_LABEL}>메모</label><input value={item.memo || ''} onChange={e => updateField(item.id, 'memo', e.target.value)} placeholder="참고사항" className={DETAIL_INPUT} /></div>
+                        </div>
+                      )}
+
+                      {/* 현금 상세 */}
+                      {activeCategory === '현금' && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div><label className={DETAIL_FIELD_LABEL}>보관처 *</label><input value={item.storageLocation || ''} onChange={e => updateField(item.id, 'storageLocation', e.target.value)} placeholder="사무실 금고" className={DETAIL_INPUT} /></div>
+                          <div>
+                            <label className={DETAIL_FIELD_LABEL}>보관책임자 *</label>
+                            <select value={item.custodian || ''} onChange={e => updateField(item.id, 'custodian', e.target.value)} className={DETAIL_INPUT}>
+                              <option value="">선택하세요</option>
+                              {staffList.map((s: any) => (<option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}{s.dept ? ` - ${s.dept}` : ''}</option>))}
+                            </select>
+                          </div>
+                          <div><label className={DETAIL_FIELD_LABEL}>용도</label><input value={item.purpose || ''} onChange={e => updateField(item.id, 'purpose', e.target.value)} placeholder="소액경비 등" className={DETAIL_INPUT} /></div>
+                          <div><label className={DETAIL_FIELD_LABEL}>메모</label><input value={item.memo || ''} onChange={e => updateField(item.id, 'memo', e.target.value)} placeholder="참고사항" className={DETAIL_INPUT} /></div>
+                        </div>
+                      )}
+
+                      {/* 어음 상세 */}
+                      {activeCategory === '어음' && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className={DETAIL_FIELD_LABEL}>구분 *</label>
+                            <select value={item.noteType || ''} onChange={e => updateField(item.id, 'noteType', e.target.value)} className={DETAIL_INPUT}>
+                              <option value="">선택하세요</option>
+                              <option value="수신">수신 (받을어음)</option>
+                              {direction === 'expense' && <option value="발행">발행 (지급어음)</option>}
+                            </select>
+                          </div>
+                          <div>
+                            <label className={DETAIL_FIELD_LABEL}>담당자 *</label>
+                            <select value={item.noteManager || ''} onChange={e => updateField(item.id, 'noteManager', e.target.value)} className={DETAIL_INPUT}>
+                              <option value="">선택하세요</option>
+                              {staffList.map((s: any) => (<option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}{s.dept ? ` - ${s.dept}` : ''}</option>))}
+                            </select>
+                          </div>
+                          <div><label className={DETAIL_FIELD_LABEL}>메모</label><input value={item.memo || ''} onChange={e => updateField(item.id, 'memo', e.target.value)} placeholder="참고사항" className={DETAIL_INPUT} /></div>
+                        </div>
+                      )}
+
+                      {/* 상품권 상세 */}
+                      {activeCategory === '상품권' && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className={DETAIL_FIELD_LABEL}>금액 *</label>
+                            <input value={item.voucherAmount ? item.voucherAmount.toLocaleString() : ''} onChange={e => { const num = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0; saveAll(allItems.map(i => i.id === item.id ? { ...i, voucherAmount: num } : i)) }} placeholder="50,000" className={DETAIL_INPUT} />
+                          </div>
+                          <div>
+                            <label className={DETAIL_FIELD_LABEL}>담당자 *</label>
+                            <select value={item.voucherManager || ''} onChange={e => updateField(item.id, 'voucherManager', e.target.value)} className={DETAIL_INPUT}>
+                              <option value="">선택하세요</option>
+                              {staffList.map((s: any) => (<option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}{s.dept ? ` - ${s.dept}` : ''}</option>))}
+                            </select>
+                          </div>
+                          <div><label className={DETAIL_FIELD_LABEL}>메모</label><input value={item.memo || ''} onChange={e => updateField(item.id, 'memo', e.target.value)} placeholder="참고사항" className={DETAIL_INPUT} /></div>
+                        </div>
+                      )}
+
+                      {/* 카드 관리 (지출수단 계좌만) */}
+                      {direction === 'expense' && activeCategory === '계좌' && (
+                        <div className="mt-5 pt-4 border-t border-dashed border-blue-200 dark:border-blue-800">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-1.5">
+                              <CreditCard size={14} className="text-blue-500" />
+                              <span className="text-[12px] font-extrabold text-[var(--text-primary)]">연결 카드</span>
+                              {(item.cards || []).length > 0 && <span className="text-[9px] font-bold bg-blue-100 dark:bg-blue-900/20 text-blue-600 px-1.5 py-0.5 rounded">{(item.cards || []).length}장</span>}
+                            </div>
+                            <button onClick={() => addCard(item.id)} className="text-[11px] font-bold text-blue-500 hover:text-blue-700 cursor-pointer flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"><Plus size={12} /> 카드 추가</button>
+                          </div>
+                          {(!item.cards || item.cards.length === 0) ? (
+                            <div className="py-4 text-center text-[11px] text-[var(--text-muted)] rounded-lg border border-dashed border-[var(--border-default)] bg-white/50 dark:bg-gray-900/30">등록된 카드가 없습니다</div>
+                          ) : (
+                            <div className="space-y-2">
+                              {item.cards.map((card, ci) => (
+                                <div key={card.id} className="rounded-lg border border-blue-100 dark:border-blue-900/30 bg-blue-50/30 dark:bg-blue-900/5 p-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-[10px] font-bold text-blue-500">💳 카드 {ci + 1}</span>
+                                    <button onClick={() => deleteCard(item.id, card.id)} className="text-[10px] text-red-400 hover:text-red-600 cursor-pointer flex items-center gap-0.5"><Trash2 size={10} /> 삭제</button>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div><label className={DETAIL_FIELD_LABEL}>카드명 *</label><input value={card.cardName} onChange={e => updateCard(item.id, card.id, 'cardName', e.target.value)} placeholder="법인카드1" className={DETAIL_INPUT} /></div>
+                                    <div><label className={DETAIL_FIELD_LABEL}>카드사 *</label><input value={card.cardCompany} onChange={e => updateCard(item.id, card.id, 'cardCompany', e.target.value)} placeholder="국민카드" className={DETAIL_INPUT} /></div>
+                                    <div><label className={DETAIL_FIELD_LABEL}>카드번호 *</label><input value={card.cardNumber} onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, '').slice(0, 16); updateCard(item.id, card.id, 'cardNumber', raw.replace(/(.{4})/g, '$1-').replace(/-$/, '')) }} placeholder="1234-5678-9012-3456" className={DETAIL_INPUT} /></div>
+                                    <div><label className={DETAIL_FIELD_LABEL}>카드종류 *</label><select value={card.cardType} onChange={e => updateCard(item.id, card.id, 'cardType', e.target.value)} className={DETAIL_INPUT}><option value="체크카드">체크카드</option><option value="신용카드">신용카드</option></select></div>
+                                    <div>
+                                      <label className={DETAIL_FIELD_LABEL}>사용자 *</label>
+                                      <select value={card.cardUser} onChange={e => updateCard(item.id, card.id, 'cardUser', e.target.value)} className={DETAIL_INPUT}>
+                                        <option value="">선택하세요</option>
+                                        {staffList.map((s: any) => (<option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}</option>))}
+                                      </select>
+                                    </div>
+                                    <div><label className={DETAIL_FIELD_LABEL}>유효기간</label><input value={card.expiryDate || ''} onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, '').slice(0, 4); updateCard(item.id, card.id, 'expiryDate', raw.length > 2 ? `${raw.slice(0, 2)}/${raw.slice(2)}` : raw) }} placeholder="MM/YY" maxLength={5} className={DETAIL_INPUT} /></div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* 어음대장 (지출수단 어음만) */}
+                      {direction === 'expense' && activeCategory === '어음' && item.noteType && (
+                        <div className="mt-5 pt-4 border-t border-dashed border-amber-200 dark:border-amber-800">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-1.5">
+                              <ScrollText size={14} className="text-amber-500" />
+                              <span className="text-[12px] font-extrabold text-[var(--text-primary)]">어음대장</span>
+                              {(item.notes || []).length > 0 && <span className="text-[9px] font-bold bg-amber-100 dark:bg-amber-900/20 text-amber-600 px-1.5 py-0.5 rounded">{(item.notes || []).length}건</span>}
+                            </div>
+                            <button onClick={() => addNote(item.id)} className="text-[11px] font-bold text-amber-500 hover:text-amber-700 cursor-pointer flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"><Plus size={12} /> 어음 추가</button>
+                          </div>
+                          {(!item.notes || item.notes.length === 0) ? (
+                            <div className="py-4 text-center text-[11px] text-[var(--text-muted)] rounded-lg border border-dashed border-[var(--border-default)] bg-white/50 dark:bg-gray-900/30">등록된 어음이 없습니다</div>
+                          ) : (
+                            <div className="space-y-2">
+                              {item.notes.map((note, ni) => (
+                                <div key={note.id} className="rounded-lg border border-amber-100 dark:border-amber-900/30 bg-amber-50/30 dark:bg-amber-900/5 p-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-[10px] font-bold text-amber-500">📄 어음 {ni + 1}</span>
+                                    <button onClick={() => deleteNote(item.id, note.id)} className="text-[10px] text-red-400 hover:text-red-600 cursor-pointer flex items-center gap-0.5"><Trash2 size={10} /> 삭제</button>
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    <div><label className={DETAIL_FIELD_LABEL}>어음번호 *</label><input value={note.noteNumber} onChange={e => updateNote(item.id, note.id, 'noteNumber', e.target.value)} placeholder="A-2026-001" className={DETAIL_INPUT} /></div>
+                                    <div><label className={DETAIL_FIELD_LABEL}>{item.noteType === '수신' ? '발행인' : '수취인'} *</label><input value={item.noteType === '수신' ? note.issuer : note.receiver} onChange={e => updateNote(item.id, note.id, item.noteType === '수신' ? 'issuer' : 'receiver', e.target.value)} placeholder="거래처명" className={DETAIL_INPUT} /></div>
+                                    <div><label className={DETAIL_FIELD_LABEL}>금액 *</label><input value={note.amount ? note.amount.toLocaleString() : ''} onChange={e => updateNote(item.id, note.id, 'amount', parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0)} placeholder="5,000,000" className={DETAIL_INPUT} /></div>
+                                    <div><label className={DETAIL_FIELD_LABEL}>발행일 *</label><input type="date" value={note.issueDate} onChange={e => updateNote(item.id, note.id, 'issueDate', e.target.value)} className={DETAIL_INPUT} /></div>
+                                    <div><label className={DETAIL_FIELD_LABEL}>만기일 *</label><input type="date" value={note.maturityDate} onChange={e => updateNote(item.id, note.id, 'maturityDate', e.target.value)} className={DETAIL_INPUT} /></div>
+                                    <div>
+                                      <label className={DETAIL_FIELD_LABEL}>상태 *</label>
+                                      <select value={note.status} onChange={e => updateNote(item.id, note.id, 'status', e.target.value)} className={DETAIL_INPUT}>
+                                        <option value="미결제">미결제</option>
+                                        {item.noteType === '수신' && <option value="추심중">추심중</option>}
+                                        <option value="결제완료">결제완료</option>
+                                        <option value="부도">부도</option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
