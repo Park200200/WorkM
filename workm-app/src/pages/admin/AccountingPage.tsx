@@ -10692,6 +10692,102 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                             </select>
                                           </div>
                                         </div>
+
+                                        {/* 수신어음: 이서(배서) 리스트 */}
+                                        {item.noteType === '수신' && (
+                                          <div className="mt-2 pt-2 border-t border-dashed border-amber-200 dark:border-amber-800/40">
+                                            <div className="flex items-center justify-between mb-1.5">
+                                              <div className="flex items-center gap-1.5">
+                                                <span className="text-[10px] font-extrabold text-indigo-600">📋 이서(배서) 내역</span>
+                                                {(note.endorsements || []).length > 0 && (
+                                                  <span className="text-[9px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 px-1.5 py-0.5 rounded">{(note.endorsements || []).length}건</span>
+                                                )}
+                                              </div>
+                                              <button
+                                                onClick={() => {
+                                                  const endorsements = [...(note.endorsements || []), { id: Date.now(), endorser: '', endorseDate: new Date().toISOString().slice(0, 10), reason: '' }]
+                                                  updateNote(item.id, note.id, 'endorsements', endorsements)
+                                                }}
+                                                className="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 cursor-pointer flex items-center gap-0.5 px-2 py-0.5 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                                              >
+                                                <Plus size={10} /> 이서 추가
+                                              </button>
+                                            </div>
+                                            {(note.endorsements || []).length === 0 ? (
+                                              <div className="text-[10px] text-[var(--text-muted)] text-center py-2 rounded-md border border-dashed border-[var(--border-default)]">이서 내역이 없습니다</div>
+                                            ) : (
+                                              <div className="space-y-1.5">
+                                                {(note.endorsements || []).map((ed: any, ei: number) => (
+                                                  <div key={ed.id} className="flex items-center gap-2 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-lg px-2.5 py-1.5">
+                                                    <span className="text-[9px] font-bold text-indigo-400 shrink-0">{ei + 1}</span>
+                                                    <div className="relative flex-1">
+                                                      <input
+                                                        value={ed.endorser || ''}
+                                                        onChange={e => {
+                                                          const updated = [...(note.endorsements || [])]
+                                                          updated[ei] = { ...updated[ei], endorser: e.target.value }
+                                                          updateNote(item.id, note.id, 'endorsements', updated)
+                                                          updateNote(item.id, note.id, `_endVendorOpen_${ei}`, true)
+                                                        }}
+                                                        onFocus={() => updateNote(item.id, note.id, `_endVendorOpen_${ei}`, true)}
+                                                        onBlur={() => setTimeout(() => updateNote(item.id, note.id, `_endVendorOpen_${ei}`, false), 200)}
+                                                        placeholder="이서인 (거래처)"
+                                                        className="w-full text-[11px] px-2 py-1 rounded-md border border-[var(--border-default)] bg-white dark:bg-gray-900 outline-none"
+                                                      />
+                                                      {note[`_endVendorOpen_${ei}`] && (() => {
+                                                        const vendorList: any[] = getItem('acct_vendors', [])
+                                                        const sv = (ed.endorser || '').toLowerCase()
+                                                        const flt = vendorList.filter(v => !sv || v.name.toLowerCase().includes(sv))
+                                                        if (flt.length === 0) return null
+                                                        return (
+                                                          <div className="absolute z-50 top-full left-0 right-0 mt-0.5 bg-white dark:bg-gray-900 border border-[var(--border-default)] rounded-lg shadow-lg max-h-[120px] overflow-y-auto">
+                                                            {flt.map((v: any) => (
+                                                              <button key={v.id} onMouseDown={e => {
+                                                                e.preventDefault()
+                                                                const updated = [...(note.endorsements || [])]
+                                                                updated[ei] = { ...updated[ei], endorser: v.name }
+                                                                updateNote(item.id, note.id, 'endorsements', updated)
+                                                                updateNote(item.id, note.id, `_endVendorOpen_${ei}`, false)
+                                                              }} className="w-full text-left px-2.5 py-1.5 text-[11px] hover:bg-[var(--bg-muted)] cursor-pointer">
+                                                                <span className="font-semibold">{v.name}</span>
+                                                                {v.ceoName && <span className="text-[9px] text-[var(--text-muted)] ml-1.5">대표: {v.ceoName}</span>}
+                                                              </button>
+                                                            ))}
+                                                          </div>
+                                                        )
+                                                      })()}
+                                                    </div>
+                                                    <DatePicker value={ed.endorseDate || ''} onChange={v => {
+                                                      const updated = [...(note.endorsements || [])]
+                                                      updated[ei] = { ...updated[ei], endorseDate: v }
+                                                      updateNote(item.id, note.id, 'endorsements', updated)
+                                                    }} />
+                                                    <input
+                                                      value={ed.reason || ''}
+                                                      onChange={e => {
+                                                        const updated = [...(note.endorsements || [])]
+                                                        updated[ei] = { ...updated[ei], reason: e.target.value }
+                                                        updateNote(item.id, note.id, 'endorsements', updated)
+                                                      }}
+                                                      placeholder="사유"
+                                                      className="w-20 text-[11px] px-2 py-1 rounded-md border border-[var(--border-default)] bg-white dark:bg-gray-900 outline-none"
+                                                    />
+                                                    <button
+                                                      onClick={() => {
+                                                        const updated = (note.endorsements || []).filter((_: any, i: number) => i !== ei)
+                                                        updateNote(item.id, note.id, 'endorsements', updated)
+                                                      }}
+                                                      className="text-red-400 hover:text-red-600 cursor-pointer shrink-0 p-0.5"
+                                                    >
+                                                      <Trash2 size={10} />
+                                                    </button>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+
                                       </div>
                                     )
                                   })}
