@@ -9450,14 +9450,43 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
                                           className={DETAIL_INPUT}
                                         />
                                       </div>
-                                      <div>
+                                      <div className="relative">
                                         <label className={DETAIL_FIELD_LABEL}>{item.noteType === '수신' ? '발행인' : '수취인'} *</label>
                                         <input
-                                          value={item.noteType === '수신' ? note.issuer : note.receiver}
-                                          onChange={e => updateNote(item.id, note.id, item.noteType === '수신' ? 'issuer' : 'receiver', e.target.value)}
-                                          placeholder="거래처명"
+                                          value={item.noteType === '수신' ? (note.issuer || '') : (note.receiver || '')}
+                                          onChange={e => {
+                                            updateNote(item.id, note.id, item.noteType === '수신' ? 'issuer' : 'receiver', e.target.value)
+                                            updateNote(item.id, note.id, '_vendorSearch', e.target.value)
+                                          }}
+                                          onFocus={() => updateNote(item.id, note.id, '_vendorDropOpen', true)}
+                                          onBlur={() => setTimeout(() => updateNote(item.id, note.id, '_vendorDropOpen', false), 200)}
+                                          placeholder="거래처 검색..."
                                           className={DETAIL_INPUT}
                                         />
+                                        {note._vendorDropOpen && (() => {
+                                          const vendorList: any[] = getItem('acct_vendors', [])
+                                          const searchVal = (item.noteType === '수신' ? (note.issuer || '') : (note.receiver || '')).toLowerCase()
+                                          const filtered = vendorList.filter(v => !searchVal || v.name.toLowerCase().includes(searchVal))
+                                          if (filtered.length === 0) return null
+                                          return (
+                                            <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white dark:bg-gray-900 border border-[var(--border-default)] rounded-xl shadow-lg max-h-[150px] overflow-y-auto">
+                                              {filtered.map((v: any) => (
+                                                <button
+                                                  key={v.id}
+                                                  onMouseDown={e => {
+                                                    e.preventDefault()
+                                                    updateNote(item.id, note.id, item.noteType === '수신' ? 'issuer' : 'receiver', v.name)
+                                                    updateNote(item.id, note.id, '_vendorDropOpen', false)
+                                                  }}
+                                                  className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--bg-muted)] cursor-pointer flex items-center gap-2 transition-colors"
+                                                >
+                                                  <span className="font-semibold text-[var(--text-primary)]">{v.name}</span>
+                                                  {v.ceoName && <span className="text-[10px] text-[var(--text-muted)]">대표: {v.ceoName}</span>}
+                                                </button>
+                                              ))}
+                                            </div>
+                                          )
+                                        })()}
                                       </div>
                                       <div>
                                         <label className={DETAIL_FIELD_LABEL}>금액 *</label>
@@ -10621,7 +10650,45 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                         </div>
                                         <div className="grid grid-cols-3 gap-2">
                                           <div><label className={DETAIL_FIELD_LABEL}>어음번호</label><input value={note.noteNumber || ''} onChange={e => updateNote(item.id, note.id, 'noteNumber', e.target.value)} placeholder="A-2026-001" className={DETAIL_INPUT} /></div>
-                                          <div><label className={DETAIL_FIELD_LABEL}>{item.noteType === '수신' ? '발행인' : '수취인'}</label><input value={item.noteType === '수신' ? (note.issuer || '') : (note.receiver || '')} onChange={e => updateNote(item.id, note.id, item.noteType === '수신' ? 'issuer' : 'receiver', e.target.value)} placeholder="거래처명" className={DETAIL_INPUT} /></div>
+                                          <div className="relative">
+                                            <label className={DETAIL_FIELD_LABEL}>{item.noteType === '수신' ? '발행인' : '수취인'}</label>
+                                            <input
+                                              value={item.noteType === '수신' ? (note.issuer || '') : (note.receiver || '')}
+                                              onChange={e => {
+                                                updateNote(item.id, note.id, item.noteType === '수신' ? 'issuer' : 'receiver', e.target.value)
+                                                updateNote(item.id, note.id, '_vendorSearch', e.target.value)
+                                              }}
+                                              onFocus={() => updateNote(item.id, note.id, '_vendorDropOpen', true)}
+                                              onBlur={() => setTimeout(() => updateNote(item.id, note.id, '_vendorDropOpen', false), 200)}
+                                              placeholder="거래처 검색..."
+                                              className={DETAIL_INPUT}
+                                            />
+                                            {note._vendorDropOpen && (() => {
+                                              const vendorList: any[] = getItem('acct_vendors', [])
+                                              const searchVal = (item.noteType === '수신' ? (note.issuer || '') : (note.receiver || '')).toLowerCase()
+                                              const filtered = vendorList.filter(v => !searchVal || v.name.toLowerCase().includes(searchVal))
+                                              if (filtered.length === 0) return null
+                                              return (
+                                                <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white dark:bg-gray-900 border border-[var(--border-default)] rounded-xl shadow-lg max-h-[150px] overflow-y-auto">
+                                                  {filtered.map((v: any) => (
+                                                    <button
+                                                      key={v.id}
+                                                      onMouseDown={e => {
+                                                        e.preventDefault()
+                                                        updateNote(item.id, note.id, item.noteType === '수신' ? 'issuer' : 'receiver', v.name)
+                                                        updateNote(item.id, note.id, '_vendorDropOpen', false)
+                                                      }}
+                                                      className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--bg-muted)] cursor-pointer flex items-center gap-2 transition-colors"
+                                                    >
+                                                      <span className="font-semibold text-[var(--text-primary)]">{v.name}</span>
+                                                      {v.ceoName && <span className="text-[10px] text-[var(--text-muted)]">대표: {v.ceoName}</span>}
+                                                      {v.phone && <span className="text-[10px] text-[var(--text-muted)]">{v.phone}</span>}
+                                                    </button>
+                                                  ))}
+                                                </div>
+                                              )
+                                            })()}
+                                          </div>
                                           <div><label className={DETAIL_FIELD_LABEL}>금액</label><input value={note.amount ? note.amount.toLocaleString() : ''} onChange={e => updateNote(item.id, note.id, 'amount', parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0)} placeholder="5,000,000" className={DETAIL_INPUT} /></div>
                                           <div><label className={DETAIL_FIELD_LABEL}>발행일</label><input type="date" value={note.issueDate || ''} onChange={e => updateNote(item.id, note.id, 'issueDate', e.target.value)} className={DETAIL_INPUT} /></div>
                                           <div><label className={DETAIL_FIELD_LABEL}>만기일</label><input type="date" value={note.maturityDate || ''} onChange={e => updateNote(item.id, note.id, 'maturityDate', e.target.value)} className={DETAIL_INPUT} /></div>
