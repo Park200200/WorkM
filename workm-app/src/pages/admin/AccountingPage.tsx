@@ -5128,7 +5128,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
             </div>
             <div>
               <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">거래일자</label>
-              <input type="date" value={transferForm.tradeDate} onChange={e => setTransferForm(f => ({ ...f, tradeDate: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+              <DatePicker value={transferForm.tradeDate} onChange={v => setTransferForm(f => ({ ...f, tradeDate: v }))} />
             </div>
             <div className="md:col-span-2">
               <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">적요 *</label>
