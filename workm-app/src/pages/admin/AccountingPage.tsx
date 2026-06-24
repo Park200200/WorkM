@@ -3496,7 +3496,7 @@ export function AcctApproval({ year }: { year: number }) {
     {
       key: 'inbox', label: '품의함', icon: '📋', color: '#4f6ef7',
       subTabs: [
-        { key: 'preExpense', label: '선지출', color: '#f97316' },
+        { key: 'preExpense', label: '품의할', color: '#f97316' },
         { key: 'pending', label: '품의한', color: '#f59e0b' },
         { key: 'rejected', label: '반려됨', color: '#ef4444' },
         { key: 'approved', label: '승인됨', color: '#22c55e' },
