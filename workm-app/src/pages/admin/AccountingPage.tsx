@@ -10144,6 +10144,83 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
         {/* 추가 폼 */}
         <div className="relative mb-4">
           <div className="flex gap-2">
+            {activeCategory === '계좌' ? (
+              <div className="flex-1 relative">
+                <input
+                  placeholder="계좌관리에서 선택 또는 직접 입력..."
+                  value={newName}
+                  onChange={e => setNewName(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') { handleAdd(); const dd = document.getElementById('method-acct-dropdown'); if (dd) dd.style.display = 'none' }
+                    if (e.key === 'Escape') { const dd = document.getElementById('method-acct-dropdown'); if (dd) dd.style.display = 'none' }
+                  }}
+                  onFocus={() => { const dd = document.getElementById('method-acct-dropdown'); if (dd) dd.style.display = 'block' }}
+                  onBlur={() => setTimeout(() => { const dd = document.getElementById('method-acct-dropdown'); if (dd) dd.style.display = 'none' }, 200)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-white dark:bg-gray-900 text-sm text-[var(--text-primary)] outline-none focus:border-primary-400 transition-colors placeholder:text-[var(--text-muted)]"
+                />
+                <div id="method-acct-dropdown" style={{ display: 'none' }} className="absolute z-50 top-full left-0 right-0 mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                  {(() => {
+                    const companyAccts = getItem<any[]>('acct_company_accounts', [])
+                    if (companyAccts.length === 0) return <div className="px-3 py-3 text-xs text-[var(--text-muted)] text-center">계좌관리에서 계좌를 먼저 등록하세요</div>
+                    const filtered = companyAccts.filter((a: any) => {
+                      const label = `${a.bankName || ''} ${a.accountNumber || ''}`.trim()
+                      return !newName || label.includes(newName)
+                    })
+                    if (filtered.length === 0) return <div className="px-3 py-2 text-xs text-[var(--text-muted)]">직접 입력 후 추가하세요</div>
+                    return filtered.map((a: any) => {
+                      const label = `${a.bankName || ''} ${a.accountNumber || ''}`.trim()
+                      const alreadyAdded = catItems.some(ci => ci.name === label)
+                      return (
+                        <button
+                          key={a.id}
+                          type="button"
+                          disabled={alreadyAdded}
+                          onMouseDown={e => {
+                            e.preventDefault()
+                            if (alreadyAdded) return
+                            // 계좌 추가 + 카드 자동 연동
+                            const newItem: PayMethodItem = {
+                              id: Date.now(),
+                              name: label,
+                              category: '계좌',
+                              budgetCatId: selectedCatId || undefined,
+                              manager: defaultManager,
+                              bankName: a.bankName,
+                              accountNumber: a.accountNumber,
+                              accountHolder: a.accountHolder,
+                              cards: (a.cards || []).map((c: any, idx: number) => ({
+                                id: Date.now() + idx + 1,
+                                cardName: c.cardName || '',
+                                cardCompany: c.cardCompany || '',
+                                cardNumber: c.cardNumber || '',
+                                cardType: c.cardType || '체크카드',
+                                cardUser: c.cardUser || defaultManager
+                              }))
+                            }
+                            saveAll([...allItems, newItem])
+                            addToast('success', `"${label}" 계좌 + ${(a.cards || []).length}장 카드 추가됨`)
+                            setNewName('')
+                            setExpandedId(newItem.id)
+                            const dd = document.getElementById('method-acct-dropdown'); if (dd) dd.style.display = 'none'
+                          }}
+                          className={`w-full text-left px-3 py-2.5 text-sm transition-colors flex items-center justify-between ${alreadyAdded ? 'opacity-40 cursor-not-allowed' : 'hover:bg-primary-50 dark:hover:bg-primary-900/20 cursor-pointer'}`}
+                        >
+                          <div>
+                            <span className="font-bold text-[var(--text-primary)]">{a.bankName}</span>
+                            <span className="text-[var(--text-muted)] ml-1.5 font-mono text-xs">{a.accountNumber}</span>
+                            {a.accountHolder && <span className="text-[var(--text-secondary)] ml-1.5 text-xs">({a.accountHolder})</span>}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {(a.cards || []).length > 0 && <span className="text-[10px] font-bold text-violet-500 bg-violet-50 dark:bg-violet-900/20 px-1.5 py-0.5 rounded">카드 {(a.cards || []).length}</span>}
+                            {alreadyAdded && <span className="text-[10px] font-bold text-emerald-500">등록됨</span>}
+                          </div>
+                        </button>
+                      )
+                    })
+                  })()}
+                </div>
+              </div>
+            ) : (
             <input
               placeholder={direction === 'income' ? `${activeCatInfo.label} 입금계정 입력 또는 Enter로 지출수단 선택...` : `새 ${activeCatInfo.label} 지출수단 입력...`}
               value={newName}
@@ -10163,6 +10240,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
               onFocus={() => { if (direction === 'income') setShowExpenseList(true) }}
               className="flex-1 px-3.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-white dark:bg-gray-900 text-sm text-[var(--text-primary)] outline-none focus:border-primary-400 transition-colors placeholder:text-[var(--text-muted)]"
             />
+            )}
             <button onClick={() => { handleAdd(); setShowExpenseList(false) }} className="px-4 py-2.5 rounded-xl text-white text-sm font-bold transition-all cursor-pointer hover:shadow-md flex items-center gap-1.5" style={{ background: activeCatInfo.color }}>
               <Plus size={14} /> 추가
             </button>
