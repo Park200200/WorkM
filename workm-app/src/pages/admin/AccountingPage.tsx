@@ -10716,71 +10716,82 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                             {(note.endorsements || []).length === 0 ? (
                                               <div className="text-[10px] text-[var(--text-muted)] text-center py-2 rounded-md border border-dashed border-[var(--border-default)]">이서 내역이 없습니다</div>
                                             ) : (
-                                              <div className="space-y-1.5">
+                                              <div className="space-y-2">
                                                 {(note.endorsements || []).map((ed: any, ei: number) => (
-                                                  <div key={ed.id} className="flex items-center gap-2 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-lg px-2.5 py-1.5">
-                                                    <span className="text-[9px] font-bold text-indigo-400 shrink-0">{ei + 1}</span>
-                                                    <div className="relative flex-1">
-                                                      <input
-                                                        value={ed.endorser || ''}
-                                                        onChange={e => {
-                                                          const updated = [...(note.endorsements || [])]
-                                                          updated[ei] = { ...updated[ei], endorser: e.target.value }
+                                                  <div key={ed.id} className="bg-indigo-50/50 dark:bg-indigo-900/10 rounded-lg p-2.5 border border-indigo-100 dark:border-indigo-900/30">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                      <span className="text-[9px] font-bold text-indigo-500 bg-indigo-100 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded">이서 {ei + 1}</span>
+                                                      <button
+                                                        onClick={() => {
+                                                          const updated = (note.endorsements || []).filter((_: any, i: number) => i !== ei)
                                                           updateNote(item.id, note.id, 'endorsements', updated)
-                                                          updateNote(item.id, note.id, `_endVendorOpen_${ei}`, true)
                                                         }}
-                                                        onFocus={() => updateNote(item.id, note.id, `_endVendorOpen_${ei}`, true)}
-                                                        onBlur={() => setTimeout(() => updateNote(item.id, note.id, `_endVendorOpen_${ei}`, false), 200)}
-                                                        placeholder="이서인 (거래처)"
-                                                        className="w-full text-[11px] px-2 py-1 rounded-md border border-[var(--border-default)] bg-white dark:bg-gray-900 outline-none"
-                                                      />
-                                                      {note[`_endVendorOpen_${ei}`] && (() => {
-                                                        const vendorList: any[] = getItem('acct_vendors', [])
-                                                        const sv = (ed.endorser || '').toLowerCase()
-                                                        const flt = vendorList.filter(v => !sv || v.name.toLowerCase().includes(sv))
-                                                        if (flt.length === 0) return null
-                                                        return (
-                                                          <div className="absolute z-50 top-full left-0 right-0 mt-0.5 bg-white dark:bg-gray-900 border border-[var(--border-default)] rounded-lg shadow-lg max-h-[120px] overflow-y-auto">
-                                                            {flt.map((v: any) => (
-                                                              <button key={v.id} onMouseDown={e => {
-                                                                e.preventDefault()
-                                                                const updated = [...(note.endorsements || [])]
-                                                                updated[ei] = { ...updated[ei], endorser: v.name }
-                                                                updateNote(item.id, note.id, 'endorsements', updated)
-                                                                updateNote(item.id, note.id, `_endVendorOpen_${ei}`, false)
-                                                              }} className="w-full text-left px-2.5 py-1.5 text-[11px] hover:bg-[var(--bg-muted)] cursor-pointer">
-                                                                <span className="font-semibold">{v.name}</span>
-                                                                {v.ceoName && <span className="text-[9px] text-[var(--text-muted)] ml-1.5">대표: {v.ceoName}</span>}
-                                                              </button>
-                                                            ))}
-                                                          </div>
-                                                        )
-                                                      })()}
+                                                        className="text-[10px] text-red-400 hover:text-red-600 cursor-pointer flex items-center gap-0.5"
+                                                      >
+                                                        <Trash2 size={10} /> 삭제
+                                                      </button>
                                                     </div>
-                                                    <DatePicker value={ed.endorseDate || ''} onChange={v => {
-                                                      const updated = [...(note.endorsements || [])]
-                                                      updated[ei] = { ...updated[ei], endorseDate: v }
-                                                      updateNote(item.id, note.id, 'endorsements', updated)
-                                                    }} />
-                                                    <input
-                                                      value={ed.reason || ''}
-                                                      onChange={e => {
-                                                        const updated = [...(note.endorsements || [])]
-                                                        updated[ei] = { ...updated[ei], reason: e.target.value }
-                                                        updateNote(item.id, note.id, 'endorsements', updated)
-                                                      }}
-                                                      placeholder="사유"
-                                                      className="w-20 text-[11px] px-2 py-1 rounded-md border border-[var(--border-default)] bg-white dark:bg-gray-900 outline-none"
-                                                    />
-                                                    <button
-                                                      onClick={() => {
-                                                        const updated = (note.endorsements || []).filter((_: any, i: number) => i !== ei)
-                                                        updateNote(item.id, note.id, 'endorsements', updated)
-                                                      }}
-                                                      className="text-red-400 hover:text-red-600 cursor-pointer shrink-0 p-0.5"
-                                                    >
-                                                      <Trash2 size={10} />
-                                                    </button>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                      <div className="relative">
+                                                        <label className="block text-[9px] font-bold text-[var(--text-muted)] mb-0.5">이서인</label>
+                                                        <input
+                                                          value={ed.endorser || ''}
+                                                          onChange={e => {
+                                                            const updated = [...(note.endorsements || [])]
+                                                            updated[ei] = { ...updated[ei], endorser: e.target.value }
+                                                            updateNote(item.id, note.id, 'endorsements', updated)
+                                                            updateNote(item.id, note.id, `_endVendorOpen_${ei}`, true)
+                                                          }}
+                                                          onFocus={() => updateNote(item.id, note.id, `_endVendorOpen_${ei}`, true)}
+                                                          onBlur={() => setTimeout(() => updateNote(item.id, note.id, `_endVendorOpen_${ei}`, false), 200)}
+                                                          placeholder="거래처 검색..."
+                                                          className="w-full text-[11px] px-2 py-1.5 rounded-md border border-[var(--border-default)] bg-white dark:bg-gray-900 outline-none"
+                                                        />
+                                                        {note[`_endVendorOpen_${ei}`] && (() => {
+                                                          const vendorList: any[] = getItem('acct_vendors', [])
+                                                          const sv = (ed.endorser || '').toLowerCase()
+                                                          const flt = vendorList.filter(v => !sv || v.name.toLowerCase().includes(sv))
+                                                          if (flt.length === 0) return null
+                                                          return (
+                                                            <div className="absolute z-50 top-full left-0 right-0 mt-0.5 bg-white dark:bg-gray-900 border border-[var(--border-default)] rounded-lg shadow-lg max-h-[120px] overflow-y-auto">
+                                                              {flt.map((v: any) => (
+                                                                <button key={v.id} onMouseDown={e => {
+                                                                  e.preventDefault()
+                                                                  const updated = [...(note.endorsements || [])]
+                                                                  updated[ei] = { ...updated[ei], endorser: v.name }
+                                                                  updateNote(item.id, note.id, 'endorsements', updated)
+                                                                  updateNote(item.id, note.id, `_endVendorOpen_${ei}`, false)
+                                                                }} className="w-full text-left px-2.5 py-1.5 text-[11px] hover:bg-[var(--bg-muted)] cursor-pointer">
+                                                                  <span className="font-semibold">{v.name}</span>
+                                                                  {v.ceoName && <span className="text-[9px] text-[var(--text-muted)] ml-1.5">대표: {v.ceoName}</span>}
+                                                                </button>
+                                                              ))}
+                                                            </div>
+                                                          )
+                                                        })()}
+                                                      </div>
+                                                      <div>
+                                                        <label className="block text-[9px] font-bold text-[var(--text-muted)] mb-0.5">이서일</label>
+                                                        <DatePicker value={ed.endorseDate || ''} onChange={v => {
+                                                          const updated = [...(note.endorsements || [])]
+                                                          updated[ei] = { ...updated[ei], endorseDate: v }
+                                                          updateNote(item.id, note.id, 'endorsements', updated)
+                                                        }} />
+                                                      </div>
+                                                      <div>
+                                                        <label className="block text-[9px] font-bold text-[var(--text-muted)] mb-0.5">사유</label>
+                                                        <input
+                                                          value={ed.reason || ''}
+                                                          onChange={e => {
+                                                            const updated = [...(note.endorsements || [])]
+                                                            updated[ei] = { ...updated[ei], reason: e.target.value }
+                                                            updateNote(item.id, note.id, 'endorsements', updated)
+                                                          }}
+                                                          placeholder="이서 사유"
+                                                          className="w-full text-[11px] px-2 py-1.5 rounded-md border border-[var(--border-default)] bg-white dark:bg-gray-900 outline-none"
+                                                        />
+                                                      </div>
+                                                    </div>
                                                   </div>
                                                 ))}
                                               </div>
