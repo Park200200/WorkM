@@ -10201,7 +10201,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                   const acctCode = noteSubTab === '수신' ? '1-01-06' : '2-01-02'
                   const newItem: any = {
                     id: Date.now(), name: nm, category: '어음' as const,
-                    budgetCatId: selectedPayCatId || undefined,
+                    budgetCatId: selectedCatId || undefined,
                     noteType: noteSubTab, linkedAccountCode: acctCode,
                     noteManager: defaultManager || undefined,
                   }
