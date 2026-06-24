@@ -23,7 +23,7 @@ import {
   Plus, Edit3, Trash2, Save, X, Check, Ban, MoreHorizontal,
   Lock, ShieldCheck, RefreshCw, Printer, Paperclip, Send, Eye,
   CreditCard, Settings, Smartphone, User, Phone, Mail, Landmark,
-  ArrowLeftRight, Calendar, Filter, Download, BarChart2, CheckCircle2, Archive, Ticket, FileText, Coins,
+  ArrowLeftRight, Calendar, Filter, Download, BarChart2, CheckCircle2, Archive, Ticket, FileText, Coins, ClipboardList,
 } from 'lucide-react'
 
 /* ─── 서버 설정 동기화 ── */
@@ -5061,8 +5061,8 @@ export function AcctApproval({ year }: { year: number }) {
             <div className="p-5 space-y-4 flex-1 overflow-y-auto">
               {!editingId && (
                 <div className="flex items-center gap-1.5 p-1.5 rounded-xl bg-[var(--bg-muted)] border border-[var(--border-default)]">
-                  <button onClick={() => { setModalApprovalType('expense'); setForm(f => ({ ...f, approver: '' })) }} className={`flex-1 py-1.5 rounded-lg text-[12px] font-extrabold transition-all cursor-pointer ${modalApprovalType === 'expense' ? 'bg-[#4f6ef7] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}>💸 지출품의</button>
-                  <button onClick={() => { setModalApprovalType('general'); setForm(f => ({ ...f, approver: '' })) }} className={`flex-1 py-1.5 rounded-lg text-[12px] font-extrabold transition-all cursor-pointer ${modalApprovalType === 'general' ? 'bg-[#8b5cf6] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}>📋 일반품의</button>
+                  <button onClick={() => { setModalApprovalType('expense'); setForm(f => ({ ...f, approver: '' })) }} className={`flex-1 py-1.5 rounded-lg text-[12px] font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1 ${modalApprovalType === 'expense' ? 'bg-[#4f6ef7] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}><Wallet size={12} /> 지출품의</button>
+                  <button onClick={() => { setModalApprovalType('general'); setForm(f => ({ ...f, approver: '' })) }} className={`flex-1 py-1.5 rounded-lg text-[12px] font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1 ${modalApprovalType === 'general' ? 'bg-[#8b5cf6] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}><ClipboardList size={12} /> 일반품의</button>
                 </div>
               )}
               <div>
