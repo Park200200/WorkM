@@ -5389,6 +5389,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
       if (!transferForm.debit) { alert('차변(받는쪽)을 선택하세요'); return }
       if (!transferForm.credit) { alert('대변(보내는쪽)을 선택하세요'); return }
       if (transferForm.debit === transferForm.credit) { alert('차변과 대변이 같을 수 없습니다'); return }
+      if (!selectedBudgetCat) { alert('예산을 선택하세요'); return }
       const tAmt = parseInt(transferForm.amount.replace(/,/g, '')) || 0
       if (tAmt <= 0) { alert('금액을 입력하세요'); return }
       if (!transferForm.description.trim()) { alert('적요를 입력하세요'); return }
