@@ -6082,7 +6082,6 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
               const payOpts: {value:string; label:string; group:string}[] = []
               const allPayItems: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
               const payItemsRaw = allPayItems.filter(p => String(p.budgetCatId) === String(catIdVal))
-              // 같은 이름+카테고리 중복 제거
               const seen = new Set<string>()
               const payItems = payItemsRaw.filter(p => {
                 const key = `${p.category}:${p.name}`
@@ -6090,45 +6089,45 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                 seen.add(key)
                 return true
               })
-              // 계좌 + 연결 카드
+              // 계좌 + 하위 카드 그룹
+              const bankGroups: {bank: typeof payItems[0]; cards: any[]}[] = []
               payItems.filter(p => p.category === '계좌').forEach(p => {
-                payOpts.push({ value: `계좌:${p.name}`, label: `🏦 ${p.name}${p.accountNumber ? ' • ' + p.accountNumber : ''}`, group: '계좌' })
-                if (p.cards) p.cards.forEach(card => {
-                  payOpts.push({ value: `카드:${card.cardName || card.cardNumber}`, label: `💳 ${card.cardName || '카드'}${card.cardNumber ? ' ' + card.cardNumber : ''}`, group: '카드' })
-                })
+                bankGroups.push({ bank: p, cards: p.cards || [] })
               })
               payItems.filter(p => p.category === '현금').forEach(p => payOpts.push({ value: p.name, label: `💵 ${p.name}`, group: '현금' }))
-              payItems.filter(p => p.category === '어음').forEach(p => payOpts.push({ value: p.name, label: `📄 ${p.name}`, group: '어음' }))
+              // 어음: 개별 발행 노트 리스트
+              payItems.filter(p => p.category === '어음').forEach(p => {
+                if (p.notes && p.notes.length > 0) {
+                  p.notes.forEach((note: any) => {
+                    const typeLabel = p.noteType === '발행' ? '발행' : '수신'
+                    const amt = note.amount ? Number(note.amount).toLocaleString() + '원' : ''
+                    const label = `📄 ${p.name} - ${typeLabel} ${note.noteNumber || ''} ${amt}`.trim()
+                    payOpts.push({ value: `어음:${p.name}:${note.id}`, label, group: '어음' })
+                  })
+                } else {
+                  payOpts.push({ value: p.name, label: `📄 ${p.name}`, group: '어음' })
+                }
+              })
               payItems.filter(p => p.category === '상품권').forEach(p => payOpts.push({ value: p.name, label: `🎟️ ${p.name}`, group: '상품권' }))
-              // 등록된 수단이 없으면 안내 표시
-              if (payOpts.length === 0) {
+              const totalOpts = bankGroups.length + payOpts.length
+              if (totalOpts === 0) {
                 return (
-                  <select
-                    value={form.method}
-                    onChange={e => setForm(f => ({ ...f, method: e.target.value }))}
-                    className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-muted)] focus:outline-none focus:border-primary-500"
-                  >
+                  <select value={form.method} onChange={e => setForm(f => ({ ...f, method: e.target.value }))} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-muted)] focus:outline-none focus:border-primary-500">
                     <option value="">— 지출수단을 먼저 등록하세요 —</option>
                   </select>
                 )
               }
               return (
-                <select
-                  value={form.method}
-                  onChange={e => setForm(f => ({ ...f, method: e.target.value }))}
-                  className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500"
-                >
+                <select value={form.method} onChange={e => setForm(f => ({ ...f, method: e.target.value }))} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
                   <option value="">— 선택 —</option>
-                  {payOpts.filter(o => o.group === '계좌').length > 0 && (
-                    <optgroup label="🏦 계좌">
-                      {payOpts.filter(o => o.group === '계좌').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  {bankGroups.map(bg => (
+                    <optgroup key={bg.bank.name} label={`🏦 ${bg.bank.name}${bg.bank.bankName ? ' (' + bg.bank.bankName + ')' : ''}`}>
+                      <option value={`계좌:${bg.bank.name}`}>🏦 {bg.bank.name}{bg.bank.accountNumber ? ' • ' + bg.bank.accountNumber : ''}</option>
+                      {bg.cards.map((card: any) => (
+                        <option key={card.id || card.cardNumber} value={`카드:${card.cardName || card.cardNumber}`}>{'　'}💳 {card.cardName || '카드'}{card.cardNumber ? ' ' + card.cardNumber : ''}</option>
+                      ))}
                     </optgroup>
-                  )}
-                  {payOpts.filter(o => o.group === '카드').length > 0 && (
-                    <optgroup label="💳 카드">
-                      {payOpts.filter(o => o.group === '카드').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </optgroup>
-                  )}
+                  ))}
                   {payOpts.filter(o => o.group === '현금').length > 0 && (
                     <optgroup label="💵 현금">
                       {payOpts.filter(o => o.group === '현금').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -6739,32 +6738,37 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                       seenPM.add(key)
                       return true
                     })
+                    // 계좌 + 하위 카드 그룹
+                    const bankGroups2: {bank: typeof filteredPM[0]; cards: any[]}[] = []
                     filteredPM.filter(p => p.category === '계좌').forEach(p => {
-                      payOptions.push({ value: `계좌:${p.name}`, label: `🏦 ${p.name}${p.accountNumber ? ' • ' + p.accountNumber : ''}`, group: '계좌' })
-                      if (p.cards) p.cards.forEach(card => {
-                        payOptions.push({ value: `카드:${card.cardName || card.cardNumber}`, label: `💳 ${card.cardName || '카드'}${card.cardNumber ? ' ' + card.cardNumber : ''}`, group: '카드' })
-                      })
+                      bankGroups2.push({ bank: p, cards: p.cards || [] })
                     })
                     filteredPM.filter(p => p.category === '현금').forEach(p => payOptions.push({ value: p.name, label: `💵 ${p.name}`, group: '현금' }))
-                    filteredPM.filter(p => p.category === '어음').forEach(p => payOptions.push({ value: p.name, label: `📄 ${p.name}`, group: '어음' }))
+                    // 어음: 개별 발행 노트 리스트
+                    filteredPM.filter(p => p.category === '어음').forEach(p => {
+                      if (p.notes && p.notes.length > 0) {
+                        p.notes.forEach((note: any) => {
+                          const typeLabel = p.noteType === '발행' ? '발행' : '수신'
+                          const amt = note.amount ? Number(note.amount).toLocaleString() + '원' : ''
+                          const label = `📄 ${p.name} - ${typeLabel} ${note.noteNumber || ''} ${amt}`.trim()
+                          payOptions.push({ value: `어음:${p.name}:${note.id}`, label, group: '어음' })
+                        })
+                      } else {
+                        payOptions.push({ value: p.name, label: `📄 ${p.name}`, group: '어음' })
+                      }
+                    })
                     filteredPM.filter(p => p.category === '상품권').forEach(p => payOptions.push({ value: p.name, label: `🎟️ ${p.name}`, group: '상품권' }))
                     return (
-                      <select
-                        value={form.method}
-                        onChange={e => setForm(f => ({ ...f, method: e.target.value }))}
-                        className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500"
-                      >
+                      <select value={form.method} onChange={e => setForm(f => ({ ...f, method: e.target.value }))} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
                         <option value="">— 선택 —</option>
-                        {payOptions.filter(o => o.group === '계좌').length > 0 && (
-                          <optgroup label="🏦 계좌">
-                            {payOptions.filter(o => o.group === '계좌').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        {bankGroups2.map(bg => (
+                          <optgroup key={bg.bank.name} label={`🏦 ${bg.bank.name}${bg.bank.bankName ? ' (' + bg.bank.bankName + ')' : ''}`}>
+                            <option value={`계좌:${bg.bank.name}`}>🏦 {bg.bank.name}{bg.bank.accountNumber ? ' • ' + bg.bank.accountNumber : ''}</option>
+                            {bg.cards.map((card: any) => (
+                              <option key={card.id || card.cardNumber} value={`카드:${card.cardName || card.cardNumber}`}>{'　'}💳 {card.cardName || '카드'}{card.cardNumber ? ' ' + card.cardNumber : ''}</option>
+                            ))}
                           </optgroup>
-                        )}
-                        {payOptions.filter(o => o.group === '카드').length > 0 && (
-                          <optgroup label="💳 카드">
-                            {payOptions.filter(o => o.group === '카드').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                          </optgroup>
-                        )}
+                        ))}
                         {payOptions.filter(o => o.group === '현금').length > 0 && (
                           <optgroup label="💵 현금">
                             {payOptions.filter(o => o.group === '현금').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
