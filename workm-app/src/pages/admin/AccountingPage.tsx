@@ -9499,21 +9499,11 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
                                       </div>
                                       <div>
                                         <label className={DETAIL_FIELD_LABEL}>발행일 *</label>
-                                        <input
-                                          type="date"
-                                          value={note.issueDate}
-                                          onChange={e => updateNote(item.id, note.id, 'issueDate', e.target.value)}
-                                          className={DETAIL_INPUT}
-                                        />
+                                        <DatePicker value={note.issueDate || ''} onChange={v => updateNote(item.id, note.id, 'issueDate', v)} />
                                       </div>
                                       <div>
                                         <label className={DETAIL_FIELD_LABEL}>만기일 *</label>
-                                        <input
-                                          type="date"
-                                          value={note.maturityDate}
-                                          onChange={e => updateNote(item.id, note.id, 'maturityDate', e.target.value)}
-                                          className={DETAIL_INPUT}
-                                        />
+                                        <DatePicker value={note.maturityDate || ''} onChange={v => updateNote(item.id, note.id, 'maturityDate', v)} />
                                       </div>
                                       <div>
                                         <label className={DETAIL_FIELD_LABEL}>{item.noteType === '수신' ? '추심은행' : '결제은행'} *</label>
@@ -10690,8 +10680,8 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                             })()}
                                           </div>
                                           <div><label className={DETAIL_FIELD_LABEL}>금액</label><input value={note.amount ? note.amount.toLocaleString() : ''} onChange={e => updateNote(item.id, note.id, 'amount', parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0)} placeholder="5,000,000" className={DETAIL_INPUT} /></div>
-                                          <div><label className={DETAIL_FIELD_LABEL}>발행일</label><input type="date" value={note.issueDate || ''} onChange={e => updateNote(item.id, note.id, 'issueDate', e.target.value)} className={DETAIL_INPUT} /></div>
-                                          <div><label className={DETAIL_FIELD_LABEL}>만기일</label><input type="date" value={note.maturityDate || ''} onChange={e => updateNote(item.id, note.id, 'maturityDate', e.target.value)} className={DETAIL_INPUT} /></div>
+                                          <div><label className={DETAIL_FIELD_LABEL}>발행일</label><DatePicker value={note.issueDate || ''} onChange={v => updateNote(item.id, note.id, 'issueDate', v)} /></div>
+                                          <div><label className={DETAIL_FIELD_LABEL}>만기일</label><DatePicker value={note.maturityDate || ''} onChange={v => updateNote(item.id, note.id, 'maturityDate', v)} /></div>
                                           <div>
                                             <label className={DETAIL_FIELD_LABEL}>상태</label>
                                             <select value={note.status || '미결제'} onChange={e => updateNote(item.id, note.id, 'status', e.target.value)} className={DETAIL_INPUT}>
