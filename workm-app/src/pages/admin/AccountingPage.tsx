@@ -6116,7 +6116,27 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                 )
               }
               return (
-                <select value={form.method} onChange={e => setForm(f => ({ ...f, method: e.target.value }))} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
+                <select value={form.method} onChange={e => {
+                  const val = e.target.value
+                  setForm(f => ({ ...f, method: val }))
+                  // 어음 선택 시 해당 노트의 수취인/발행인을 거래처로 자동 설정
+                  if (val.startsWith('어음:')) {
+                    const parts = val.split(':')
+                    const itemName = parts[1]
+                    const noteId = Number(parts[2])
+                    const matchItem = payItems.find(p => p.name === itemName)
+                    if (matchItem) {
+                      const matchNote = (matchItem.notes || []).find((n: any) => n.id === noteId)
+                      if (matchNote) {
+                        const vendor = matchItem.noteType === '발행' ? (matchNote.receiver || '') : (matchNote.issuer || '')
+                        if (vendor) {
+                          setForm(f => ({ ...f, counter: vendor }))
+                          setCounterSearch('')
+                        }
+                      }
+                    }
+                  }
+                }} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
                   <option value="">— 선택 —</option>
                   {bankGroups.map(bg => (
                     <optgroup key={bg.bank.name} label={`🏦 ${bg.bank.name}${bg.bank.bankName ? ' (' + bg.bank.bankName + ')' : ''}`}>
@@ -6755,7 +6775,26 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                     })
                     filteredPM.filter(p => p.category === '상품권').forEach(p => payOptions.push({ value: p.name, label: `🎟️ ${p.name}`, group: '상품권' }))
                     return (
-                      <select value={form.method} onChange={e => setForm(f => ({ ...f, method: e.target.value }))} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
+                      <select value={form.method} onChange={e => {
+                        const val = e.target.value
+                        setForm(f => ({ ...f, method: val }))
+                        if (val.startsWith('어음:')) {
+                          const parts = val.split(':')
+                          const itemName = parts[1]
+                          const noteId = Number(parts[2])
+                          const matchItem = filteredPM.find(p => p.name === itemName)
+                          if (matchItem) {
+                            const matchNote = (matchItem.notes || []).find((n: any) => n.id === noteId)
+                            if (matchNote) {
+                              const vendor = matchItem.noteType === '발행' ? (matchNote.receiver || '') : (matchNote.issuer || '')
+                              if (vendor) {
+                                setForm(f => ({ ...f, counter: vendor }))
+                                setCounterSearch('')
+                              }
+                            }
+                          }
+                        }
+                      }} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
                         <option value="">— 선택 —</option>
                         {bankGroups2.map(bg => (
                           <optgroup key={bg.bank.name} label={`🏦 ${bg.bank.name}${bg.bank.bankName ? ' (' + bg.bank.bankName + ')' : ''}`}>
