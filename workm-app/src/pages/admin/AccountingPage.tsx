@@ -11824,11 +11824,13 @@ function AcctCashflowList({ year }: { year: number }) {
     const receivablesInRange = receivables.filter(c => c.expectedDate && c.expectedDate >= dateFrom && c.expectedDate <= dateTo)
     const receivablesInRangeAmt = receivablesInRange.reduce((s: number, c: any) => s + (c.amount || 0), 0)
     const incomeSchedAmt = incomeScheduled.reduce((s: number, a: any) => s + (a.amount || 0), 0) + receivablesInRangeAmt
-    // 출금예정: 승인된 품의(미집행)
+    // 출금예정: 승인된 품의(미집행) + 기간 내 지급예정 미지급금
     const expenseScheduled = approvals.filter(a => a.status === 'approved' && !a.isGeneral)
-    const expenseSchedAmt = expenseScheduled.reduce((s: number, a: any) => s + (a.amount || 0), 0)
-    return { totalIn, totalOut, net: totalIn - totalOut, receivableAmt, receivableCount: receivables.length, payableAmt, payableCount: payables.length, incomeSchedAmt, incomeSchedCount: incomeScheduled.length + receivablesInRange.length, expenseSchedAmt, expenseSchedCount: expenseScheduled.length }
-  }, [filtered, cashflows, approvals])
+    const payablesInRange = payables.filter(c => c.expectedDate && c.expectedDate >= dateFrom && c.expectedDate <= dateTo)
+    const payablesInRangeAmt = payablesInRange.reduce((s: number, c: any) => s + (c.amount || 0), 0)
+    const expenseSchedAmt = expenseScheduled.reduce((s: number, a: any) => s + (a.amount || 0), 0) + payablesInRangeAmt
+    return { totalIn, totalOut, net: totalIn - totalOut, receivableAmt, receivableCount: receivables.length, payableAmt, payableCount: payables.length, incomeSchedAmt, incomeSchedCount: incomeScheduled.length + receivablesInRange.length, expenseSchedAmt, expenseSchedCount: expenseScheduled.length + payablesInRange.length }
+  }, [filtered, cashflows, approvals, dateFrom, dateTo])
 
   // ── 누적잔액 계산 ──
   const withBalance = useMemo(() => {
@@ -11867,7 +11869,10 @@ function AcctCashflowList({ year }: { year: number }) {
       ...cashflows.filter(c => c.receivable && !c.received && c.expectedDate && c.expectedDate >= dateFrom && c.expectedDate <= dateTo).map(c => ({ ...c, _cardType: '미수금(입금예정)', _isReceivable: true })),
       ...approvals.filter(a => a.status === 'approved' && a.type === 'income').map(a => ({ id: a.id, date: a.date || a.createdAt || '', type: 'income', amount: a.amount || 0, counter: a.applicant || '', description: a.title || '', manager: a.applicant || '', _cardType: '입금예정', _isApproval: true }))
     ]
-    if (cardFilter === 'expenseScheduled') return approvals.filter(a => a.status === 'approved' && !a.isGeneral).map(a => ({ id: a.id, date: a.date || a.createdAt || '', type: 'expense', amount: a.amount || 0, counter: a.applicant || '', description: a.title || '', manager: a.applicant || '', budgetCatId: a.budgetCatId, _cardType: '출금예정', _isApproval: true }))
+    if (cardFilter === 'expenseScheduled') return [
+      ...cashflows.filter(c => c.payable && !c.paid && c.expectedDate && c.expectedDate >= dateFrom && c.expectedDate <= dateTo).map(c => ({ ...c, _cardType: '미지급금(출금예정)', _isPayable: true })),
+      ...approvals.filter(a => a.status === 'approved' && !a.isGeneral).map(a => ({ id: a.id, date: a.date || a.createdAt || '', type: 'expense', amount: a.amount || 0, counter: a.applicant || '', description: a.title || '', manager: a.applicant || '', budgetCatId: a.budgetCatId, _cardType: '출금예정', _isApproval: true }))
+    ]
     return []
   }, [cardFilter, cashflows, approvals, dateFrom, dateTo])
 
