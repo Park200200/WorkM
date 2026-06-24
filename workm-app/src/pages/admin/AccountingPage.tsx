@@ -3090,7 +3090,7 @@ export function AcctApproval({ year }: { year: number }) {
 
   const statusInfo: Record<string, { label: string; color: string; bg: string }> = {
     preExpense: { label: '지출한', color: '#f97316', bg: 'rgba(249,115,22,.1)' },
-    pending: { label: '품의한', color: '#f59e0b', bg: 'rgba(245,158,11,.1)' },
+    pending: { label: '품의한', color: '#3b82f6', bg: 'rgba(59,130,246,.1)' },
     rejected: { label: '반려된', color: '#ef4444', bg: 'rgba(239,68,68,.1)' },
     approved: { label: '승인된', color: '#22c55e', bg: 'rgba(34,197,94,.1)' },
     expensed: { label: '지출된', color: '#3b82f6', bg: 'rgba(59,130,246,.1)' },
@@ -3774,13 +3774,14 @@ export function AcctApproval({ year }: { year: number }) {
               <tbody>
                 {filteredApprovals.map(a => {
                   const isTransferApproval = !!(a as any).transferType || (a.title || '').startsWith('[대체]')
-                  const isResubmitted = a.status === 'pending' && (a as any).resubmittedAt
-                  const si = isResubmitted
-                    ? { label: '품의한', color: '#f59e0b', bg: 'rgba(245,158,11,.15)' }
-                    : a.status === 'preExpense' && isTransferApproval
-                      ? { label: '대체한', color: '#f97316', bg: 'rgba(249,115,22,.1)' }
-                      : (statusInfo[a.status] || statusInfo.pending)
                   const isPreExp = !!(a as any).isPreExpense || a.status === 'preExpense' || (a.title || '').startsWith('[선지출]')
+                  const si = isTransferApproval && (isPreExp || a.status === 'preExpense')
+                    ? { label: '대체한', color: '#8b5cf6', bg: 'rgba(139,92,246,.1)' }
+                    : isPreExp
+                      ? { label: '지출한', color: '#f97316', bg: 'rgba(249,115,22,.1)' }
+                      : (a.status === 'pending' && (a as any).resubmittedAt)
+                        ? { label: '품의한', color: '#3b82f6', bg: 'rgba(59,130,246,.1)' }
+                        : (statusInfo[a.status] || statusInfo.pending)
                   return (
                     <tr key={a.id} className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors">
                       <td className="py-2.5 px-3.5 text-[12px] text-[var(--text-secondary)]">{(a.date || a.createdAt || '').slice(0, 10)}</td>
@@ -6105,7 +6106,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                     {type !== 'income' && (() => {
                       // 연결된 품의의 실제 진행상태 자동 표시
                       const sMap: Record<string, { label: string; color: string; bg: string }> = {
-                        preExpense: { label: (c as any).type === 'transfer' ? '대체한' : '지출한', color: '#f97316', bg: 'rgba(249,115,22,.12)' },
+                        preExpense: { label: (c as any).type === 'transfer' ? '대체한' : '지출한', color: (c as any).type === 'transfer' ? '#8b5cf6' : '#f97316', bg: (c as any).type === 'transfer' ? 'rgba(139,92,246,.12)' : 'rgba(249,115,22,.12)' },
                         pending: { label: '품의한', color: '#3b82f6', bg: 'rgba(59,130,246,.12)' },
                         approved: { label: '승인', color: '#22c55e', bg: 'rgba(34,197,94,.12)' },
                         rejected: { label: '반려', color: '#ef4444', bg: 'rgba(239,68,68,.12)' },
