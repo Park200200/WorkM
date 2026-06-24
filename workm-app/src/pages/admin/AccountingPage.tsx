@@ -5550,21 +5550,6 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
               </div>
               <input value={form.amount} onChange={e => handleAmtInput(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm font-bold text-right focus:border-primary-500 outline-none" style={{ color: typeColors[type] }} />
             </div>
-            {/* 입금전표: 5) 미수금 옵션 */}
-            <div className="bg-orange-50/60 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800 rounded-lg p-2.5">
-              <div className="flex items-center gap-3 flex-wrap">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={isReceivable} onChange={e => { setIsReceivable(e.target.checked); if (!e.target.checked) setExpectedDate('') }} className="w-4 h-4 rounded border-orange-300 text-orange-500 accent-orange-500" />
-                  <span className="text-[11px] font-bold text-orange-700 dark:text-orange-400">📥 미수금</span>
-                </label>
-                {isReceivable && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 whitespace-nowrap">입금예정일</span>
-                    <DatePicker value={expectedDate} onChange={v => setExpectedDate(v)} />
-                  </div>
-                )}
-              </div>
-            </div>
           </>
           ) : (
           <>
@@ -5933,6 +5918,23 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'income' ? '실제거래일자' : '실제거래일자'}</label>
             <DatePicker value={form.tradeDate} onChange={v => setForm(f => ({ ...f, tradeDate: v }))} />
           </div>
+          {/* 미수금 옵션 (입금전표) */}
+          {type === 'income' && (
+            <div className="bg-orange-50/60 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800 rounded-lg p-2.5 col-span-2">
+              <div className="flex items-center gap-3 flex-wrap">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={isReceivable} onChange={e => { setIsReceivable(e.target.checked); if (!e.target.checked) setExpectedDate('') }} className="w-4 h-4 rounded border-orange-300 text-orange-500 accent-orange-500" />
+                  <span className="text-[11px] font-bold text-orange-700 dark:text-orange-400">📥 미수금</span>
+                </label>
+                {isReceivable && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 whitespace-nowrap">입금예정일</span>
+                    <DatePicker value={expectedDate} onChange={v => setExpectedDate(v)} />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           {/* 미지급금 옵션 (출금전표) */}
           {type === 'withdrawal' && (
             <div className="bg-violet-50/60 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800 rounded-lg p-2.5 col-span-2">
