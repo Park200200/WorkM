@@ -354,12 +354,12 @@ export function DashboardPage() {
         const completed = approvals.filter(a => ['completed', 'vouchered'].includes(a.status) && (a.applicant === userName || a.approver === userName || isInMyCat(a))).length
         const total = pendingApprove + rejected + preExpense + toResolve + toExpense + toSettle
         const allItems = [
-          { label: '승인할', value: pendingApprove, icon: Stamp, color: '#f59e0b', bg: 'rgba(245,158,11,.12)', tab: 'approval' },
-          { label: '반려된', value: rejected, icon: AlertCircle, color: '#ef4444', bg: 'rgba(239,68,68,.12)', tab: 'approval' },
-          { label: '품의할', value: preExpense, icon: FileEdit, color: '#f97316', bg: 'rgba(249,115,22,.12)', tab: 'approval' },
-          { label: '결의할', value: toResolve, icon: FileCheck, color: '#8b5cf6', bg: 'rgba(139,92,246,.12)', tab: 'approval' },
-          { label: '지출할', value: toExpense, icon: CreditCard, color: '#3b82f6', bg: 'rgba(59,130,246,.12)', tab: 'expense' },
-          { label: '정산할', value: toSettle, icon: Receipt, color: '#06b6d4', bg: 'rgba(6,182,212,.12)', tab: 'approval' },
+          { label: '승인할', value: pendingApprove, icon: Stamp, color: '#f59e0b', bg: 'rgba(245,158,11,.12)', tab: 'approval', group: 'process', subtab: 'ap_pending' },
+          { label: '반려된', value: rejected, icon: AlertCircle, color: '#ef4444', bg: 'rgba(239,68,68,.12)', tab: 'approval', group: 'inbox', subtab: 'rejected' },
+          { label: '품의할', value: preExpense, icon: FileEdit, color: '#f97316', bg: 'rgba(249,115,22,.12)', tab: 'approval', group: 'inbox', subtab: 'preExpense' },
+          { label: '결의할', value: toResolve, icon: FileCheck, color: '#8b5cf6', bg: 'rgba(139,92,246,.12)', tab: 'approval', group: 'inbox', subtab: 'toResolve' },
+          { label: '지출할', value: toExpense, icon: CreditCard, color: '#3b82f6', bg: 'rgba(59,130,246,.12)', tab: 'expense', group: '', subtab: '' },
+          { label: '정산할', value: toSettle, icon: Receipt, color: '#06b6d4', bg: 'rgba(6,182,212,.12)', tab: 'approval', group: 'inbox', subtab: 'confirming' },
         ]
         const items = allItems.filter(i => i.value > 0)
         return (
@@ -399,7 +399,7 @@ export function DashboardPage() {
                   return (
                     <div
                       key={item.label}
-                      onClick={() => navigate(`/accounting?tab=${item.tab}`)}
+                      onClick={() => navigate(`/accounting?tab=${item.tab}${(item as any).group ? `&group=${(item as any).group}` : ''}${(item as any).subtab ? `&subtab=${(item as any).subtab}` : ''}`)}
                       className="bg-[var(--bg-muted)] rounded-lg p-2.5 text-center cursor-pointer hover:border-primary-400 border border-transparent transition-all group hover:shadow-sm"
                     >
                       <div className="w-7 h-7 rounded-lg mx-auto mb-1.5 flex items-center justify-center" style={{ background: item.bg, color: item.color }}>

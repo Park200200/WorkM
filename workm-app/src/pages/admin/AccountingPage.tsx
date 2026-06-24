@@ -3284,8 +3284,14 @@ export function AcctApproval({ year }: { year: number }) {
     },
   ]
 
-  const [activeGroup, setActiveGroup] = useState<GroupKey>('inbox')
-  const [subTab, setSubTab] = useState<string>('preExpense')
+  const [activeGroup, setActiveGroup] = useState<GroupKey>(() => {
+    const g = searchParams.get('group')
+    if (g && ['inbox', 'process', 'archive'].includes(g)) return g as GroupKey
+    return 'inbox'
+  })
+  const [subTab, setSubTab] = useState<string>(() => {
+    return searchParams.get('subtab') || 'preExpense'
+  })
 
   // ── 로그인 사용자 역할 판별 (현재 연도 예산구분 기준) ──
   const userIsApprover = useMemo(() => {
