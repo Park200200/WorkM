@@ -4726,11 +4726,27 @@ export function AcctApproval({ year }: { year: number }) {
                         ...staffList.map(s => ({ value: s.name, label: `${s.name}${s.position ? ' (' + s.position + ')' : ''}` })),
                       ]}
                     />
-                  ) : (
-                    <div className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm font-bold text-[var(--text-primary)]">
-                      {form.approver || <span className="text-[var(--text-muted)] font-normal">예산구분을 선택하세요</span>}
-                    </div>
-                  )}
+                  ) : (() => {
+                    const selCatId = (form as any).budgetCatId || ''
+                    const selCat = selCatId ? budgetCats.find(c => String(c.id) === selCatId) as any : null
+                    const catApprovers: string[] = selCat?.approvers || []
+                    if (catApprovers.length > 1) {
+                      // 여러 승인권자: 드롭다운 선택
+                      return (
+                        <select value={form.approver} onChange={e => setForm(f => ({ ...f, approver: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm font-bold text-[var(--text-primary)] focus:border-primary-500 outline-none">
+                          {catApprovers.map(ap => {
+                            const s = staffList.find(st => st.name === ap)
+                            return <option key={ap} value={ap}>{ap}{s?.position ? ` (${s.position})` : ''}</option>
+                          })}
+                        </select>
+                      )
+                    }
+                    return (
+                      <div className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm font-bold text-[var(--text-primary)]">
+                        {form.approver || <span className="text-[var(--text-muted)] font-normal">예산구분을 선택하세요</span>}
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
               <div>
