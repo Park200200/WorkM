@@ -23,7 +23,7 @@ import {
   Plus, Edit3, Trash2, Save, X, Check, Ban, MoreHorizontal,
   Lock, ShieldCheck, RefreshCw, Printer, Paperclip, Send, Eye,
   CreditCard, Settings, Smartphone, User, Phone, Mail, Landmark,
-  ArrowLeftRight, Calendar, Filter, Download,
+  ArrowLeftRight, Calendar, Filter, Download, BarChart2, CheckCircle2,
 } from 'lucide-react'
 
 /* ─── 서버 설정 동기화 ── */
@@ -1582,7 +1582,7 @@ function AcctBaseBudget({ year: propYear }: { year: number }) {
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
               )}
             >
-              📊 예산설정
+              <BarChart2 size={14} /> 예산설정
             </button>
             <button
               onClick={isBudgetApprover ? () => setInnerTab('balance') : undefined}
@@ -1595,7 +1595,7 @@ function AcctBaseBudget({ year: propYear }: { year: number }) {
               )}
               title={!isBudgetApprover ? '지출승인권자만 사용 가능' : undefined}
             >
-              🏦 기초잔액
+              <Landmark size={14} /> 기초잔액
             </button>
           </div>
         </div>
@@ -2254,9 +2254,9 @@ function AcctBudget({ year }: { year: number }) {
                         setBudgetStatusPw('')
                         setBudgetStatusPwErr('')
                       }}
-                      className={`flex-1 py-2 text-[11px] font-bold ${(cat as any).budgetStatus === 'confirmed' ? 'text-[#22c55e] bg-green-50 dark:bg-green-900/10' : 'text-[#f59e0b]'} ${isBudgetApprover ? 'hover:bg-[var(--bg-muted)] cursor-pointer' : 'opacity-50 cursor-not-allowed'} transition-colors`}
+                      className={`flex-1 py-2 text-[11px] font-bold flex items-center justify-center gap-1 ${(cat as any).budgetStatus === 'confirmed' ? 'text-[#22c55e] bg-green-50 dark:bg-green-900/10' : 'text-[#f59e0b]'} ${isBudgetApprover ? 'hover:bg-[var(--bg-muted)] cursor-pointer' : 'opacity-50 cursor-not-allowed'} transition-colors`}
                     >
-                      {(cat as any).budgetStatus === 'confirmed' ? '✅ 확정' : '📝 편성'}
+                      {(cat as any).budgetStatus === 'confirmed' ? <><CheckCircle2 size={12} /> 확정</> : <><Edit3 size={12} /> 편성</>}
                     </button>
                   </div>
                 </div>
