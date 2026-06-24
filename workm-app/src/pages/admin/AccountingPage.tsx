@@ -5840,8 +5840,8 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
         </div>
         {type === 'withdrawal' && (
           <div className="flex gap-1.5 mt-1">
-            <button onClick={() => setWithdrawalMode('withdrawal')} className={`px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer transition-all ${withdrawalMode === 'withdrawal' ? 'bg-white text-amber-600 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}>🏧 출금</button>
-            <button onClick={() => setWithdrawalMode('transfer')} className={`px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer transition-all ${withdrawalMode === 'transfer' ? 'bg-white text-amber-600 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}>🔄 대체</button>
+            <button onClick={() => setWithdrawalMode('withdrawal')} className={`px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer transition-all flex items-center gap-1.5 ${withdrawalMode === 'withdrawal' ? 'bg-white text-amber-600 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}><Wallet size={13} /> 출금</button>
+            <button onClick={() => setWithdrawalMode('transfer')} className={`px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer transition-all flex items-center gap-1.5 ${withdrawalMode === 'transfer' ? 'bg-white text-amber-600 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}><ArrowLeftRight size={13} /> 대체</button>
           </div>
         )}
       </div>
