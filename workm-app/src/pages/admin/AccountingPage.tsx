@@ -5223,15 +5223,28 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
             <PrintApprovalForm
               editMode={transferEvidenceEdit}
               data={{
+                isTransfer: true,
                 title: `[대체] ${transferForm.description || (creditLabel + ' → ' + debitLabel)}`,
                 amount: parseInt(transferForm.amount.replace(/,/g, '')) || 0,
                 applicant: currentUserName,
                 approver: '',
                 date: transferForm.tradeDate,
                 expenseDate: transferForm.tradeDate,
-                description: transferForm.reason || `대체전표 - ${creditLabel} → ${debitLabel}`,
+                description: transferForm.reason || '',
+                debitAccount: transferForm.debit,
+                debitDetail: transferForm.debitDetail,
+                creditAccount: transferForm.credit,
+                creditDetail: transferForm.creditDetail,
+                transferContent: (() => {
+                  const creditPM = transferPayMethods.find(p => p.category === transferForm.credit && p.name === transferForm.creditDetail)
+                  const debitPM = transferPayMethods.find(p => p.category === transferForm.debit && p.name === transferForm.debitDetail)
+                  const creditDesc = creditPM && transferForm.credit === '계좌' ? `${creditPM.bankName || ''} ${creditPM.accountNumber || ''}` : (transferForm.creditDetail || transferForm.credit)
+                  const debitDesc = debitPM && transferForm.debit === '계좌' ? `${debitPM.bankName || ''} ${debitPM.accountNumber || ''}` : (transferForm.debitDetail || transferForm.debit)
+                  return `${creditDesc} 에서 ${debitDesc}(으)로 대체`
+                })(),
                 counter: `${creditLabel} → ${debitLabel}`,
                 method: '대체',
+                memo: transferForm.memo,
                 attachments: transferAttachments.map(a => ({
                   name: a.name,
                   type: a.data?.startsWith('data:image') ? 'image/jpeg' : 'application/octet-stream',

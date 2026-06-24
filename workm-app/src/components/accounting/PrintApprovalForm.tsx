@@ -71,6 +71,17 @@ interface PrintApprovalData {
   approvalType?: string    // 품의유형 (지출/일반)
   approvedDate?: string    // 승인일자
   department?: string      // 소속 부서
+  // 대체전표 전용
+  isTransfer?: boolean
+  debitAccount?: string    // 수신항목 (차변)
+  debitDetail?: string
+  creditAccount?: string   // 송신항목 (대변)
+  creditDetail?: string
+  transferContent?: string // 대체내용
+  description?: string     // 적요
+  counter?: string         // 대체경로
+  method?: string
+  title?: string
 }
 
 interface PrintApprovalFormProps {
@@ -85,6 +96,7 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
   const canEdit = !readOnly
   const printRef = useRef<HTMLDivElement>(null)
   const [formTitle, setFormTitle] = useState(() => {
+    if (data.isTransfer) return '대체결의서'
     if (data.isGeneral) return localStorage.getItem('pf_title_general') || '품 의 서'
     if (data.approvalType === '선지출') return '지출결의서'
     return localStorage.getItem('pf_title') || '지출품의서'
@@ -259,7 +271,89 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
           <h1 className="pf-title">{formTitle}</h1>
 
           {/* ── 기본 정보 테이블 ── */}
-          {data.isGeneral ? (
+          {data.isTransfer ? (
+            /* ── 대체결의서 레이아웃 ── */
+            <>
+            <table className="pf-main-table">
+              <colgroup>
+                <col style={{ width: '14%' }} />
+                <col style={{ width: '86%' }} />
+              </colgroup>
+              <tbody>
+                <tr>
+                  <th>대체일자</th>
+                  <td>{data.expenseDate || data.date || ''}</td>
+                </tr>
+                <tr>
+                  <th>수신항목</th>
+                  <td>{data.debitDetail ? `${data.debitAccount}(${data.debitDetail})` : (data.debitAccount || '')}</td>
+                </tr>
+                <tr>
+                  <th>송신항목</th>
+                  <td>{data.creditDetail ? `${data.creditAccount}(${data.creditDetail})` : (data.creditAccount || '')}</td>
+                </tr>
+                <tr>
+                  <th>대체내용</th>
+                  <td>{data.transferContent || data.counter || ''}</td>
+                </tr>
+                <tr>
+                  <th>적　　　요</th>
+                  <td>{data.description || ''}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* ── 대체금액 테이블 ── */}
+            <table className="pf-amount-table">
+              <colgroup>
+                <col style={{ width: '14%' }} />
+                <col style={{ width: '86%' }} />
+              </colgroup>
+              <tbody>
+                <tr>
+                  <th>대체금액</th>
+                  <td className="pf-amount-cell">
+                    <div className="pf-amount-value">
+                      ₩ {formatNumber(data.amount || 0)}
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* ── 금액 한글 + 결의문 ── */}
+            <div className="pf-declaration">
+              <div className="pf-amount-korean">
+                금 {numberToKorean(data.amount || 0)}
+              </div>
+              <div className="pf-declaration-text">
+                상기 금액을 위와 같이 대체하였음을 결의합니다.
+              </div>
+            </div>
+
+            {/* ── 비고 테이블 ── */}
+            <table className="pf-memo-table" style={{ flex: 1 }}>
+              <colgroup>
+                <col style={{ width: '14%' }} />
+                <col style={{ width: '86%' }} />
+              </colgroup>
+              <tbody style={{ height: '100%' }}>
+                <tr style={{ height: '100%' }}>
+                  <th>비 고</th>
+                  <td className="pf-memo-cell">
+                    {data.memo || ''}
+                    {data.approvedMemo && (
+                      <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px dashed #ccc' }}>
+                        <span style={{ fontSize: '9px', fontWeight: 700, color: '#22c55e' }}>승인메모:</span>{' '}
+                        <span style={{ fontSize: '10px' }}>{data.approvedMemo}</span>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            </>
+          ) : data.isGeneral ? (
             /* ── 일반품의서 레이아웃 ── */
             <>
             <table className="pf-main-table">
