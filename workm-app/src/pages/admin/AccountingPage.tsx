@@ -5926,12 +5926,10 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                   <input type="checkbox" checked={isReceivable} onChange={e => { setIsReceivable(e.target.checked); if (!e.target.checked) setExpectedDate('') }} className="w-4 h-4 rounded border-orange-300 text-orange-500 accent-orange-500" />
                   <span className="text-[11px] font-bold text-orange-700 dark:text-orange-400">📥 미수금</span>
                 </label>
-                {isReceivable && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 whitespace-nowrap">입금예정일</span>
-                    <DatePicker value={expectedDate} onChange={v => setExpectedDate(v)} />
-                  </div>
-                )}
+                <div className={`flex items-center gap-1.5 transition-opacity ${isReceivable ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                  <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 whitespace-nowrap">입금예정일</span>
+                  <DatePicker value={expectedDate} onChange={v => setExpectedDate(v)} />
+                </div>
               </div>
             </div>
           )}
@@ -5943,12 +5941,10 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                   <input type="checkbox" checked={isPayable} onChange={e => { setIsPayable(e.target.checked); if (!e.target.checked) setExpectedDate('') }} className="w-4 h-4 rounded border-violet-300 text-violet-500 accent-violet-500" />
                   <span className="text-[11px] font-bold text-violet-700 dark:text-violet-400">📤 미지급금</span>
                 </label>
-                {isPayable && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 whitespace-nowrap">지급예정일</span>
-                    <DatePicker value={expectedDate} onChange={v => setExpectedDate(v)} />
-                  </div>
-                )}
+                <div className={`flex items-center gap-1.5 transition-opacity ${isPayable ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                  <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 whitespace-nowrap">지급예정일</span>
+                  <DatePicker value={expectedDate} onChange={v => setExpectedDate(v)} />
+                </div>
               </div>
             </div>
           )}
