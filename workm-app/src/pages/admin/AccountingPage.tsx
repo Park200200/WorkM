@@ -4532,6 +4532,9 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const [wdAttachments, setWdAttachments] = useState<{name:string; data:string; size:number; title:string; printWidth:number; row?:number}[]>([])
   const [wdEvidenceOpen, setWdEvidenceOpen] = useState(false)
   const [wdEvidenceEdit, setWdEvidenceEdit] = useState(true)
+  const [withdrawalMode, setWithdrawalMode] = useState<'withdrawal' | 'transfer'>('withdrawal')
+  const transferAccounts = ['현금', '상품권', '어음', '계좌'] as const
+  const [transferForm, setTransferForm] = useState({ debit: '', credit: '', amount: '', tradeDate: today, description: '', memo: '' })
   const staffList = useStaffStore(s => s.staff).filter(s => !s.resignedAt)
   const [counterSearch, setCounterSearch] = useState('')
   const [showCounterList, setShowCounterList] = useState(false)
@@ -4761,7 +4764,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
     return all.filter(c => {
       if (!c.date) return false
       if (parseInt(c.date.substring(0, 4)) !== year) return false
-      if (!(c.type === type || (type === 'withdrawal' && c.type === 'expense'))) return false
+      if (!(c.type === type || (type === 'withdrawal' && (c.type === 'expense' || c.type === 'transfer' as any)))) return false
       // 모든 전표: 내가 작성한 것만 표시 (승인권자는 전체)
       if (!isApprover) {
         const cfCreator = (c as any).createdBy || ''
@@ -4796,6 +4799,45 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const uid = () => Date.now() + Math.floor(Math.random() * 1000)
 
   const saveEntry = () => {
+    // 대체전표 저장
+    if (type === 'withdrawal' && withdrawalMode === 'transfer') {
+      if (!transferForm.debit) { alert('차변(받는쪽)을 선택하세요'); return }
+      if (!transferForm.credit) { alert('대변(보내는쪽)을 선택하세요'); return }
+      if (transferForm.debit === transferForm.credit) { alert('차변과 대변이 같을 수 없습니다'); return }
+      const tAmt = parseInt(transferForm.amount.replace(/,/g, '')) || 0
+      if (tAmt <= 0) { alert('금액을 입력하세요'); return }
+      if (!transferForm.description.trim()) { alert('적요를 입력하세요'); return }
+      const tId = uid()
+      const vId = uid()
+      const acctMap: Record<string, string> = { '현금': '1010', '계좌': '1020', '상품권': '1030', '어음': '1040' }
+      const vouchers = getItem<Voucher[]>('acct_vouchers', [])
+      vouchers.push({
+        id: vId, date: transferForm.tradeDate, type: 'transfer',
+        description: `${transferForm.debit} → ${transferForm.credit}`,
+        entries: [
+          { side: 'debit', accountCode: acctMap[transferForm.debit] || '1010', amount: tAmt },
+          { side: 'credit', accountCode: acctMap[transferForm.credit] || '1020', amount: tAmt },
+        ],
+        createdAt: new Date().toISOString(),
+      })
+      setItem('acct_vouchers', vouchers)
+      const cfs = getItem<CashFlow[]>('acct_cashflows', [])
+      cfs.push({
+        id: tId, date: transferForm.tradeDate, type: 'transfer' as any,
+        amount: tAmt, description: transferForm.description,
+        accountCode: acctMap[transferForm.debit] || '1010',
+        counter: `${transferForm.debit} → ${transferForm.credit}`,
+        writeDate: today,
+        debitAccount: transferForm.debit,
+        creditAccount: transferForm.credit,
+        memo: transferForm.memo,
+        createdBy: currentUserName,
+      } as any)
+      setItem('acct_cashflows', cfs)
+      setTransferForm({ debit: '', credit: '', amount: '', tradeDate: today, description: '', memo: '' })
+      setRefresh(r => r + 1)
+      return
+    }
     if (!form.desc.trim()) { alert('내용을 입력하세요'); return }
     const amt = parseInt(form.amount.replace(/,/g, '')) || 0
     if (amt <= 0) { alert('금액을 입력하세요'); return }
@@ -5017,12 +5059,61 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
         <div className="flex items-center gap-2.5 mb-3">
           <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-xl">{typeEmojis[type]}</div>
           <div>
-            <div className="text-[17px] font-extrabold">간편 {typeLabels[type]}</div>
-            <div className="text-[11.5px] opacity-85">{type === 'income' ? '입금' : '지출'} 내역을 입력하세요</div>
+            <div className="text-[17px] font-extrabold">간편 {type === 'withdrawal' && withdrawalMode === 'transfer' ? '대체전표' : typeLabels[type]}</div>
+            <div className="text-[11.5px] opacity-85">{type === 'withdrawal' && withdrawalMode === 'transfer' ? '자산 대체 내역을 입력하세요' : (type === 'income' ? '입금' : '지출') + ' 내역을 입력하세요'}</div>
           </div>
         </div>
+        {type === 'withdrawal' && (
+          <div className="flex gap-1.5 mt-1">
+            <button onClick={() => setWithdrawalMode('withdrawal')} className={`px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer transition-all ${withdrawalMode === 'withdrawal' ? 'bg-white text-amber-600 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}>🏧 출금</button>
+            <button onClick={() => setWithdrawalMode('transfer')} className={`px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer transition-all ${withdrawalMode === 'transfer' ? 'bg-white text-amber-600 shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}>🔄 대체</button>
+          </div>
+        )}
       </div>
 
+      {/* ━━ 대체전표 입력 폼 ━━ */}
+      {type === 'withdrawal' && withdrawalMode === 'transfer' && (
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4 space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">차변 (받는쪽) *</label>
+              <CustomSelect value={transferForm.debit} onChange={v => setTransferForm(f => ({ ...f, debit: v }))} placeholder="— 선택 —" options={[{ value: '', label: '— 선택 —' }, ...transferAccounts.map(a => ({ value: a, label: a }))]} />
+            </div>
+            <div>
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">대변 (보내는쪽) *</label>
+              <CustomSelect value={transferForm.credit} onChange={v => setTransferForm(f => ({ ...f, credit: v }))} placeholder="— 선택 —" options={[{ value: '', label: '— 선택 —' }, ...transferAccounts.filter(a => a !== transferForm.debit).map(a => ({ value: a, label: a }))]} />
+            </div>
+            <div>
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">금액 (원) *</label>
+              <input value={transferForm.amount} onChange={e => { const v = e.target.value.replace(/[^0-9]/g, ''); setTransferForm(f => ({ ...f, amount: v ? parseInt(v).toLocaleString('ko-KR') : '' })) }} placeholder="0" className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-right font-bold text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+            </div>
+            <div>
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">거래일자</label>
+              <input type="date" value={transferForm.tradeDate} onChange={e => setTransferForm(f => ({ ...f, tradeDate: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">적요 *</label>
+              <input value={transferForm.description} onChange={e => setTransferForm(f => ({ ...f, description: e.target.value }))} placeholder={transferForm.debit && transferForm.credit ? `${transferForm.debit} → ${transferForm.credit} 전환` : '대체 내용 입력'} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">비고</label>
+              <input value={transferForm.memo} onChange={e => setTransferForm(f => ({ ...f, memo: e.target.value }))} placeholder="선택 입력" className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+            </div>
+          </div>
+          {transferForm.debit && transferForm.credit && (
+            <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-700 dark:text-amber-400 font-bold">
+              🔄 {transferForm.debit} → {transferForm.credit} 대체전표가 생성됩니다.
+            </div>
+          )}
+          <div className="flex justify-end">
+            <button onClick={saveEntry} className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-white text-sm font-bold cursor-pointer shadow-md bg-gradient-to-r from-[#f59e0b] to-[#d97706]">
+              <Save size={14} /> 대체 등록
+            </button>
+          </div>
+        </div>
+      )}
+
+      {(type !== 'withdrawal' || withdrawalMode !== 'transfer') && (
       <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4 space-y-3">
         {/* ━━ 입력 영역 ━━ */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -5625,6 +5716,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
             <Save size={14} /> {type === 'income' ? '입금 등록' : (type === 'withdrawal' && (!form.manager || form.manager === currentUserName) ? '결의품의' : '지출 등록')}
           </button>
         </div>
+      )}
       </div>
       </>
       )}
@@ -5779,6 +5871,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           <div className="flex items-center gap-2">
             <ScrollText size={14} className="text-primary-500" />
             <span className="text-sm font-extrabold text-[var(--text-primary)]">{type === 'income' ? '입금' : '지출'} 내역</span>
+            {type === 'withdrawal' && <span className="text-[9px] text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded font-bold">대체 포함</span>}
             <span className="text-[10px] text-[var(--text-muted)] bg-[var(--bg-muted)] px-2 py-0.5 rounded-full">{cashflows.length}건</span>
           </div>
           <span className="text-[13px] font-extrabold" style={{ color: typeColors[type] }}>{formatNumber(totalAmount)}원</span>
@@ -5800,7 +5893,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                 {cashflows.map(c => (
                   <tr key={c.id} className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors">
                     <td className="py-2.5 px-3.5 text-[12px] text-[var(--text-secondary)]">{c.date || ''}</td>
-                    <td className="py-2.5 px-3.5 text-[12px] font-bold text-[var(--text-primary)]">{c.description || '-'}</td>
+                    <td className="py-2.5 px-3.5 text-[12px] font-bold text-[var(--text-primary)]">{(c as any).type === 'transfer' ? '🔄 ' : ''}{c.description || '-'}{(c as any).type === 'transfer' && (c as any).counter && <span className="text-[10px] text-amber-600 ml-1">({(c as any).counter})</span>}</td>
                     {type === 'income' && (
                       <td className="py-2.5 px-3.5 text-[12px] text-[var(--text-secondary)]">{(c as any).incomeNote || '-'}</td>
                     )}
