@@ -1041,7 +1041,7 @@ interface Voucher {
 /* ─── 서브 페이지 정의 ── */
 const SUB_PAGES = [
   { key: 'overview',     label: '기본현황',   icon: LayoutDashboard },
-  { key: 'base_budget',  label: '기본현황',   icon: PieChart },
+  { key: 'base_budget',  label: '기초예산',   icon: PieChart },
   { key: 'approval',     label: '품의하기',   icon: FileCheck },
   { key: 'expense',      label: '지출하기',   icon: TrendingDown },
   { key: 'income',       label: '입금전표',   icon: TrendingUp },

@@ -72,7 +72,7 @@ const workNav: NavItem[] = [
    ═══════════════════════════════════════════ */
 const acctNav: { tab: string; label: string; icon: React.ElementType }[] = [
   { tab: 'overview',     label: '기본현황',   icon: LayoutDashboard },
-  { tab: 'base_budget',  label: '기본현황',   icon: Wallet },
+  { tab: 'base_budget',  label: '기초예산',   icon: Wallet },
   { tab: 'approval',     label: '품의하기',   icon: FileCheck },
   { tab: 'expense',      label: '지출하기',   icon: CreditCard },
   { tab: 'income',       label: '입금전표',   icon: ArrowDownCircle },

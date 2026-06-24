@@ -120,7 +120,10 @@ export function Header() {
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-500 text-white shrink-0">
             <Calculator size={13} />
             <span className="text-[12px] font-bold">{
-              activeTab === 'approval' ? '품의하기' : '기본현황'
+              (() => {
+                const tabLabels: Record<string, string> = { overview: '기본현황', base_budget: '기초예산', approval: '품의하기', expense: '지출하기', income: '입금전표', withdrawal: '출금전표', payment: '전표장부', cashflow_list: '입출금내역', reports: '회계현황', vendors: '거래처관리', methodReg: '수단등록', budgetTree: '예산과목', hq_vendor: '본사거래처', acct_mgmt: '계정관리' }
+                return tabLabels[activeTab] || '기본현황'
+              })()
             }</span>
           </div>
 

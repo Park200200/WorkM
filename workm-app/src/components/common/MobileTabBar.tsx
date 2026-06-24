@@ -59,7 +59,7 @@ const ACCT_DRAWER: Record<string, { icon: React.ElementType; label: string; colo
     { icon: ContactRound,    label: '거래처관리', color: '#6366f1', bg: 'rgba(99,102,241,.12)', tab: 'vendors' },
   ],
   acct_config: [
-    { icon: PieChart,  label: '기본현황', color: '#f59e0b', bg: 'rgba(245,158,11,.12)', tab: 'base_budget' },
+    { icon: PieChart,  label: '기초예산', color: '#f59e0b', bg: 'rgba(245,158,11,.12)', tab: 'base_budget' },
   ],
   acct_ledger: [
     { icon: FileCheck,       label: '품의하기',  color: '#06b6d4', bg: 'rgba(6,182,212,.12)',  tab: 'approval' },
