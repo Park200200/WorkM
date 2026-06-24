@@ -4355,7 +4355,11 @@ export function AcctApproval({ year }: { year: number }) {
             approverPosition: staffList.find(s => s.name === detailApproval.approver)?.position || '',
             approvalStatus: detailApproval.status || '',
             approvedMemo: (detailApproval as any).approvedMemo || '',
-            attachments: (detailApproval as any).attachments || [],
+            attachments: ((detailApproval as any).attachments || []).map((a: any) => ({
+              ...a,
+              type: a.type || (a.data?.startsWith?.('data:image') ? 'image/jpeg' : a.type),
+              dataUrl: a.dataUrl || a.data,
+            })),
             isGeneral: !!(detailApproval as any).isGeneral,
             approvalType: (detailApproval as any).isGeneral ? '일반품의' : ['preExpense','toResolve','confirming','completed'].includes(detailApproval.status) || !!(detailApproval as any).isPreExpense ? '선지출' : '지출품의',
             approvedDate: (detailApproval as any).approvedAt ? (detailApproval as any).approvedAt.slice(0, 10) : '',
