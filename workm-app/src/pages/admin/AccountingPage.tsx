@@ -6658,6 +6658,24 @@ function AcctPaymentLedger({ year, catId }: { year: number; catId?: string | nul
     return list
   }, [vouchers, voucherTypeFilter, voucherBudgetFilter, cashflows])
 
+  // 예산 필터만 적용 (유형 필터 제외) - 카드 카운트용
+  const budgetBaseVouchers = useMemo(() => {
+    if (!voucherBudgetFilter) return vouchers
+    const cfMap = new Map<string, string>()
+    cashflows.forEach((c: any) => {
+      if (c.budgetCatId) {
+        const key = `${(c.date || c.writeDate || '').slice(0,10)}_${Number(c.amount)}`
+        cfMap.set(key, String(c.budgetCatId))
+      }
+    })
+    return vouchers.filter(v => {
+      const directCat = String((v as any).budgetCatId || '')
+      if (directCat) return directCat === voucherBudgetFilter
+      const totalAmt = (v.entries || []).reduce((s, e) => e.side === 'debit' ? s + Number(e.amount || 0) : s, 0)
+      const key = `${(v.date || '').slice(0,10)}_${totalAmt}`
+      return cfMap.get(key) === voucherBudgetFilter
+    })
+  }, [vouchers, voucherBudgetFilter, cashflows])
   const openModal = (id?: string | number) => {
     if (id) {
       const v = getItem<Voucher[]>('acct_vouchers', []).find(x => String(x.id) === String(id))
@@ -6745,10 +6763,10 @@ function AcctPaymentLedger({ year, catId }: { year: number; catId?: string | nul
         </div>
         <div className="grid grid-cols-4 gap-2">
           {[
-            { label: '총 전표', value: vouchers.length, bg: 'rgba(255,255,255,.18)', filter: '' },
-            { label: '입금', value: incCnt, bg: 'rgba(34,197,94,.2)', filter: 'income' },
-            { label: '출금', value: expCnt, bg: 'rgba(239,68,68,.2)', filter: 'expense' },
-            { label: '대체', value: etcCnt, bg: 'rgba(245,158,11,.2)', filter: 'transfer' },
+            { label: '총 전표', value: budgetBaseVouchers.length, bg: 'rgba(255,255,255,.18)', filter: '' },
+            { label: '입금', value: budgetBaseVouchers.filter(v => v.type === 'income').length, bg: 'rgba(34,197,94,.2)', filter: 'income' },
+            { label: '출금', value: budgetBaseVouchers.filter(v => v.type === 'expense').length, bg: 'rgba(239,68,68,.2)', filter: 'expense' },
+            { label: '대체', value: budgetBaseVouchers.filter(v => v.type !== 'income' && v.type !== 'expense').length, bg: 'rgba(245,158,11,.2)', filter: 'transfer' },
           ].map(s => (
             <div key={s.label} onClick={() => setVoucherTypeFilter(voucherTypeFilter === s.filter ? '' : s.filter)} className={`rounded-xl p-2 text-center cursor-pointer transition-all ${voucherTypeFilter === s.filter ? 'ring-2 ring-white shadow-lg scale-[1.02]' : 'hover:bg-white/10'}`} style={{ background: s.bg }}>
               <div className="text-[9px] opacity-80">{s.label}</div>
