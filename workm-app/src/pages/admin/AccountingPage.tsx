@@ -4692,13 +4692,15 @@ export function AcctApproval({ year }: { year: number }) {
                 <select value={(form as any).budgetCatId || ''} onChange={e => {
                   const catId = e.target.value
                   const cat = budgetCats.find(c => String(c.id) === catId) as any
-                  // 예산구분의 approvers에서 승인권자 자동 설정
+                  // 예산구분의 승인권자 자동 설정 (추가 승인권자 우선)
                   let autoApprover = ''
                   if (cat) {
-                    if (cat.approvers && cat.approvers.length > 0) {
+                    if (cat.approver) {
+                      // 추가 승인권자가 있으면 추가 승인권자 사용
+                      autoApprover = cat.approver
+                    } else if (cat.approvers && cat.approvers.length > 0) {
                       autoApprover = cat.approvers[0]
                     } else {
-                      // approvers가 없으면 approverType === 'approver' 인 직원
                       const approverStaff = staffList.find(s => (s as any).approverType === 'approver')
                       if (approverStaff) autoApprover = approverStaff.name
                     }
@@ -4735,23 +4737,13 @@ export function AcctApproval({ year }: { year: number }) {
                   ) : (() => {
                     const selCatId = (form as any).budgetCatId || ''
                     const selCat = selCatId ? budgetCats.find(c => String(c.id) === selCatId) as any : null
-                    // approvers 배열 + approver 필드 + 기본 승인권자를 모두 합침
-                    const defaultApprover = staffList.find(s => (s as any).approverType === 'approver')?.name || ''
-                    const rawApprovers = [
-                      ...(selCat?.approvers || []),
-                      selCat?.approver || '',
-                      defaultApprover,
-                    ].filter(Boolean)
-                    const catApprovers: string[] = [...new Set(rawApprovers)]
-                    if (catApprovers.length > 1) {
-                      // 여러 승인권자: 드롭다운 선택
+                    // 추가 승인권자가 있으면 추가 승인권자만 표시
+                    const additionalApprover = selCat?.approver || ''
+                    if (additionalApprover) {
                       return (
-                        <select value={form.approver} onChange={e => setForm(f => ({ ...f, approver: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm font-bold text-[var(--text-primary)] focus:border-primary-500 outline-none">
-                          {catApprovers.map(ap => {
-                            const s = staffList.find(st => st.name === ap)
-                            return <option key={ap} value={ap}>{ap}{s?.position ? ` (${s.position})` : ''}</option>
-                          })}
-                        </select>
+                        <div className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm font-bold text-[var(--text-primary)]">
+                          {additionalApprover}
+                        </div>
                       )
                     }
                     return (
