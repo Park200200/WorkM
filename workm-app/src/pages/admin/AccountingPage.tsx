@@ -4675,7 +4675,7 @@ export function AcctApproval({ year }: { year: number }) {
       , document.body)}
 
       {/* ── 수정 폼 모달 (PrintApprovalForm 위에 표시) ── */}
-      {resubmitMode && detailApproval && createPortal(
+      {resubmitMode && detailApproval && !resubmitEvidenceOpen && createPortal(
         <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) { setResubmitMode(false); setApprovePwError('') } }}>
           <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-fadeIn max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border-default)]">
