@@ -10330,100 +10330,102 @@ function AcctCashflowList({ year }: { year: number }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* ── 타이틀 ── */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-extrabold text-[var(--text-primary)] flex items-center gap-2">
-          <ArrowLeftRight size={20} className="text-primary-500" />
+        <h2 className="text-base sm:text-lg font-extrabold text-[var(--text-primary)] flex items-center gap-2">
+          <ArrowLeftRight size={18} className="text-primary-500" />
           입출금내역
         </h2>
-        <button onClick={downloadCSV} className="px-3 py-1.5 rounded-lg bg-[#22c55e] text-white text-[11px] font-bold hover:bg-[#16a34a] cursor-pointer flex items-center gap-1 shadow-sm">
-          <Download size={13} /> CSV 다운로드
+        <button onClick={downloadCSV} className="px-2.5 py-1.5 rounded-lg bg-[#22c55e] text-white text-[10px] sm:text-[11px] font-bold hover:bg-[#16a34a] cursor-pointer flex items-center gap-1 shadow-sm">
+          <Download size={12} /> CSV
         </button>
       </div>
 
       {/* ── 8개 대시보드 카드 ── */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         {/* 1행: 실적 */}
         <div className={cardStyle('#22c55e', 'from-emerald-50/80 to-emerald-100/40 dark:from-emerald-900/20 dark:to-emerald-800/10')}>
-          <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mb-1">💵 총 입금</div>
-          <div className="text-[18px] font-extrabold text-emerald-700 dark:text-emerald-300">₩ {stats.totalIn.toLocaleString()}</div>
+          <div className="text-[9px] sm:text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mb-0.5 sm:mb-1">💵 총 입금</div>
+          <div className="text-[14px] sm:text-[18px] font-extrabold text-emerald-700 dark:text-emerald-300">₩{stats.totalIn.toLocaleString()}</div>
         </div>
         <div className={cardStyle('#ef4444', 'from-red-50/80 to-red-100/40 dark:from-red-900/20 dark:to-red-800/10')}>
-          <div className="text-[10px] font-bold text-red-500 dark:text-red-400 mb-1">💸 총 출금</div>
-          <div className="text-[18px] font-extrabold text-red-600 dark:text-red-300">₩ {stats.totalOut.toLocaleString()}</div>
+          <div className="text-[9px] sm:text-[10px] font-bold text-red-500 dark:text-red-400 mb-0.5 sm:mb-1">💸 총 출금</div>
+          <div className="text-[14px] sm:text-[18px] font-extrabold text-red-600 dark:text-red-300">₩{stats.totalOut.toLocaleString()}</div>
         </div>
         <div className={cardStyle('#3b82f6', 'from-blue-50/80 to-blue-100/40 dark:from-blue-900/20 dark:to-blue-800/10')}>
-          <div className="text-[10px] font-bold text-blue-500 dark:text-blue-400 mb-1">📈 순 증감</div>
-          <div className={`text-[18px] font-extrabold ${stats.net >= 0 ? 'text-blue-600 dark:text-blue-300' : 'text-red-600 dark:text-red-300'}`}>
-            {stats.net >= 0 ? '+' : ''}₩ {stats.net.toLocaleString()}
+          <div className="text-[9px] sm:text-[10px] font-bold text-blue-500 dark:text-blue-400 mb-0.5 sm:mb-1">📈 순 증감</div>
+          <div className={`text-[14px] sm:text-[18px] font-extrabold ${stats.net >= 0 ? 'text-blue-600 dark:text-blue-300' : 'text-red-600 dark:text-red-300'}`}>
+            {stats.net >= 0 ? '+' : ''}₩{stats.net.toLocaleString()}
           </div>
         </div>
         <div className={cardStyle('#1e293b', 'from-slate-50/80 to-slate-100/40 dark:from-slate-800/30 dark:to-slate-700/20')}>
-          <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">🏦 현재 잔액</div>
-          <div className="text-[18px] font-extrabold text-slate-700 dark:text-slate-200">₩ {stats.net.toLocaleString()}</div>
+          <div className="text-[9px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">🏦 현재 잔액</div>
+          <div className="text-[14px] sm:text-[18px] font-extrabold text-slate-700 dark:text-slate-200">₩{stats.net.toLocaleString()}</div>
         </div>
         {/* 2행: 미수·미지급·예정 (클릭 가능) */}
         <div onClick={() => setCardFilter(cardFilter === 'receivable' ? '' : 'receivable')} className={cardStyle('#f97316', 'from-orange-50/80 to-orange-100/40 dark:from-orange-900/20 dark:to-orange-800/10', cardFilter === 'receivable') + ' cursor-pointer'}>
-          <div className="text-[10px] font-bold text-orange-500 dark:text-orange-400 mb-1">📥 미수금</div>
-          <div className="text-[16px] font-extrabold text-orange-600 dark:text-orange-300">₩ {stats.receivableAmt.toLocaleString()}</div>
-          <div className="text-[10px] text-orange-400 mt-0.5">{stats.receivableCount}건 {cardFilter === 'receivable' && <span className="ml-1 text-primary-500">← 보기 중</span>}</div>
+          <div className="text-[9px] sm:text-[10px] font-bold text-orange-500 dark:text-orange-400 mb-0.5 sm:mb-1">📥 미수금</div>
+          <div className="text-[13px] sm:text-[16px] font-extrabold text-orange-600 dark:text-orange-300">₩{stats.receivableAmt.toLocaleString()}</div>
+          <div className="text-[9px] sm:text-[10px] text-orange-400 mt-0.5">{stats.receivableCount}건 {cardFilter === 'receivable' && <span className="ml-1 text-primary-500">← 보기 중</span>}</div>
         </div>
         <div onClick={() => setCardFilter(cardFilter === 'payable' ? '' : 'payable')} className={cardStyle('#8b5cf6', 'from-violet-50/80 to-violet-100/40 dark:from-violet-900/20 dark:to-violet-800/10', cardFilter === 'payable') + ' cursor-pointer'}>
-          <div className="text-[10px] font-bold text-violet-500 dark:text-violet-400 mb-1">📤 미지급금</div>
-          <div className="text-[16px] font-extrabold text-violet-600 dark:text-violet-300">₩ {stats.payableAmt.toLocaleString()}</div>
-          <div className="text-[10px] text-violet-400 mt-0.5">{stats.payableCount}건 {cardFilter === 'payable' && <span className="ml-1 text-primary-500">← 보기 중</span>}</div>
+          <div className="text-[9px] sm:text-[10px] font-bold text-violet-500 dark:text-violet-400 mb-0.5 sm:mb-1">📤 미지급금</div>
+          <div className="text-[13px] sm:text-[16px] font-extrabold text-violet-600 dark:text-violet-300">₩{stats.payableAmt.toLocaleString()}</div>
+          <div className="text-[9px] sm:text-[10px] text-violet-400 mt-0.5">{stats.payableCount}건 {cardFilter === 'payable' && <span className="ml-1 text-primary-500">← 보기 중</span>}</div>
         </div>
         <div onClick={() => setCardFilter(cardFilter === 'incomeScheduled' ? '' : 'incomeScheduled')} className={cardStyle('#10b981', 'from-teal-50/80 to-teal-100/40 dark:from-teal-900/20 dark:to-teal-800/10', cardFilter === 'incomeScheduled') + ' cursor-pointer'}>
-          <div className="text-[10px] font-bold text-teal-500 dark:text-teal-400 mb-1">🔜 입금 예정</div>
-          <div className="text-[16px] font-extrabold text-teal-600 dark:text-teal-300">₩ {stats.incomeSchedAmt.toLocaleString()}</div>
-          <div className="text-[10px] text-teal-400 mt-0.5">{stats.incomeSchedCount}건 {cardFilter === 'incomeScheduled' && <span className="ml-1 text-primary-500">← 보기 중</span>}</div>
+          <div className="text-[9px] sm:text-[10px] font-bold text-teal-500 dark:text-teal-400 mb-0.5 sm:mb-1">🔜 입금 예정</div>
+          <div className="text-[13px] sm:text-[16px] font-extrabold text-teal-600 dark:text-teal-300">₩{stats.incomeSchedAmt.toLocaleString()}</div>
+          <div className="text-[9px] sm:text-[10px] text-teal-400 mt-0.5">{stats.incomeSchedCount}건 {cardFilter === 'incomeScheduled' && <span className="ml-1 text-primary-500">← 보기 중</span>}</div>
         </div>
         <div onClick={() => setCardFilter(cardFilter === 'expenseScheduled' ? '' : 'expenseScheduled')} className={cardStyle('#f43f5e', 'from-rose-50/80 to-rose-100/40 dark:from-rose-900/20 dark:to-rose-800/10', cardFilter === 'expenseScheduled') + ' cursor-pointer'}>
-          <div className="text-[10px] font-bold text-rose-500 dark:text-rose-400 mb-1">🔜 출금 예정</div>
-          <div className="text-[16px] font-extrabold text-rose-600 dark:text-rose-300">₩ {stats.expenseSchedAmt.toLocaleString()}</div>
-          <div className="text-[10px] text-rose-400 mt-0.5">{stats.expenseSchedCount}건 {cardFilter === 'expenseScheduled' && <span className="ml-1 text-primary-500">← 보기 중</span>}</div>
+          <div className="text-[9px] sm:text-[10px] font-bold text-rose-500 dark:text-rose-400 mb-0.5 sm:mb-1">🔜 출금 예정</div>
+          <div className="text-[13px] sm:text-[16px] font-extrabold text-rose-600 dark:text-rose-300">₩{stats.expenseSchedAmt.toLocaleString()}</div>
+          <div className="text-[9px] sm:text-[10px] text-rose-400 mt-0.5">{stats.expenseSchedCount}건 {cardFilter === 'expenseScheduled' && <span className="ml-1 text-primary-500">← 보기 중</span>}</div>
         </div>
       </div>
 
       {/* ── 필터 바 ── */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-3 space-y-2">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-2.5 sm:p-3 space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--text-muted)]">
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--text-muted)] shrink-0">
             <Calendar size={13} /> 기간
           </div>
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="px-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[11px] text-[var(--text-primary)]" />
-          <span className="text-[11px] text-[var(--text-muted)]">~</span>
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="px-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[11px] text-[var(--text-primary)]" />
-          <div className="flex gap-1 ml-1">
+          <div className="flex items-center gap-1 flex-wrap">
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="px-1.5 sm:px-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[10px] sm:text-[11px] text-[var(--text-primary)] w-[105px] sm:w-auto" />
+            <span className="text-[11px] text-[var(--text-muted)]">~</span>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="px-1.5 sm:px-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[10px] sm:text-[11px] text-[var(--text-primary)] w-[105px] sm:w-auto" />
+          </div>
+          <div className="flex gap-1 flex-wrap">
             {[{label:'오늘',key:'today'},{label:'이번주',key:'week'},{label:'이번달',key:'month'},{label:'분기',key:'quarter'},{label:'연간',key:'year'}].map(p => (
-              <button key={p.key} onClick={() => setPreset(p.key)} className="px-2 py-0.5 rounded-full text-[10px] font-bold border border-[var(--border-default)] text-[var(--text-muted)] hover:bg-primary-50 hover:text-primary-600 hover:border-primary-300 transition-all cursor-pointer">{p.label}</button>
+              <button key={p.key} onClick={() => setPreset(p.key)} className="px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold border border-[var(--border-default)] text-[var(--text-muted)] hover:bg-primary-50 hover:text-primary-600 hover:border-primary-300 transition-all cursor-pointer">{p.label}</button>
             ))}
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--text-muted)]">
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--text-muted)] shrink-0">
             <Filter size={13} /> 필터
           </div>
-          <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="px-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[11px] text-[var(--text-primary)]">
+          <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="px-1.5 sm:px-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[10px] sm:text-[11px] text-[var(--text-primary)] max-w-[120px] sm:max-w-none">
             <option value="">전체 예산</option>
             {budgetCats.filter((c: any) => { const pf = c.periodFrom || ''; const pt = c.periodTo || ''; if (pf && pt) return pf <= `${year}-12-31` && pt >= `${year}-01-01`; return true }).map((c: any) => (
               <option key={c.id} value={String(c.id)}>{c.name}</option>
             ))}
           </select>
-          <select value={filterManager} onChange={e => setFilterManager(e.target.value)} className="px-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[11px] text-[var(--text-primary)]">
+          <select value={filterManager} onChange={e => setFilterManager(e.target.value)} className="px-1.5 sm:px-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[10px] sm:text-[11px] text-[var(--text-primary)] max-w-[100px] sm:max-w-none">
             <option value="">전체 담당자</option>
             {managers.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
           <div className="flex rounded-lg border border-[var(--border-default)] overflow-hidden">
             {[{label:'전체',val:'all'},{label:'입금',val:'income'},{label:'출금',val:'expense'}].map(t => (
-              <button key={t.val} onClick={() => setFilterType(t.val as any)} className={cn('px-2.5 py-1 text-[10px] font-bold cursor-pointer transition-all', filterType === t.val ? 'bg-primary-500 text-white' : 'bg-[var(--bg-base)] text-[var(--text-muted)] hover:bg-primary-50')}>{t.label}</button>
+              <button key={t.val} onClick={() => setFilterType(t.val as any)} className={cn('px-2 sm:px-2.5 py-1 text-[9px] sm:text-[10px] font-bold cursor-pointer transition-all', filterType === t.val ? 'bg-primary-500 text-white' : 'bg-[var(--bg-base)] text-[var(--text-muted)] hover:bg-primary-50')}>{t.label}</button>
             ))}
           </div>
-          <div className="flex-1 min-w-[150px]">
+          <div className="flex-1 min-w-[120px] sm:min-w-[150px]">
             <div className="relative">
               <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-              <input value={searchText} onChange={e => setSearchText(e.target.value)} placeholder="거래처·적요·금액 검색" className="w-full pl-7 pr-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[11px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500" />
+              <input value={searchText} onChange={e => setSearchText(e.target.value)} placeholder="거래처·적요·금액 검색" className="w-full pl-7 pr-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[10px] sm:text-[11px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500" />
             </div>
           </div>
         </div>
@@ -10431,15 +10433,15 @@ function AcctCashflowList({ year }: { year: number }) {
 
       {/* ── 건수 ── */}
       {cardFilter ? (
-        <div className="flex items-center justify-between text-[11px]">
+        <div className="flex items-center justify-between text-[10px] sm:text-[11px]">
           <span className="text-[var(--text-muted)]">
             <span className="font-bold text-primary-600">{cardFilter === 'receivable' ? '📥 미수금' : cardFilter === 'payable' ? '📤 미지급금' : cardFilter === 'incomeScheduled' ? '🔜 입금예정' : '🔜 출금예정'}</span>
             {' '}<span className="font-bold text-[var(--text-primary)]">{cardFilteredList.length}</span>건
           </span>
-          <button onClick={() => setCardFilter('')} className="px-2 py-0.5 rounded-full bg-[var(--bg-muted)] text-[10px] font-bold text-[var(--text-muted)] hover:bg-primary-100 hover:text-primary-600 cursor-pointer transition-all">✕ 전체보기</button>
+          <button onClick={() => setCardFilter('')} className="px-2 py-0.5 rounded-full bg-[var(--bg-muted)] text-[9px] sm:text-[10px] font-bold text-[var(--text-muted)] hover:bg-primary-100 hover:text-primary-600 cursor-pointer transition-all">✕ 전체보기</button>
         </div>
       ) : (
-        <div className="flex items-center justify-between text-[11px]">
+        <div className="flex items-center justify-between text-[10px] sm:text-[11px]">
           <span className="text-[var(--text-muted)]">총 <span className="font-bold text-[var(--text-primary)]">{filtered.length}</span>건</span>
           <span className="text-[var(--text-muted)]">
             입금 <span className="font-bold text-emerald-600">₩{stats.totalIn.toLocaleString()}</span>
@@ -10448,8 +10450,8 @@ function AcctCashflowList({ year }: { year: number }) {
         </div>
       )}
 
-      {/* ── 메인 테이블 ── */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+      {/* ── 데스크톱 테이블 (sm 이상) ── */}
+      <div className="hidden sm:block bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-[11px]">
             <thead>
@@ -10547,6 +10549,90 @@ function AcctCashflowList({ year }: { year: number }) {
             )}
           </table>
         </div>
+      </div>
+
+      {/* ── 모바일 카드 리스트 (sm 미만) ── */}
+      <div className="block sm:hidden space-y-2">
+        {(() => {
+          const displayList = cardFilter ? cardFilteredList : withBalance
+          if (displayList.length === 0) return (
+            <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-8 text-center text-[var(--text-muted)]">
+              <div className="flex flex-col items-center gap-2">
+                <ArrowLeftRight size={28} className="text-[var(--border-default)]" />
+                <span className="text-[11px]">{cardFilter ? '해당 항목이 없습니다' : '해당 기간의 입출금 내역이 없습니다'}</span>
+              </div>
+            </div>
+          )
+          return displayList.map((c: any, i: number) => {
+            const catName = budgetCats.find((cat: any) => String(cat.id) === String(c.budgetCatId))?.name || ''
+            const isIncome = c.type === 'income'
+            return (
+              <div key={c.id || i} className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-3 space-y-1.5">
+                {/* 1줄: 날짜 + 구분 + 금액 */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-[var(--text-primary)]">{(c.date || c.writeDate || '').slice(0, 10)}</span>
+                    <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${isIncome ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+                      {isIncome ? '입금' : '출금'}
+                    </span>
+                    {cardFilter && c._cardType && (
+                      <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                        c._cardType === '미수금' ? 'bg-orange-100 text-orange-700' :
+                        c._cardType === '미지급금' ? 'bg-violet-100 text-violet-700' :
+                        c._cardType === '입금예정' ? 'bg-teal-100 text-teal-700' :
+                        'bg-rose-100 text-rose-700'
+                      }`}>{c._cardType}</span>
+                    )}
+                  </div>
+                  <span className={`text-[13px] font-extrabold ${isIncome ? 'text-emerald-600' : 'text-red-500'}`}>₩{(c.amount||0).toLocaleString()}</span>
+                </div>
+                {/* 2줄: 거래처 + 적요 */}
+                <div className="flex items-center gap-2 text-[10px]">
+                  {(c.counter || c.description || c.incomeNote) && (
+                    <>
+                      {c.counter && <span className="font-bold text-[var(--text-primary)]">{c.counter}</span>}
+                      {(c.description || c.incomeNote) && <span className="text-[var(--text-muted)] truncate max-w-[200px]">{c.description || c.incomeNote}</span>}
+                    </>
+                  )}
+                </div>
+                {/* 3줄: 예산+담당자+잔액 */}
+                <div className="flex items-center justify-between text-[9px]">
+                  <div className="flex items-center gap-1.5">
+                    {catName && <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-bold">{catName}</span>}
+                    <span className="text-[var(--text-muted)]">{c.manager || c.createdBy || ''}</span>
+                  </div>
+                  {!cardFilter && <span className={`font-extrabold ${(c._balance||0) >= 0 ? 'text-[var(--text-secondary)]' : 'text-red-500'}`}>잔액 ₩{(c._balance||0).toLocaleString()}</span>}
+                  {(cardFilter === 'receivable' || cardFilter === 'payable') && !c._isApproval && (
+                    <button
+                      onClick={() => handleSettlement(c.id, cardFilter === 'receivable' ? 'received' : 'paid')}
+                      className={`px-2 py-1 rounded text-[9px] font-bold cursor-pointer ${
+                        cardFilter === 'receivable' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
+                      }`}
+                    >
+                      {cardFilter === 'receivable' ? '✅ 수금완료' : '✅ 지급완료'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })
+        })()}
+        {/* 모바일 합계 */}
+        {!cardFilter && withBalance.length > 0 && (
+          <div className="bg-[var(--bg-muted)] border border-[var(--border-default)] rounded-xl p-3 flex items-center justify-between text-[10px] font-bold">
+            <span className="text-[var(--text-primary)]">합계</span>
+            <div className="flex gap-3">
+              <span className="text-emerald-600">입금 ₩{stats.totalIn.toLocaleString()}</span>
+              <span className="text-red-500">출금 ₩{stats.totalOut.toLocaleString()}</span>
+            </div>
+          </div>
+        )}
+        {cardFilter && cardFilteredList.length > 0 && (
+          <div className="bg-[var(--bg-muted)] border border-[var(--border-default)] rounded-xl p-3 flex items-center justify-between text-[10px] font-bold">
+            <span className="text-[var(--text-primary)]">합계 ({cardFilteredList.length}건)</span>
+            <span className="text-[var(--text-primary)]">₩{cardFilteredList.reduce((s: number, c: any) => s + (c.amount || 0), 0).toLocaleString()}</span>
+          </div>
+        )}
       </div>
     </div>
   )
