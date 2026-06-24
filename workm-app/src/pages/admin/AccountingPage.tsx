@@ -9467,14 +9467,13 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
                                           value={item.noteType === '수신' ? (note.issuer || '') : (note.receiver || '')}
                                           onChange={e => {
                                             updateNote(item.id, note.id, item.noteType === '수신' ? 'issuer' : 'receiver', e.target.value)
-                                            updateNote(item.id, note.id, '_vendorSearch', e.target.value)
                                           }}
-                                          onFocus={() => updateNote(item.id, note.id, '_vendorDropOpen', true)}
-                                          onBlur={() => setTimeout(() => updateNote(item.id, note.id, '_vendorDropOpen', false), 200)}
+                                          onFocus={() => setVendorDropKey(`${item.id}-${note.id}`)}
+                                          onBlur={() => setTimeout(() => setVendorDropKey(k => k === `${item.id}-${note.id}` ? null : k), 200)}
                                           placeholder="거래처 검색..."
                                           className={DETAIL_INPUT}
                                         />
-                                        {note._vendorDropOpen && (() => {
+                                        {vendorDropKey === `${item.id}-${note.id}` && (() => {
                                           const vendorList: any[] = getItem('acct_vendors', [])
                                           const searchVal = (item.noteType === '수신' ? (note.issuer || '') : (note.receiver || '')).toLowerCase()
                                           const filtered = vendorList.filter(v => !searchVal || v.name.toLowerCase().includes(searchVal))
@@ -9485,8 +9484,9 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
                                                   key={v.id}
                                                   onMouseDown={e => {
                                                     e.preventDefault()
+                                                    e.stopPropagation()
                                                     updateNote(item.id, note.id, item.noteType === '수신' ? 'issuer' : 'receiver', v.name)
-                                                    updateNote(item.id, note.id, '_vendorDropOpen', false)
+                                                    setVendorDropKey(null)
                                                   }}
                                                   className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--bg-muted)] cursor-pointer flex items-center gap-2 transition-colors"
                                                 >
@@ -10136,6 +10136,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
     saveAll(allItems.map(i => i.id === itemId ? { ...i, notes: (i.notes || []).filter(n => n.id !== noteId) } : i))
   }
   const [endDropKey, setEndDropKey] = React.useState<string | null>(null)
+  const [vendorDropKey, setVendorDropKey] = React.useState<string | null>(null)
 
   const dirLabel = direction === 'expense' ? '지출수단' : '입금계정'
 
@@ -10664,14 +10665,13 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                               value={item.noteType === '수신' ? (note.issuer || '') : (note.receiver || '')}
                                               onChange={e => {
                                                 updateNote(item.id, note.id, item.noteType === '수신' ? 'issuer' : 'receiver', e.target.value)
-                                                updateNote(item.id, note.id, '_vendorSearch', e.target.value)
                                               }}
-                                              onFocus={() => updateNote(item.id, note.id, '_vendorDropOpen', true)}
-                                              onBlur={() => setTimeout(() => updateNote(item.id, note.id, '_vendorDropOpen', false), 200)}
+                                              onFocus={() => setVendorDropKey(`${item.id}-${note.id}`)}
+                                              onBlur={() => setTimeout(() => setVendorDropKey(k => k === `${item.id}-${note.id}` ? null : k), 200)}
                                               placeholder="거래처 검색..."
                                               className={DETAIL_INPUT}
                                             />
-                                            {note._vendorDropOpen && (() => {
+                                            {vendorDropKey === `${item.id}-${note.id}` && (() => {
                                               const vendorList: any[] = getItem('acct_vendors', [])
                                               const searchVal = (item.noteType === '수신' ? (note.issuer || '') : (note.receiver || '')).toLowerCase()
                                               const filtered = vendorList.filter(v => !searchVal || v.name.toLowerCase().includes(searchVal))
@@ -10682,8 +10682,9 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                                       key={v.id}
                                                       onMouseDown={e => {
                                                         e.preventDefault()
+                                                        e.stopPropagation()
                                                         updateNote(item.id, note.id, item.noteType === '수신' ? 'issuer' : 'receiver', v.name)
-                                                        updateNote(item.id, note.id, '_vendorDropOpen', false)
+                                                        setVendorDropKey(null)
                                                       }}
                                                       className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--bg-muted)] cursor-pointer flex items-center gap-2 transition-colors"
                                                     >
