@@ -1655,6 +1655,15 @@ function AcctBudget({ year }: { year: number }) {
   const [catModalOpen, setCatModalOpen] = useState(false)
   const [catEditId, setCatEditId] = useState<string | number | null>(null)
   const [bankModalOpen, setBankModalOpen] = useState(false)
+  const [bankAccounts, setBankAccounts] = useState<any[]>(() => getItem('acct_company_accounts', []))
+  const [bankEditId, setBankEditId] = useState<string | number | null>(null)
+  const emptyBankForm = { bankName: '', accountNumber: '', accountHolder: '', purpose: '', manager: '', memo: '', cards: [] as any[] }
+  const [bankForm, setBankForm] = useState(emptyBankForm)
+  const [bankAdding, setBankAdding] = useState(false)
+  const [bankExpandedCards, setBankExpandedCards] = useState<Record<string, boolean>>({})
+  const [bankAddingCardFor, setBankAddingCardFor] = useState<string | number | null>(null)
+  const emptyCardForm = { cardName: '', cardCompany: '', cardNumber: '', cardType: '체크카드', cardUser: '', expiryDate: '' }
+  const [bankCardForm, setBankCardForm] = useState(emptyCardForm)
   const [catForm, setCatForm] = useState({ name: '', description: '', bank: '', accounts: [] as BudgetCatAccount[], periodFrom: `${year}-01-01`, periodTo: `${year}-12-31`, users: [] as string[], approver: '' })
 
   // 지출수단에서 등록된 계좌+카드 목록
@@ -2854,25 +2863,26 @@ function AcctBudget({ year }: { year: number }) {
             </div>
             {/* 본문 + 하단 */}
             {(() => {
-                const [accounts, setAccounts] = React.useState<Array<{
-                  id: string | number; bankName: string; accountNumber: string; accountHolder: string;
-                  purpose: string; manager: string; memo: string;
-                  cards: Array<{ id: string | number; cardName: string; cardCompany: string; cardNumber: string; cardType: string; cardUser: string; expiryDate: string }>
-                }>>(getItem('acct_company_accounts', []))
-                const [editId, setEditId] = React.useState<string | number | null>(null)
-                const emptyForm = { bankName: '', accountNumber: '', accountHolder: '', purpose: '', manager: '', memo: '', cards: [] as any[] }
-                const [form, setForm] = React.useState(emptyForm)
-                const [adding, setAdding] = React.useState(false)
-                const [expandedCards, setExpandedCards] = React.useState<Record<string, boolean>>({})
-                const [addingCardFor, setAddingCardFor] = React.useState<string | number | null>(null)
-                const emptyCard = { cardName: '', cardCompany: '', cardNumber: '', cardType: '체크카드', cardUser: '', expiryDate: '' }
-                const [cardForm, setCardForm] = React.useState(emptyCard)
+                const accounts = bankAccounts
+                const setAccounts = setBankAccounts
+                const editId = bankEditId
+                const setEditId = setBankEditId
+                const form = bankForm
+                const setForm = setBankForm
+                const adding = bankAdding
+                const setAdding = setBankAdding
+                const expandedCards = bankExpandedCards
+                const setExpandedCards = setBankExpandedCards
+                const addingCardFor = bankAddingCardFor
+                const setAddingCardFor = setBankAddingCardFor
+                const cardForm = bankCardForm
+                const setCardForm = setBankCardForm
 
                 const save = (list: typeof accounts) => { setAccounts(list); setItem('acct_company_accounts', list) }
                 const toggleCards = (id: string | number) => setExpandedCards(p => ({ ...p, [String(id)]: !p[String(id)] }))
-                const startAdd = () => { setAdding(true); setEditId(null); setForm(emptyForm) }
+                const startAdd = () => { setAdding(true); setEditId(null); setForm(emptyBankForm) }
                 const startEdit = (acc: typeof accounts[0]) => { setEditId(acc.id); setAdding(false); setForm({ bankName: acc.bankName, accountNumber: acc.accountNumber, accountHolder: acc.accountHolder, purpose: acc.purpose, manager: acc.manager, memo: acc.memo, cards: acc.cards || [] }) }
-                const cancelEdit = () => { setEditId(null); setAdding(false); setForm(emptyForm) }
+                const cancelEdit = () => { setEditId(null); setAdding(false); setForm(emptyBankForm) }
 
                 const saveAccount = () => {
                   if (!form.bankName.trim() || !form.accountNumber.trim()) return
@@ -2888,7 +2898,7 @@ function AcctBudget({ year }: { year: number }) {
                 const addCard = (acctId: string | number) => {
                   if (!cardForm.cardName.trim() || !cardForm.cardNumber.trim()) return
                   save(accounts.map(a => String(a.id) === String(acctId) ? { ...a, cards: [...(a.cards || []), { id: Date.now(), ...cardForm }] } : a))
-                  setCardForm(emptyCard); setAddingCardFor(null)
+                  setCardForm(emptyCardForm); setAddingCardFor(null)
                 }
                 const deleteCard = (acctId: string | number, cardId: string | number) => {
                   save(accounts.map(a => String(a.id) === String(acctId) ? { ...a, cards: (a.cards || []).filter(c => String(c.id) !== String(cardId)) } : a))
@@ -3005,12 +3015,12 @@ function AcctBudget({ year }: { year: number }) {
                                         <input value={cardForm.expiryDate} onChange={e => setCardForm(f => ({ ...f, expiryDate: e.target.value }))} placeholder="유효기간" className="px-2 py-1.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs text-[var(--text-primary)] focus:border-primary-500 outline-none" />
                                       </div>
                                       <div className="flex justify-end gap-2">
-                                        <button onClick={() => { setAddingCardFor(null); setCardForm(emptyCard) }} className="px-2 py-1 rounded text-[11px] font-bold text-[var(--text-secondary)] border border-[var(--border-default)] hover:bg-[var(--bg-muted)] cursor-pointer transition-colors">취소</button>
+                                        <button onClick={() => { setAddingCardFor(null); setCardForm(emptyCardForm) }} className="px-2 py-1 rounded text-[11px] font-bold text-[var(--text-secondary)] border border-[var(--border-default)] hover:bg-[var(--bg-muted)] cursor-pointer transition-colors">취소</button>
                                         <button onClick={() => addCard(acc.id)} className="px-2 py-1 rounded text-[11px] font-bold text-white bg-violet-500 hover:bg-violet-600 cursor-pointer transition-colors">추가</button>
                                       </div>
                                     </div>
                                   ) : (
-                                    <button onClick={() => { setAddingCardFor(acc.id); setCardForm(emptyCard) }} className="w-full flex items-center justify-center gap-1 py-2 rounded-lg border border-dashed border-[var(--border-default)] text-xs font-bold text-[var(--text-muted)] hover:border-violet-400 hover:text-violet-500 cursor-pointer transition-colors">
+                                    <button onClick={() => { setAddingCardFor(acc.id); setCardForm(emptyCardForm) }} className="w-full flex items-center justify-center gap-1 py-2 rounded-lg border border-dashed border-[var(--border-default)] text-xs font-bold text-[var(--text-muted)] hover:border-violet-400 hover:text-violet-500 cursor-pointer transition-colors">
                                       <Plus size={12} /> 카드 추가
                                     </button>
                                   )}
