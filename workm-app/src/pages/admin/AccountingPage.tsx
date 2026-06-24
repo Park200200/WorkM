@@ -2916,9 +2916,21 @@ function AcctBudget({ year }: { year: number }) {
                         <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">계좌번호 *</label>
                         <input value={form.accountNumber} onChange={e => setForm(f => ({ ...f, accountNumber: e.target.value }))} placeholder="000-000-000000" className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors" />
                       </div>
-                      <div>
+                      <div className="relative">
                         <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">예금주</label>
-                        <input value={form.accountHolder} onChange={e => setForm(f => ({ ...f, accountHolder: e.target.value }))} placeholder="예금주명" className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors" />
+                        <input value={form.accountHolder} onChange={e => setForm(f => ({ ...f, accountHolder: e.target.value }))} placeholder="선택 또는 직접 입력" className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors" onFocus={e => { const dd = e.currentTarget.nextElementSibling as HTMLElement; if (dd) dd.style.display = 'block' }} onBlur={() => setTimeout(() => { const dd = document.getElementById('holder-dropdown'); if (dd) dd.style.display = 'none' }, 150)} />
+                        <div id="holder-dropdown" style={{ display: 'none' }} className="absolute z-50 top-full left-0 right-0 mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg shadow-lg max-h-32 overflow-y-auto">
+                          {(() => {
+                            const holders = Array.from(new Set(accounts.map(a => a.accountHolder).filter(Boolean)))
+                            const filtered = holders.filter(h => !form.accountHolder || h.includes(form.accountHolder))
+                            if (filtered.length === 0) return <div className="px-3 py-2 text-xs text-[var(--text-muted)]">직접 입력하세요</div>
+                            return filtered.map(h => (
+                              <button key={h} type="button" onMouseDown={e => { e.preventDefault(); setForm(f => ({ ...f, accountHolder: h })); const dd = document.getElementById('holder-dropdown'); if (dd) dd.style.display = 'none' }} className="w-full text-left px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-primary-50 dark:hover:bg-primary-900/20 cursor-pointer transition-colors">
+                                {h}
+                              </button>
+                            ))
+                          })()}
+                        </div>
                       </div>
                       <div>
                         <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">용도</label>
