@@ -5098,14 +5098,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const [wdEvidenceOpen, setWdEvidenceOpen] = useState(false)
   const [wdEvidenceEdit, setWdEvidenceEdit] = useState(true)
   const [withdrawalMode, setWithdrawalMode] = useState<'withdrawal' | 'transfer'>('withdrawal')
-  const allTransferCategories = ['현금', '상품권', '어음', '계좌'] as const
-  const allPayMethodsRaw: any[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
-  const transferPayMethods: any[] = selectedBudgetCat
-    ? allPayMethodsRaw.filter(p => String(p.budgetCatId || '') === String(selectedBudgetCat))
-    : allPayMethodsRaw
-  const transferAccounts = (() => {
-    return allTransferCategories.filter(cat => transferPayMethods.some(p => p.category === cat))
-  })()
+
   const [transferForm, setTransferForm] = useState({ debit: '', debitDetail: '', credit: '', creditDetail: '', amount: '', tradeDate: today, description: '', memo: '', reason: '' })
   const [transferAttachments, setTransferAttachments] = useState<{name:string; data:string; size:number; title:string; printWidth:number; row?:number}[]>([])
   const [transferEvidenceOpen, setTransferEvidenceOpen] = useState(false)
@@ -5119,6 +5112,14 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const [selectedApprovalId, setSelectedApprovalId] = useState<string | null>(null)
   const [approvalMeta, setApprovalMeta] = useState<{approver:string; requestDate:string; approvedDate:string; budgetCatName:string; accountCode:string; budgetCatId?:string}>({approver:'',requestDate:'',approvedDate:'',budgetCatName:'',accountCode:''})
   const [selectedBudgetCat, setSelectedBudgetCat] = useState('')
+  const allTransferCategories = ['현금', '상품권', '어음', '계좌'] as const
+  const allPayMethodsRaw: any[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
+  const transferPayMethods: any[] = selectedBudgetCat
+    ? allPayMethodsRaw.filter(p => String(p.budgetCatId || '') === String(selectedBudgetCat))
+    : allPayMethodsRaw
+  const transferAccounts = (() => {
+    return allTransferCategories.filter(cat => transferPayMethods.some(p => p.category === cat))
+  })()
   const [wdBudgetItem, setWdBudgetItem] = useState('')
   const [wdCatName, setWdCatName] = useState('')
   // 출금전표 통합 검색
