@@ -3459,7 +3459,16 @@ export function AcctApproval({ year }: { year: number }) {
   const [refresh, setRefresh] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [detailApproval, setDetailApproval] = useState<Approval | null>(null)
+  const [detailApproval, setDetailApproval] = useState<Approval | null>(() => {
+    // URL의 openId 파라미터로 반려 품의 자동 열기
+    const openId = searchParams.get('openId')
+    if (openId) {
+      const all: any[] = getItem('acct_approvals', [])
+      const found = all.find((a: any) => String(a.id) === openId)
+      return found || null
+    }
+    return null
+  })
   const [approvalBtnLabel, setApprovalBtnLabel] = useState(() => getItem('acct_approval_btn_label', '품의 등록'))
   const [editingBtnLabel, setEditingBtnLabel] = useState(false)
   const [editingDescText, setEditingDescText] = useState('')
@@ -6648,13 +6657,8 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                             style={{ background: statusBg, color: statusColor }}
                             onClick={() => {
                               if (statusLabel === '반려' && aId) {
-                                // 반려된 품의: 먼저 데이터 로드 후 탭 전환
-                                const apAll: any[] = getItem('acct_approvals', [])
-                                const ap = apAll.find((a: any) => String(a.id) === String(aId))
-                                if (ap) {
-                                  setDetailApproval(ap)
-                                  setActiveTab('approval')
-                                }
+                                // 반려된 품의: URL로 품의하기 페이지 이동 + openId 전달
+                                window.location.hash = `/accounting?tab=approval&group=inbox&subtab=rejected&openId=${aId}`
                               }
                             }}
                             title={statusLabel === '반려' ? '클릭하여 수정' : ''}
