@@ -6467,24 +6467,53 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                 seen.add(key)
                 return true
               })
+              const cfs: CashFlow[] = getItem('acct_cashflows', [])
+              // 계좌 잔액 계산 헬퍼
+              const calcAcctBal = (p: PayMethodItem) => {
+                const acctIn = cfs.filter(cf => cf.type === 'income' && (cf as any).payMethod === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                const acctInT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '계좌' && (cf as any).debitDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                const acctOut = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '계좌' && (cf as any).payDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                const acctOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '계좌' && (cf as any).creditDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                return (p.initialBalance || 0) + acctIn + acctInT - acctOut - acctOutT
+              }
+              // 현금 잔액 계산 헬퍼
+              const calcCashBal = (p: PayMethodItem) => {
+                const cashIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                const cashOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '현금' && (cf as any).creditDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                const cashOutE = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '현금' && (cf as any).payDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                return cashIn - cashOutT - cashOutE
+              }
+              // 상품권 잔여수 계산 헬퍼
+              const calcVoucherRemain = (p: PayMethodItem) => {
+                const qty = p.voucherQty || 0
+                const usedQty = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '상품권' && (cf as any).payDetail === p.name).length
+                return qty - usedQty
+              }
               // 계좌 + 하위 카드 그룹
-              const bankGroups: {bank: typeof payItems[0]; cards: any[]}[] = []
+              const bankGroups: {bank: typeof payItems[0]; cards: any[]; balance: number}[] = []
               payItems.filter(p => p.category === '계좌').forEach(p => {
-                bankGroups.push({ bank: p, cards: p.cards || [] })
+                bankGroups.push({ bank: p, cards: p.cards || [], balance: calcAcctBal(p) })
               })
-              payItems.filter(p => p.category === '현금').forEach(p => payOpts.push({ value: p.name, label: `💵 ${p.name}`, group: '현금' }))
+              payItems.filter(p => p.category === '현금').forEach(p => {
+                const bal = calcCashBal(p)
+                payOpts.push({ value: p.name, label: `현금 ${p.name} [잔액 ${bal.toLocaleString()}원]`, group: '현금' })
+              })
               // 어음: 발행어음만 (수신어음은 출금 불가)
               payItems.filter(p => p.category === '어음').forEach(p => {
                 if (p.notes && p.notes.length > 0) {
                   p.notes.forEach((note: any) => {
                     const typeLabel = p.noteType === '발행' ? '발행' : '수신'
                     const amt = note.amount ? Number(note.amount).toLocaleString() + '원' : ''
-                    const label = `📄 ${p.name} - ${typeLabel} ${note.noteNumber || ''} ${amt}`.trim()
+                    const label = `${p.name} - ${typeLabel} ${note.noteNumber || ''} ${amt}`.trim()
                     payOpts.push({ value: `어음:${p.name}:${note.id}`, label, group: '어음' })
                   })
                 }
               })
-              payItems.filter(p => p.category === '상품권').forEach(p => payOpts.push({ value: p.name, label: `🎟️ ${p.name}`, group: '상품권' }))
+              payItems.filter(p => p.category === '상품권').forEach(p => {
+                const remain = calcVoucherRemain(p)
+                const qty = p.voucherQty || 0
+                payOpts.push({ value: p.name, label: `상품권 ${p.name} [잔여 ${remain}매/${qty}매]`, group: '상품권' })
+              })
               const totalOpts = bankGroups.length + payOpts.length
               if (totalOpts === 0) {
                 return (
@@ -6521,7 +6550,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                 }} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
                   <option value="">— 선택 —</option>
                   {bankGroups.map(bg => (
-                    <optgroup key={bg.bank.name} label={`🏦 ${bg.bank.name}${bg.bank.bankName ? ' (' + bg.bank.bankName + ')' : ''}`}>
+                    <optgroup key={bg.bank.name} label={`${bg.bank.name}${bg.bank.bankName ? ' (' + bg.bank.bankName + ')' : ''} [잔액 ${bg.balance.toLocaleString()}원]`}>
                       <option value={`계좌:${bg.bank.name}`}>계좌이체{bg.bank.accountNumber ? ' • ' + bg.bank.accountNumber : ''}</option>
                       {bg.cards.map((card: any) => (
                         <option key={card.id || card.cardNumber} value={`카드:${card.cardName || card.cardNumber}`}>💳 {card.cardName || '카드'}{card.cardNumber ? ' ' + card.cardNumber : ''}</option>
