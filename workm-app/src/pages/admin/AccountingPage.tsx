@@ -25,6 +25,73 @@ import {
   CreditCard, Settings, Smartphone, User, Phone, Mail, Landmark,
 } from 'lucide-react'
 
+/* ─── 서버 설정 동기화 ── */
+const SYNC_KEYS = [
+  'acct_accounts', 'acct_budgets', 'acct_budget_cats', 'acct_budget_item_defs',
+  'acct_pay_methods_v2', 'acct_income_methods', 'acct_payment_methods',
+  'acct_cashflows', 'acct_vouchers', 'acct_approvals', 'acct_vendors',
+  'acct_opening_balances', 'acct_hq_vendors', 'ws_users',
+  'acct_itemName_history', 'acct_subItemName_history',
+  'acct_desc_myRequest_pending', 'acct_desc_myRequest_preExpense',
+  'acct_title_myRequest_pending', 'acct_title_myRequest_preExpense',
+  'acct_title_myRequest_approved', 'acct_title_myApproval_approved',
+]
+
+export async function loadSettingsFromServer() {
+  try {
+    const base = import.meta.env.BASE_URL || '/'
+    const res = await fetch(`${base}data/settings.json?t=${Date.now()}`)
+    if (!res.ok) return false
+    const data = await res.json()
+    if (!data || typeof data !== 'object') return false
+    let loaded = 0
+    for (const key of Object.keys(data)) {
+      // 이미 로컬에 있으면 덮어쓰지 않음 (로컬 우선)
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, typeof data[key] === 'string' ? data[key] : JSON.stringify(data[key]))
+        loaded++
+      }
+    }
+    return loaded > 0
+  } catch { return false }
+}
+
+export function exportSettingsJson(): string {
+  const data: Record<string, any> = {}
+  for (const key of SYNC_KEYS) {
+    const val = localStorage.getItem(key)
+    if (val) {
+      try { data[key] = JSON.parse(val) } catch { data[key] = val }
+    }
+  }
+  return JSON.stringify(data, null, 2)
+}
+
+export function downloadSettingsJson() {
+  const json = exportSettingsJson()
+  const blob = new Blob([json], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'settings.json'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export function importSettingsFromJson(json: string, overwrite = true): number {
+  try {
+    const data = JSON.parse(json)
+    let count = 0
+    for (const key of Object.keys(data)) {
+      if (overwrite || !localStorage.getItem(key)) {
+        localStorage.setItem(key, typeof data[key] === 'string' ? data[key] : JSON.stringify(data[key]))
+        count++
+      }
+    }
+    return count
+  } catch { return 0 }
+}
+
 /* ─── 회계 시드 데이터 초기화 ── */
 export function initAccountingSeed() {
   // ── 시드 데이터 버전 관리: 기초자료만 갱신, 사용자 데이터 보존 ──
@@ -988,7 +1055,12 @@ export function AccountingPage() {
     return cy === year
   }), [year])
 
-  useEffect(() => { initAccountingSeed() }, [])
+  useEffect(() => {
+    // 서버에서 설정 로드 후 시드 초기화
+    loadSettingsFromServer().finally(() => {
+      initAccountingSeed()
+    })
+  }, [])
 
   // ── 권한 없는 탭 접근 시 리디렉트 ──
   useEffect(() => {
@@ -1197,8 +1269,67 @@ function AcctOverview({ year, selectedCatId }: { year: number; selectedCatId: st
     setSearchParams(params)
   }
 
+  const addToast = useToastStore(s => s.add)
+
+  const handleServerSave = () => {
+    downloadSettingsJson()
+    addToast('success', '설정 파일(settings.json)이 다운로드됩니다. docs/data/ 폴더에 넣고 배포하세요.')
+  }
+
+  const handleServerLoad = async () => {
+    const loaded = await loadSettingsFromServer()
+    if (loaded) {
+      addToast('success', '서버에서 설정을 불러왔습니다. 새로고침합니다.')
+      setTimeout(() => window.location.reload(), 1000)
+    } else {
+      addToast('info', '서버에 저장된 설정이 없거나 이미 최신 상태입니다.')
+    }
+  }
+
+  const handleFileImport = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.json'
+    input.onchange = (e: any) => {
+      const file = e.target.files?.[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = () => {
+        const count = importSettingsFromJson(reader.result as string, true)
+        if (count > 0) {
+          addToast('success', `${count}개 설정을 불러왔습니다. 새로고침합니다.`)
+          setTimeout(() => window.location.reload(), 1000)
+        } else {
+          addToast('error', '올바른 설정 파일이 아닙니다.')
+        }
+      }
+      reader.readAsText(file)
+    }
+    input.click()
+  }
+
   return (
     <div className="space-y-4">
+      {/* ── 데이터 동기화 ── */}
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <span className="text-sm font-extrabold text-[var(--text-primary)]">📦 데이터 동기화</span>
+            <p className="text-[10px] text-[var(--text-muted)] mt-0.5">로컬 설정을 서버에 저장하거나, 서버에서 불러올 수 있습니다</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleServerSave} className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors flex items-center gap-1">
+              ⬆️ 서버 저장
+            </button>
+            <button onClick={handleServerLoad} className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-blue-500 text-white hover:bg-blue-600 transition-colors flex items-center gap-1">
+              ⬇️ 서버에서 불러오기
+            </button>
+            <button onClick={handleFileImport} className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-[var(--bg-muted)] text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-1">
+              📂 파일 불러오기
+            </button>
+          </div>
+        </div>
+      </div>
       {/* ── 통계 카드 ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {statCards.map(card => {
