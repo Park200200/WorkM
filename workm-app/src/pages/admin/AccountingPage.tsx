@@ -240,6 +240,16 @@ export function initAccountingSeed() {
     localStorage.setItem('_acct_subsidy_patch_v1', '1')
   }
 
+  /* ── 상품권 계정과목 패치 ── */
+  if (!localStorage.getItem('_acct_voucher_acct_patch_v1')) {
+    const existing = getItem<any[]>('acct_accounts', [])
+    if (existing.length > 0 && !existing.some(a => a.name === '상품권' && a.type === 'asset')) {
+      existing.push({ code: '1-01-20', name: '상품권', type: 'asset', group: '유동자산', description: '문화상품권·백화점상품권 등 유가증권 성격의 상품권', active: true })
+      setItem('acct_accounts', existing)
+    }
+    localStorage.setItem('_acct_voucher_acct_patch_v1', '1')
+  }
+
   /* ── 선지출 품의가 approved 상태인 경우 toResolve로 자동 마이그레이션 ── */
   if (!localStorage.getItem('_acct_preexp_resolve_v1')) {
     const existingApprovals = getItem<any[]>('acct_approvals', [])
@@ -289,6 +299,7 @@ export function initAccountingSeed() {
       { code: '1-01-17', name: '재고자산(원재료)', type: 'asset', group: '유동자산', description: '제품 제조에 투입될 원자재' },
       { code: '1-01-18', name: '재고자산(재공품)', type: 'asset', group: '유동자산', description: '제조 과정 중인 미완성 제품' },
       { code: '1-01-19', name: '단기금융상품', type: 'asset', group: '유동자산', description: '만기 1년 이내 금융상품(CD, MMF 등)' },
+      { code: '1-01-20', name: '상품권', type: 'asset', group: '유동자산', description: '문화상품권·백화점상품권 등 유가증권 성격의 상품권' },
       { code: '1-02-01', name: '토지', type: 'asset', group: '비유동자산', description: '사업용 토지(감가상각 대상 아님)' },
       { code: '1-02-02', name: '건물', type: 'asset', group: '비유동자산', description: '사무실·공장·창고 등 사업용 건축물' },
       { code: '1-02-03', name: '건물감가상각누계액', type: 'asset', group: '비유동자산', description: '건물의 누적 감가상각액(차감계정)' },
