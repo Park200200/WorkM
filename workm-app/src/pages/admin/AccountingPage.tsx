@@ -5390,7 +5390,22 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                   const selectedIM = allIM.find(a => a.name === v)
                   const revenueAcct = (selectedIM as any)?.revenueAccountCode || ''
                   const assetAcct = (selectedIM as any)?.accountCode || ''
-                  setForm(f => ({ ...f, desc: v, accountCode: revenueAcct, incomeAssetAccount: assetAcct } as any))
+                  // 입금수단 자동 세팅: 카테고리 + 계좌정보
+                  let autoMethod = ''
+                  if (selectedIM) {
+                    if (selectedIM.category === '계좌' && selectedIM.bankName) {
+                      autoMethod = `🏦 ${selectedIM.name} • ${selectedIM.accountNumber || ''}`
+                    } else if (selectedIM.category === '현금') {
+                      autoMethod = `💵 ${selectedIM.name}`
+                    } else if (selectedIM.category === '어음') {
+                      autoMethod = `📄 ${selectedIM.name}`
+                    } else if (selectedIM.category === '상품권') {
+                      autoMethod = `🎟️ ${selectedIM.name}`
+                    } else {
+                      autoMethod = selectedIM.name
+                    }
+                  }
+                  setForm(f => ({ ...f, desc: v, accountCode: revenueAcct, incomeAssetAccount: assetAcct, method: autoMethod } as any))
                 }}
                 placeholder="— 입금계정 선택 —"
                 options={[
@@ -5714,7 +5729,13 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           </div>
           <div>
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'income' ? '입금' : '지출'}수단</label>
-            {(() => {
+            {type === 'income' ? (
+              <input
+                value={form.method || '입금계정을 선택하면 자동 설정됩니다'}
+                readOnly
+                className={`w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] text-sm outline-none cursor-not-allowed ${form.method ? 'bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-300 font-bold' : 'bg-[var(--bg-muted)] text-[var(--text-muted)]'}`}
+              />
+            ) : (() => {
               // 지출수단 관리에서 등록된 수단만 사용 (예산구분별 필터)
               const catIdVal = selectedBudgetCat
               if (!catIdVal) {
