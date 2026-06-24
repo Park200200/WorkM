@@ -287,9 +287,10 @@ export function initAccountingSeed() {
   const oldKeys = ['_acct_react_seed_v1','_acct_react_seed_v2','_acct_react_seed_v3','_acct_react_seed_v4','_acct_react_seed_v5','_acct_react_seed_v6','_acct_react_seed_v7','_acct_react_seed_v8','_acct_react_seed_v9','_acct_react_seed_v10']
   const hadOldSeed = oldKeys.some(k => localStorage.getItem(k))
   if (hadOldSeed) {
-    // 이전 시드 버전 키 제거 + 회계 데이터 클리어
+    // 이전 시드 버전 키만 제거 (사용자 거래 데이터는 보존)
     oldKeys.forEach(k => localStorage.removeItem(k))
-    ;['acct_budget_cats','acct_budgets','acct_approvals','acct_cashflows','acct_vouchers','acct_vendors'].forEach(k => localStorage.removeItem(k))
+    // 주의: acct_approvals, acct_cashflows, acct_vouchers, acct_vendors 등
+    // 사용자 거래 데이터는 삭제하지 않음 (시드 갱신과 무관한 실제 업무 데이터)
   }
 
   /* ── 계정과목 시드 (버전 변경 시 강제 리셋) ── */
