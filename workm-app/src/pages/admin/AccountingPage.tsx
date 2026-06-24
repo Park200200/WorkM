@@ -4248,7 +4248,7 @@ export function AcctApproval({ year }: { year: number }) {
                       <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-1 text-[10px]">
                           {(a as any).applicant && (
-                            <span className="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 font-bold">품의-{(a as any).applicant}</span>
+                            <span className="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 font-bold">{isPreExp ? '지출' : '품의'}-{(a as any).applicant}</span>
                           )}
                           {(a as any).approver && (
                             <span className={cn('px-1.5 py-0.5 rounded font-bold',
