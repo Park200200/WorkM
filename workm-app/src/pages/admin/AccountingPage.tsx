@@ -5444,11 +5444,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           </>
           ) : (
           <>
-            {/* 출금전표: 지출내용 + 예산선택 */}
-            <div>
-              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{(!form.manager || form.manager === currentUserName) ? '품의명' : '지출내용'} *</label>
-              <input value={form.desc} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))} placeholder="예) 사무용품 구매" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
-            </div>
+            {/* 출금전표: 1) 예산선택 */}
             <div>
               <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                 <label className="text-[10.5px] font-bold text-[var(--text-muted)]">예산선택</label>
@@ -5470,6 +5466,11 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                 })()}
               </div>
               <input value={wdCatName || '예산구분 선택'} readOnly className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] cursor-not-allowed outline-none font-bold" />
+            </div>
+            {/* 출금전표: 2) 품의명/지출내용 */}
+            <div>
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{(!form.manager || form.manager === currentUserName) ? '품의명' : '지출내용'} *</label>
+              <input value={form.desc} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))} placeholder="예) 사무용품 구매" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
             </div>
           </>
           )}
