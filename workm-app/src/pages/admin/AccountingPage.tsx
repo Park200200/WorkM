@@ -4659,9 +4659,9 @@ export function AcctApproval({ year }: { year: number }) {
                           className="w-full text-left px-3 py-2 hover:bg-[var(--bg-muted)] transition-colors cursor-pointer border-b border-[var(--border-default)] last:border-0"
                         >
                           <div className="text-[11px] font-bold text-[var(--text-primary)]">{r.path}</div>
-                          <div className="text-[10px] text-[var(--text-muted)]">
-                            예산 ₩{r.amount.toLocaleString()} | 잔액 ₩{r.remaining.toLocaleString()}
-                            {r.accountCode && ` | ${r.accountCode} ${r.accountName || ''}`}
+                          <div className="text-[10px] font-bold text-[#ef4444]">
+                            예산 ₩{r.amount.toLocaleString()} | 잔액 ₩{r.remaining.toLocaleString()} | 사용율 {r.amount > 0 ? Math.round((r.spent / r.amount) * 100) : 0}%
+                            {r.accountCode && <span className="text-[var(--text-muted)] font-normal"> | {r.accountCode} {r.accountName || ''}</span>}
                           </div>
                         </button>
                       ))}
