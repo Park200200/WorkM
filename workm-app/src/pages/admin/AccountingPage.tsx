@@ -6603,12 +6603,13 @@ function AcctPaymentLedger({ year }: { year: number }) {
     let changed = false
     all.forEach((v: any) => {
       if (!v.budgetCatId && v.date && v.entries) {
-        const totalAmt = (v.entries || []).reduce((s: number, e: any) => e.side === 'debit' ? s + e.amount : s, 0)
-        const match = cfs.find((c: any) =>
-          (c.date === v.date || c.writeDate === v.date) &&
-          c.amount === totalAmt &&
-          c.budgetCatId
-        )
+        const totalAmt = Number((v.entries || []).reduce((s: number, e: any) => e.side === 'debit' ? s + Number(e.amount || 0) : s, 0))
+        // 날짜+금액+타입 매칭
+        const match = cfs.find((c: any) => {
+          const cfDate = (c.date || c.writeDate || '').slice(0, 10)
+          const vDate = (v.date || '').slice(0, 10)
+          return cfDate === vDate && Number(c.amount) === totalAmt && c.budgetCatId
+        })
         if (match) {
           v.budgetCatId = match.budgetCatId
           changed = true
@@ -6620,6 +6621,7 @@ function AcctPaymentLedger({ year }: { year: number }) {
       setRefresh(r => r + 1)
     }
   }, [])
+
   const filteredVouchers = useMemo(() => {
     let list = vouchers
     if (voucherTypeFilter) {
@@ -6631,10 +6633,21 @@ function AcctPaymentLedger({ year }: { year: number }) {
       })
     }
     if (voucherBudgetFilter) {
-      // 전표에 직접 저장된 budgetCatId로 필터링
+      // 직접 budgetCatId가 있으면 사용, 없으면 cashflow에서 매칭
+      const cfMap = new Map<string, string>()
+      cashflows.forEach((c: any) => {
+        if (c.budgetCatId) {
+          const key = `${(c.date || c.writeDate || '').slice(0,10)}_${Number(c.amount)}`
+          cfMap.set(key, String(c.budgetCatId))
+        }
+      })
       list = list.filter(v => {
-        const catId = String((v as any).budgetCatId || '')
-        return catId === voucherBudgetFilter
+        const directCat = String((v as any).budgetCatId || '')
+        if (directCat) return directCat === voucherBudgetFilter
+        // 폴백: cashflow 매칭
+        const totalAmt = (v.entries || []).reduce((s, e) => e.side === 'debit' ? s + Number(e.amount || 0) : s, 0)
+        const key = `${(v.date || '').slice(0,10)}_${totalAmt}`
+        return cfMap.get(key) === voucherBudgetFilter
       })
     }
     return list
