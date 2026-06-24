@@ -1666,15 +1666,19 @@ function AcctBudget({ year }: { year: number }) {
   const [bankCardForm, setBankCardForm] = useState(emptyCardForm)
   const [catForm, setCatForm] = useState({ name: '', description: '', bank: '', accounts: [] as BudgetCatAccount[], periodFrom: `${year}-01-01`, periodTo: `${year}-12-31`, users: [] as string[], approver: '' })
 
-  // 지출수단에서 등록된 계좌+카드 목록
+  // 계좌관리에서 등록된 계좌+카드 목록
   const registeredAccounts = useMemo(() => {
     try {
-      const raw = localStorage.getItem('acct_pay_methods_v2')
-      if (!raw) return []
-      const items = JSON.parse(raw) as any[]
-      return items.filter((i: any) => i.category === '계좌' && (i.bankName || i.accountNumber))
+      const accts = getItem<any[]>('acct_company_accounts', [])
+      return accts.filter((a: any) => a.bankName || a.accountNumber).map((a: any) => ({
+        ...a,
+        bankName: a.bankName || '',
+        accountNumber: a.accountNumber || '',
+        accountHolder: a.accountHolder || '',
+        cards: a.cards || []
+      }))
     } catch { return [] }
-  }, [catModalOpen])
+  }, [catModalOpen, bankModalOpen])
 
   const [budgetModalOpen, setBudgetModalOpen] = useState(false)
   const [budgetEditId, setBudgetEditId] = useState<number | null>(null)
@@ -2690,7 +2694,7 @@ function AcctBudget({ year }: { year: number }) {
                       </button>
                     </div>
                   ) : (
-                    <span className="text-[9px] text-[var(--text-muted)]">지출수단에서 계좌를 먼저 등록하세요</span>
+                    <span className="text-[9px] text-[var(--text-muted)]">계좌관리에서 계좌를 먼저 등록하세요</span>
                   )}
                 </div>
                 {catForm.accounts.length === 0 ? (
