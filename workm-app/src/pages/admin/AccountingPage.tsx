@@ -11806,7 +11806,15 @@ function AcctCashflowList({ year }: { year: number }) {
         if (!haystack.includes(q)) return false
       }
       return true
-    }).sort((a: any, b: any) => (b.date || b.writeDate || '').localeCompare(a.date || a.writeDate || '') || (Number(b.id) || 0) - (Number(a.id) || 0))
+    }).sort((a: any, b: any) => {
+      // 전체 예산일 때 예산별로 먼저 그룹핑
+      if (!filterCat) {
+        const catA = String(a.budgetCatId || '')
+        const catB = String(b.budgetCatId || '')
+        if (catA !== catB) return catA.localeCompare(catB)
+      }
+      return (b.date || b.writeDate || '').localeCompare(a.date || a.writeDate || '') || (Number(b.id) || 0) - (Number(a.id) || 0)
+    })
   }, [cashflows, dateFrom, dateTo, filterCat, filterManager, filterType, searchText])
 
   // ── 집계 ──
@@ -12080,30 +12088,54 @@ function AcctCashflowList({ year }: { year: number }) {
                     </div>
                   </td></tr>
                 )
-                return displayList.map((c: any, i: number) => {
-                  const catName = budgetCats.find((cat: any) => String(cat.id) === String(c.budgetCatId))?.name || ''
-                  const isIncome = c.type === 'income'
-                  return (
-                    <tr key={c.id || i} className="border-b border-[var(--border-default)] hover:bg-primary-50/30 dark:hover:bg-primary-900/10 transition-colors">
-                      <td className="px-3 py-2 whitespace-nowrap text-[var(--text-primary)]">{(c.date || c.writeDate || '').slice(0, 10)}</td>
-                      <td className="px-2 py-2 text-center">
-                        <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${isIncome ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
-                          {isIncome ? '입금' : '출금'}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        {catName && <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-[9px] font-bold">{catName}</span>}
-                      </td>
-                      <td className="px-3 py-2 text-[var(--text-primary)] whitespace-nowrap max-w-[120px] truncate">{c.counter || '-'}</td>
-                      <td className="px-3 py-2 text-[var(--text-secondary)] max-w-[180px] truncate" title={c.description || c.incomeNote || ''}>{c.description || c.incomeNote || '-'}</td>
-                      <td className={`px-3 py-2 text-right font-bold whitespace-nowrap ${isIncome ? 'text-emerald-600' : 'text-red-500'}`}>₩{(c.amount||0).toLocaleString()}</td>
-                      <td className={`px-3 py-2 text-right font-extrabold whitespace-nowrap ${!cardFilter ? ((c._balance||0) >= 0 ? 'text-[var(--text-primary)]' : 'text-red-500') : 'text-transparent select-none'}`}>
-                        {!cardFilter ? `₩${(c._balance||0).toLocaleString()}` : '-'}
-                      </td>
-                      <td className="px-3 py-2 text-[var(--text-muted)] whitespace-nowrap">{c.manager || c.createdBy || '-'}</td>
-                    </tr>
-                  )
-                })
+                return (() => {
+                  let lastCatId: string = ''
+                  return displayList.map((c: any, i: number) => {
+                    const catName = budgetCats.find((cat: any) => String(cat.id) === String(c.budgetCatId))?.name || ''
+                    const isIncome = c.type === 'income'
+                    const curCatId = String(c.budgetCatId || '')
+                    const showGroupHeader = !cardFilter && !filterCat && curCatId !== lastCatId
+                    if (showGroupHeader) lastCatId = curCatId
+                    // 그룹 내 소계
+                    const groupItems = !cardFilter && !filterCat && showGroupHeader ? displayList.filter((x: any) => String(x.budgetCatId || '') === curCatId) : []
+                    const groupIn = groupItems.reduce((s: number, x: any) => s + (x.type === 'income' ? (x.amount || 0) : 0), 0)
+                    const groupOut = groupItems.reduce((s: number, x: any) => s + (x.type !== 'income' ? (x.amount || 0) : 0), 0)
+                    return (
+                      <React.Fragment key={c.id || i}>
+                        {showGroupHeader && (
+                          <tr className="bg-gradient-to-r from-primary-50/60 to-blue-50/40 dark:from-primary-900/15 dark:to-blue-900/10">
+                            <td colSpan={8} className="px-3 py-1.5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-extrabold text-primary-600 dark:text-primary-400">{catName || '미지정'}</span>
+                                <span className="text-[9px] text-[var(--text-muted)]">{groupItems.length}건</span>
+                                <span className="text-[9px] text-emerald-600 font-bold">입금 ₩{groupIn.toLocaleString()}</span>
+                                <span className="text-[9px] text-red-500 font-bold">출금 ₩{groupOut.toLocaleString()}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                        <tr className="border-b border-[var(--border-default)] hover:bg-primary-50/30 dark:hover:bg-primary-900/10 transition-colors">
+                          <td className="px-3 py-2 whitespace-nowrap text-[var(--text-primary)]">{(c.date || c.writeDate || '').slice(0, 10)}</td>
+                          <td className="px-2 py-2 text-center">
+                            <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${isIncome ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+                              {isIncome ? '입금' : '출금'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            {catName && <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-[9px] font-bold">{catName}</span>}
+                          </td>
+                          <td className="px-3 py-2 text-[var(--text-primary)] whitespace-nowrap max-w-[120px] truncate">{c.counter || '-'}</td>
+                          <td className="px-3 py-2 text-[var(--text-secondary)] max-w-[180px] truncate" title={c.description || c.incomeNote || ''}>{c.description || c.incomeNote || '-'}</td>
+                          <td className={`px-3 py-2 text-right font-bold whitespace-nowrap ${isIncome ? 'text-emerald-600' : 'text-red-500'}`}>₩{(c.amount||0).toLocaleString()}</td>
+                          <td className={`px-3 py-2 text-right font-extrabold whitespace-nowrap ${!cardFilter ? ((c._balance||0) >= 0 ? 'text-[var(--text-primary)]' : 'text-red-500') : 'text-transparent select-none'}`}>
+                            {!cardFilter ? `₩${(c._balance||0).toLocaleString()}` : '-'}
+                          </td>
+                          <td className="px-3 py-2 text-[var(--text-muted)] whitespace-nowrap">{c.manager || c.createdBy || '-'}</td>
+                        </tr>
+                      </React.Fragment>
+                    )
+                  })
+                })()
               })()}
             </tbody>
             <tfoot>
