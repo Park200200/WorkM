@@ -9962,6 +9962,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [showExpenseList, setShowExpenseList] = useState(false)
   const [checkedExpenseIds, setCheckedExpenseIds] = useState<number[]>([])
+  const [noteSubTab, setNoteSubTab] = useState<'수신' | '발행'>('수신')
   const addToast = useToastStore(s => s.add)
   const staffList = useMemo(() => getItem<any[]>('ws_users', []), [])
   const allAccounts: AcctAccount[] = useMemo(() => getItem('acct_accounts', []), [refresh])
@@ -10013,7 +10014,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
   const filteredItems = selectedCatId
     ? allItems.filter(i => String(i.budgetCatId) === selectedCatId)
     : allItems
-  const catItems = filteredItems.filter(i => i.category === activeCategory)
+  const catItems = filteredItems.filter(i => i.category === activeCategory && (activeCategory !== '어음' || (i.noteType || '') === noteSubTab))
   const activeCatInfo = PAY_CATEGORIES.find(c => c.key === activeCategory)!
 
   const defaultManager = useMemo(() => {
@@ -10168,6 +10169,55 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
           <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ color: activeCatInfo.color, background: `${activeCatInfo.color}15` }}>{catItems.length}건</span>
         </div>
 
+        {/* 어음: 수신/발행 서브탭 */}
+        {activeCategory === '어음' ? (
+          <div className="mb-4">
+            <div className="flex items-center gap-2">
+              {(['수신', '발행'] as const).map(sub => {
+                const subCount = filteredItems.filter(i => i.category === '어음' && (i.noteType || '') === sub).length
+                const isActive = noteSubTab === sub
+                const subColor = sub === '수신' ? '#3b82f6' : '#ef4444'
+                const subIcon = sub === '수신' ? '📥' : '📤'
+                return (
+                  <button
+                    key={sub}
+                    onClick={() => { setNoteSubTab(sub); setExpandedId(null) }}
+                    className={`flex-1 py-2.5 px-4 rounded-xl border-2 transition-all cursor-pointer ${
+                      isActive ? 'shadow-sm' : 'bg-white/50 dark:bg-gray-900/30 border-transparent hover:border-[var(--border-default)]'
+                    }`}
+                    style={isActive ? { borderColor: subColor, background: `${subColor}08` } : undefined}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-sm">{subIcon}</span>
+                      <span className="text-[12px] font-extrabold" style={isActive ? { color: subColor } : { color: 'var(--text-secondary)' }}>{sub === '수신' ? '수신어음 (받을어음)' : '발행어음 (지급어음)'}</span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ color: subColor, background: `${subColor}15` }}>{subCount}</span>
+                    </div>
+                  </button>
+                )
+              })}
+              <button
+                onClick={() => {
+                  const nm = `${noteSubTab === '수신' ? '수신' : '발행'}어음-${Date.now().toString(36).slice(-4)}`
+                  const acctCode = noteSubTab === '수신' ? '1-01-06' : '2-01-02'
+                  const newItem: any = {
+                    id: Date.now(), name: nm, category: '어음' as const,
+                    budgetCatId: selectedPayCatId || undefined,
+                    noteType: noteSubTab, linkedAccountCode: acctCode,
+                    noteManager: defaultManager || undefined,
+                  }
+                  saveAll([...allItems, newItem])
+                  addToast('success', `${noteSubTab}어음 "${nm}" 추가`)
+                  setRefresh(r => r + 1)
+                }}
+                className="px-3 py-2.5 rounded-xl text-white text-sm font-bold transition-all cursor-pointer hover:shadow-md flex items-center gap-1.5 shrink-0"
+                style={{ background: noteSubTab === '수신' ? '#3b82f6' : '#ef4444' }}
+              >
+                <Plus size={14} /> 추가
+              </button>
+            </div>
+          </div>
+        ) : (
+        <>
         {/* 추가 폼 */}
         <div className="relative mb-4">
           <div className="flex gap-2">
@@ -10367,6 +10417,8 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
             )
           })()}
         </div>
+        </>
+        )}
 
         {/* 항목 리스트 */}
         {catItems.length === 0 ? (
@@ -10491,26 +10543,22 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                         <div className="space-y-3">
                           <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <label className={DETAIL_FIELD_LABEL}>구분 *</label>
-                              <select value={item.noteType || ''} onChange={e => {
-                                const v = e.target.value
-                                const acctCode = v === '수신' ? '1-01-06' : v === '발행' ? '2-01-02' : ''
-                                saveAll(allItems.map(i => i.id === item.id ? { ...i, noteType: v, linkedAccountCode: acctCode } : i))
-                              }} className={DETAIL_INPUT}>
-                                <option value="">선택하세요</option>
-                                <option value="수신">수신 (받을어음)</option>
-                                {direction === 'expense' && <option value="발행">발행 (지급어음)</option>}
-                              </select>
+                              <label className={DETAIL_FIELD_LABEL}>구분</label>
+                              <div className={`${DETAIL_INPUT} flex items-center gap-1.5 !bg-[var(--bg-muted)]`}>
+                                {item.noteType === '수신' ? (
+                                  <><span className="text-sm">📥</span><span className="text-xs font-bold text-blue-600">수신어음 (받을어음)</span></>
+                                ) : (
+                                  <><span className="text-sm">📤</span><span className="text-xs font-bold text-rose-600">발행어음 (지급어음)</span></>
+                                )}
+                              </div>
                             </div>
                             <div>
                               <label className={DETAIL_FIELD_LABEL}>연결 계정</label>
                               <div className={`${DETAIL_INPUT} flex items-center gap-1.5 !bg-[var(--bg-muted)]`}>
                                 {item.noteType === '수신' ? (
                                   <><span className="text-[10px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-1.5 py-0.5 rounded">자산</span><span className="text-xs font-bold">1-01-06 받을어음</span></>
-                                ) : item.noteType === '발행' ? (
-                                  <><span className="text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-900/20 px-1.5 py-0.5 rounded">부채</span><span className="text-xs font-bold">2-01-02 지급어음</span></>
                                 ) : (
-                                  <span className="text-xs text-[var(--text-muted)]">구분을 선택하세요</span>
+                                  <><span className="text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-900/20 px-1.5 py-0.5 rounded">부채</span><span className="text-xs font-bold">2-01-02 지급어음</span></>
                                 )}
                               </div>
                             </div>
