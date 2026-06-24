@@ -3928,7 +3928,7 @@ export function AcctApproval({ year }: { year: number }) {
                   detailId: detBudget ? String(detBudget.id) : undefined, detailName: det.name,
                   accountCode: det.accountCode || sub.accountCode, accountName: detAcct?.name || '',
                   aliases: [...(def?.aliases || []), ...(sub.aliases || []), ...(det.aliases || [])].join(' '),
-                  path: `${cat.name} > ${itemName} > ${sub.name} > ${det.name}`,
+                  path: `${cat.name} > ${itemName}${sub.name !== itemName ? ` > ${sub.name}` : ''} > ${det.name}`,
                   amount: amt, spent: sp, remaining: amt - sp,
                 })
               })
@@ -3943,7 +3943,7 @@ export function AcctApproval({ year }: { year: number }) {
                 subId: `def_${sub.id}`, subName: sub.name,
                 accountCode: sub.accountCode, accountName: subAcct?.name || '',
                 aliases: [...(def?.aliases || []), ...(sub.aliases || [])].join(' '),
-                path: `${cat.name} > ${itemName} > ${sub.name}`,
+                path: sub.name === itemName ? `${cat.name} > ${itemName}` : `${cat.name} > ${itemName} > ${sub.name}`,
                 amount: amt, spent: sp, remaining: amt - sp,
               })
             }
