@@ -9467,7 +9467,6 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
                                           const vendorList: any[] = getItem('acct_vendors', [])
                                           const searchVal = (item.noteType === '수신' ? (note.issuer || '') : (note.receiver || '')).toLowerCase()
                                           const filtered = vendorList.filter(v => !searchVal || v.name.toLowerCase().includes(searchVal))
-                                          if (filtered.length === 0) return null
                                           return (
                                             <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white dark:bg-gray-900 border border-[var(--border-default)] rounded-xl shadow-lg max-h-[150px] overflow-y-auto">
                                               {filtered.map((v: any) => (
@@ -9480,10 +9479,15 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
                                                   }}
                                                   className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--bg-muted)] cursor-pointer flex items-center gap-2 transition-colors"
                                                 >
+                                                  <span className="text-[10px]">🏢</span>
                                                   <span className="font-semibold text-[var(--text-primary)]">{v.name}</span>
                                                   {v.ceoName && <span className="text-[10px] text-[var(--text-muted)]">대표: {v.ceoName}</span>}
                                                 </button>
                                               ))}
+                                              {filtered.length === 0 && (
+                                                <div className="px-3 py-2 text-[11px] text-[var(--text-muted)]">검색 결과가 없습니다</div>
+                                              )}
+
                                             </div>
                                           )
                                         })()}
@@ -10657,7 +10661,6 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                               const vendorList: any[] = getItem('acct_vendors', [])
                                               const searchVal = (item.noteType === '수신' ? (note.issuer || '') : (note.receiver || '')).toLowerCase()
                                               const filtered = vendorList.filter(v => !searchVal || v.name.toLowerCase().includes(searchVal))
-                                              if (filtered.length === 0) return null
                                               return (
                                                 <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white dark:bg-gray-900 border border-[var(--border-default)] rounded-xl shadow-lg max-h-[150px] overflow-y-auto">
                                                   {filtered.map((v: any) => (
@@ -10670,11 +10673,15 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                                       }}
                                                       className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--bg-muted)] cursor-pointer flex items-center gap-2 transition-colors"
                                                     >
+                                                      <span className="text-[10px]">🏢</span>
                                                       <span className="font-semibold text-[var(--text-primary)]">{v.name}</span>
                                                       {v.ceoName && <span className="text-[10px] text-[var(--text-muted)]">대표: {v.ceoName}</span>}
-                                                      {v.phone && <span className="text-[10px] text-[var(--text-muted)]">{v.phone}</span>}
                                                     </button>
                                                   ))}
+                                                  {filtered.length === 0 && (
+                                                    <div className="px-3 py-2 text-[11px] text-[var(--text-muted)]">검색 결과가 없습니다</div>
+                                                  )}
+
                                                 </div>
                                               )
                                             })()}
@@ -10751,9 +10758,9 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                                           const vendorList: any[] = getItem('acct_vendors', [])
                                                           const sv = (ed.endorser || '').toLowerCase()
                                                           const flt = vendorList.filter(v => !sv || v.name.toLowerCase().includes(sv))
-                                                          if (flt.length === 0) return null
+
                                                           return (
-                                                            <div className="absolute z-50 top-full left-0 right-0 mt-0.5 bg-white dark:bg-gray-900 border border-[var(--border-default)] rounded-lg shadow-lg max-h-[120px] overflow-y-auto">
+                                                            <div className="absolute z-50 top-full left-0 right-0 mt-0.5 bg-white dark:bg-gray-900 border border-[var(--border-default)] rounded-lg shadow-lg max-h-[160px] overflow-y-auto">
                                                               {flt.map((v: any) => (
                                                                 <button key={v.id} onMouseDown={e => {
                                                                   e.preventDefault()
@@ -10761,11 +10768,16 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                                                   updated[ei] = { ...updated[ei], endorser: v.name }
                                                                   updateNote(item.id, note.id, 'endorsements', updated)
                                                                   updateNote(item.id, note.id, `_endVendorOpen_${ei}`, false)
-                                                                }} className="w-full text-left px-2.5 py-1.5 text-[11px] hover:bg-[var(--bg-muted)] cursor-pointer">
+                                                                }} className="w-full text-left px-2.5 py-1.5 text-[11px] hover:bg-[var(--bg-muted)] cursor-pointer flex items-center gap-1.5">
+                                                                  <span className="text-[10px]">🏢</span>
                                                                   <span className="font-semibold">{v.name}</span>
-                                                                  {v.ceoName && <span className="text-[9px] text-[var(--text-muted)] ml-1.5">대표: {v.ceoName}</span>}
+                                                                  {v.ceoName && <span className="text-[9px] text-[var(--text-muted)]">대표: {v.ceoName}</span>}
                                                                 </button>
                                                               ))}
+                                                              {flt.length === 0 && (
+                                                                <div className="px-2.5 py-1.5 text-[10px] text-[var(--text-muted)]">검색 결과가 없습니다</div>
+                                                              )}
+
                                                             </div>
                                                           )
                                                         })()}
