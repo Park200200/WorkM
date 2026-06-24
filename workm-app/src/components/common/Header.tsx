@@ -156,8 +156,9 @@ export function Header() {
             const hasBudgetAccess = isBudgetApprover || isBudgetHandler
 
             const currentCat = searchParams.get('cat') || 'all'
+            const isApprovalTab = activeTab === 'approval'
             const setCat = (catId: string) => {
-              if (!hasBudgetAccess) return
+              if (!hasBudgetAccess || isApprovalTab) return
               const params: Record<string, string> = { tab: activeTab, year: String(acctYear), cat: catId }
               setSearchParams(params)
             }
@@ -182,18 +183,18 @@ export function Header() {
                 {activeTab !== 'expense' && (
                 <button onClick={() => setCat('all')}
                   className={cn('px-2.5 py-1 rounded-md text-[11px] font-bold transition-all',
-                    !hasBudgetAccess ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
-                    currentCat === 'all' ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)]' + (hasBudgetAccess ? ' hover:text-[var(--text-primary)]' : ''))}
-                  title={!hasBudgetAccess ? '예산담당자 또는 지출승인권자만 사용 가능' : undefined}>
+                    (!hasBudgetAccess || isApprovalTab) ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
+                    currentCat === 'all' ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)]' + ((hasBudgetAccess && !isApprovalTab) ? ' hover:text-[var(--text-primary)]' : ''))}
+                  title={isApprovalTab ? '품의하기에서는 예산선택 불가' : (!hasBudgetAccess ? '예산담당자 또는 지출승인권자만 사용 가능' : undefined)}>
                   전체
                 </button>
                 )}
                 {budgetCatsForYear.map((c: any) => (
                   <button key={c.id} onClick={() => setCat(String(c.id))}
                     className={cn('px-2.5 py-1 rounded-md text-[11px] font-bold transition-all',
-                      !hasBudgetAccess ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
-                      currentCat === String(c.id) ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)]' + (hasBudgetAccess ? ' hover:text-[var(--text-primary)]' : ''))}
-                    title={!hasBudgetAccess ? '예산담당자 또는 지출승인권자만 사용 가능' : undefined}>
+                      (!hasBudgetAccess || isApprovalTab) ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
+                      currentCat === String(c.id) ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)]' + ((hasBudgetAccess && !isApprovalTab) ? ' hover:text-[var(--text-primary)]' : ''))}
+                    title={isApprovalTab ? '품의하기에서는 예산선택 불가' : (!hasBudgetAccess ? '예산담당자 또는 지출승인권자만 사용 가능' : undefined)}>
                     {c.name}
                   </button>
                 ))}
