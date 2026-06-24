@@ -432,21 +432,29 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
                 <tr>
                   <th>품의일자</th>
                   <td>{data.date || ''}</td>
-                  <th>계정과목</th>
-                  <td>{data.accountName || ''}</td>
+                  {data.approvalStatus !== 'preExpense' ? (
+                    <><th>계정과목</th><td>{data.accountName || ''}</td></>
+                  ) : (
+                    <><th>증빙구분</th><td>{data.evidenceType || ''}</td></>
+                  )}
                 </tr>
                 <tr>
                   <th>지출일자</th>
                   <td>{data.expenseDate || ''}</td>
-                  <th>증빙구분</th>
-                  <td>{data.evidenceType || ''}</td>
+                  {data.approvalStatus !== 'preExpense' ? (
+                    <><th>증빙구분</th><td>{data.evidenceType || ''}</td></>
+                  ) : (
+                    <td colSpan={2}></td>
+                  )}
                 </tr>
+                {data.approvalStatus !== 'preExpense' && (
                 <tr>
                   <th>결제일자</th>
                   <td>{data.settleDate || ''}</td>
                   <th>거 래 처</th>
                   <td>{data.vendor || ''}</td>
                 </tr>
+                )}
                 <tr>
                   <th>물 품 명</th>
                   <td>{data.itemName || ''}</td>
