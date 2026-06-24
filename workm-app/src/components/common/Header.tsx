@@ -156,7 +156,7 @@ export function Header() {
             const hasBudgetAccess = isBudgetApprover || isBudgetHandler
 
             const currentCat = searchParams.get('cat') || 'all'
-            const isApprovalTab = activeTab === 'approval'
+            const isApprovalTab = activeTab === 'approval' || activeTab === 'vendors'
             const setCat = (catId: string) => {
               if (!hasBudgetAccess || isApprovalTab) return
               const params: Record<string, string> = { tab: activeTab, year: String(acctYear), cat: catId }
