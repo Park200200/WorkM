@@ -3459,16 +3459,16 @@ export function AcctApproval({ year }: { year: number }) {
   const [refresh, setRefresh] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [detailApproval, setDetailApproval] = useState<Approval | null>(() => {
-    // URL의 openId 파라미터로 반려 품의 자동 열기
+  const [detailApproval, setDetailApproval] = useState<Approval | null>(null)
+  // URL의 openId 파라미터로 반려 품의 자동 열기
+  useEffect(() => {
     const openId = searchParams.get('openId')
     if (openId) {
       const all: any[] = getItem('acct_approvals', [])
       const found = all.find((a: any) => String(a.id) === openId)
-      return found || null
+      if (found) setDetailApproval(found)
     }
-    return null
-  })
+  }, [searchParams])
   const [approvalBtnLabel, setApprovalBtnLabel] = useState(() => getItem('acct_approval_btn_label', '품의 등록'))
   const [editingBtnLabel, setEditingBtnLabel] = useState(false)
   const [editingDescText, setEditingDescText] = useState('')
