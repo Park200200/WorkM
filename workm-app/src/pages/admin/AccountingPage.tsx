@@ -6648,13 +6648,13 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                             style={{ background: statusBg, color: statusColor }}
                             onClick={() => {
                               if (statusLabel === '반려' && aId) {
-                                // 반려된 품의를 클릭하면 품의하기 페이지에서 수정 가능하도록 이동
-                                setActiveTab('approval')
-                                setTimeout(() => {
-                                  const apAll: any[] = getItem('acct_approvals', [])
-                                  const ap = apAll.find((a: any) => String(a.id) === String(aId))
-                                  if (ap) setDetailApproval(ap)
-                                }, 100)
+                                // 반려된 품의: 먼저 데이터 로드 후 탭 전환
+                                const apAll: any[] = getItem('acct_approvals', [])
+                                const ap = apAll.find((a: any) => String(a.id) === String(aId))
+                                if (ap) {
+                                  setDetailApproval(ap)
+                                  setActiveTab('approval')
+                                }
                               }
                             }}
                             title={statusLabel === '반려' ? '클릭하여 수정' : ''}
