@@ -1088,31 +1088,7 @@ export function AccountingPage() {
 
   return (
     <div className="animate-fadeIn">
-      {/* ── 모바일 연도 선택 (데스크탑은 헤더에 표시) ── */}
-      <div className="mb-4 md:hidden">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1">
-            <Clock size={12} /> 회계연도
-          </span>
-          {[currentYear + 1, currentYear, currentYear - 1].map(y => (
-            <button
-              key={y}
-              onClick={() => {
-                const tab = searchParams.get('tab') || 'overview'
-                setSearchParams({ tab, year: String(y) })
-              }}
-              className={cn(
-                'px-3 py-1 rounded-full text-[11px] font-bold cursor-pointer transition-all border',
-                y === year
-                  ? 'bg-primary-500 text-white border-primary-500'
-                  : 'bg-transparent text-[var(--text-muted)] border-[var(--border-default)] hover:border-primary-400',
-              )}
-            >
-              {y}
-            </button>
-          ))}
-        </div>
-      </div>
+
 
 
 
