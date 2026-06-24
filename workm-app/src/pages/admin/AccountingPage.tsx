@@ -3617,9 +3617,9 @@ export function AcctApproval({ year }: { year: number }) {
     const approvedAmt = isPreExp ? (detailApproval.amount || 0) : (parseInt(approveAmount.replace(/[^0-9]/g, '')) || detailApproval.amount || 0)
     const updated = all.map(a => String(a.id) === String(detailApproval.id) ? {
       ...a,
-      // 선지출: 담당자 본인 지출이면 바로 completed, 아니면 toResolve / 일반: approved
-      status: isPreExp ? ((detailApproval as any).selfExpense ? 'completed' : 'toResolve') : 'approved',
-      ...((isPreExp && (detailApproval as any).selfExpense) ? { completedAt: new Date().toISOString() } : {}),
+      // 선지출: 이미 지출+증빙 완료이므로 바로 completed(보관함) / 일반: approved
+      status: isPreExp ? 'completed' : 'approved',
+      ...((isPreExp) ? { completedAt: new Date().toISOString() } : {}),
       approver: currentUserName,
       ...(isPreExp ? {} : {
         budgetCatId: approveBudgetCat,
