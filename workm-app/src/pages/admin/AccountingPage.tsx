@@ -10647,49 +10647,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                         </div>
                       )}
 
-                      {/* 어음대장 (지출수단 어음만) */}
-                      {direction === 'expense' && activeCategory === '어음' && item.noteType && (
-                        <div className="mt-5 pt-4 border-t border-dashed border-amber-200 dark:border-amber-800">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-1.5">
-                              <ScrollText size={14} className="text-amber-500" />
-                              <span className="text-[12px] font-extrabold text-[var(--text-primary)]">어음대장</span>
-                              {(item.notes || []).length > 0 && <span className="text-[9px] font-bold bg-amber-100 dark:bg-amber-900/20 text-amber-600 px-1.5 py-0.5 rounded">{(item.notes || []).length}건</span>}
-                            </div>
-                            <button onClick={() => addNote(item.id)} className="text-[11px] font-bold text-amber-500 hover:text-amber-700 cursor-pointer flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"><Plus size={12} /> 어음 추가</button>
-                          </div>
-                          {(!item.notes || item.notes.length === 0) ? (
-                            <div className="py-4 text-center text-[11px] text-[var(--text-muted)] rounded-lg border border-dashed border-[var(--border-default)] bg-white/50 dark:bg-gray-900/30">등록된 어음이 없습니다</div>
-                          ) : (
-                            <div className="space-y-2">
-                              {item.notes.map((note, ni) => (
-                                <div key={note.id} className="rounded-lg border border-amber-100 dark:border-amber-900/30 bg-amber-50/30 dark:bg-amber-900/5 p-3">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[10px] font-bold text-amber-500">📄 어음 {ni + 1}</span>
-                                    <button onClick={() => deleteNote(item.id, note.id)} className="text-[10px] text-red-400 hover:text-red-600 cursor-pointer flex items-center gap-0.5"><Trash2 size={10} /> 삭제</button>
-                                  </div>
-                                  <div className="grid grid-cols-3 gap-2">
-                                    <div><label className={DETAIL_FIELD_LABEL}>어음번호 *</label><input value={note.noteNumber} onChange={e => updateNote(item.id, note.id, 'noteNumber', e.target.value)} placeholder="A-2026-001" className={DETAIL_INPUT} /></div>
-                                    <div><label className={DETAIL_FIELD_LABEL}>{item.noteType === '수신' ? '발행인' : '수취인'} *</label><input value={item.noteType === '수신' ? note.issuer : note.receiver} onChange={e => updateNote(item.id, note.id, item.noteType === '수신' ? 'issuer' : 'receiver', e.target.value)} placeholder="거래처명" className={DETAIL_INPUT} /></div>
-                                    <div><label className={DETAIL_FIELD_LABEL}>금액 *</label><input value={note.amount ? note.amount.toLocaleString() : ''} onChange={e => updateNote(item.id, note.id, 'amount', parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0)} placeholder="5,000,000" className={DETAIL_INPUT} /></div>
-                                    <div><label className={DETAIL_FIELD_LABEL}>발행일 *</label><input type="date" value={note.issueDate} onChange={e => updateNote(item.id, note.id, 'issueDate', e.target.value)} className={DETAIL_INPUT} /></div>
-                                    <div><label className={DETAIL_FIELD_LABEL}>만기일 *</label><input type="date" value={note.maturityDate} onChange={e => updateNote(item.id, note.id, 'maturityDate', e.target.value)} className={DETAIL_INPUT} /></div>
-                                    <div>
-                                      <label className={DETAIL_FIELD_LABEL}>상태 *</label>
-                                      <select value={note.status} onChange={e => updateNote(item.id, note.id, 'status', e.target.value)} className={DETAIL_INPUT}>
-                                        <option value="미결제">미결제</option>
-                                        {item.noteType === '수신' && <option value="추심중">추심중</option>}
-                                        <option value="결제완료">결제완료</option>
-                                        <option value="부도">부도</option>
-                                      </select>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
+
                     </div>
                   )}
                 </div>
