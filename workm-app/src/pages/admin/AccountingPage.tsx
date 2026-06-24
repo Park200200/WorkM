@@ -2908,9 +2908,23 @@ function AcctBudget({ year }: { year: number }) {
                   <div className="bg-[var(--bg-muted)] border border-[var(--border-default)] rounded-xl p-4 space-y-3">
                     <div className="text-sm font-extrabold text-[var(--text-primary)] mb-2">{isNew ? '새 계좌 추가' : '계좌 수정'}</div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
+                      <div className="relative">
                         <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">은행명 *</label>
-                        <input value={form.bankName} onChange={e => setForm(f => ({ ...f, bankName: e.target.value }))} placeholder="예) 국민은행" className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors" />
+                        <input value={form.bankName} onChange={e => setForm(f => ({ ...f, bankName: e.target.value }))} placeholder="선택 또는 직접 입력" className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors" onFocus={e => { const dd = e.currentTarget.nextElementSibling as HTMLElement; if (dd) dd.style.display = 'block' }} onBlur={() => setTimeout(() => { const dd = document.getElementById('bank-dropdown'); if (dd) dd.style.display = 'none' }, 150)} />
+                        <div id="bank-dropdown" style={{ display: 'none' }} className="absolute z-50 top-full left-0 right-0 mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                          {(() => {
+                            const defaultBanks = ['국민은행', '신한은행', '우리은행', '하나은행', '농협은행', 'SC제일은행', '기업은행', '카카오뱅크', '토스뱅크', '케이뱅크', '대구은행', '부산은행', '경남은행', '광주은행', '전북은행', '제주은행', '수협은행', '산업은행', '새마을금고', '신협', '우체국']
+                            const custom = accounts.map(a => a.bankName).filter(Boolean)
+                            const all = Array.from(new Set([...defaultBanks, ...custom]))
+                            const filtered = all.filter(b => !form.bankName || b.includes(form.bankName))
+                            if (filtered.length === 0) return <div className="px-3 py-2 text-xs text-[var(--text-muted)]">직접 입력하세요</div>
+                            return filtered.map(b => (
+                              <button key={b} type="button" onMouseDown={e => { e.preventDefault(); setForm(f => ({ ...f, bankName: b })); const dd = document.getElementById('bank-dropdown'); if (dd) dd.style.display = 'none' }} className="w-full text-left px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-primary-50 dark:hover:bg-primary-900/20 cursor-pointer transition-colors">
+                                {b}
+                              </button>
+                            ))
+                          })()}
+                        </div>
                       </div>
                       <div>
                         <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">계좌번호 *</label>
