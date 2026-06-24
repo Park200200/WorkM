@@ -4447,7 +4447,7 @@ export function AcctApproval({ year }: { year: number }) {
                 )
               })()}
               {/* 정산완료 비밀번호 모달 */}
-              {settleCompleteMode && (
+              {settleCompleteMode && createPortal(
                 <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/40" onClick={() => setSettleCompleteMode(false)}>
                   <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-[380px] p-5 space-y-3" onClick={e => e.stopPropagation()}>
                     <div className="text-sm font-extrabold text-[#22c55e] flex items-center gap-1.5"><Check size={16} /> 정산완료</div>
@@ -4485,9 +4485,9 @@ export function AcctApproval({ year }: { year: number }) {
                     </div>
                   </div>
                 </div>
-              )}
+              , document.body)}
               {/* 정산반려 사유 입력 모달 */}
-              {settleRejectMode && (
+              {settleRejectMode && createPortal(
                 <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/40" onClick={() => setSettleRejectMode(false)}>
                   <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-[400px] p-5 space-y-3" onClick={e => e.stopPropagation()}>
                     <div className="text-sm font-extrabold text-[#ef4444] flex items-center gap-1.5"><Ban size={16} /> 정산반려</div>
@@ -4520,7 +4520,7 @@ export function AcctApproval({ year }: { year: number }) {
                     </div>
                   </div>
                 </div>
-              )}
+              , document.body)}
               {!isApproverPendingView && detailApproval.status === 'toResolve' && (
                 <>
                   {(detailApproval as any).returnReason && (
