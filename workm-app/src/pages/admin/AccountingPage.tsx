@@ -9417,6 +9417,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
   const [newName, setNewName] = useState('')
   const [activeCategory, setActiveCategory] = useState<'계좌' | '현금' | '어음' | '상품권'>('계좌')
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [showExpenseList, setShowExpenseList] = useState(false)
   const addToast = useToastStore(s => s.add)
   const staffList = useMemo(() => getItem<any[]>('ws_users', []), [])
   const allAccounts: AcctAccount[] = useMemo(() => getItem('acct_accounts', []), [refresh])
@@ -9448,6 +9449,22 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
       return parsed as PayMethodItem[]
     } catch { return direction === 'expense' ? DEFAULT_PAY_ITEMS : [] }
   }, [refresh, direction, storageKey])
+
+  // 입금 모드에서 참조할 지출수단 리스트
+  const expenseItems: PayMethodItem[] = useMemo(() => {
+    if (direction !== 'income') return []
+    try {
+      const raw = localStorage.getItem('acct_pay_methods_v2')
+      if (!raw) return DEFAULT_PAY_ITEMS
+      const parsed = JSON.parse(raw)
+      return Array.isArray(parsed) ? parsed as PayMethodItem[] : DEFAULT_PAY_ITEMS
+    } catch { return DEFAULT_PAY_ITEMS }
+  }, [refresh, direction])
+
+  const filteredExpenseItems = useMemo(() => {
+    const items = selectedCatId ? expenseItems.filter(i => String(i.budgetCatId) === selectedCatId) : expenseItems
+    return items.filter(i => i.category === activeCategory)
+  }, [expenseItems, selectedCatId, activeCategory])
 
   const filteredItems = selectedCatId
     ? allItems.filter(i => String(i.budgetCatId) === selectedCatId)
@@ -9551,48 +9568,24 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
         </span>
       </div>
 
-      {/* 예산구분 + 지출/입금 탭 */}
-      <div className="flex items-center gap-3 flex-wrap">
-        {/* 예산구분 */}
-        <div className="flex items-center gap-1 bg-[var(--bg-muted)] rounded-lg px-1 py-0.5 border border-[var(--border-default)]">
-          <span className="px-2 py-1 text-[10px] font-bold text-[var(--text-muted)]">예산</span>
-          {budgetCats.map(c => (
-            <button
-              key={c.id}
-              onClick={() => {
-                const params = new URLSearchParams(window.location.hash.split('?')[1] || '')
-                params.set('tab', 'methodReg')
-                params.set('cat', String(c.id))
-                window.location.hash = `#/admin/accounting?${params.toString()}`
-              }}
-              className={cn('px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer',
-                selectedCatId === String(c.id) ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-              )}
-            >
-              {c.name}
-            </button>
-          ))}
-        </div>
-
-        {/* 지출/입금 전환 */}
-        <div className="flex items-center gap-1 bg-[var(--bg-muted)] rounded-lg px-1 py-0.5 border border-[var(--border-default)]">
-          <button
-            onClick={() => { setDirection('expense'); setExpandedId(null); setNewName('') }}
-            className={cn('px-3 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1',
-              direction === 'expense' ? 'bg-orange-500 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-            )}
-          >
-            <ArrowUpCircle size={12} /> 지출
-          </button>
-          <button
-            onClick={() => { setDirection('income'); setExpandedId(null); setNewName('') }}
-            className={cn('px-3 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1',
-              direction === 'income' ? 'bg-emerald-500 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-            )}
-          >
-            <ArrowDownCircle size={12} /> 입금
-          </button>
-        </div>
+      {/* 지출/입금 전환 */}
+      <div className="flex items-center gap-1 bg-[var(--bg-muted)] rounded-lg px-1 py-0.5 border border-[var(--border-default)] w-fit">
+        <button
+          onClick={() => { setDirection('expense'); setExpandedId(null); setNewName(''); setShowExpenseList(false) }}
+          className={cn('px-3 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1',
+            direction === 'expense' ? 'bg-orange-500 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+          )}
+        >
+          <ArrowUpCircle size={12} /> 지출
+        </button>
+        <button
+          onClick={() => { setDirection('income'); setExpandedId(null); setNewName(''); setShowExpenseList(false) }}
+          className={cn('px-3 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1',
+            direction === 'income' ? 'bg-emerald-500 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+          )}
+        >
+          <ArrowDownCircle size={12} /> 입금
+        </button>
       </div>
 
       {/* 카테고리 탭 */}
@@ -9632,17 +9625,96 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
         </div>
 
         {/* 추가 폼 */}
-        <div className="flex gap-2 mb-4">
-          <input
-            placeholder={`새 ${activeCatInfo.label} ${dirLabel} 입력...`}
-            value={newName}
-            onChange={e => setNewName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            className="flex-1 px-3.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-white dark:bg-gray-900 text-sm text-[var(--text-primary)] outline-none focus:border-primary-400 transition-colors placeholder:text-[var(--text-muted)]"
-          />
-          <button onClick={handleAdd} className="px-4 py-2.5 rounded-xl text-white text-sm font-bold transition-all cursor-pointer hover:shadow-md flex items-center gap-1.5" style={{ background: activeCatInfo.color }}>
-            <Plus size={14} /> 추가
-          </button>
+        <div className="relative mb-4">
+          <div className="flex gap-2">
+            <input
+              placeholder={direction === 'income' ? `${activeCatInfo.label} 입금계정 입력 또는 Enter로 지출수단 선택...` : `새 ${activeCatInfo.label} 지출수단 입력...`}
+              value={newName}
+              onChange={e => { setNewName(e.target.value); if (direction === 'income') setShowExpenseList(true) }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  if (direction === 'income' && !newName.trim()) {
+                    e.preventDefault()
+                    setShowExpenseList(!showExpenseList)
+                  } else {
+                    handleAdd()
+                    setShowExpenseList(false)
+                  }
+                }
+                if (e.key === 'Escape') setShowExpenseList(false)
+              }}
+              onFocus={() => { if (direction === 'income') setShowExpenseList(true) }}
+              className="flex-1 px-3.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-white dark:bg-gray-900 text-sm text-[var(--text-primary)] outline-none focus:border-primary-400 transition-colors placeholder:text-[var(--text-muted)]"
+            />
+            <button onClick={() => { handleAdd(); setShowExpenseList(false) }} className="px-4 py-2.5 rounded-xl text-white text-sm font-bold transition-all cursor-pointer hover:shadow-md flex items-center gap-1.5" style={{ background: activeCatInfo.color }}>
+              <Plus size={14} /> 추가
+            </button>
+          </div>
+
+          {/* 입금 모드: 지출수단 선택 드롭다운 */}
+          {direction === 'income' && showExpenseList && (
+            <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-gray-900 rounded-xl border border-[var(--border-default)] shadow-lg max-h-[280px] overflow-y-auto">
+              <div className="p-2 border-b border-[var(--border-default)]">
+                <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase">📋 지출수단에서 선택 ({filteredExpenseItems.length}건)</span>
+              </div>
+              {filteredExpenseItems.length === 0 ? (
+                <div className="p-4 text-center text-[11px] text-[var(--text-muted)]">
+                  이 예산의 {activeCatInfo.label} 지출수단이 없습니다. 직접 입력 후 추가하세요.
+                </div>
+              ) : (
+                filteredExpenseItems
+                  .filter(ei => !newName.trim() || ei.name.toLowerCase().includes(newName.toLowerCase()))
+                  .map(ei => {
+                    const alreadyAdded = catItems.some(ci => ci.name === ei.name)
+                    return (
+                      <button
+                        key={ei.id}
+                        onClick={() => {
+                          if (alreadyAdded) {
+                            addToast('warning', `"${ei.name}"은(는) 이미 등록되어 있습니다`)
+                            return
+                          }
+                          const newItem: PayMethodItem = {
+                            ...ei,
+                            id: Date.now(),
+                            budgetCatId: selectedCatId || undefined,
+                          }
+                          const incomeAll: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_income_methods') || '[]') } catch { return [] } })()
+                          localStorage.setItem('acct_income_methods', JSON.stringify([...incomeAll, newItem]))
+                          setRefresh(r => r + 1)
+                          addToast('success', `"${ei.name}" 입금계정에 추가됨`)
+                          setShowExpenseList(false)
+                          setNewName('')
+                          setExpandedId(newItem.id)
+                        }}
+                        className={cn(
+                          'w-full text-left px-3 py-2.5 flex items-center gap-3 transition-colors',
+                          alreadyAdded ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[var(--bg-muted)] cursor-pointer'
+                        )}
+                      >
+                        <span className="text-[10px] font-bold w-5 text-center shrink-0 rounded-full py-0.5" style={{ color: activeCatInfo.color, background: `${activeCatInfo.color}15` }}>•</span>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-semibold text-[var(--text-primary)]">{ei.name}</span>
+                          {ei.bankName && <span className="text-[10px] text-[var(--text-muted)] ml-2">{ei.bankName} {ei.accountNumber || ''}</span>}
+                        </div>
+                        {alreadyAdded && <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">등록됨</span>}
+                        {(ei as any).accountCode && <span className="text-[9px] font-bold text-violet-500 bg-violet-50 dark:bg-violet-900/20 px-1.5 py-0.5 rounded">{(ei as any).accountCode}</span>}
+                      </button>
+                    )
+                  })
+              )}
+              {newName.trim() && !filteredExpenseItems.some(ei => ei.name === newName.trim()) && (
+                <div className="p-2 border-t border-[var(--border-default)]">
+                  <button
+                    onClick={() => { handleAdd(); setShowExpenseList(false) }}
+                    className="w-full text-left px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 text-sm font-bold hover:bg-emerald-100 cursor-pointer flex items-center gap-2"
+                  >
+                    <Plus size={14} /> "{newName.trim()}" 새로 추가
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 항목 리스트 */}
