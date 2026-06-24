@@ -10118,6 +10118,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
   const deleteNote = (itemId: number, noteId: number) => {
     saveAll(allItems.map(i => i.id === itemId ? { ...i, notes: (i.notes || []).filter(n => n.id !== noteId) } : i))
   }
+  const [endDropKey, setEndDropKey] = React.useState<string | null>(null)
 
   const dirLabel = direction === 'expense' ? '지출수단' : '입금계정'
 
@@ -10701,10 +10702,8 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                         </div>
 
                                         {/* 수신어음: 이서(배서) 리스트 */}
-                                        {item.noteType === '수신' && (() => {
-                                          // eslint-disable-next-line react-hooks/rules-of-hooks
-                                          const [endDropIdx, setEndDropIdx] = React.useState<number | null>(null)
-                                          return (
+                                        {/* 수신어음: 이서(배서) 리스트 */}
+                                        {item.noteType === '수신' && (
                                           <div className="mt-2 pt-2 border-t border-dashed border-amber-200 dark:border-amber-800/40">
                                             <div className="flex items-center justify-between mb-1.5">
                                               <div className="flex items-center gap-1.5">
@@ -10727,7 +10726,9 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                               <div className="text-[10px] text-[var(--text-muted)] text-center py-2 rounded-md border border-dashed border-[var(--border-default)]">이서 내역이 없습니다</div>
                                             ) : (
                                               <div className="space-y-2">
-                                                {(note.endorsements || []).map((ed: any, ei: number) => (
+                                                {(note.endorsements || []).map((ed: any, ei: number) => {
+                                                  const dropKey = `${note.id}-${ei}`
+                                                  return (
                                                   <div key={ed.id} className="bg-indigo-50/50 dark:bg-indigo-900/10 rounded-lg p-2.5 border border-indigo-100 dark:border-indigo-900/30">
                                                     <div className="flex items-center justify-between mb-2">
                                                       <span className="text-[9px] font-bold text-indigo-500 bg-indigo-100 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded">이서 {ei + 1}</span>
@@ -10750,14 +10751,14 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                                             const updated = [...(note.endorsements || [])]
                                                             updated[ei] = { ...updated[ei], endorser: e.target.value }
                                                             updateNote(item.id, note.id, 'endorsements', updated)
-                                                            setEndDropIdx(ei)
+                                                            setEndDropKey(dropKey)
                                                           }}
-                                                          onFocus={() => setEndDropIdx(ei)}
-                                                          onBlur={() => setTimeout(() => setEndDropIdx(null), 200)}
+                                                          onFocus={() => setEndDropKey(dropKey)}
+                                                          onBlur={() => setTimeout(() => setEndDropKey(null), 200)}
                                                           placeholder="거래처 검색..."
                                                           className="w-full text-[11px] px-2 py-1.5 rounded-md border border-[var(--border-default)] bg-white dark:bg-gray-900 outline-none"
                                                         />
-                                                        {endDropIdx === ei && (() => {
+                                                        {endDropKey === dropKey && (() => {
                                                           const vendorList: any[] = getItem('acct_vendors', [])
                                                           const sv = (ed.endorser || '').toLowerCase()
                                                           const flt = vendorList.filter(v => !sv || v.name.toLowerCase().includes(sv))
@@ -10769,7 +10770,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                                                   const updated = [...(note.endorsements || [])]
                                                                   updated[ei] = { ...updated[ei], endorser: v.name }
                                                                   updateNote(item.id, note.id, 'endorsements', updated)
-                                                                  setEndDropIdx(null)
+                                                                  setEndDropKey(null)
                                                                 }} className="w-full text-left px-2.5 py-1.5 text-[11px] hover:bg-[var(--bg-muted)] cursor-pointer flex items-center gap-1.5">
                                                                   <span className="text-[10px]">🏢</span>
                                                                   <span className="font-semibold">{v.name}</span>
@@ -10806,12 +10807,12 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                                       </div>
                                                     </div>
                                                   </div>
-                                                ))}
+                                                  )
+                                                })}
                                               </div>
                                             )}
                                           </div>
-                                        )
-                                        })()}
+                                        )}
 
                                         {/* 수신어음: 스캔본 첨부 */}
                                         {item.noteType === '수신' && (
