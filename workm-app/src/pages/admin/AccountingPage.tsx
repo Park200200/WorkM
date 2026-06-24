@@ -23,7 +23,7 @@ import {
   Plus, Edit3, Trash2, Save, X, Check, Ban, MoreHorizontal,
   Lock, ShieldCheck, RefreshCw, Printer, Paperclip, Send, Eye,
   CreditCard, Settings, Smartphone, User, Phone, Mail, Landmark,
-  ArrowLeftRight, Calendar, Filter, Download, BarChart2, CheckCircle2,
+  ArrowLeftRight, Calendar, Filter, Download, BarChart2, CheckCircle2, Archive,
 } from 'lucide-react'
 
 /* ─── 서버 설정 동기화 ── */
@@ -3515,9 +3515,9 @@ export function AcctApproval({ year }: { year: number }) {
   }
 
   type GroupKey = 'inbox' | 'process' | 'archive'
-  const groupDefs: { key: GroupKey; label: string; icon: string; color: string; subTabs: { key: string; label: string; color: string }[] }[] = [
+  const groupDefs: { key: GroupKey; label: string; icon: React.ElementType; color: string; subTabs: { key: string; label: string; color: string }[] }[] = [
     {
-      key: 'inbox', label: '품의함', icon: '📋', color: '#4f6ef7',
+      key: 'inbox', label: '품의함', icon: FileCheck, color: '#4f6ef7',
       subTabs: [
         { key: 'preExpense', label: '품의할', color: '#f97316' },
         { key: 'pending', label: '품의한', color: '#f59e0b' },
@@ -3528,7 +3528,7 @@ export function AcctApproval({ year }: { year: number }) {
       ],
     },
     {
-      key: 'process', label: '결제함', icon: '✅', color: '#22c55e',
+      key: 'process', label: '결제함', icon: CheckCircle2, color: '#22c55e',
       subTabs: [
         { key: 'ap_pending', label: '승인할', color: '#f59e0b' },
         { key: 'ap_approved', label: '승인한', color: '#22c55e' },
@@ -3542,7 +3542,7 @@ export function AcctApproval({ year }: { year: number }) {
       ],
     },
     {
-      key: 'archive', label: '보관함', icon: '📦', color: '#6b7280',
+      key: 'archive', label: '보관함', icon: Archive, color: '#6b7280',
       subTabs: [
         { key: 'generalDone', label: '일반품의완료', color: '#4f6ef7' },
         { key: 'expenseDone', label: '지출품의완료', color: '#f97316' },
@@ -4188,7 +4188,7 @@ export function AcctApproval({ year }: { year: number }) {
                   : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]/50'
               )}
             >
-              <span className="text-[14px]">{g.icon}</span>
+              <g.icon size={14} />
               <span>{g.label}</span>
               {cnt > 0 && (
                 <span className={cn(
