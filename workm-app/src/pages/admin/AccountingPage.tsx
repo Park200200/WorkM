@@ -9418,6 +9418,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
   const [activeCategory, setActiveCategory] = useState<'계좌' | '현금' | '어음' | '상품권'>('계좌')
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [showExpenseList, setShowExpenseList] = useState(false)
+  const [checkedExpenseIds, setCheckedExpenseIds] = useState<number[]>([])
   const addToast = useToastStore(s => s.add)
   const staffList = useMemo(() => getItem<any[]>('ws_users', []), [])
   const allAccounts: AcctAccount[] = useMemo(() => getItem('acct_accounts', []), [refresh])
@@ -9651,48 +9652,81 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
             </button>
           </div>
 
-          {/* 입금 모드: 지출수단 선택 드롭다운 */}
-          {direction === 'income' && showExpenseList && (
-            <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-gray-900 rounded-xl border border-[var(--border-default)] shadow-lg max-h-[280px] overflow-y-auto">
-              <div className="p-2 border-b border-[var(--border-default)]">
+          {/* 입금 모드: 지출수단 복수선택 드롭다운 */}
+          {direction === 'income' && showExpenseList && (() => {
+            const visibleItems = filteredExpenseItems.filter(ei => !newName.trim() || ei.name.toLowerCase().includes(newName.toLowerCase()))
+            const selectableItems = visibleItems.filter(ei => !catItems.some(ci => ci.name === ei.name))
+            const checkedCount = checkedExpenseIds.length
+            return (
+            <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-gray-900 rounded-xl border border-[var(--border-default)] shadow-lg max-h-[320px] flex flex-col">
+              {/* 헤더 */}
+              <div className="p-2.5 border-b border-[var(--border-default)] flex items-center justify-between shrink-0">
                 <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase">📋 지출수단에서 선택 ({filteredExpenseItems.length}건)</span>
+                <div className="flex items-center gap-2">
+                  {selectableItems.length > 0 && (
+                    <button
+                      onClick={() => {
+                        if (checkedExpenseIds.length === selectableItems.length) {
+                          setCheckedExpenseIds([])
+                        } else {
+                          setCheckedExpenseIds(selectableItems.map(i => i.id))
+                        }
+                      }}
+                      className="text-[10px] font-bold text-primary-500 hover:text-primary-700 cursor-pointer"
+                    >
+                      {checkedExpenseIds.length === selectableItems.length ? '전체해제' : '전체선택'}
+                    </button>
+                  )}
+                  {checkedCount > 0 && (
+                    <button
+                      onClick={() => {
+                        const incomeAll: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_income_methods') || '[]') } catch { return [] } })()
+                        const toAdd = filteredExpenseItems.filter(ei => checkedExpenseIds.includes(ei.id) && !catItems.some(ci => ci.name === ei.name))
+                        const newItems = toAdd.map((ei, i) => ({ ...ei, id: Date.now() + i, budgetCatId: selectedCatId || undefined }))
+                        localStorage.setItem('acct_income_methods', JSON.stringify([...incomeAll, ...newItems]))
+                        setRefresh(r => r + 1)
+                        addToast('success', `${newItems.length}건 입금계정에 추가됨`)
+                        setShowExpenseList(false)
+                        setCheckedExpenseIds([])
+                        setNewName('')
+                      }}
+                      className="px-3 py-1 rounded-lg bg-emerald-500 text-white text-[11px] font-bold cursor-pointer hover:bg-emerald-600 flex items-center gap-1 shadow-sm"
+                    >
+                      <Check size={12} /> {checkedCount}건 추가
+                    </button>
+                  )}
+                </div>
               </div>
+              {/* 리스트 */}
+              <div className="overflow-y-auto flex-1">
               {filteredExpenseItems.length === 0 ? (
                 <div className="p-4 text-center text-[11px] text-[var(--text-muted)]">
                   이 예산의 {activeCatInfo.label} 지출수단이 없습니다. 직접 입력 후 추가하세요.
                 </div>
               ) : (
-                filteredExpenseItems
-                  .filter(ei => !newName.trim() || ei.name.toLowerCase().includes(newName.toLowerCase()))
-                  .map(ei => {
+                visibleItems.map(ei => {
                     const alreadyAdded = catItems.some(ci => ci.name === ei.name)
+                    const isChecked = checkedExpenseIds.includes(ei.id)
                     return (
                       <button
                         key={ei.id}
                         onClick={() => {
-                          if (alreadyAdded) {
-                            addToast('warning', `"${ei.name}"은(는) 이미 등록되어 있습니다`)
-                            return
-                          }
-                          const newItem: PayMethodItem = {
-                            ...ei,
-                            id: Date.now(),
-                            budgetCatId: selectedCatId || undefined,
-                          }
-                          const incomeAll: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_income_methods') || '[]') } catch { return [] } })()
-                          localStorage.setItem('acct_income_methods', JSON.stringify([...incomeAll, newItem]))
-                          setRefresh(r => r + 1)
-                          addToast('success', `"${ei.name}" 입금계정에 추가됨`)
-                          setShowExpenseList(false)
-                          setNewName('')
-                          setExpandedId(newItem.id)
+                          if (alreadyAdded) return
+                          setCheckedExpenseIds(prev => isChecked ? prev.filter(id => id !== ei.id) : [...prev, ei.id])
                         }}
                         className={cn(
                           'w-full text-left px-3 py-2.5 flex items-center gap-3 transition-colors',
-                          alreadyAdded ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[var(--bg-muted)] cursor-pointer'
+                          alreadyAdded ? 'opacity-40 cursor-not-allowed' : 'hover:bg-[var(--bg-muted)] cursor-pointer',
+                          isChecked && !alreadyAdded && 'bg-emerald-50/50 dark:bg-emerald-900/10'
                         )}
                       >
-                        <span className="text-[10px] font-bold w-5 text-center shrink-0 rounded-full py-0.5" style={{ color: activeCatInfo.color, background: `${activeCatInfo.color}15` }}>•</span>
+                        {/* 체크박스 */}
+                        <div className={cn(
+                          'w-4.5 h-4.5 rounded border-2 flex items-center justify-center shrink-0 transition-all',
+                          alreadyAdded ? 'border-emerald-300 bg-emerald-100' : isChecked ? 'border-emerald-500 bg-emerald-500' : 'border-gray-300 dark:border-gray-600'
+                        )}>
+                          {(isChecked || alreadyAdded) && <Check size={10} className={alreadyAdded ? 'text-emerald-400' : 'text-white'} />}
+                        </div>
                         <div className="flex-1 min-w-0">
                           <span className="text-sm font-semibold text-[var(--text-primary)]">{ei.name}</span>
                           {ei.bankName && <span className="text-[10px] text-[var(--text-muted)] ml-2">{ei.bankName} {ei.accountNumber || ''}</span>}
@@ -9703,10 +9737,11 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                     )
                   })
               )}
+              </div>
               {newName.trim() && !filteredExpenseItems.some(ei => ei.name === newName.trim()) && (
-                <div className="p-2 border-t border-[var(--border-default)]">
+                <div className="p-2 border-t border-[var(--border-default)] shrink-0">
                   <button
-                    onClick={() => { handleAdd(); setShowExpenseList(false) }}
+                    onClick={() => { handleAdd(); setShowExpenseList(false); setCheckedExpenseIds([]) }}
                     className="w-full text-left px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 text-sm font-bold hover:bg-emerald-100 cursor-pointer flex items-center gap-2"
                   >
                     <Plus size={14} /> "{newName.trim()}" 새로 추가
@@ -9714,7 +9749,8 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                 </div>
               )}
             </div>
-          )}
+            )
+          })()}
         </div>
 
         {/* 항목 리스트 */}
