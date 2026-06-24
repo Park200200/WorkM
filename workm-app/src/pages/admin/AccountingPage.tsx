@@ -5350,7 +5350,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
               ]}
             />
           </div>
-          ) : (
+          ) : type === 'income' ? (
           <>
             {/* 입금전표: 1) 예산선택 */}
             <div>
@@ -5373,11 +5373,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                   )
                 })()}
               </div>
-              <input
-                value={wdCatName || '예산구분 선택'}
-                readOnly
-                className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] cursor-not-allowed outline-none font-bold"
-              />
+              <input value={wdCatName || '예산구분 선택'} readOnly className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] cursor-not-allowed outline-none font-bold" />
             </div>
             {/* 입금전표: 2) 입금내용 */}
             <div>
@@ -5444,6 +5440,36 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                 })()}
               </div>
               <input value={form.amount} onChange={e => handleAmtInput(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm font-bold text-right focus:border-primary-500 outline-none" style={{ color: typeColors[type] }} />
+            </div>
+          </>
+          ) : (
+          <>
+            {/* 출금전표: 지출내용 + 예산선택 */}
+            <div>
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{(!form.manager || form.manager === currentUserName) ? '품의명' : '지출내용'} *</label>
+              <input value={form.desc} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))} placeholder="예) 사무용품 구매" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                <label className="text-[10.5px] font-bold text-[var(--text-muted)]">예산선택</label>
+                {selectedBudgetCat && (() => {
+                  const allBudgets: BudgetItem[] = getItem('acct_budgets', [])
+                  const catBudgets = allBudgets.filter(b => String(b.catId) === String(selectedBudgetCat))
+                  const tb = catBudgets.reduce((s, b) => s + (b.amount || 0), 0)
+                  const sp = catBudgets.reduce((s, b) => s + (b.spent || 0), 0)
+                  const rm = tb - sp
+                  const rt = tb > 0 ? Math.round(sp / tb * 100) : 0
+                  return (
+                    <>
+                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800"><span className="text-[7px] text-blue-500 font-bold">총예산</span><span className="text-[9px] font-extrabold text-blue-600">{tb.toLocaleString('ko-KR')}</span></div>
+                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800"><span className="text-[7px] text-amber-500 font-bold">기집행</span><span className="text-[9px] font-extrabold text-amber-600">{sp.toLocaleString('ko-KR')}</span></div>
+                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800"><span className="text-[7px] text-emerald-500 font-bold">잔액</span><span className="text-[9px] font-extrabold text-emerald-600">{rm.toLocaleString('ko-KR')}</span></div>
+                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-violet-50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800"><span className="text-[9px] font-extrabold text-violet-600">{rt}%</span></div>
+                    </>
+                  )
+                })()}
+              </div>
+              <input value={wdCatName || '예산구분 선택'} readOnly className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] cursor-not-allowed outline-none font-bold" />
             </div>
           </>
           )}
