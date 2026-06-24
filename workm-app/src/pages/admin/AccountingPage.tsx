@@ -10399,7 +10399,8 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                   {/* 상세 필드 */}
                   {isOpen && (
                     <div className="px-4 pb-4 pt-1 border-t border-[var(--border-default)] mx-3">
-                      {/* 계정과목 연결 */}
+                      {/* 계정과목 연결 (어음은 자동연결이므로 제외) */}
+                      {activeCategory !== '어음' && (
                       <div className="mb-3 mt-3 p-3 rounded-lg bg-violet-50/50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800">
                         {direction === 'income' ? (
                           <>
@@ -10449,6 +10450,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                           </>
                         )}
                       </div>
+                      )}
 
                       {/* 계좌 상세 */}
                       {activeCategory === '계좌' && (
