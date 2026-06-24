@@ -81,6 +81,7 @@ const acctNav: { tab: string; label: string; icon: React.ElementType }[] = [
   { tab: 'reports',      label: '회계현황',   icon: BarChart3 },
   { tab: 'vendors',      label: '거래처관리',   icon: ContactRound },
   { tab: 'payMethods',   label: '지출수단',   icon: CreditCard },
+  { tab: 'incomeMethods', label: '입금계정',   icon: Landmark },
   { tab: 'budgetTree',   label: '예산과목',   icon: Wallet },
   { tab: 'hq_vendor',    label: '본사거래처',   icon: Building2 },
   { tab: 'acct_mgmt',    label: '계정관리',   icon: Settings2 },
