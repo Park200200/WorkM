@@ -3089,8 +3089,8 @@ export function AcctApproval({ year }: { year: number }) {
   }, [year, refresh])
 
   const statusInfo: Record<string, { label: string; color: string; bg: string }> = {
-    preExpense: { label: '선지출', color: '#f97316', bg: 'rgba(249,115,22,.1)' },
-    pending: { label: '품의중', color: '#f59e0b', bg: 'rgba(245,158,11,.1)' },
+    preExpense: { label: '지출한', color: '#f97316', bg: 'rgba(249,115,22,.1)' },
+    pending: { label: '품의한', color: '#f59e0b', bg: 'rgba(245,158,11,.1)' },
     rejected: { label: '반려된', color: '#ef4444', bg: 'rgba(239,68,68,.1)' },
     approved: { label: '승인된', color: '#22c55e', bg: 'rgba(34,197,94,.1)' },
     expensed: { label: '지출된', color: '#3b82f6', bg: 'rgba(59,130,246,.1)' },
@@ -3773,10 +3773,13 @@ export function AcctApproval({ year }: { year: number }) {
               </thead>
               <tbody>
                 {filteredApprovals.map(a => {
+                  const isTransferApproval = !!(a as any).transferType || (a.title || '').startsWith('[대체]')
                   const isResubmitted = a.status === 'pending' && (a as any).resubmittedAt
                   const si = isResubmitted
-                    ? { label: '품의중', color: '#f59e0b', bg: 'rgba(245,158,11,.15)' }
-                    : (statusInfo[a.status] || statusInfo.pending)
+                    ? { label: '품의한', color: '#f59e0b', bg: 'rgba(245,158,11,.15)' }
+                    : a.status === 'preExpense' && isTransferApproval
+                      ? { label: '대체한', color: '#f97316', bg: 'rgba(249,115,22,.1)' }
+                      : (statusInfo[a.status] || statusInfo.pending)
                   const isPreExp = !!(a as any).isPreExpense || a.status === 'preExpense' || (a.title || '').startsWith('[선지출]')
                   return (
                     <tr key={a.id} className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors">
@@ -3785,7 +3788,7 @@ export function AcctApproval({ year }: { year: number }) {
                       <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-right text-[var(--text-primary)]">{formatNumber(a.amount || 0)}원</td>
                       <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: si.bg, color: si.color }}>
-                          {isPreExp && <span style={{ color: '#ef4444', marginRight: '2px' }}>후</span>}{si.label}
+                          {si.label}
                         </span>
                       </td>
                       <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
