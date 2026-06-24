@@ -6657,8 +6657,31 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                             style={{ background: statusBg, color: statusColor }}
                             onClick={() => {
                               if (statusLabel === '반려' && aId) {
-                                // 반려된 품의: URL로 품의하기 페이지 이동 + openId 전달
-                                window.location.hash = `/accounting?tab=approval&group=inbox&subtab=rejected&openId=${aId}`
+                                // 반려된 품의: 현재 출금전표 폼에 데이터를 채워서 수정 가능하게 함
+                                const cf = c as any
+                                setForm(prev => ({
+                                  ...prev,
+                                  desc: cf.description || '',
+                                  amount: String(cf.amount || ''),
+                                  writeDate: cf.date || today,
+                                  tradeDate: cf.tradeDate || cf.date || today,
+                                  manager: cf.manager || '',
+                                  counter: cf.counter || '',
+                                  method: cf.method || '계좌이체',
+                                  subItem: cf.subItem || '',
+                                  detailItem: cf.detailItem || '',
+                                  memo: cf.memo || '',
+                                } as any))
+                                // 예산 카테고리 설정
+                                if (cf.budgetCatId) setSelectedBudgetCat(String(cf.budgetCatId))
+                                if (cf.budgetItem) setWdBudgetItem(cf.budgetItem)
+                                if (cf.budgetCatName) setWdCatName(cf.budgetCatName)
+                                // 첨부파일
+                                if (cf.attachments) setWdAttachments(cf.attachments)
+                                // 편집 중인 cashflow ID 저장
+                                setSelectedApprovalId(aId)
+                                // 스크롤 위로
+                                window.scrollTo({ top: 0, behavior: 'smooth' })
                               }
                             }}
                             title={statusLabel === '반려' ? '클릭하여 수정' : ''}
