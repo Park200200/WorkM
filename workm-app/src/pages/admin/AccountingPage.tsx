@@ -4100,6 +4100,7 @@ export function AcctApproval({ year }: { year: number }) {
       budgetSubId: (a as any).budgetSubId,
       budgetItem: (a as any).budgetItem,
       budgetSubItem: (a as any).budgetSubItem,
+      attachments: (resubmitForm as any).attachments || (a as any).attachments || [],
       approvedAt: undefined,
       rejectedAt: undefined,
       resubmittedAt: new Date().toISOString(),
@@ -4372,7 +4373,7 @@ export function AcctApproval({ year }: { year: number }) {
               )}
               {!isApproverPendingView && detailApproval.status === 'pending' && (
                 <>
-                  <button onClick={() => { const a=detailApproval; const da=a as any; let catId=da.budgetCatId?String(da.budgetCatId):''; if(!catId&&da.budgetCatName){const cat=budgetCats.find(c=>c.name===da.budgetCatName);if(cat)catId=String(cat.id)} setResubmitMode(true); setResubmitForm({title:a.title||'',amount:a.amount?Number(a.amount).toLocaleString('ko-KR'):'',date:(a.date||a.createdAt||'').slice(0,10),description:da.description||'',budgetCatId:catId} as any); setApprovePwError('') }} className="px-4 py-2 rounded-lg bg-[#4f6ef7] text-white text-sm font-bold hover:bg-[#3b5de7] cursor-pointer flex items-center gap-1 shadow-sm"><Edit3 size={13} /> 수정</button>
+                  <button onClick={() => { const a=detailApproval; const da=a as any; let catId=da.budgetCatId?String(da.budgetCatId):''; if(!catId&&da.budgetCatName){const cat=budgetCats.find(c=>c.name===da.budgetCatName);if(cat)catId=String(cat.id)} setResubmitMode(true); setResubmitForm({title:a.title||'',amount:a.amount?Number(a.amount).toLocaleString('ko-KR'):'',date:(a.date||a.createdAt||'').slice(0,10),description:da.description||'',budgetCatId:catId,attachments:da.attachments||[]} as any); setApprovePwError('') }} className="px-4 py-2 rounded-lg bg-[#4f6ef7] text-white text-sm font-bold hover:bg-[#3b5de7] cursor-pointer flex items-center gap-1 shadow-sm"><Edit3 size={13} /> 수정</button>
                   <button onClick={() => { deleteApproval(detailApproval.id); resetApproveState(); setDetailApproval(null) }} className="px-4 py-2 rounded-lg bg-[#ef4444] text-white text-sm font-bold hover:bg-[#dc2626] cursor-pointer flex items-center gap-1"><Trash2 size={13} /> 삭제</button>
                 </>
               )}
@@ -4393,11 +4394,11 @@ export function AcctApproval({ year }: { year: number }) {
                 )
               })()}
               {!isApproverPendingView && detailApproval.status === 'preExpense' && (
-                <button onClick={() => { const a=detailApproval; const da=a as any; let catId=da.budgetCatId?String(da.budgetCatId):''; if(!catId&&da.budgetCatName){const cat=budgetCats.find(c=>c.name===da.budgetCatName);if(cat)catId=String(cat.id)} setResubmitMode(true); setResubmitForm({title:a.title||'',amount:a.amount?Number(a.amount).toLocaleString('ko-KR'):'',date:(a.date||a.createdAt||'').slice(0,10),description:da.description||'',budgetCatId:catId} as any); setApprovePwError('') }} className="px-4 py-2 rounded-lg bg-[#f97316] text-white text-sm font-bold hover:bg-[#ea580c] cursor-pointer flex items-center gap-1 shadow-sm"><Edit3 size={13} /> 품의</button>
+                <button onClick={() => { const a=detailApproval; const da=a as any; let catId=da.budgetCatId?String(da.budgetCatId):''; if(!catId&&da.budgetCatName){const cat=budgetCats.find(c=>c.name===da.budgetCatName);if(cat)catId=String(cat.id)} setResubmitMode(true); setResubmitForm({title:a.title||'',amount:a.amount?Number(a.amount).toLocaleString('ko-KR'):'',date:(a.date||a.createdAt||'').slice(0,10),description:da.description||'',budgetCatId:catId,attachments:da.attachments||[]} as any); setApprovePwError('') }} className="px-4 py-2 rounded-lg bg-[#f97316] text-white text-sm font-bold hover:bg-[#ea580c] cursor-pointer flex items-center gap-1 shadow-sm"><Edit3 size={13} /> 품의</button>
               )}
               {!isApproverPendingView && detailApproval.status === 'rejected' && (
                 <>
-                  <button onClick={() => { const a=detailApproval; const da=a as any; let catId=da.budgetCatId?String(da.budgetCatId):''; if(!catId&&da.budgetCatName){const cat=budgetCats.find(c=>c.name===da.budgetCatName);if(cat)catId=String(cat.id)} setResubmitMode(true); setResubmitForm({title:a.title||'',amount:a.amount?Number(a.amount).toLocaleString('ko-KR'):'',date:(a.date||a.createdAt||'').slice(0,10),description:da.description||'',budgetCatId:catId} as any); setApprovePwError('') }} className="px-4 py-2 rounded-lg bg-[#f59e0b] text-white text-sm font-bold hover:bg-[#d97706] cursor-pointer flex items-center gap-1 shadow-sm"><RefreshCw size={13} /> 재품의</button>
+                  <button onClick={() => { const a=detailApproval; const da=a as any; let catId=da.budgetCatId?String(da.budgetCatId):''; if(!catId&&da.budgetCatName){const cat=budgetCats.find(c=>c.name===da.budgetCatName);if(cat)catId=String(cat.id)} setResubmitMode(true); setResubmitForm({title:a.title||'',amount:a.amount?Number(a.amount).toLocaleString('ko-KR'):'',date:(a.date||a.createdAt||'').slice(0,10),description:da.description||'',budgetCatId:catId,attachments:da.attachments||[]} as any); setApprovePwError('') }} className="px-4 py-2 rounded-lg bg-[#f59e0b] text-white text-sm font-bold hover:bg-[#d97706] cursor-pointer flex items-center gap-1 shadow-sm"><RefreshCw size={13} /> 재품의</button>
                   <button onClick={() => { deleteApproval(detailApproval.id); resetApproveState(); setDetailApproval(null) }} className="px-4 py-2 rounded-lg bg-[#ef4444] text-white text-sm font-bold hover:bg-[#dc2626] cursor-pointer flex items-center gap-1"><Trash2 size={13} /> 삭제</button>
                 </>
               )}
@@ -4711,6 +4712,18 @@ export function AcctApproval({ year }: { year: number }) {
                       </div>
                     </div>
                     <div>
+                      <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">거래처</label>
+                      <div className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] font-bold">
+                        🏢 {(detailApproval as any).counter || '-'}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">지출수단</label>
+                      <div className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] font-bold">
+                        💳 {(detailApproval as any).method || '-'}
+                      </div>
+                    </div>
+                    <div>
                       <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">지출일자</label>
                       <div className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)]">
                         📅 {resubmitForm.date}
@@ -4726,6 +4739,36 @@ export function AcctApproval({ year }: { year: number }) {
                           }
                           return (detailApproval as any).approver || '미지정'
                         })()}
+                      </div>
+                    </div>
+                    {/* 증빙 첨부 */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">📎 증빙 첨부 (영수증/증빙)</label>
+                      <div className="space-y-1.5">
+                        {((resubmitForm as any).attachments || []).map((att: any, i: number) => (
+                          <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[var(--bg-muted)] border border-[var(--border-default)]">
+                            <span className="text-[11px] text-[var(--text-primary)] font-bold truncate flex-1">{att.name || `파일 ${i + 1}`}</span>
+                            <button type="button" onClick={() => {
+                              const updated = [...((resubmitForm as any).attachments || [])]; updated.splice(i, 1)
+                              setResubmitForm(f => ({ ...f, attachments: updated } as any))
+                            }} className="text-[#ef4444] text-[12px] hover:text-[#dc2626] cursor-pointer shrink-0">✕</button>
+                          </div>
+                        ))}
+                        <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-primary-400 bg-primary-50/30 text-primary-600 text-[11px] font-bold cursor-pointer hover:bg-primary-50/50 transition-colors">
+                          <span>+ 증빙 파일 추가</span>
+                          <input type="file" accept="image/*,.pdf" multiple className="hidden" onChange={e => {
+                            const files = Array.from(e.target.files || [])
+                            files.forEach(file => {
+                              const reader = new FileReader()
+                              reader.onload = () => {
+                                const newAtt = { name: file.name, data: reader.result as string, size: file.size, title: file.name, printWidth: 100 }
+                                setResubmitForm(f => ({ ...f, attachments: [...((f as any).attachments || []), newAtt] } as any))
+                              }
+                              reader.readAsDataURL(file)
+                            })
+                            e.target.value = ''
+                          }} />
+                        </label>
                       </div>
                     </div>
                     </>
