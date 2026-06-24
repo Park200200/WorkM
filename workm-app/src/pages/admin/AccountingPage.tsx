@@ -1103,7 +1103,11 @@ export function AccountingPage() {
     const currentStaff = staffList.find((s: any) => s.name === userName)
     const isAdmin = currentStaff?.role === 'admin'
     const budgetCats = JSON.parse(localStorage.getItem('acct_budget_cats') || '[]') as any[]
-    const isBudgetHandler = budgetCats.some((c: any) =>
+    const yearCats = budgetCats.filter((c: any) => {
+      const catYear = c.year || (c.periodFrom ? parseInt(c.periodFrom.substring(0, 4)) : 0)
+      return catYear === year
+    })
+    const isBudgetHandler = yearCats.some((c: any) =>
       (c.users && c.users.includes(userName)) ||
       (c.approvers && c.approvers.includes(userName)) ||
       (c.approver === userName)

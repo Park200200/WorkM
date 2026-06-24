@@ -157,9 +157,14 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             const staffList = JSON.parse(localStorage.getItem('ws_users') || '[]') as any[]
             const currentStaff = staffList.find((s: any) => s.name === userName)
             const isAdmin = currentStaff?.role === 'admin'
-            // 예산담당자 여부: 어떤 예산구분의 users 또는 approvers에 포함
+            // 현재 선택된 회계연도 기준으로 예산 권한 확인
+            const currentYear = parseInt(new URLSearchParams(location.search).get('year') || String(new Date().getFullYear()))
             const budgetCats = JSON.parse(localStorage.getItem('acct_budget_cats') || '[]') as any[]
-            const isBudgetHandler = budgetCats.some((c: any) =>
+            const yearCats = budgetCats.filter((c: any) => {
+              const catYear = c.year || (c.periodFrom ? parseInt(c.periodFrom.substring(0, 4)) : 0)
+              return catYear === currentYear
+            })
+            const isBudgetHandler = yearCats.some((c: any) =>
               (c.users && c.users.includes(userName)) ||
               (c.approvers && c.approvers.includes(userName)) ||
               (c.approver === userName)
