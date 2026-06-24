@@ -4533,28 +4533,64 @@ export function AcctApproval({ year }: { year: number }) {
                 <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">품의명</label>
                 <input value={resubmitForm.title} onChange={e => setResubmitForm(f => ({ ...f, title: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-500" placeholder="품의명을 입력해주세요" />
               </div>
-              {!(detailApproval as any).isGeneral && (
-              <>
-              <div>
-                <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">예산구분</label>
-                <select value={(resubmitForm as any).budgetCatId || ''} onChange={e => setResubmitForm(f => ({ ...f, budgetCatId: e.target.value } as any))} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
-                  <option value="">— 예산구분 선택 —</option>
-                  {budgetCats.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">금액</label>
-                <input value={resubmitForm.amount} onChange={e => {
-                  const d = e.target.value.replace(/[^\d]/g, '')
-                  setResubmitForm(f => ({ ...f, amount: d ? Number(d).toLocaleString('ko-KR') : '' }))
-                }} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm text-[var(--text-primary)] text-right font-bold focus:outline-none focus:border-primary-500" placeholder="0" />
-              </div>
-              </>
-              )}
+              {!(detailApproval as any).isGeneral && (() => {
+                const isPreExpEdit = !!(detailApproval as any).isPreExpense || detailApproval.status === 'preExpense'
+                if (isPreExpEdit) {
+                  // 선지출: 예산 정보 읽기전용 상세 텍스트
+                  const catName = (detailApproval as any).budgetCatName || budgetCats.find(c => String(c.id) === String((detailApproval as any).budgetCatId))?.name || '미지정'
+                  const itemName = (detailApproval as any).budgetItem || ''
+                  const subName = (detailApproval as any).budgetSubItem || ''
+                  const detailName = (detailApproval as any).budgetDetailItem || ''
+                  const budgetPath = [catName, itemName, subName, detailName].filter(Boolean).join(' > ')
+                  return (
+                    <>
+                    <div>
+                      <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">예산 정보</label>
+                      <div className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] font-bold">
+                        📋 {budgetPath}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">금액</label>
+                      <div className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] text-right font-extrabold">
+                        {typeof detailApproval.amount === 'number' ? detailApproval.amount.toLocaleString('ko-KR') : resubmitForm.amount}원
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">지출일자</label>
+                      <div className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)]">
+                        📅 {resubmitForm.date}
+                      </div>
+                    </div>
+                    </>
+                  )
+                }
+                // 일반 품의 수정: 기존 편집 가능 필드
+                return (
+                  <>
+                  <div>
+                    <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">예산구분</label>
+                    <select value={(resubmitForm as any).budgetCatId || ''} onChange={e => setResubmitForm(f => ({ ...f, budgetCatId: e.target.value } as any))} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
+                      <option value="">— 예산구분 선택 —</option>
+                      {budgetCats.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">금액</label>
+                    <input value={resubmitForm.amount} onChange={e => {
+                      const d = e.target.value.replace(/[^\d]/g, '')
+                      setResubmitForm(f => ({ ...f, amount: d ? Number(d).toLocaleString('ko-KR') : '' }))
+                    }} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm text-[var(--text-primary)] text-right font-bold focus:outline-none focus:border-primary-500" placeholder="0" />
+                  </div>
+                  </>
+                )
+              })()}
+              {!((detailApproval as any).isPreExpense || detailApproval.status === 'preExpense') && (
               <div>
                 <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">날짜</label>
                 <input type="date" value={resubmitForm.date} onChange={e => setResubmitForm(f => ({ ...f, date: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-500" />
               </div>
+              )}
               <div>
                 <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">비고 / 설명</label>
                 <textarea value={resubmitForm.description} onChange={e => setResubmitForm(f => ({ ...f, description: e.target.value }))} rows={3} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-500 resize-none" placeholder="비고를 입력해주세요" />
