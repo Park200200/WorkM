@@ -1120,7 +1120,7 @@ export function AccountingPage() {
         <AcctVoucherEntry year={year} type={activeSub as 'expense' | 'income' | 'withdrawal'} catId={selectedOverviewCatId} />
       )}
       {activeSub === 'payment' && <AcctPaymentLedger year={year} catId={selectedOverviewCatId} />}
-      {activeSub === 'cashflow_list' && <AcctCashflowList year={year} />}
+      {activeSub === 'cashflow_list' && <AcctCashflowList year={year} catId={selectedOverviewCatId} />}
       {activeSub === 'reports' && <AcctReports year={year} />}
       {activeSub === 'vendors' && <AcctVendors />}
       {activeSub === 'methodReg' && <AcctMethodReg catId={selectedOverviewCatId} />}
@@ -11751,15 +11751,25 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
 /* ═══════════════════════════════════════════
    입출금내역 (CashFlow List)
    ═══════════════════════════════════════════ */
-function AcctCashflowList({ year }: { year: number }) {
+function AcctCashflowList({ year, catId }: { year: number; catId?: string | null }) {
   const [refresh, setRefresh] = useState(0)
   const currentUserName = useAuthStore.getState().user?.name || ''
 
   // ── 데이터 로드 ──
-  const cashflows: any[] = useMemo(() => getItem('acct_cashflows', []), [refresh])
-  const approvals: any[] = useMemo(() => getItem('acct_approvals', []), [refresh])
+  const allCashflows: any[] = useMemo(() => getItem('acct_cashflows', []), [refresh])
+  const allApprovals: any[] = useMemo(() => getItem('acct_approvals', []), [refresh])
   const budgetCats: any[] = useMemo(() => getItem('acct_budget_cats', []), [refresh])
   const staffList: any[] = useMemo(() => getItem('acct_staff', []), [refresh])
+
+  // ── 예산별 필터링 ──
+  const cashflows = useMemo(() => {
+    if (!catId || catId === 'all') return allCashflows
+    return allCashflows.filter(c => String(c.budgetCatId) === String(catId))
+  }, [allCashflows, catId])
+  const approvals = useMemo(() => {
+    if (!catId || catId === 'all') return allApprovals
+    return allApprovals.filter(a => String((a as any).budgetCatId) === String(catId))
+  }, [allApprovals, catId])
 
   // ── 필터 상태 ──
   const today = getLocalDate()
