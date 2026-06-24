@@ -9958,7 +9958,7 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
                                   <div key={note.id} className="rounded-lg border border-amber-100 dark:border-amber-900/30 bg-amber-50/30 dark:bg-amber-900/5 p-3">
                                     <div className="flex items-center justify-between mb-2">
                                       <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-bold text-amber-500">📄 어음 {ni + 1}</span>
+                                        <span className="text-[10px] font-bold text-amber-500 flex items-center gap-1"><FileText size={10} /> 어음 {ni + 1}</span>
                                         {note.status && (
                                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ color: statusColors[note.status] || '#888', background: `${statusColors[note.status] || '#888'}15` }}>
                                             {note.status}
@@ -11330,9 +11330,9 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                               <label className={DETAIL_FIELD_LABEL}>구분</label>
                               <div className={`${DETAIL_INPUT} flex items-center gap-1.5 !bg-[var(--bg-muted)]`}>
                                 {item.noteType === '수신' ? (
-                                  <><span className="text-sm">📥</span><span className="text-xs font-bold text-blue-600">수신어음 (받을어음)</span></>
+                                  <><ArrowDownCircle size={14} className="text-blue-500" /><span className="text-xs font-bold text-blue-600">수신어음 (받을어음)</span></>
                                 ) : (
-                                  <><span className="text-sm">📤</span><span className="text-xs font-bold text-rose-600">발행어음 (지급어음)</span></>
+                                  <><ArrowUpCircle size={14} className="text-rose-500" /><span className="text-xs font-bold text-rose-600">발행어음 (지급어음)</span></>
                                 )}
                               </div>
                             </div>
@@ -11361,7 +11361,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                             <div className="pt-3 border-t border-dashed border-amber-200 dark:border-amber-800">
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-[12px] font-extrabold text-[var(--text-primary)]">📄 어음대장</span>
+                                  <span className="text-[12px] font-extrabold text-[var(--text-primary)] flex items-center gap-1"><FileText size={13} /> 어음대장</span>
                                   {(item.notes || []).length > 0 && (
                                     <span className="text-[9px] font-bold bg-amber-100 dark:bg-amber-900/20 text-amber-600 px-1.5 py-0.5 rounded">{(item.notes || []).length}건</span>
                                   )}
@@ -11382,7 +11382,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                       <div key={note.id} className="rounded-lg border border-amber-100 dark:border-amber-900/30 bg-amber-50/30 dark:bg-amber-900/5 p-2.5">
                                         <div className="flex items-center justify-between mb-2">
                                           <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-bold text-amber-500">📄 어음 {ni + 1}</span>
+                                            <span className="text-[10px] font-bold text-amber-500 flex items-center gap-1"><FileText size={10} /> 어음 {ni + 1}</span>
                                             {note.status && (
                                               <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ color: statusColors[note.status] || '#888', background: `${statusColors[note.status] || '#888'}15` }}>
                                                 {note.status}
@@ -11457,7 +11457,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                           <div className="mt-2 pt-2 border-t border-dashed border-amber-200 dark:border-amber-800/40">
                                             <div className="flex items-center justify-between mb-1.5">
                                               <div className="flex items-center gap-1.5">
-                                                <span className="text-[10px] font-extrabold text-indigo-600">📋 이서(배서) 내역</span>
+                                                <span className="text-[10px] font-extrabold text-indigo-600 flex items-center gap-1"><ScrollText size={11} /> 이서(배서) 내역</span>
                                                 {(note.endorsements || []).length > 0 && (
                                                   <span className="text-[9px] font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 px-1.5 py-0.5 rounded">{(note.endorsements || []).length}건</span>
                                                 )}
@@ -11569,7 +11569,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                           <div className="mt-2 pt-2 border-t border-dashed border-amber-200 dark:border-amber-800/40">
                                             <div className="flex items-center justify-between mb-1.5">
                                               <div className="flex items-center gap-1.5">
-                                                <span className="text-[10px] font-extrabold text-teal-600">📎 어음 스캔본</span>
+                                                <span className="text-[10px] font-extrabold text-teal-600 flex items-center gap-1"><Paperclip size={11} /> 어음 스캔본</span>
                                                 {(note.attachments || []).length > 0 && (
                                                   <span className="text-[9px] font-bold bg-teal-50 dark:bg-teal-900/20 text-teal-500 px-1.5 py-0.5 rounded">{(note.attachments || []).length}건</span>
                                                 )}
