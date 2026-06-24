@@ -5809,6 +5809,23 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
         setItem('acct_approvals', approvals)
       }
     }
+    // 예산 집행액(spent) 복원: 출금/지출 전표 삭제 시 spent에서 차감
+    if (target && (target.type === 'withdrawal' || target.type === 'expense') && (target as any).budgetCatId) {
+      const budgets: BudgetItem[] = getItem('acct_budgets', [])
+      const amt = target.amount || 0
+      const budgetItem = (target as any).budgetItem || (target as any).budgetSubItem || ''
+      if (amt > 0 && budgetItem) {
+        const updated = budgets.map(b => {
+          const catMatch = String(b.catId) === String((target as any).budgetCatId)
+          const itemMatch = b.itemName === budgetItem || b.subItemName === budgetItem
+          if (catMatch && itemMatch && (b.spent || 0) >= amt) {
+            return { ...b, spent: (b.spent || 0) - amt }
+          }
+          return b
+        })
+        setItem('acct_budgets', updated)
+      }
+    }
     const cfs = allCfs.filter(c => String(c.id) !== String(id))
     setItem('acct_cashflows', cfs)
     setRefresh(r => r + 1)
@@ -9934,7 +9951,7 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
                               ((cf as any).payMethod || (cf as any).method) === '현금' &&
                               ((cf as any).payDetail || '') === item.name
                             ).reduce((s, cf) => s + (cf.amount || 0), 0)
-                            const balance = cashIn - cashOutTransfer - cashOutExpense
+                            const balance = (item.initialBalance || 0) + cashIn - cashOutTransfer - cashOutExpense
                             const isOver = item.cashLimit && balance > item.cashLimit
                             return (
                               <div className={`w-full px-3 py-2.5 rounded-lg border text-sm font-extrabold text-right ${balance < 0 ? 'border-red-300 bg-red-50 dark:bg-red-900/10 text-red-600' : isOver ? 'border-amber-300 bg-amber-50 dark:bg-amber-900/10 text-amber-600' : 'border-emerald-300 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600'}`}>
@@ -11233,7 +11250,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                       const cashIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                       const cashOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '현금' && (cf as any).creditDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                       const cashOutE = cfs.filter(cf => (cf.type === 'withdrawal' || cf.type === 'expense') && ((cf as any).payMethod || (cf as any).method) === '현금' && ((cf as any).payDetail || '') === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                      const bal = cashIn - cashOutT - cashOutE
+                      const bal = (item.initialBalance || 0) + cashIn - cashOutT - cashOutE
                       return (
                         <>
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap">1-01-01 현금</span>
@@ -11485,7 +11502,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                               const cashIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                               const cashOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '현금' && (cf as any).creditDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                               const cashOutE = cfs.filter(cf => (cf.type === 'withdrawal' || cf.type === 'expense') && ((cf as any).payMethod || (cf as any).method) === '현금' && ((cf as any).payDetail || '') === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                              const balance = cashIn - cashOutT - cashOutE
+                              const balance = (item.initialBalance || 0) + cashIn - cashOutT - cashOutE
                               const isOver = item.cashLimit && balance > item.cashLimit
                               return (
                                 <div className={`w-full px-3 py-2.5 rounded-lg border text-sm font-extrabold text-right ${balance < 0 ? 'border-red-300 bg-red-50 dark:bg-red-900/10 text-red-600' : isOver ? 'border-amber-300 bg-amber-50 dark:bg-amber-900/10 text-amber-600' : 'border-emerald-300 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600'}`}>
