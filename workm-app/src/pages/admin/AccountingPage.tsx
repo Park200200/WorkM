@@ -4284,7 +4284,7 @@ export function AcctApproval({ year }: { year: number }) {
       </div>
 
       {/* ── 지출품의서 폼 (상세 팝업 대체) ── */}
-      {detailApproval && (
+      {detailApproval && !resubmitEvidenceOpen && (
         <PrintApprovalForm
           readOnly={['approved','expensed','confirming','completed'].includes(detailApproval.status)}
           data={(() => {
