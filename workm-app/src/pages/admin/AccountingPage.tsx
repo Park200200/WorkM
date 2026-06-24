@@ -9206,6 +9206,7 @@ interface PayMethodItem {
   purpose?: string
   memo?: string
   cards?: PayMethodCard[]
+  initialBalance?: number  // 기초잔액
   // 현금 상세
   storageLocation?: string
   custodian?: string
@@ -11146,9 +11147,22 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                         </>
                       )
                     })()}
-                    {activeCategory === '계좌' && item.bankName && !isOpen && (
-                      <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[200px]">{item.bankName} {item.accountNumber ? `• ${item.accountNumber}` : ''}</span>
-                    )}
+                    {activeCategory === '계좌' && (() => {
+                      const cfs: CashFlow[] = getItem('acct_cashflows', [])
+                      const acctIn = cfs.filter(cf => cf.type === 'income' && (cf as any).payMethod === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const acctInT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '계좌' && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const acctOut = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '계좌' && (cf as any).payDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const acctOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '계좌' && (cf as any).creditDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const bal = (item.initialBalance || 0) + acctIn + acctInT - acctOut - acctOutT
+                      return (
+                        <>
+                          {item.bankName && !isOpen && <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[200px]">{item.bankName} {item.accountNumber ? `• ${item.accountNumber}` : ''}</span>}
+                          <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap ${bal < 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-600' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600'}`}>
+                            {bal.toLocaleString('ko-KR')}원
+                          </span>
+                        </>
+                      )
+                    })()}
                     {/* 연결된 계정과목 표시 */}
                     {activeCategory !== '현금' && activeCategory !== '상품권' && (item as any).accountCode && !isOpen && (
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-900/20 text-violet-600">{(item as any).accountCode}</span>
@@ -11275,6 +11289,55 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                           </div>
                           <div><label className={DETAIL_FIELD_LABEL}>용도</label><input value={item.purpose || ''} onChange={e => updateField(item.id, 'purpose', e.target.value)} placeholder="운영자금 등" className={DETAIL_INPUT} /></div>
                           <div><label className={DETAIL_FIELD_LABEL}>메모</label><input value={item.memo || ''} onChange={e => updateField(item.id, 'memo', e.target.value)} placeholder="참고사항" className={DETAIL_INPUT} /></div>
+                        </div>
+                        {/* 잔액 관리 */}
+                        <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-900/10 dark:to-indigo-900/10 border border-blue-200 dark:border-blue-800">
+                          <div className="flex items-center gap-1.5 mb-2.5">
+                            <Wallet size={13} className="text-blue-500" />
+                            <span className="text-[11px] font-extrabold text-blue-700 dark:text-blue-400">잔액 관리</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <label className={DETAIL_FIELD_LABEL}>기초잔액</label>
+                              <input
+                                value={item.initialBalance ? item.initialBalance.toLocaleString() : ''}
+                                onChange={e => {
+                                  const num = parseInt(e.target.value.replace(/[^0-9-]/g, '')) || 0
+                                  saveAll(allItems.map(i => i.id === item.id ? { ...i, initialBalance: num } : i))
+                                }}
+                                placeholder="0"
+                                className={`${DETAIL_INPUT} text-right`}
+                              />
+                            </div>
+                            {(() => {
+                              const cfs: CashFlow[] = getItem('acct_cashflows', [])
+                              const acctIn = cfs.filter(cf => cf.type === 'income' && (cf as any).payMethod === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                              const acctInT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '계좌' && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                              const acctOut = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '계좌' && (cf as any).payDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                              const acctOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '계좌' && (cf as any).creditDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                              const totalIn = acctIn + acctInT
+                              const totalOut = acctOut + acctOutT
+                              const currentBal = (item.initialBalance || 0) + totalIn - totalOut
+                              return (
+                                <>
+                                  <div>
+                                    <label className={DETAIL_FIELD_LABEL}>입금 / 출금</label>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[11px] font-bold text-emerald-600">+{totalIn.toLocaleString('ko-KR')}</span>
+                                      <span className="text-[10px] text-[var(--text-muted)]">/</span>
+                                      <span className="text-[11px] font-bold text-red-500">-{totalOut.toLocaleString('ko-KR')}</span>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <label className={DETAIL_FIELD_LABEL}>현재잔액</label>
+                                    <div className={`w-full px-3 py-2 rounded-lg border text-sm font-extrabold text-right ${currentBal < 0 ? 'border-red-300 bg-red-50 dark:bg-red-900/10 text-red-600' : 'border-emerald-300 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600'}`}>
+                                      {currentBal.toLocaleString('ko-KR')}원
+                                    </div>
+                                  </div>
+                                </>
+                              )
+                            })()}
+                          </div>
                         </div>
                       )}
 
