@@ -9319,13 +9319,29 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
                           <label className={DETAIL_FIELD_LABEL}>구분 *</label>
                           <select
                             value={item.noteType || ''}
-                            onChange={e => updateField(item.id, 'noteType' as any, e.target.value)}
+                            onChange={e => {
+                              const v = e.target.value
+                              const acctCode = v === '수신' ? '1-01-06' : v === '발행' ? '2-01-02' : ''
+                              saveAll(allItems.map(i => i.id === item.id ? { ...i, noteType: v, linkedAccountCode: acctCode } : i))
+                            }}
                             className={DETAIL_INPUT}
                           >
                             <option value="">선택하세요</option>
                             <option value="수신">수신 (받을어음)</option>
                             <option value="발행">발행 (지급어음)</option>
                           </select>
+                        </div>
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>연결 계정</label>
+                          <div className={`${DETAIL_INPUT} flex items-center gap-1.5 !bg-[var(--bg-muted)]`}>
+                            {item.noteType === '수신' ? (
+                              <><span className="text-[10px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-1.5 py-0.5 rounded">자산</span><span className="text-xs font-bold">1-01-06 받을어음</span></>
+                            ) : item.noteType === '발행' ? (
+                              <><span className="text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-900/20 px-1.5 py-0.5 rounded">부채</span><span className="text-xs font-bold">2-01-02 지급어음</span></>
+                            ) : (
+                              <span className="text-xs text-[var(--text-muted)]">구분을 선택하세요</span>
+                            )}
+                          </div>
                         </div>
                         <div>
                           <label className={DETAIL_FIELD_LABEL}>담당자 *</label>
@@ -10470,23 +10486,102 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
 
                       {/* 어음 상세 */}
                       {activeCategory === '어음' && (
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className={DETAIL_FIELD_LABEL}>구분 *</label>
-                            <select value={item.noteType || ''} onChange={e => updateField(item.id, 'noteType', e.target.value)} className={DETAIL_INPUT}>
-                              <option value="">선택하세요</option>
-                              <option value="수신">수신 (받을어음)</option>
-                              {direction === 'expense' && <option value="발행">발행 (지급어음)</option>}
-                            </select>
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className={DETAIL_FIELD_LABEL}>구분 *</label>
+                              <select value={item.noteType || ''} onChange={e => {
+                                const v = e.target.value
+                                const acctCode = v === '수신' ? '1-01-06' : v === '발행' ? '2-01-02' : ''
+                                saveAll(allItems.map(i => i.id === item.id ? { ...i, noteType: v, linkedAccountCode: acctCode } : i))
+                              }} className={DETAIL_INPUT}>
+                                <option value="">선택하세요</option>
+                                <option value="수신">수신 (받을어음)</option>
+                                {direction === 'expense' && <option value="발행">발행 (지급어음)</option>}
+                              </select>
+                            </div>
+                            <div>
+                              <label className={DETAIL_FIELD_LABEL}>연결 계정</label>
+                              <div className={`${DETAIL_INPUT} flex items-center gap-1.5 !bg-[var(--bg-muted)]`}>
+                                {item.noteType === '수신' ? (
+                                  <><span className="text-[10px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-1.5 py-0.5 rounded">자산</span><span className="text-xs font-bold">1-01-06 받을어음</span></>
+                                ) : item.noteType === '발행' ? (
+                                  <><span className="text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-900/20 px-1.5 py-0.5 rounded">부채</span><span className="text-xs font-bold">2-01-02 지급어음</span></>
+                                ) : (
+                                  <span className="text-xs text-[var(--text-muted)]">구분을 선택하세요</span>
+                                )}
+                              </div>
+                            </div>
+                            <div>
+                              <label className={DETAIL_FIELD_LABEL}>담당자 *</label>
+                              <select value={item.noteManager || ''} onChange={e => updateField(item.id, 'noteManager', e.target.value)} className={DETAIL_INPUT}>
+                                <option value="">선택하세요</option>
+                                {staffList.map((s: any) => (<option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}{s.dept ? ` - ${s.dept}` : ''}</option>))}
+                              </select>
+                            </div>
+                            <div><label className={DETAIL_FIELD_LABEL}>메모</label><input value={item.memo || ''} onChange={e => updateField(item.id, 'memo', e.target.value)} placeholder="참고사항" className={DETAIL_INPUT} /></div>
                           </div>
-                          <div>
-                            <label className={DETAIL_FIELD_LABEL}>담당자 *</label>
-                            <select value={item.noteManager || ''} onChange={e => updateField(item.id, 'noteManager', e.target.value)} className={DETAIL_INPUT}>
-                              <option value="">선택하세요</option>
-                              {staffList.map((s: any) => (<option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}{s.dept ? ` - ${s.dept}` : ''}</option>))}
-                            </select>
-                          </div>
-                          <div><label className={DETAIL_FIELD_LABEL}>메모</label><input value={item.memo || ''} onChange={e => updateField(item.id, 'memo', e.target.value)} placeholder="참고사항" className={DETAIL_INPUT} /></div>
+
+                          {/* ── 어음대장 ── */}
+                          {item.noteType && (
+                            <div className="pt-3 border-t border-dashed border-amber-200 dark:border-amber-800">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[12px] font-extrabold text-[var(--text-primary)]">📄 어음대장</span>
+                                  {(item.notes || []).length > 0 && (
+                                    <span className="text-[9px] font-bold bg-amber-100 dark:bg-amber-900/20 text-amber-600 px-1.5 py-0.5 rounded">{(item.notes || []).length}건</span>
+                                  )}
+                                </div>
+                                <button onClick={() => addNote(item.id)} className="text-[11px] font-bold text-amber-500 hover:text-amber-700 cursor-pointer flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors">
+                                  <Plus size={12} /> 어음 추가
+                                </button>
+                              </div>
+                              {(!item.notes || item.notes.length === 0) ? (
+                                <div className="py-3 text-center text-[11px] text-[var(--text-muted)] rounded-lg border border-dashed border-[var(--border-default)]">
+                                  등록된 어음이 없습니다
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  {item.notes.map((note: any, ni: number) => {
+                                    const statusColors: Record<string, string> = { '미결제': '#f59e0b', '추심중': '#3b82f6', '결제완료': '#22c55e', '부도': '#ef4444' }
+                                    return (
+                                      <div key={note.id} className="rounded-lg border border-amber-100 dark:border-amber-900/30 bg-amber-50/30 dark:bg-amber-900/5 p-2.5">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-bold text-amber-500">📄 어음 {ni + 1}</span>
+                                            {note.status && (
+                                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ color: statusColors[note.status] || '#888', background: `${statusColors[note.status] || '#888'}15` }}>
+                                                {note.status}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <button onClick={() => deleteNote(item.id, note.id)} className="text-[10px] text-red-400 hover:text-red-600 cursor-pointer flex items-center gap-0.5">
+                                            <Trash2 size={10} /> 삭제
+                                          </button>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                          <div><label className={DETAIL_FIELD_LABEL}>어음번호</label><input value={note.noteNumber || ''} onChange={e => updateNote(item.id, note.id, 'noteNumber', e.target.value)} placeholder="A-2026-001" className={DETAIL_INPUT} /></div>
+                                          <div><label className={DETAIL_FIELD_LABEL}>{item.noteType === '수신' ? '발행인' : '수취인'}</label><input value={item.noteType === '수신' ? (note.issuer || '') : (note.receiver || '')} onChange={e => updateNote(item.id, note.id, item.noteType === '수신' ? 'issuer' : 'receiver', e.target.value)} placeholder="거래처명" className={DETAIL_INPUT} /></div>
+                                          <div><label className={DETAIL_FIELD_LABEL}>금액</label><input value={note.amount ? note.amount.toLocaleString() : ''} onChange={e => updateNote(item.id, note.id, 'amount', parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0)} placeholder="5,000,000" className={DETAIL_INPUT} /></div>
+                                          <div><label className={DETAIL_FIELD_LABEL}>발행일</label><input type="date" value={note.issueDate || ''} onChange={e => updateNote(item.id, note.id, 'issueDate', e.target.value)} className={DETAIL_INPUT} /></div>
+                                          <div><label className={DETAIL_FIELD_LABEL}>만기일</label><input type="date" value={note.maturityDate || ''} onChange={e => updateNote(item.id, note.id, 'maturityDate', e.target.value)} className={DETAIL_INPUT} /></div>
+                                          <div>
+                                            <label className={DETAIL_FIELD_LABEL}>상태</label>
+                                            <select value={note.status || '미결제'} onChange={e => updateNote(item.id, note.id, 'status', e.target.value)} className={DETAIL_INPUT}>
+                                              <option value="미결제">미결제</option>
+                                              {item.noteType === '수신' && <option value="추심중">추심중</option>}
+                                              <option value="결제완료">결제완료</option>
+                                              <option value="부도">부도</option>
+                                            </select>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
 
