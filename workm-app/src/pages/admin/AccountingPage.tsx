@@ -23,6 +23,7 @@ import {
   Plus, Edit3, Trash2, Save, X, Check, Ban, MoreHorizontal,
   Lock, ShieldCheck, RefreshCw, Printer, Paperclip, Send, Eye,
   CreditCard, Settings, Smartphone, User, Phone, Mail, Landmark,
+  ArrowLeftRight, Calendar, Filter, Download,
 } from 'lucide-react'
 
 /* ─── 서버 설정 동기화 ── */
@@ -1026,6 +1027,7 @@ const SUB_PAGES = [
   { key: 'income',       label: '입금전표',   icon: TrendingUp },
   { key: 'withdrawal',   label: '출금전표',   icon: ArrowUpCircle },
   { key: 'payment',      label: '전표장부',   icon: BookOpen },
+  { key: 'cashflow_list', label: '입출금내역', icon: ArrowLeftRight },
   { key: 'reports',      label: '회계현황',   icon: ScrollText },
   { key: 'vendors',      label: '거래처관리',   icon: ContactRound },
   { key: 'methodReg',    label: '수단등록',   icon: CreditCard },
@@ -1078,7 +1080,7 @@ export function AccountingPage() {
     const approvals = JSON.parse(localStorage.getItem('acct_approvals') || '[]') as any[]
     const isApproverInApprovals = approvals.some((a: any) => a.approver === userName)
     const hasBudgetAccess = isAdmin || isBudgetApprover || isBudgetHandler || isApproverInApprovals
-    const restrictedTabs = ['overview', 'base_budget', 'expense', 'income', 'withdrawal', 'payment', 'reports', 'vendors', 'budgetTree', 'accounts', 'hq_vendor', 'methodReg', 'acct_mgmt']
+    const restrictedTabs = ['overview', 'base_budget', 'expense', 'income', 'withdrawal', 'payment', 'cashflow_list', 'reports', 'vendors', 'budgetTree', 'accounts', 'hq_vendor', 'methodReg', 'acct_mgmt']
     if (!hasBudgetAccess && restrictedTabs.includes(activeSub)) {
       setActiveSub('approval')
     }
@@ -1122,13 +1124,14 @@ export function AccountingPage() {
         <AcctVoucherEntry year={year} type={activeSub as 'expense' | 'income' | 'withdrawal'} catId={selectedOverviewCatId} />
       )}
       {activeSub === 'payment' && <AcctPaymentLedger year={year} />}
+      {activeSub === 'cashflow_list' && <AcctCashflowList year={year} />}
       {activeSub === 'reports' && <AcctReports year={year} />}
       {activeSub === 'vendors' && <AcctVendors />}
       {activeSub === 'methodReg' && <AcctMethodReg catId={selectedOverviewCatId} />}
       {activeSub === 'hq_vendor' && <AcctHQVendor />}
       {activeSub === 'budgetTree' && <BudgetTreePanel />}
       {activeSub === 'acct_mgmt' && <AcctAccountsMgmt />}
-      {!['overview','base_budget','budget','balance','approval','expense','income','withdrawal','payment','reports','vendors','methodReg','hq_vendor','budgetTree','acct_mgmt'].includes(activeSub) && (
+      {!['overview','base_budget','budget','balance','approval','expense','income','withdrawal','payment','cashflow_list','reports','vendors','methodReg','hq_vendor','budgetTree','acct_mgmt'].includes(activeSub) && (
         <AcctSubPlaceholder
           pageKey={activeSub}
           label={SUB_PAGES.find(s => s.key === activeSub)?.label || ''}
@@ -10153,6 +10156,290 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
             })}
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════
+   입출금내역 (CashFlow List)
+   ═══════════════════════════════════════════ */
+function AcctCashflowList({ year }: { year: number }) {
+  const [refresh, setRefresh] = useState(0)
+  const currentUserName = useAuthStore.getState().user?.name || ''
+
+  // ── 데이터 로드 ──
+  const cashflows: any[] = useMemo(() => getItem('acct_cashflows', []), [refresh])
+  const approvals: any[] = useMemo(() => getItem('acct_approvals', []), [refresh])
+  const budgetCats: any[] = useMemo(() => getItem('acct_budget_cats', []), [refresh])
+  const staffList: any[] = useMemo(() => getItem('acct_staff', []), [refresh])
+
+  // ── 필터 상태 ──
+  const today = new Date().toISOString().slice(0, 10)
+  const yearStart = `${year}-01-01`
+  const yearEnd = `${year}-12-31`
+  const [dateFrom, setDateFrom] = useState(yearStart)
+  const [dateTo, setDateTo] = useState(yearEnd)
+  const [filterCat, setFilterCat] = useState('')
+  const [filterManager, setFilterManager] = useState('')
+  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all')
+  const [searchText, setSearchText] = useState('')
+
+  // ── 기간 프리셋 ──
+  const setPreset = (preset: string) => {
+    const now = new Date()
+    const y = now.getFullYear(), m = now.getMonth(), d = now.getDate()
+    const dow = now.getDay()
+    if (preset === 'today') { const t = now.toISOString().slice(0,10); setDateFrom(t); setDateTo(t) }
+    else if (preset === 'week') { const mon = new Date(y,m,d-(dow===0?6:dow-1)); setDateFrom(mon.toISOString().slice(0,10)); setDateTo(now.toISOString().slice(0,10)) }
+    else if (preset === 'month') { setDateFrom(`${y}-${String(m+1).padStart(2,'0')}-01`); setDateTo(now.toISOString().slice(0,10)) }
+    else if (preset === 'quarter') { const qm = Math.floor(m/3)*3; setDateFrom(`${y}-${String(qm+1).padStart(2,'0')}-01`); setDateTo(now.toISOString().slice(0,10)) }
+    else if (preset === 'year') { setDateFrom(`${year}-01-01`); setDateTo(`${year}-12-31`) }
+  }
+
+  // ── 담당자 목록 ──
+  const managers = useMemo(() => {
+    const set = new Set<string>()
+    cashflows.forEach(c => { if (c.manager) set.add(c.manager); if (c.createdBy) set.add(c.createdBy) })
+    return Array.from(set).sort()
+  }, [cashflows])
+
+  // ── 필터 적용된 목록 ──
+  const filtered = useMemo(() => {
+    return cashflows.filter(c => {
+      const d = c.date || c.writeDate || ''
+      if (d < dateFrom || d > dateTo) return false
+      if (filterCat && String(c.budgetCatId) !== filterCat) return false
+      if (filterManager && c.manager !== filterManager && c.createdBy !== filterManager) return false
+      if (filterType !== 'all' && c.type !== filterType) return false
+      if (searchText.trim()) {
+        const q = searchText.trim().toLowerCase()
+        const haystack = `${c.counter||''} ${c.description||''} ${c.incomeNote||''} ${c.amount||''}`.toLowerCase()
+        if (!haystack.includes(q)) return false
+      }
+      return true
+    }).sort((a: any, b: any) => (b.date || b.writeDate || '').localeCompare(a.date || a.writeDate || ''))
+  }, [cashflows, dateFrom, dateTo, filterCat, filterManager, filterType, searchText])
+
+  // ── 집계 ──
+  const stats = useMemo(() => {
+    let totalIn = 0, totalOut = 0
+    filtered.forEach(c => { if (c.type === 'income') totalIn += (c.amount || 0); else totalOut += (c.amount || 0) })
+    // 미수금: 입금 전표 중 receivable=true & !received
+    const receivables = cashflows.filter(c => c.receivable && !c.received)
+    const receivableAmt = receivables.reduce((s: number, c: any) => s + (c.amount || 0), 0)
+    // 미지급금: 출금 전표 중 payable=true & !paid
+    const payables = cashflows.filter(c => c.payable && !c.paid)
+    const payableAmt = payables.reduce((s: number, c: any) => s + (c.amount || 0), 0)
+    // 입금예정: 승인된 입금 품의(미처리)
+    const incomeScheduled = approvals.filter(a => a.status === 'approved' && a.type === 'income')
+    const incomeSchedAmt = incomeScheduled.reduce((s: number, a: any) => s + (a.amount || 0), 0)
+    // 출금예정: 승인된 품의(미집행)
+    const expenseScheduled = approvals.filter(a => a.status === 'approved' && !a.isGeneral)
+    const expenseSchedAmt = expenseScheduled.reduce((s: number, a: any) => s + (a.amount || 0), 0)
+    return { totalIn, totalOut, net: totalIn - totalOut, receivableAmt, receivableCount: receivables.length, payableAmt, payableCount: payables.length, incomeSchedAmt, incomeSchedCount: incomeScheduled.length, expenseSchedAmt, expenseSchedCount: expenseScheduled.length }
+  }, [filtered, cashflows, approvals])
+
+  // ── 누적잔액 계산 ──
+  const withBalance = useMemo(() => {
+    let bal = 0
+    // 역순이므로 reverse하여 잔액 계산 후 다시 역순
+    const asc = [...filtered].reverse()
+    const result = asc.map(c => {
+      if (c.type === 'income') bal += (c.amount || 0); else bal -= (c.amount || 0)
+      return { ...c, _balance: bal }
+    })
+    return result.reverse()
+  }, [filtered])
+
+  // ── 엑셀 다운로드 ──
+  const downloadCSV = () => {
+    const header = '날짜,구분,예산구분,거래처,적요,입금액,출금액,잔액,담당자\n'
+    const rows = withBalance.map(c => {
+      const catName = budgetCats.find((cat: any) => String(cat.id) === String(c.budgetCatId))?.name || ''
+      return `${c.date||c.writeDate||''},${c.type==='income'?'입금':'출금'},${catName},${c.counter||''},${(c.description||'').replace(/,/g,' ')},${c.type==='income'?(c.amount||0):''},${c.type==='expense'?(c.amount||0):''},${c._balance},${c.manager||c.createdBy||''}`
+    }).join('\n')
+    const bom = '\uFEFF'
+    const blob = new Blob([bom + header + rows], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `입출금내역_${dateFrom}_${dateTo}.csv`; a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const cardStyle = (color: string, bg: string) => `rounded-xl border border-[var(--border-default)] p-3.5 bg-gradient-to-br ${bg} cursor-default transition-all hover:shadow-md`
+
+  return (
+    <div className="space-y-4">
+      {/* ── 타이틀 ── */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-extrabold text-[var(--text-primary)] flex items-center gap-2">
+          <ArrowLeftRight size={20} className="text-primary-500" />
+          입출금내역
+        </h2>
+        <button onClick={downloadCSV} className="px-3 py-1.5 rounded-lg bg-[#22c55e] text-white text-[11px] font-bold hover:bg-[#16a34a] cursor-pointer flex items-center gap-1 shadow-sm">
+          <Download size={13} /> CSV 다운로드
+        </button>
+      </div>
+
+      {/* ── 8개 대시보드 카드 ── */}
+      <div className="grid grid-cols-4 gap-3">
+        {/* 1행: 실적 */}
+        <div className={cardStyle('#22c55e', 'from-emerald-50/80 to-emerald-100/40 dark:from-emerald-900/20 dark:to-emerald-800/10')}>
+          <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mb-1">💵 총 입금</div>
+          <div className="text-[18px] font-extrabold text-emerald-700 dark:text-emerald-300">₩ {stats.totalIn.toLocaleString()}</div>
+        </div>
+        <div className={cardStyle('#ef4444', 'from-red-50/80 to-red-100/40 dark:from-red-900/20 dark:to-red-800/10')}>
+          <div className="text-[10px] font-bold text-red-500 dark:text-red-400 mb-1">💸 총 출금</div>
+          <div className="text-[18px] font-extrabold text-red-600 dark:text-red-300">₩ {stats.totalOut.toLocaleString()}</div>
+        </div>
+        <div className={cardStyle('#3b82f6', 'from-blue-50/80 to-blue-100/40 dark:from-blue-900/20 dark:to-blue-800/10')}>
+          <div className="text-[10px] font-bold text-blue-500 dark:text-blue-400 mb-1">📈 순 증감</div>
+          <div className={`text-[18px] font-extrabold ${stats.net >= 0 ? 'text-blue-600 dark:text-blue-300' : 'text-red-600 dark:text-red-300'}`}>
+            {stats.net >= 0 ? '+' : ''}₩ {stats.net.toLocaleString()}
+          </div>
+        </div>
+        <div className={cardStyle('#1e293b', 'from-slate-50/80 to-slate-100/40 dark:from-slate-800/30 dark:to-slate-700/20')}>
+          <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">🏦 현재 잔액</div>
+          <div className="text-[18px] font-extrabold text-slate-700 dark:text-slate-200">₩ {stats.net.toLocaleString()}</div>
+        </div>
+        {/* 2행: 미수·미지급·예정 */}
+        <div className={cardStyle('#f97316', 'from-orange-50/80 to-orange-100/40 dark:from-orange-900/20 dark:to-orange-800/10')}>
+          <div className="text-[10px] font-bold text-orange-500 dark:text-orange-400 mb-1">📥 미수금</div>
+          <div className="text-[16px] font-extrabold text-orange-600 dark:text-orange-300">₩ {stats.receivableAmt.toLocaleString()}</div>
+          <div className="text-[10px] text-orange-400 mt-0.5">{stats.receivableCount}건</div>
+        </div>
+        <div className={cardStyle('#8b5cf6', 'from-violet-50/80 to-violet-100/40 dark:from-violet-900/20 dark:to-violet-800/10')}>
+          <div className="text-[10px] font-bold text-violet-500 dark:text-violet-400 mb-1">📤 미지급금</div>
+          <div className="text-[16px] font-extrabold text-violet-600 dark:text-violet-300">₩ {stats.payableAmt.toLocaleString()}</div>
+          <div className="text-[10px] text-violet-400 mt-0.5">{stats.payableCount}건</div>
+        </div>
+        <div className={cardStyle('#10b981', 'from-teal-50/80 to-teal-100/40 dark:from-teal-900/20 dark:to-teal-800/10')}>
+          <div className="text-[10px] font-bold text-teal-500 dark:text-teal-400 mb-1">🔜 입금 예정</div>
+          <div className="text-[16px] font-extrabold text-teal-600 dark:text-teal-300">₩ {stats.incomeSchedAmt.toLocaleString()}</div>
+          <div className="text-[10px] text-teal-400 mt-0.5">{stats.incomeSchedCount}건</div>
+        </div>
+        <div className={cardStyle('#f43f5e', 'from-rose-50/80 to-rose-100/40 dark:from-rose-900/20 dark:to-rose-800/10')}>
+          <div className="text-[10px] font-bold text-rose-500 dark:text-rose-400 mb-1">🔜 출금 예정</div>
+          <div className="text-[16px] font-extrabold text-rose-600 dark:text-rose-300">₩ {stats.expenseSchedAmt.toLocaleString()}</div>
+          <div className="text-[10px] text-rose-400 mt-0.5">{stats.expenseSchedCount}건</div>
+        </div>
+      </div>
+
+      {/* ── 필터 바 ── */}
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-3 space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--text-muted)]">
+            <Calendar size={13} /> 기간
+          </div>
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="px-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[11px] text-[var(--text-primary)]" />
+          <span className="text-[11px] text-[var(--text-muted)]">~</span>
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="px-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[11px] text-[var(--text-primary)]" />
+          <div className="flex gap-1 ml-1">
+            {[{label:'오늘',key:'today'},{label:'이번주',key:'week'},{label:'이번달',key:'month'},{label:'분기',key:'quarter'},{label:'연간',key:'year'}].map(p => (
+              <button key={p.key} onClick={() => setPreset(p.key)} className="px-2 py-0.5 rounded-full text-[10px] font-bold border border-[var(--border-default)] text-[var(--text-muted)] hover:bg-primary-50 hover:text-primary-600 hover:border-primary-300 transition-all cursor-pointer">{p.label}</button>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--text-muted)]">
+            <Filter size={13} /> 필터
+          </div>
+          <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="px-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[11px] text-[var(--text-primary)]">
+            <option value="">전체 예산</option>
+            {budgetCats.filter((c: any) => { const pf = c.periodFrom || ''; const pt = c.periodTo || ''; if (pf && pt) return pf <= `${year}-12-31` && pt >= `${year}-01-01`; return true }).map((c: any) => (
+              <option key={c.id} value={String(c.id)}>{c.name}</option>
+            ))}
+          </select>
+          <select value={filterManager} onChange={e => setFilterManager(e.target.value)} className="px-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[11px] text-[var(--text-primary)]">
+            <option value="">전체 담당자</option>
+            {managers.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+          <div className="flex rounded-lg border border-[var(--border-default)] overflow-hidden">
+            {[{label:'전체',val:'all'},{label:'입금',val:'income'},{label:'출금',val:'expense'}].map(t => (
+              <button key={t.val} onClick={() => setFilterType(t.val as any)} className={cn('px-2.5 py-1 text-[10px] font-bold cursor-pointer transition-all', filterType === t.val ? 'bg-primary-500 text-white' : 'bg-[var(--bg-base)] text-[var(--text-muted)] hover:bg-primary-50')}>{t.label}</button>
+            ))}
+          </div>
+          <div className="flex-1 min-w-[150px]">
+            <div className="relative">
+              <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+              <input value={searchText} onChange={e => setSearchText(e.target.value)} placeholder="거래처·적요·금액 검색" className="w-full pl-7 pr-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[11px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 건수 ── */}
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="text-[var(--text-muted)]">총 <span className="font-bold text-[var(--text-primary)]">{filtered.length}</span>건</span>
+        <span className="text-[var(--text-muted)]">
+          입금 <span className="font-bold text-emerald-600">₩{stats.totalIn.toLocaleString()}</span>
+          {' · '}출금 <span className="font-bold text-red-500">₩{stats.totalOut.toLocaleString()}</span>
+        </span>
+      </div>
+
+      {/* ── 메인 테이블 ── */}
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-[11px]">
+            <thead>
+              <tr className="bg-[var(--bg-muted)] text-[var(--text-muted)] font-bold border-b border-[var(--border-default)]">
+                <th className="px-3 py-2 text-left whitespace-nowrap">날짜</th>
+                <th className="px-2 py-2 text-center whitespace-nowrap">구분</th>
+                <th className="px-3 py-2 text-left whitespace-nowrap">예산구분</th>
+                <th className="px-3 py-2 text-left whitespace-nowrap">거래처</th>
+                <th className="px-3 py-2 text-left whitespace-nowrap">적요</th>
+                <th className="px-3 py-2 text-right whitespace-nowrap">입금액</th>
+                <th className="px-3 py-2 text-right whitespace-nowrap">출금액</th>
+                <th className="px-3 py-2 text-right whitespace-nowrap">잔액</th>
+                <th className="px-3 py-2 text-left whitespace-nowrap">담당자</th>
+              </tr>
+            </thead>
+            <tbody>
+              {withBalance.length === 0 ? (
+                <tr><td colSpan={9} className="px-4 py-12 text-center text-[var(--text-muted)]">
+                  <div className="flex flex-col items-center gap-2">
+                    <ArrowLeftRight size={32} className="text-[var(--border-default)]" />
+                    <span>해당 기간의 입출금 내역이 없습니다</span>
+                  </div>
+                </td></tr>
+              ) : withBalance.map((c: any, i: number) => {
+                const catName = budgetCats.find((cat: any) => String(cat.id) === String(c.budgetCatId))?.name || ''
+                const isIncome = c.type === 'income'
+                return (
+                  <tr key={c.id || i} className="border-b border-[var(--border-default)] hover:bg-primary-50/30 dark:hover:bg-primary-900/10 transition-colors">
+                    <td className="px-3 py-2 whitespace-nowrap text-[var(--text-primary)]">{(c.date || c.writeDate || '').slice(5)}</td>
+                    <td className="px-2 py-2 text-center">
+                      <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${isIncome ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'}`}>
+                        {isIncome ? '입금' : '출금'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {catName && <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-[9px] font-bold">{catName}</span>}
+                    </td>
+                    <td className="px-3 py-2 text-[var(--text-primary)] whitespace-nowrap max-w-[120px] truncate">{c.counter || '-'}</td>
+                    <td className="px-3 py-2 text-[var(--text-secondary)] max-w-[180px] truncate" title={c.description || c.incomeNote || ''}>{c.description || c.incomeNote || '-'}</td>
+                    <td className="px-3 py-2 text-right font-bold text-emerald-600 whitespace-nowrap">{isIncome ? `₩${(c.amount||0).toLocaleString()}` : ''}</td>
+                    <td className="px-3 py-2 text-right font-bold text-red-500 whitespace-nowrap">{!isIncome ? `₩${(c.amount||0).toLocaleString()}` : ''}</td>
+                    <td className={`px-3 py-2 text-right font-extrabold whitespace-nowrap ${c._balance >= 0 ? 'text-[var(--text-primary)]' : 'text-red-500'}`}>₩{(c._balance||0).toLocaleString()}</td>
+                    <td className="px-3 py-2 text-[var(--text-muted)] whitespace-nowrap">{c.manager || c.createdBy || '-'}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+            {withBalance.length > 0 && (
+              <tfoot>
+                <tr className="bg-[var(--bg-muted)] font-bold border-t-2 border-[var(--border-default)]">
+                  <td colSpan={5} className="px-3 py-2 text-[var(--text-primary)]">합계</td>
+                  <td className="px-3 py-2 text-right text-emerald-600">₩{stats.totalIn.toLocaleString()}</td>
+                  <td className="px-3 py-2 text-right text-red-500">₩{stats.totalOut.toLocaleString()}</td>
+                  <td className="px-3 py-2 text-right text-[var(--text-primary)]">₩{stats.net.toLocaleString()}</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
       </div>
     </div>
   )
