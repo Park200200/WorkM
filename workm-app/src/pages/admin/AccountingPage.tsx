@@ -23,7 +23,7 @@ import {
   Plus, Edit3, Trash2, Save, X, Check, Ban, MoreHorizontal,
   Lock, ShieldCheck, RefreshCw, Printer, Paperclip, Send, Eye,
   CreditCard, Settings, Smartphone, User, Phone, Mail, Landmark,
-  ArrowLeftRight, Calendar, Filter, Download, BarChart2, CheckCircle2, Archive,
+  ArrowLeftRight, Calendar, Filter, Download, BarChart2, CheckCircle2, Archive, Ticket, FileText, Coins,
 } from 'lucide-react'
 
 /* ─── 서버 설정 동기화 ── */
@@ -9225,10 +9225,10 @@ interface PayMethodItem {
 }
 
 const PAY_CATEGORIES = [
-  { key: '계좌' as const, label: '계좌', icon: '🏦', color: '#3b82f6', bg: 'bg-blue-50 dark:bg-blue-900/10', border: 'border-blue-200 dark:border-blue-800', desc: '계좌이체, 자동이체 등' },
-  { key: '현금' as const, label: '현금', icon: '💵', color: '#22c55e', bg: 'bg-emerald-50 dark:bg-emerald-900/10', border: 'border-emerald-200 dark:border-emerald-800', desc: '현금, 소액현금 등' },
-  { key: '어음' as const, label: '어음', icon: '📄', color: '#f59e0b', bg: 'bg-amber-50 dark:bg-amber-900/10', border: 'border-amber-200 dark:border-amber-800', desc: '수신어음, 발행어음, 수표' },
-  { key: '상품권' as const, label: '상품권', icon: '🎟️', color: '#8b5cf6', bg: 'bg-violet-50 dark:bg-violet-900/10', border: 'border-violet-200 dark:border-violet-800', desc: '문화상품권, 백화점상품권 등' },
+  { key: '계좌' as const, label: '계좌', Icon: Landmark, color: '#3b82f6', bg: 'bg-blue-50 dark:bg-blue-900/10', border: 'border-blue-200 dark:border-blue-800', desc: '계좌이체, 자동이체 등' },
+  { key: '현금' as const, label: '현금', Icon: Coins, color: '#22c55e', bg: 'bg-emerald-50 dark:bg-emerald-900/10', border: 'border-emerald-200 dark:border-emerald-800', desc: '현금, 소액현금 등' },
+  { key: '어음' as const, label: '어음', Icon: FileText, color: '#f59e0b', bg: 'bg-amber-50 dark:bg-amber-900/10', border: 'border-amber-200 dark:border-amber-800', desc: '수신어음, 발행어음, 수표' },
+  { key: '상품권' as const, label: '상품권', Icon: Ticket, color: '#8b5cf6', bg: 'bg-violet-50 dark:bg-violet-900/10', border: 'border-violet-200 dark:border-violet-800', desc: '문화상품권, 백화점상품권 등' },
 ]
 
 const DEFAULT_PAY_ITEMS: PayMethodItem[] = [
@@ -9429,7 +9429,7 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-extrabold text-[var(--text-primary)] flex items-center gap-2">
-            💳 지출수단 관리
+            <CreditCard size={18} /> 지출수단 관리
           </h2>
           <p className="text-[11px] text-[var(--text-muted)] mt-0.5">상단에서 예산구분을 선택하여 지출수단을 관리합니다</p>
         </div>
@@ -9454,7 +9454,7 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
               }`}
             >
               <div className="text-center">
-                <span className="text-lg">{cat.icon}</span>
+                <cat.Icon size={18} style={{ color: isActive ? cat.color : undefined }} />
                 <div className={`text-[12px] font-extrabold mt-1 ${isActive ? '' : 'text-[var(--text-secondary)]'}`} style={isActive ? { color: cat.color } : undefined}>
                   {cat.label}
                 </div>
@@ -9469,7 +9469,7 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
       <div className={`rounded-2xl border-2 ${activeCatInfo.border} ${activeCatInfo.bg} p-5`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <span className="text-xl">{activeCatInfo.icon}</span>
+            <activeCatInfo.Icon size={20} style={{ color: activeCatInfo.color }} />
             <div>
               <h3 className="text-sm font-extrabold" style={{ color: activeCatInfo.color }}>{activeCatInfo.label}</h3>
               <p className="text-[10px] text-[var(--text-muted)]">{activeCatInfo.desc}</p>
@@ -10170,10 +10170,10 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
 
 /* ═══ 입금계정 관리 ═══ */
 const INCOME_CATEGORIES = [
-  { key: '계좌' as const, label: '계좌', icon: '🏦', color: '#3b82f6', bg: 'bg-blue-50 dark:bg-blue-900/10', border: 'border-blue-200 dark:border-blue-800', desc: '계좌입금, 자동이체 수신 등' },
-  { key: '현금' as const, label: '현금', icon: '💵', color: '#22c55e', bg: 'bg-emerald-50 dark:bg-emerald-900/10', border: 'border-emerald-200 dark:border-emerald-800', desc: '현금 수입, 현장 수납 등' },
-  { key: '어음' as const, label: '어음', icon: '📄', color: '#f59e0b', bg: 'bg-amber-50 dark:bg-amber-900/10', border: 'border-amber-200 dark:border-amber-800', desc: '수신어음, 수표 등' },
-  { key: '상품권' as const, label: '상품권', icon: '🎟️', color: '#8b5cf6', bg: 'bg-violet-50 dark:bg-violet-900/10', border: 'border-violet-200 dark:border-violet-800', desc: '상품권 수입 등' },
+  { key: '계좌' as const, label: '계좌', Icon: Landmark, color: '#3b82f6', bg: 'bg-blue-50 dark:bg-blue-900/10', border: 'border-blue-200 dark:border-blue-800', desc: '계좌입금, 자동이체 수신 등' },
+  { key: '현금' as const, label: '현금', Icon: Coins, color: '#22c55e', bg: 'bg-emerald-50 dark:bg-emerald-900/10', border: 'border-emerald-200 dark:border-emerald-800', desc: '현금 수입, 현장 수납 등' },
+  { key: '어음' as const, label: '어음', Icon: FileText, color: '#f59e0b', bg: 'bg-amber-50 dark:bg-amber-900/10', border: 'border-amber-200 dark:border-amber-800', desc: '수신어음, 수표 등' },
+  { key: '상품권' as const, label: '상품권', Icon: Ticket, color: '#8b5cf6', bg: 'bg-violet-50 dark:bg-violet-900/10', border: 'border-violet-200 dark:border-violet-800', desc: '상품권 수입 등' },
 ]
 
 function AcctIncomeMethods({ catId }: { catId?: string | null }) {
@@ -10295,7 +10295,7 @@ function AcctIncomeMethods({ catId }: { catId?: string | null }) {
               }`}
             >
               <div className="text-center">
-                <span className="text-lg">{cat.icon}</span>
+                <cat.Icon size={18} style={{ color: isActive ? cat.color : undefined }} />
                 <div className={`text-[12px] font-extrabold mt-1 ${isActive ? '' : 'text-[var(--text-secondary)]'}`} style={isActive ? { color: cat.color } : undefined}>
                   {cat.label}
                 </div>
@@ -10310,7 +10310,7 @@ function AcctIncomeMethods({ catId }: { catId?: string | null }) {
       <div className={`rounded-2xl border-2 ${activeCatInfo.border} ${activeCatInfo.bg} p-5`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <span className="text-xl">{activeCatInfo.icon}</span>
+            <activeCatInfo.Icon size={20} style={{ color: activeCatInfo.color }} />
             <div>
               <h3 className="text-sm font-extrabold" style={{ color: activeCatInfo.color }}>{activeCatInfo.label}</h3>
               <p className="text-[10px] text-[var(--text-muted)]">{activeCatInfo.desc}</p>
@@ -10828,7 +10828,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
               }`}
             >
               <div className="text-center">
-                <span className="text-lg">{cat.icon}</span>
+                <cat.Icon size={18} style={{ color: isActive ? cat.color : undefined }} />
                 <div className={`text-[12px] font-extrabold mt-1 ${isActive ? '' : 'text-[var(--text-secondary)]'}`} style={isActive ? { color: cat.color } : undefined}>{cat.label}</div>
                 <div className="text-[10px] font-bold text-[var(--text-muted)] mt-0.5">{count}건</div>
               </div>
@@ -10841,7 +10841,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
       <div className={`rounded-2xl border-2 ${activeCatInfo.border} ${activeCatInfo.bg} p-5`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <span className="text-xl">{activeCatInfo.icon}</span>
+            <activeCatInfo.Icon size={20} style={{ color: activeCatInfo.color }} />
             <div>
               <h3 className="text-sm font-extrabold" style={{ color: activeCatInfo.color }}>{activeCatInfo.label} {dirLabel}</h3>
               <p className="text-[10px] text-[var(--text-muted)]">{activeCatInfo.desc}</p>
