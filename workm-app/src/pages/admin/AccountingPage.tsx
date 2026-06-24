@@ -1099,7 +1099,7 @@ export function AccountingPage() {
       {(activeSub === 'expense' || activeSub === 'income' || activeSub === 'withdrawal') && (
         <AcctVoucherEntry year={year} type={activeSub as 'expense' | 'income' | 'withdrawal'} catId={selectedOverviewCatId} />
       )}
-      {activeSub === 'payment' && <AcctPaymentLedger year={year} />}
+      {activeSub === 'payment' && <AcctPaymentLedger year={year} catId={selectedOverviewCatId} />}
       {activeSub === 'cashflow_list' && <AcctCashflowList year={year} />}
       {activeSub === 'reports' && <AcctReports year={year} />}
       {activeSub === 'vendors' && <AcctVendors />}
@@ -6568,7 +6568,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
 /* ═══════════════════════════════════════════
    전표장부 (Payment Ledger) — CRUD
    ═══════════════════════════════════════════ */
-function AcctPaymentLedger({ year }: { year: number }) {
+function AcctPaymentLedger({ year, catId }: { year: number; catId?: string | null }) {
   const [refresh, setRefresh] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
   const [editId, setEditId] = useState<string | number | null>(null)
@@ -6594,7 +6594,12 @@ function AcctPaymentLedger({ year }: { year: number }) {
   const expCnt = vouchers.filter(v => v.type === 'expense').length
   const etcCnt = vouchers.length - incCnt - expCnt
   const [voucherTypeFilter, setVoucherTypeFilter] = useState<string>('')
-  const [voucherBudgetFilter, setVoucherBudgetFilter] = useState<string>('')
+  const [voucherBudgetFilter, setVoucherBudgetFilter] = useState<string>(catId && catId !== 'all' ? catId : '')
+
+  // 헤더 예산 변경 시 동기화
+  useEffect(() => {
+    setVoucherBudgetFilter(catId && catId !== 'all' ? catId : '')
+  }, [catId])
 
   // 기존 전표에 budgetCatId 마이그레이션
   useEffect(() => {
