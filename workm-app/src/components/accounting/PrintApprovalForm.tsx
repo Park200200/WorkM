@@ -86,7 +86,8 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
   const printRef = useRef<HTMLDivElement>(null)
   const [formTitle, setFormTitle] = useState(() => {
     if (data.isGeneral) return localStorage.getItem('pf_title_general') || '품 의 서'
-    return localStorage.getItem('pf_title') || '지출결의서'
+    if (data.approvalType === '선지출') return '지출결의서'
+    return localStorage.getItem('pf_title') || '지출품의서'
   })
   const [printWidth, setPrintWidth] = useState(() => Number(localStorage.getItem('pf_width')) || 210)
   const [localAttachments, setLocalAttachments] = useState<PrintAttachment[]>(data.attachments || [])
