@@ -9453,7 +9453,7 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
                   : 'bg-[var(--bg-surface)] border-transparent hover:border-[var(--border-default)]'
               }`}
             >
-              <div className="text-center">
+              <div className="flex flex-col items-center">
                 <cat.Icon size={18} style={{ color: isActive ? cat.color : undefined }} />
                 <div className={`text-[12px] font-extrabold mt-1 ${isActive ? '' : 'text-[var(--text-secondary)]'}`} style={isActive ? { color: cat.color } : undefined}>
                   {cat.label}
@@ -10294,7 +10294,7 @@ function AcctIncomeMethods({ catId }: { catId?: string | null }) {
                   : 'bg-[var(--bg-surface)] border-transparent hover:border-[var(--border-default)]'
               }`}
             >
-              <div className="text-center">
+              <div className="flex flex-col items-center">
                 <cat.Icon size={18} style={{ color: isActive ? cat.color : undefined }} />
                 <div className={`text-[12px] font-extrabold mt-1 ${isActive ? '' : 'text-[var(--text-secondary)]'}`} style={isActive ? { color: cat.color } : undefined}>
                   {cat.label}
@@ -10827,7 +10827,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                 isActive ? `${cat.bg} ${cat.border} shadow-sm` : 'bg-[var(--bg-surface)] border-transparent hover:border-[var(--border-default)]'
               }`}
             >
-              <div className="text-center">
+              <div className="flex flex-col items-center">
                 <cat.Icon size={18} style={{ color: isActive ? cat.color : undefined }} />
                 <div className={`text-[12px] font-extrabold mt-1 ${isActive ? '' : 'text-[var(--text-secondary)]'}`} style={isActive ? { color: cat.color } : undefined}>{cat.label}</div>
                 <div className="text-[10px] font-bold text-[var(--text-muted)] mt-0.5">{count}건</div>
