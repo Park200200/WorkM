@@ -3838,6 +3838,7 @@ export function AcctApproval({ year }: { year: number }) {
   const [rejectReason, setRejectReason] = useState('')
   const [resubmitMode, setResubmitMode] = useState(false)
   const [resubmitForm, setResubmitForm] = useState({ title: '', amount: '', date: '', description: '' })
+  const [resubmitEvidenceOpen, setResubmitEvidenceOpen] = useState(false)
   const [approvePw, setApprovePw] = useState('')
   const [approvePwError, setApprovePwError] = useState('')
   const [approveBudgetCat, setApproveBudgetCat] = useState('')
@@ -4741,56 +4742,21 @@ export function AcctApproval({ year }: { year: number }) {
                         })()}
                       </div>
                     </div>
-                    {/* 증빙 첨부 - toResolve 상태와 동일한 UI */}
+                    {/* 증빙 첨부 - PrintApprovalForm 증빙서류 문서 뷰 */}
                     <div className="pt-1">
                       <div className="flex items-center gap-2">
                         <label className="text-[10.5px] font-bold text-[var(--text-muted)]">📎 첨부파일 (영수증/증빙)</label>
                         {((resubmitForm as any).attachments || []).length > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-bold">{((resubmitForm as any).attachments || []).length}건</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-1.5">
-                        <label className="px-4 py-2 rounded-lg bg-[#4f6ef7] text-white text-sm font-bold hover:bg-[#3b5de7] cursor-pointer flex items-center gap-1">
+                        <button type="button" onClick={() => setResubmitEvidenceOpen(true)} className="px-4 py-2 rounded-lg bg-[#4f6ef7] text-white text-sm font-bold hover:bg-[#3b5de7] cursor-pointer flex items-center gap-1">
                           <Paperclip size={13} /> 증빙첨부
-                          <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.hwp" className="hidden" onChange={async e => {
-                            const fileList = e.target.files; if(!fileList||fileList.length===0)return
-                            const fileArr = Array.from(fileList); e.target.value = ''
-                            const existing:any[] = (resubmitForm as any).attachments||[]
-                            const newFiles:any[] = []
-                            for(const f of fileArr){
-                              const imageKey = `att_resubmit_${Date.now()}_${Math.random().toString(36).slice(2,8)}`
-                              const entry:any = {name:f.name,size:f.size,type:f.type,addedAt:new Date().toISOString(),title:f.name.replace(/\.[^/.]+$/,''),printWidth:150,imageKey}
-                              if(f.type.startsWith('image/')){
-                                try{
-                                  const dataUrl:string = await new Promise((resolve,reject)=>{
-                                    const reader=new FileReader()
-                                    reader.onload=()=>{
-                                      const img=new Image()
-                                      img.onload=()=>{
-                                        const MAX=800; let w=img.width,h=img.height
-                                        if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX}else{w=Math.round(w*MAX/h);h=MAX}}
-                                        const c=document.createElement('canvas');c.width=w;c.height=h
-                                        const ctx=c.getContext('2d');ctx?.drawImage(img,0,0,w,h)
-                                        resolve(c.toDataURL('image/jpeg',0.7))
-                                      }
-                                      img.onerror=reject; img.src=reader.result as string
-                                    }
-                                    reader.onerror=reject; reader.readAsDataURL(f)
-                                  })
-                                  entry.dataUrl = dataUrl; entry.data = dataUrl
-                                }catch(err){console.error('이미지 저장 실패',err)}
-                              } else {
-                                const dataUrl:string = await new Promise((resolve,reject)=>{
-                                  const reader=new FileReader()
-                                  reader.onload=()=>resolve(reader.result as string)
-                                  reader.onerror=reject; reader.readAsDataURL(f)
-                                })
-                                entry.data = dataUrl
-                              }
-                              newFiles.push(entry)
-                            }
-                            const updated=[...existing,...newFiles]
-                            setResubmitForm(f => ({ ...f, attachments: updated } as any))
-                          }} />
-                        </label>
+                        </button>
+                        {((resubmitForm as any).attachments || []).length > 0 && (
+                          <button type="button" onClick={() => setResubmitEvidenceOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-[11px] font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer transition-colors">
+                            <Eye size={12} /> 미리보기
+                          </button>
+                        )}
                       </div>
                       {((resubmitForm as any).attachments || []).length > 0 && (
                         <div className="mt-2 space-y-1">
@@ -4857,6 +4823,117 @@ export function AcctApproval({ year }: { year: number }) {
         </div>
       , document.body)}
 
+      {/* ── 선지출 품의 수정: 증빙서류 문서 뷰 ── */}
+      {resubmitEvidenceOpen && detailApproval && (() => {
+        const da = detailApproval as any
+        const catName = da.budgetCatName || budgetCats.find((c: any) => String(c.id) === String(da.budgetCatId))?.name || ''
+        const amt = typeof detailApproval.amount === 'number' ? detailApproval.amount : (parseInt(String(detailApproval.amount || '0').replace(/,/g, '')) || 0)
+        const applicantStaff = staffList.find(s => s.name === da.applicant)
+        const approverName = (() => {
+          const cat = budgetCats.find((c: any) => String(c.id) === String(da.budgetCatId))
+          if (cat && (cat as any).approvers && (cat as any).approvers.length > 0) return (cat as any).approvers[0]
+          return da.approver || ''
+        })()
+        const approverStaff = staffList.find(s => s.name === approverName)
+        const currentAttachments = ((resubmitForm as any).attachments || []).map((a: any) => ({
+          name: a.name,
+          type: a.type || (a.data?.startsWith('data:image') ? 'image/jpeg' : 'application/octet-stream'),
+          dataUrl: a.dataUrl || a.data,
+          title: a.title || a.name,
+          printWidth: a.printWidth || 150,
+          row: a.row,
+          imageKey: a.imageKey,
+        }))
+        return (
+          <PrintApprovalForm
+            readOnly={false}
+            data={{
+              date: da.date || da.createdAt?.slice(0, 10) || '',
+              expenseDate: da.date || da.createdAt?.slice(0, 10) || '',
+              accountName: da.budgetItem || '',
+              evidenceType: catName,
+              vendor: da.counter || '',
+              itemName: detailApproval.title || '',
+              purpose: da.budgetSubItem || '',
+              amount: amt,
+              memo: da.description || '',
+              applicant: da.applicant || '',
+              approver: approverName,
+              applicantSealImg: applicantStaff?.sealImg || '',
+              approverSealImg: '',
+              applicantPosition: applicantStaff?.position || '',
+              approverPosition: approverStaff?.position || '',
+              approvalStatus: 'preExpense',
+              attachments: currentAttachments,
+              approvalType: '선지출',
+              department: (applicantStaff as any)?.department || (applicantStaff as any)?.dept || '',
+            }}
+            onClose={() => setResubmitEvidenceOpen(false)}
+            onUpdateAttachments={(updated) => {
+              const mapped = updated.map((a: any) => ({
+                name: a.name,
+                data: a.dataUrl || '',
+                dataUrl: a.dataUrl || '',
+                size: 0,
+                title: a.title,
+                printWidth: a.printWidth,
+                row: a.row,
+                imageKey: a.imageKey,
+                type: a.type,
+              }))
+              setResubmitForm(f => ({ ...f, attachments: mapped } as any))
+            }}
+            actions={
+              <>
+                <label className="px-4 py-2 rounded-lg bg-[#4f6ef7] text-white text-sm font-bold hover:bg-[#3b5de7] cursor-pointer flex items-center gap-1">
+                  <Paperclip size={13} /> 증빙첨부
+                  <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.hwp" className="hidden" onChange={async e => {
+                    const fileList = e.target.files; if(!fileList||fileList.length===0)return
+                    const fileArr = Array.from(fileList); e.target.value = ''
+                    const existing:any[] = (resubmitForm as any).attachments||[]
+                    const newFiles:any[] = []
+                    for(const f of fileArr){
+                      const imageKey = `att_resubmit_${Date.now()}_${Math.random().toString(36).slice(2,8)}`
+                      const entry:any = {name:f.name,size:f.size,type:f.type,addedAt:new Date().toISOString(),title:f.name.replace(/\.[^/.]+$/,''),printWidth:150,imageKey}
+                      if(f.type.startsWith('image/')){
+                        try{
+                          const dataUrl:string = await new Promise((resolve,reject)=>{
+                            const reader=new FileReader()
+                            reader.onload=()=>{
+                              const img=new Image()
+                              img.onload=()=>{
+                                const MAX=800; let w=img.width,h=img.height
+                                if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX}else{w=Math.round(w*MAX/h);h=MAX}}
+                                const c=document.createElement('canvas');c.width=w;c.height=h
+                                const ctx=c.getContext('2d');ctx?.drawImage(img,0,0,w,h)
+                                resolve(c.toDataURL('image/jpeg',0.7))
+                              }
+                              img.onerror=reject; img.src=reader.result as string
+                            }
+                            reader.onerror=reject; reader.readAsDataURL(f)
+                          })
+                          entry.dataUrl = dataUrl; entry.data = dataUrl
+                        }catch(err){console.error('이미지 저장 실패',err)}
+                      }
+                      newFiles.push(entry)
+                    }
+                    const updated=[...existing,...newFiles]
+                    setResubmitForm(f => ({ ...f, attachments: updated } as any))
+                    // PrintApprovalForm의 onUpdateAttachments도 호출하기 위해 증빙서류 뷰를 리로드
+                    setResubmitEvidenceOpen(false)
+                    setTimeout(() => setResubmitEvidenceOpen(true), 50)
+                  }} />
+                </label>
+                {((resubmitForm as any).attachments||[]).length > 0 && (
+                  <button onClick={() => {
+                    setResubmitEvidenceOpen(false)
+                  }} className="px-4 py-2 rounded-lg bg-[#8b5cf6] text-white text-sm font-bold hover:bg-[#7c3aed] cursor-pointer flex items-center gap-1 shadow-sm"><Send size={13} /> 승인요청</button>
+                )}
+              </>
+            }
+          />
+        )
+      })()}
       {/* 품의 등록 모달 */}
       {modalOpen && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) { setModalOpen(false); setEditingId(null); setModalApprovalType('expense'); setForm({ title: '', amount: '', date: new Date().toISOString().slice(0, 10), accountCode: '', description: '', applicant: currentUserName, approver: '' }) } }}>
