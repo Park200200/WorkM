@@ -369,7 +369,7 @@ export function DashboardPage() {
           { label: '품의할', value: preExpense, icon: FileEdit, color: '#f97316', bg: 'rgba(249,115,22,.12)', tab: 'approval', group: 'inbox', subtab: 'preExpense' },
           { label: '결의할', value: toResolve, icon: FileCheck, color: '#8b5cf6', bg: 'rgba(139,92,246,.12)', tab: 'approval', group: 'inbox', subtab: 'toResolve' },
           ...(isExpenseManager ? [{ label: '지출할', value: toExpense, icon: CreditCard, color: '#3b82f6', bg: 'rgba(59,130,246,.12)', tab: 'expense', group: '', subtab: '' }] : []),
-          ...(isExpenseManager ? [{ label: '정산할', value: toSettle, icon: Receipt, color: '#06b6d4', bg: 'rgba(6,182,212,.12)', tab: 'approval', group: 'inbox', subtab: 'confirming' }] : []),
+          ...(isExpenseManager ? [{ label: '정산할', value: toSettle, icon: Receipt, color: '#06b6d4', bg: 'rgba(6,182,212,.12)', tab: 'approval', group: 'process', subtab: 'ex_settle' }] : []),
         ]
         const items = allItems.filter(i => i.value > 0)
         return (
