@@ -6730,7 +6730,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                     const allPM: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
                     const filteredPMRaw = catIdVal
                       ? allPM.filter(p => String(p.budgetCatId) === String(catIdVal))
-                      : allPM
+                      : []
                     // 같은 이름+카테고리 중복 제거
                     const seenPM = new Set<string>()
                     const filteredPM = filteredPMRaw.filter(p => {
