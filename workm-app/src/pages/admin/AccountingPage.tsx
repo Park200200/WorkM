@@ -6657,28 +6657,38 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                             style={{ background: statusBg, color: statusColor }}
                             onClick={() => {
                               if (statusLabel === '반려' && aId) {
-                                // 반려된 품의: 현재 출금전표 폼에 데이터를 채워서 수정 가능하게 함
+                                // 반려된 품의: cashflow + approval 데이터를 폼에 채움
                                 const cf = c as any
+                                const apAll: any[] = getItem('acct_approvals', [])
+                                const ap = apAll.find((a: any) => String(a.id) === String(aId))
                                 setForm(prev => ({
                                   ...prev,
-                                  desc: cf.description || '',
-                                  amount: String(cf.amount || ''),
+                                  desc: cf.description || ap?.title?.replace('[선지출] ', '') || '',
+                                  amount: String(cf.amount || ap?.amount || ''),
                                   writeDate: cf.date || today,
                                   tradeDate: cf.tradeDate || cf.date || today,
-                                  manager: cf.manager || '',
-                                  counter: cf.counter || '',
-                                  method: cf.method || '계좌이체',
-                                  subItem: cf.subItem || '',
-                                  detailItem: cf.detailItem || '',
-                                  memo: cf.memo || '',
+                                  manager: cf.manager || ap?.applicant || '',
+                                  counter: cf.counter || ap?.counter || '',
+                                  method: cf.method || ap?.method || '계좌이체',
+                                  subItem: cf.subItem || ap?.budgetSubItem || '',
+                                  detailItem: cf.detailItem || ap?.budgetDetailItem || '',
+                                  memo: cf.memo || ap?.description || '',
                                 } as any))
-                                // 예산 카테고리 설정
-                                if (cf.budgetCatId) setSelectedBudgetCat(String(cf.budgetCatId))
-                                if (cf.budgetItem) setWdBudgetItem(cf.budgetItem)
-                                if (cf.budgetCatName) setWdCatName(cf.budgetCatName)
-                                // 첨부파일
-                                if (cf.attachments) setWdAttachments(cf.attachments)
-                                // 편집 중인 cashflow ID 저장
+                                // 거래처 검색 필드
+                                setCounterSearch(cf.counter || ap?.counter || '')
+                                // 예산 카테고리 설정 (approval에서 우선)
+                                const catId = cf.budgetCatId || ap?.budgetCatId || ''
+                                if (catId) setSelectedBudgetCat(String(catId))
+                                // 예산항목 (approval에서 가져옴)
+                                const budgetItem = ap?.budgetItem || cf.budgetItem || ''
+                                if (budgetItem) setWdBudgetItem(budgetItem)
+                                // 예산 카테고리명
+                                const catName = ap?.budgetCatName || cf.budgetCatName || ''
+                                if (catName) setWdCatName(catName)
+                                // 첨부파일 (approval에서 우선)
+                                const attachments = ap?.attachments || cf.attachments
+                                if (attachments) setWdAttachments(attachments)
+                                // 편집 중인 approval ID 저장
                                 setSelectedApprovalId(aId)
                                 // 스크롤 위로
                                 window.scrollTo({ top: 0, behavior: 'smooth' })
