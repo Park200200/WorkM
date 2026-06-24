@@ -4255,29 +4255,31 @@ export function AcctApproval({ year }: { year: number }) {
             // 연동된 cashflow 조회
             const allCfs: any[] = getItem('acct_cashflows', [])
             const linkedCf = allCfs.find(c => c.approvalId && String(c.approvalId) === String(detailApproval.id))
+            const acctList: any[] = getItem('acct_accounts', [])
+            const da = detailApproval as any
+            const isPreExp = da.isPreExpense || detailApproval.status === 'preExpense'
             return {
             date: (detailApproval.date || detailApproval.createdAt || '').slice(0, 10),
-            expenseDate: linkedCf?.tradeDate || (((detailApproval as any).isPreExpense || detailApproval.status === 'preExpense') ? (detailApproval.date || detailApproval.createdAt || '').slice(0, 10) : ''),
-            settleDate: linkedCf?.inputDate || linkedCf?.writeDate || linkedCf?.date || (detailApproval.status === 'preExpense' ? (detailApproval.date || detailApproval.createdAt || '').slice(0, 10) : ''),
+            expenseDate: linkedCf?.tradeDate || linkedCf?.date || (isPreExp ? (detailApproval.date || detailApproval.createdAt || '').slice(0, 10) : ''),
+            settleDate: linkedCf?.inputDate || linkedCf?.writeDate || linkedCf?.date || (isPreExp ? (detailApproval.date || detailApproval.createdAt || '').slice(0, 10) : ''),
             accountName: (() => {
               // linkedCf에서 계정과목 가져오기
               if (linkedCf?.accountCode) {
-                const acct = allAccounts.find(a => a.code === linkedCf.accountCode)
+                const acct = acctList.find(a => a.code === linkedCf.accountCode)
                 if (acct) return acct.name
               }
-              const d = detailApproval as any
-              if (d.budgetItemId) {
-                const item = budgetItems.find(b => String(b.id) === String(d.budgetItemId))
+              if (da.budgetItemId) {
+                const item = budgetItems.find(b => String(b.id) === String(da.budgetItemId))
                 if (item?.accountCode) {
-                  const acct = allAccounts.find(a => a.code === item.accountCode)
+                  const acct = acctList.find(a => a.code === item.accountCode)
                   if (acct) return acct.name
                 }
-                return item?.itemName || d.budgetItem || ''
+                return item?.itemName || da.budgetItem || ''
               }
-              return d.budgetItem || ''
+              return da.budgetItem || ''
             })(),
-            evidenceType: (detailApproval as any).budgetCatName || '',
-            vendor: linkedCf?.counter || (detailApproval as any).vendor || (detailApproval as any).counter || '',
+            evidenceType: da.budgetCatName || '',
+            vendor: linkedCf?.counter || da.vendor || da.counter || '',
             itemName: detailApproval.title || '',
             purpose: (() => {
               const d = detailApproval as any
