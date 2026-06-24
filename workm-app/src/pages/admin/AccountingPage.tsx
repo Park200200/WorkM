@@ -9037,6 +9037,10 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
                       {idx + 1}
                     </span>
                     <input value={item.name} onChange={e => { e.stopPropagation(); updateField(item.id, 'name', e.target.value) }} onClick={e => e.stopPropagation()} placeholder="이름 입력" className="text-sm font-semibold text-[var(--text-primary)] flex-1 bg-transparent border-none outline-none focus:bg-[var(--bg-muted)] focus:px-2 focus:rounded-md transition-all" />
+                    {/* 현금 계정과목 고정 표시 */}
+                    {activeCategory === '현금' && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap">1-01-01 현금</span>
+                    )}
                     {/* 계좌 요약 표시 */}
                     {activeCategory === '계좌' && item.bankName && !isOpen && (
                       <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[200px]">
@@ -9826,6 +9830,9 @@ function AcctIncomeMethods({ catId }: { catId?: string | null }) {
                       {idx + 1}
                     </span>
                     <input value={item.name} onChange={e => { e.stopPropagation(); updateField(item.id, 'name', e.target.value) }} onClick={e => e.stopPropagation()} placeholder="이름 입력" className="text-sm font-semibold text-[var(--text-primary)] flex-1 bg-transparent border-none outline-none focus:bg-[var(--bg-muted)] focus:px-2 focus:rounded-md transition-all" />
+                    {activeCategory === '현금' && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap">1-01-01 현금</span>
+                    )}
                     {activeCategory === '계좌' && item.bankName && !isOpen && (
                       <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[200px]">
                         {item.bankName} {item.accountNumber ? `• ${item.accountNumber}` : ''}
@@ -10459,11 +10466,14 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                   <div className="flex items-center gap-3 px-3.5 py-2.5 cursor-pointer group" onClick={() => setExpandedId(isOpen ? null : item.id)}>
                     <span className="text-[10px] font-bold w-5 text-center shrink-0 rounded-full py-0.5" style={{ color: activeCatInfo.color, background: `${activeCatInfo.color}15` }}>{idx + 1}</span>
                     <input value={item.name} onChange={e => { e.stopPropagation(); updateField(item.id, 'name', e.target.value) }} onClick={e => e.stopPropagation()} placeholder="이름 입력" className="text-sm font-semibold text-[var(--text-primary)] flex-1 bg-transparent border-none outline-none focus:bg-[var(--bg-muted)] focus:px-2 focus:rounded-md transition-all" />
+                    {activeCategory === '현금' && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap">1-01-01 현금</span>
+                    )}
                     {activeCategory === '계좌' && item.bankName && !isOpen && (
                       <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[200px]">{item.bankName} {item.accountNumber ? `• ${item.accountNumber}` : ''}</span>
                     )}
                     {/* 연결된 계정과목 표시 */}
-                    {(item as any).accountCode && !isOpen && (
+                    {activeCategory !== '현금' && (item as any).accountCode && !isOpen && (
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-900/20 text-violet-600">{(item as any).accountCode}</span>
                     )}
                     <ChevronDown size={14} className={`text-[var(--text-muted)] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -10475,8 +10485,8 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                   {/* 상세 필드 */}
                   {isOpen && (
                     <div className="px-4 pb-4 pt-1 border-t border-[var(--border-default)] mx-3">
-                      {/* 계정과목 연결 (어음은 자동연결이므로 제외) */}
-                      {activeCategory !== '어음' && (
+                      {/* 계정과목 연결 (어음/현금은 자동연결이므로 제외) */}
+                      {activeCategory !== '어음' && activeCategory !== '현금' && (
                       <div className="mb-3 mt-3 p-3 rounded-lg bg-violet-50/50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800">
                         {direction === 'income' ? (
                           <>
