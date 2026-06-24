@@ -3011,7 +3011,7 @@ function AcctBudget({ year }: { year: number }) {
                                         <select value={cardForm.cardType} onChange={e => setCardForm(f => ({ ...f, cardType: e.target.value }))} className="px-2 py-1.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs text-[var(--text-primary)] focus:border-primary-500 outline-none">
                                           <option>체크카드</option><option>신용카드</option>
                                         </select>
-                                        <input value={cardForm.cardUser} onChange={e => setCardForm(f => ({ ...f, cardUser: e.target.value }))} placeholder="사용자" className="px-2 py-1.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+                                        <input value={cardForm.cardUser} onChange={e => setCardForm(f => ({ ...f, cardUser: e.target.value }))} placeholder="비고" className="px-2 py-1.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs text-[var(--text-primary)] focus:border-primary-500 outline-none" />
                                         <input value={cardForm.expiryDate} onChange={e => { const v = e.target.value.replace(/[^0-9]/g, '').slice(0, 4); const fmt = v.length > 2 ? v.slice(0, 2) + '/' + v.slice(2) : v; setCardForm(f => ({ ...f, expiryDate: fmt })) }} placeholder="MM/YY" maxLength={5} className="px-2 py-1.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs text-[var(--text-primary)] focus:border-primary-500 outline-none" />
                                       </div>
                                       <div className="flex justify-end gap-2">
