@@ -4646,6 +4646,9 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const [wdSearchText, setWdSearchText] = useState('')
   const [wdSearchFocused, setWdSearchFocused] = useState(false)
   const [wdSearchSelected, setWdSearchSelected] = useState('')
+  const [isReceivable, setIsReceivable] = useState(false)
+  const [isPayable, setIsPayable] = useState(false)
+  const [expectedDate, setExpectedDate] = useState('')
 
   const user = useAuthStore(s => s.user)
 
@@ -5037,6 +5040,8 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
       budgetCatId: selectedBudgetCat || '',
       createdBy: currentUserName,
       ...(type === 'income' && (form as any).incomeNote ? { incomeNote: (form as any).incomeNote } : {}),
+      ...(type === 'income' && isReceivable ? { receivable: true, received: false, expectedDate: expectedDate || '' } : {}),
+      ...(type !== 'income' && isPayable ? { payable: true, paid: false, expectedDate: expectedDate || '' } : {}),
     }
     // 품의에서 지출등록한 경우 approvalId 연결
     if (isFromApproval && selectedApprovalId) {
@@ -5545,6 +5550,19 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
               </div>
               <input value={form.amount} onChange={e => handleAmtInput(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm font-bold text-right focus:border-primary-500 outline-none" style={{ color: typeColors[type] }} />
             </div>
+            {/* 입금전표: 5) 미수금 옵션 */}
+            <div className="bg-orange-50/60 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800 rounded-lg p-2.5">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={isReceivable} onChange={e => { setIsReceivable(e.target.checked); if (!e.target.checked) setExpectedDate('') }} className="w-4 h-4 rounded border-orange-300 text-orange-500 accent-orange-500" />
+                <span className="text-[11px] font-bold text-orange-700 dark:text-orange-400">📥 미수금 (아직 입금되지 않은 금액)</span>
+              </label>
+              {isReceivable && (
+                <div className="mt-2 ml-6">
+                  <label className="text-[10px] font-bold text-orange-600 dark:text-orange-400 mb-1 block">입금 예정일</label>
+                  <input type="date" value={expectedDate} onChange={e => setExpectedDate(e.target.value)} className="px-2 py-1.5 rounded-lg border border-orange-200 dark:border-orange-700 bg-white dark:bg-[var(--bg-surface)] text-[11px] text-[var(--text-primary)]" />
+                </div>
+              )}
+            </div>
           </>
           ) : (
           <>
@@ -5913,6 +5931,21 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'income' ? '실제거래일자' : '실제거래일자'}</label>
             <DatePicker value={form.tradeDate} onChange={v => setForm(f => ({ ...f, tradeDate: v }))} />
           </div>
+          {/* 미지급금 옵션 (출금전표) */}
+          {type === 'withdrawal' && (
+            <div className="bg-violet-50/60 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800 rounded-lg p-2.5 col-span-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={isPayable} onChange={e => { setIsPayable(e.target.checked); if (!e.target.checked) setExpectedDate('') }} className="w-4 h-4 rounded border-violet-300 text-violet-500 accent-violet-500" />
+                <span className="text-[11px] font-bold text-violet-700 dark:text-violet-400">📤 미지급금 (아직 지급하지 않은 금액)</span>
+              </label>
+              {isPayable && (
+                <div className="mt-2 ml-6">
+                  <label className="text-[10px] font-bold text-violet-600 dark:text-violet-400 mb-1 block">지급 예정일</label>
+                  <input type="date" value={expectedDate} onChange={e => setExpectedDate(e.target.value)} className="px-2 py-1.5 rounded-lg border border-violet-200 dark:border-violet-700 bg-white dark:bg-[var(--bg-surface)] text-[11px] text-[var(--text-primary)]" />
+                </div>
+              )}
+            </div>
+          )}
           {/* 전표날짜 (기존 입력일자) */}
           {type === 'expense' && (
           <div>
@@ -10279,6 +10312,19 @@ function AcctCashflowList({ year }: { year: number }) {
     return []
   }, [cardFilter, cashflows, approvals])
 
+  // ── 수금/지급 완료 처리 ──
+  const handleSettlement = (cfId: any, settleType: 'received' | 'paid') => {
+    const cfs = getItem('acct_cashflows', []) as any[]
+    const idx = cfs.findIndex((c: any) => c.id === cfId)
+    if (idx >= 0) {
+      if (settleType === 'received') { cfs[idx].received = true; cfs[idx].receivedAt = new Date().toISOString() }
+      else { cfs[idx].paid = true; cfs[idx].paidAt = new Date().toISOString() }
+      setItem('acct_cashflows', cfs)
+      setRefresh(r => r + 1)
+      useToastStore.getState().addToast({ type: 'success', message: settleType === 'received' ? '✅ 수금 완료 처리되었습니다' : '✅ 지급 완료 처리되었습니다' })
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* ── 타이틀 ── */}
@@ -10413,6 +10459,7 @@ function AcctCashflowList({ year }: { year: number }) {
                 <th className="px-3 py-2 text-right whitespace-nowrap">금액</th>
                 {!cardFilter && <th className="px-3 py-2 text-right whitespace-nowrap">잔액</th>}
                 <th className="px-3 py-2 text-left whitespace-nowrap">담당자</th>
+                {(cardFilter === 'receivable' || cardFilter === 'payable') && <th className="px-2 py-2 text-center whitespace-nowrap">처리</th>}
               </tr>
             </thead>
             <tbody>
@@ -10455,6 +10502,20 @@ function AcctCashflowList({ year }: { year: number }) {
                       <td className={`px-3 py-2 text-right font-bold whitespace-nowrap ${isIncome ? 'text-emerald-600' : 'text-red-500'}`}>₩{(c.amount||0).toLocaleString()}</td>
                       {!cardFilter && <td className={`px-3 py-2 text-right font-extrabold whitespace-nowrap ${(c._balance||0) >= 0 ? 'text-[var(--text-primary)]' : 'text-red-500'}`}>₩{(c._balance||0).toLocaleString()}</td>}
                       <td className="px-3 py-2 text-[var(--text-muted)] whitespace-nowrap">{c.manager || c.createdBy || '-'}</td>
+                      {(cardFilter === 'receivable' || cardFilter === 'payable') && !c._isApproval && (
+                        <td className="px-2 py-2 text-center">
+                          <button
+                            onClick={() => handleSettlement(c.id, cardFilter === 'receivable' ? 'received' : 'paid')}
+                            className={`px-2 py-1 rounded text-[9px] font-bold cursor-pointer transition-all ${
+                              cardFilter === 'receivable'
+                                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                : 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400'
+                            }`}
+                          >
+                            {cardFilter === 'receivable' ? '✅ 수금완료' : '✅ 지급완료'}
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   )
                 })
