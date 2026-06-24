@@ -4258,17 +4258,26 @@ export function AcctApproval({ year }: { year: number }) {
             return {
             date: (detailApproval.date || detailApproval.createdAt || '').slice(0, 10),
             expenseDate: linkedCf?.tradeDate || (((detailApproval as any).isPreExpense || detailApproval.status === 'preExpense') ? (detailApproval.date || detailApproval.createdAt || '').slice(0, 10) : ''),
-            settleDate: linkedCf?.inputDate || '',
+            settleDate: linkedCf?.inputDate || (detailApproval.status === 'preExpense' ? (detailApproval.date || detailApproval.createdAt || '').slice(0, 10) : ''),
             accountName: (() => {
+              // linkedCf에서 계정과목 가져오기
+              if (linkedCf?.accountCode) {
+                const acct = allAccounts.find(a => a.code === linkedCf.accountCode)
+                if (acct) return acct.name
+              }
               const d = detailApproval as any
               if (d.budgetItemId) {
                 const item = budgetItems.find(b => String(b.id) === String(d.budgetItemId))
+                if (item?.accountCode) {
+                  const acct = allAccounts.find(a => a.code === item.accountCode)
+                  if (acct) return acct.name
+                }
                 return item?.itemName || d.budgetItem || ''
               }
               return d.budgetItem || ''
             })(),
             evidenceType: (detailApproval as any).budgetCatName || '',
-            vendor: linkedCf?.counter || (detailApproval as any).vendor || '',
+            vendor: linkedCf?.counter || (detailApproval as any).vendor || (detailApproval as any).counter || '',
             itemName: detailApproval.title || '',
             purpose: (() => {
               const d = detailApproval as any
@@ -5377,6 +5386,8 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
         budgetCatName: catName,
         budgetItemId: matchedItem ? String(matchedItem.id) : '',
         budgetSubId: matchedSub ? String(matchedSub.id) : '',
+        counter: form.counter || '',
+        method: form.method || '',
         attachments: wdAttachments.length > 0 ? wdAttachments : undefined,
       } as any)
       setItem('acct_approvals', approvals)
