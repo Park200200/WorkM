@@ -10392,40 +10392,36 @@ function AcctCashflowList({ year }: { year: number }) {
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--text-muted)] shrink-0">
             <Calendar size={13} /> 기간
           </div>
-          <div className="flex items-center gap-1 flex-wrap">
-            <DatePicker value={dateFrom} onChange={v => setDateFrom(v)} />
-            <span className="text-[11px] text-[var(--text-muted)]">~</span>
-            <DatePicker value={dateTo} onChange={v => setDateTo(v)} />
-          </div>
-          <div className="flex gap-1 flex-wrap">
-            {[{label:'오늘',key:'today'},{label:'이번주',key:'week'},{label:'이번달',key:'month'},{label:'분기',key:'quarter'},{label:'연간',key:'year'}].map(p => (
-              <button key={p.key} onClick={() => setPreset(p.key)} className="px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold border border-[var(--border-default)] text-[var(--text-muted)] hover:bg-primary-50 hover:text-primary-600 hover:border-primary-300 transition-all cursor-pointer">{p.label}</button>
-            ))}
-          </div>
+          <DatePicker value={dateFrom} onChange={v => setDateFrom(v)} />
+          <span className="text-[11px] text-[var(--text-muted)]">~</span>
+          <DatePicker value={dateTo} onChange={v => setDateTo(v)} />
+          {[{label:'오늘',key:'today'},{label:'이번주',key:'week'},{label:'이번달',key:'month'},{label:'분기',key:'quarter'},{label:'연간',key:'year'}].map(p => (
+            <button key={p.key} onClick={() => setPreset(p.key)} className="px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold border border-[var(--border-default)] text-[var(--text-muted)] hover:bg-primary-50 hover:text-primary-600 hover:border-primary-300 transition-all cursor-pointer">{p.label}</button>
+          ))}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--text-muted)] shrink-0">
             <Filter size={13} /> 필터
           </div>
-          <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="px-1.5 sm:px-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[10px] sm:text-[11px] text-[var(--text-primary)] max-w-[120px] sm:max-w-none">
+          <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="px-1.5 sm:px-2 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[10px] sm:text-[11px] text-[var(--text-primary)] max-w-[120px] sm:max-w-none">
             <option value="">전체 예산</option>
             {budgetCats.filter((c: any) => { const pf = c.periodFrom || ''; const pt = c.periodTo || ''; if (pf && pt) return pf <= `${year}-12-31` && pt >= `${year}-01-01`; return true }).map((c: any) => (
               <option key={c.id} value={String(c.id)}>{c.name}</option>
             ))}
           </select>
-          <select value={filterManager} onChange={e => setFilterManager(e.target.value)} className="px-1.5 sm:px-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[10px] sm:text-[11px] text-[var(--text-primary)] max-w-[100px] sm:max-w-none">
+          <select value={filterManager} onChange={e => setFilterManager(e.target.value)} className="px-1.5 sm:px-2 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[10px] sm:text-[11px] text-[var(--text-primary)] max-w-[100px] sm:max-w-none">
             <option value="">전체 담당자</option>
             {managers.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
           <div className="flex rounded-lg border border-[var(--border-default)] overflow-hidden">
             {[{label:'전체',val:'all'},{label:'입금',val:'income'},{label:'출금',val:'expense'}].map(t => (
-              <button key={t.val} onClick={() => setFilterType(t.val as any)} className={cn('px-2 sm:px-2.5 py-1 text-[9px] sm:text-[10px] font-bold cursor-pointer transition-all', filterType === t.val ? 'bg-primary-500 text-white' : 'bg-[var(--bg-base)] text-[var(--text-muted)] hover:bg-primary-50')}>{t.label}</button>
+              <button key={t.val} onClick={() => setFilterType(t.val as any)} className={cn('px-2 sm:px-2.5 py-1.5 text-[9px] sm:text-[10px] font-bold cursor-pointer transition-all', filterType === t.val ? 'bg-primary-500 text-white' : 'bg-[var(--bg-base)] text-[var(--text-muted)] hover:bg-primary-50')}>{t.label}</button>
             ))}
           </div>
           <div className="flex-1 min-w-[120px] sm:min-w-[150px]">
             <div className="relative">
               <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-              <input value={searchText} onChange={e => setSearchText(e.target.value)} placeholder="거래처·적요·금액 검색" className="w-full pl-7 pr-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[10px] sm:text-[11px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500" />
+              <input value={searchText} onChange={e => setSearchText(e.target.value)} placeholder="거래처·적요·금액 검색" className="w-full pl-7 pr-2 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[10px] sm:text-[11px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500" />
             </div>
           </div>
         </div>
