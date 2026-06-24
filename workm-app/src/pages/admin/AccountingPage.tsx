@@ -3412,7 +3412,7 @@ export function AcctApproval({ year }: { year: number }) {
   const [settleCompletePwError, setSettleCompletePwError] = useState('')
 
   // 승인할 탭에서의 상세 열기 여부
-  const isApproverPendingView = activeGroup === 'myApproval' && subTab === 'pending'
+  const isApproverPendingView = activeGroup === 'process' && subTab === 'ap_pending'
 
   // 선택된 예산구분에 따른 예산항목 필터 (고유 itemName 기준)
   const approveFilteredItems = useMemo(() => {
