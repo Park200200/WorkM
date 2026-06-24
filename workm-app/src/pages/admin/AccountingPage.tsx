@@ -4294,10 +4294,12 @@ export function AcctApproval({ year }: { year: number }) {
                     <span className="text-[var(--text-muted)]">신청자</span>
                     <span className="font-bold text-[var(--text-primary)]">{(detailApproval as any).applicant || ''}</span>
                   </div>
+                  {!!(detailApproval.amount) && (
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="text-[var(--text-muted)]">금액</span>
                     <span className="font-extrabold text-[var(--text-primary)] text-[14px]">₩ {(detailApproval.amount || 0).toLocaleString()}</span>
                   </div>
+                  )}
                   {(detailApproval as any).budgetCatName && (
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="text-[var(--text-muted)]">예산구분</span>
