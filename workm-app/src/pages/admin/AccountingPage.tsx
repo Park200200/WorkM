@@ -5428,6 +5428,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
         creditAccount: transferForm.credit,
         creditDetail: transferForm.creditDetail,
         memo: transferForm.memo,
+        manager: currentUserName,
         createdBy: currentUserName,
       } as any)
       setItem('acct_cashflows', cfs)
