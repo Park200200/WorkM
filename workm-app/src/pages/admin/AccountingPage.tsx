@@ -10388,15 +10388,15 @@ function AcctCashflowList({ year }: { year: number }) {
 
       {/* ── 필터 바 ── */}
       <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-2.5 sm:p-3 space-y-2">
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--text-muted)] shrink-0">
             <Calendar size={13} /> 기간
           </div>
-          <DatePicker value={dateFrom} onChange={v => setDateFrom(v)} />
-          <span className="text-[11px] text-[var(--text-muted)]">~</span>
-          <DatePicker value={dateTo} onChange={v => setDateTo(v)} />
+          <DatePicker value={dateFrom} onChange={v => setDateFrom(v)} className="w-auto shrink-0" />
+          <span className="text-[11px] text-[var(--text-muted)] shrink-0">~</span>
+          <DatePicker value={dateTo} onChange={v => setDateTo(v)} className="w-auto shrink-0" />
           {[{label:'오늘',key:'today'},{label:'이번주',key:'week'},{label:'이번달',key:'month'},{label:'분기',key:'quarter'},{label:'연간',key:'year'}].map(p => (
-            <button key={p.key} onClick={() => setPreset(p.key)} className="px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold border border-[var(--border-default)] text-[var(--text-muted)] hover:bg-primary-50 hover:text-primary-600 hover:border-primary-300 transition-all cursor-pointer">{p.label}</button>
+            <button key={p.key} onClick={() => setPreset(p.key)} className="px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold border border-[var(--border-default)] text-[var(--text-muted)] hover:bg-primary-50 hover:text-primary-600 hover:border-primary-300 transition-all cursor-pointer whitespace-nowrap shrink-0">{p.label}</button>
           ))}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
