@@ -3029,7 +3029,23 @@ function AcctBudget({ year }: { year: number }) {
                                     <div className="bg-[var(--bg-surface)] border border-dashed border-[var(--border-default)] rounded-lg p-3 space-y-2">
                                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                         <input value={cardForm.cardName} onChange={e => setCardForm(f => ({ ...f, cardName: e.target.value }))} placeholder="카드명 *" className="px-2 py-1.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs text-[var(--text-primary)] focus:border-primary-500 outline-none" />
-                                        <input value={cardForm.cardCompany} onChange={e => setCardForm(f => ({ ...f, cardCompany: e.target.value }))} placeholder="카드사" className="px-2 py-1.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+                                        <div className="relative">
+                                          <input value={cardForm.cardCompany} onChange={e => setCardForm(f => ({ ...f, cardCompany: e.target.value }))} placeholder="선택/입력" className="w-full px-2 py-1.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs text-[var(--text-primary)] focus:border-primary-500 outline-none" onFocus={e => { const dd = e.currentTarget.nextElementSibling as HTMLElement; if (dd) dd.style.display = 'block' }} onBlur={() => setTimeout(() => { const dd = document.getElementById('cardco-dropdown'); if (dd) dd.style.display = 'none' }, 150)} />
+                                          <div id="cardco-dropdown" style={{ display: 'none' }} className="absolute z-50 top-full left-0 right-0 mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg shadow-lg max-h-32 overflow-y-auto">
+                                            {(() => {
+                                              const defaults = ['국민카드', '신한카드', '삼성카드', '현대카드', '롯데카드', '우리카드', '하나카드', 'BC카드', 'NH농협카드', '카카오뱅크']
+                                              const custom = accounts.flatMap(a => (a.cards || []).map((c: any) => c.cardCompany)).filter(Boolean)
+                                              const all = Array.from(new Set([...defaults, ...custom]))
+                                              const filtered = all.filter(c => !cardForm.cardCompany || c.includes(cardForm.cardCompany))
+                                              if (filtered.length === 0) return <div className="px-2 py-1.5 text-[10px] text-[var(--text-muted)]">직접 입력</div>
+                                              return filtered.map(c => (
+                                                <button key={c} type="button" onMouseDown={e => { e.preventDefault(); setCardForm(f => ({ ...f, cardCompany: c })); const dd = document.getElementById('cardco-dropdown'); if (dd) dd.style.display = 'none' }} className="w-full text-left px-2 py-1.5 text-xs text-[var(--text-primary)] hover:bg-primary-50 dark:hover:bg-primary-900/20 cursor-pointer transition-colors">
+                                                  {c}
+                                                </button>
+                                              ))
+                                            })()}
+                                          </div>
+                                        </div>
                                         <input value={cardForm.cardNumber} onChange={e => { const v = e.target.value.replace(/[^0-9]/g, '').slice(0, 16); const fmt = v.replace(/(.{4})/g, '$1-').replace(/-$/, ''); setCardForm(f => ({ ...f, cardNumber: fmt })) }} placeholder="0000-0000-0000-0000" className="px-2 py-1.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs text-[var(--text-primary)] focus:border-primary-500 outline-none" />
                                         <select value={cardForm.cardType} onChange={e => setCardForm(f => ({ ...f, cardType: e.target.value }))} className="px-2 py-1.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs text-[var(--text-primary)] focus:border-primary-500 outline-none">
                                           <option>체크카드</option><option>신용카드</option>
