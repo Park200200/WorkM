@@ -11819,13 +11819,13 @@ function AcctCashflowList({ year }: { year: number }) {
     // 미지급금: 출금 전표 중 payable=true & !paid
     const payables = cashflows.filter(c => c.payable && !c.paid)
     const payableAmt = payables.reduce((s: number, c: any) => s + (c.amount || 0), 0)
-    // 입금예정: 승인된 입금 품의(미처리)
+    // 입금예정: 승인된 입금 품의(미처리) + 미수금
     const incomeScheduled = approvals.filter(a => a.status === 'approved' && a.type === 'income')
-    const incomeSchedAmt = incomeScheduled.reduce((s: number, a: any) => s + (a.amount || 0), 0)
+    const incomeSchedAmt = incomeScheduled.reduce((s: number, a: any) => s + (a.amount || 0), 0) + receivableAmt
     // 출금예정: 승인된 품의(미집행)
     const expenseScheduled = approvals.filter(a => a.status === 'approved' && !a.isGeneral)
     const expenseSchedAmt = expenseScheduled.reduce((s: number, a: any) => s + (a.amount || 0), 0)
-    return { totalIn, totalOut, net: totalIn - totalOut, receivableAmt, receivableCount: receivables.length, payableAmt, payableCount: payables.length, incomeSchedAmt, incomeSchedCount: incomeScheduled.length, expenseSchedAmt, expenseSchedCount: expenseScheduled.length }
+    return { totalIn, totalOut, net: totalIn - totalOut, receivableAmt, receivableCount: receivables.length, payableAmt, payableCount: payables.length, incomeSchedAmt, incomeSchedCount: incomeScheduled.length + receivables.length, expenseSchedAmt, expenseSchedCount: expenseScheduled.length }
   }, [filtered, cashflows, approvals])
 
   // ── 누적잔액 계산 ──
@@ -11861,7 +11861,10 @@ function AcctCashflowList({ year }: { year: number }) {
   const cardFilteredList = useMemo(() => {
     if (cardFilter === 'receivable') return cashflows.filter(c => c.receivable && !c.received).map(c => ({ ...c, _cardType: '미수금' }))
     if (cardFilter === 'payable') return cashflows.filter(c => c.payable && !c.paid).map(c => ({ ...c, _cardType: '미지급금' }))
-    if (cardFilter === 'incomeScheduled') return approvals.filter(a => a.status === 'approved' && a.type === 'income').map(a => ({ id: a.id, date: a.date || a.createdAt || '', type: 'income', amount: a.amount || 0, counter: a.applicant || '', description: a.title || '', manager: a.applicant || '', _cardType: '입금예정', _isApproval: true }))
+    if (cardFilter === 'incomeScheduled') return [
+      ...cashflows.filter(c => c.receivable && !c.received).map(c => ({ ...c, _cardType: '미수금(입금예정)', _isReceivable: true })),
+      ...approvals.filter(a => a.status === 'approved' && a.type === 'income').map(a => ({ id: a.id, date: a.date || a.createdAt || '', type: 'income', amount: a.amount || 0, counter: a.applicant || '', description: a.title || '', manager: a.applicant || '', _cardType: '입금예정', _isApproval: true }))
+    ]
     if (cardFilter === 'expenseScheduled') return approvals.filter(a => a.status === 'approved' && !a.isGeneral).map(a => ({ id: a.id, date: a.date || a.createdAt || '', type: 'expense', amount: a.amount || 0, counter: a.applicant || '', description: a.title || '', manager: a.applicant || '', budgetCatId: a.budgetCatId, _cardType: '출금예정', _isApproval: true }))
     return []
   }, [cardFilter, cashflows, approvals])
