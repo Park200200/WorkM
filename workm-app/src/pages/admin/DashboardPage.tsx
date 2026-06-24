@@ -371,7 +371,7 @@ export function DashboardPage() {
           ...(isExpenseManager ? [{ label: '지출할', value: toExpense, icon: CreditCard, color: '#3b82f6', bg: 'rgba(59,130,246,.12)', tab: 'expense', group: '', subtab: '' }] : []),
           ...(isExpenseManager ? [{ label: '정산할', value: toSettle, icon: Receipt, color: '#06b6d4', bg: 'rgba(6,182,212,.12)', tab: 'approval', group: 'inbox', subtab: 'confirming' }] : []),
         ]
-        const items = allItems
+        const items = allItems.filter(i => i.value > 0)
         return (
           <div className="mb-4">
             <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4">
