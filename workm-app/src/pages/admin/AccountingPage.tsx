@@ -5352,40 +5352,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           </div>
           ) : (
           <>
-            {/* 출금/입금전표: 내용 + 예산선택 */}
-            <div>
-              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'income' ? '입금계정' : (type === 'withdrawal' && (!form.manager || form.manager === currentUserName)) ? '품의명' : '지출내용'} *</label>
-              {type === 'income' ? (
-                <CustomSelect
-                  value={form.desc}
-                  onChange={v => {
-                    // 선택한 입금계정의 수익계정(revenueAccountCode)을 자동 세팅
-                    const allIM: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_income_methods') || '[]') } catch { return [] } })()
-                    const selectedIM = allIM.find(a => a.name === v)
-                    const revenueAcct = (selectedIM as any)?.revenueAccountCode || ''
-                    const assetAcct = (selectedIM as any)?.accountCode || ''
-                    setForm(f => ({ ...f, desc: v, accountCode: revenueAcct, incomeAssetAccount: assetAcct } as any))
-                  }}
-                  placeholder="— 입금계정 선택 —"
-                  options={[
-                    { value: '', label: '— 입금계정 선택 —' },
-                    ...(() => {
-                      const allIM: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_income_methods') || '[]') } catch { return [] } })()
-                      const filtered = selectedBudgetCat
-                        ? allIM.filter(p => String(p.budgetCatId) === String(selectedBudgetCat))
-                        : allIM
-                      return filtered.map(a => {
-                        const detail = a.category === '계좌' && a.bankName ? ` (${a.bankName} ${a.accountNumber || ''})` : a.category === '현금' ? ` (현금)` : ''
-                        const revAcct = (a as any).revenueAccountCode ? ` → ${(a as any).revenueAccountCode}` : ''
-                        return { value: a.name, label: `${a.category} • ${a.name}${detail}${revAcct}` }
-                      })
-                    })(),
-                  ]}
-                />
-              ) : (
-                <input value={form.desc} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))} placeholder="예) 사무용품 구매" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
-              )}
-            </div>
+            {/* 입금전표: 1) 예산선택 */}
             <div>
               <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                 <label className="text-[10.5px] font-bold text-[var(--text-muted)]">예산선택</label>
@@ -5412,14 +5379,73 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                 className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] cursor-not-allowed outline-none font-bold"
               />
             </div>
-            {type === 'income' && (
+            {/* 입금전표: 2) 입금내용 */}
             <div>
               <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">입금내용</label>
               <input value={(form as any).incomeNote || ''} onChange={e => setForm(f => ({ ...f, incomeNote: e.target.value } as any))} placeholder="예) 4월 보조금 입금" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
             </div>
-            )}
-          </>
-          )}
+            {/* 입금전표: 3) 입금계정 */}
+            <div>
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">입금계정 *</label>
+              <CustomSelect
+                value={form.desc}
+                onChange={v => {
+                  const allIM: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_income_methods') || '[]') } catch { return [] } })()
+                  const selectedIM = allIM.find(a => a.name === v)
+                  const revenueAcct = (selectedIM as any)?.revenueAccountCode || ''
+                  const assetAcct = (selectedIM as any)?.accountCode || ''
+                  setForm(f => ({ ...f, desc: v, accountCode: revenueAcct, incomeAssetAccount: assetAcct } as any))
+                }}
+                placeholder="— 입금계정 선택 —"
+                options={[
+                  { value: '', label: '— 입금계정 선택 —' },
+                  ...(() => {
+                    const allIM: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_income_methods') || '[]') } catch { return [] } })()
+                    const filtered = selectedBudgetCat
+                      ? allIM.filter(p => String(p.budgetCatId) === String(selectedBudgetCat))
+                      : allIM
+                    return filtered.map(a => {
+                      const detail = a.category === '계좌' && a.bankName ? ` (${a.bankName} ${a.accountNumber || ''})` : a.category === '현금' ? ` (현금)` : ''
+                      const revAcct = (a as any).revenueAccountCode ? ` → ${(a as any).revenueAccountCode}` : ''
+                      return { value: a.name, label: `${a.category} • ${a.name}${detail}${revAcct}` }
+                    })
+                  })(),
+                ]}
+              />
+            </div>
+            {/* 입금전표: 4) 금액 */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                <label className="text-[10.5px] font-bold text-[var(--text-muted)]">금액 (원) *</label>
+                {selectedBudgetCat && (() => {
+                  const allBudgets: BudgetItem[] = getItem('acct_budgets', [])
+                  const catBudgets = allBudgets.filter(b => String(b.catId) === String(selectedBudgetCat))
+                  const totalBudget = catBudgets.reduce((s, b) => s + (b.amount || 0), 0)
+                  const allCfs: any[] = getItem('acct_cashflows', [])
+                  const incomeCfs = allCfs.filter((c: any) => c.type === 'income' && (!c.budgetCatId || String(c.budgetCatId) === String(selectedBudgetCat)))
+                  const totalIncome = incomeCfs.reduce((s: number, c: any) => s + (typeof c.amount === 'number' ? c.amount : (Number(String(c.amount || '0').replace(/,/g, '')) || 0)), 0)
+                  const inputAmt = Number((form.amount || '0').replace(/,/g, '')) || 0
+                  const afterIncome = totalIncome + inputAmt
+                  const remaining = totalBudget - afterIncome
+                  const incomePct = totalBudget > 0 ? Math.round(afterIncome / totalBudget * 100) : 0
+                  return (
+                    <>
+                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800"><span className="text-[7px] text-blue-500 font-bold">총예산</span><span className="text-[9px] font-extrabold text-blue-600">{totalBudget.toLocaleString('ko-KR')}</span></div>
+                      <div className="flex items-center gap-0.5 px-1 py-px rounded bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800"><span className="text-[7px] text-emerald-500 font-bold">총입금</span><span className="text-[9px] font-extrabold text-emerald-600">{afterIncome.toLocaleString('ko-KR')}</span></div>
+                      <div className={`flex items-center gap-0.5 px-1 py-px rounded border ${remaining < 0 ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800' : 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800'}`}>
+                        <span className={`text-[7px] font-bold ${remaining < 0 ? 'text-red-500' : 'text-amber-500'}`}>잔여</span>
+                        <span className={`text-[9px] font-extrabold ${remaining < 0 ? 'text-red-600' : 'text-amber-600'}`}>{remaining.toLocaleString('ko-KR')}</span>
+                      </div>
+                      <div className={`flex items-center gap-0.5 px-1 py-px rounded border ${incomePct >= 100 ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800' : 'bg-violet-50 dark:bg-violet-900/10 border-violet-200 dark:border-violet-800'}`}>
+                        <span className={`text-[9px] font-extrabold ${incomePct >= 100 ? 'text-emerald-600' : 'text-violet-600'}`}>{incomePct}%</span>
+                      </div>
+                    </>
+                  )
+                })()}
+              </div>
+              <input value={form.amount} onChange={e => handleAmtInput(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm font-bold text-right focus:border-primary-500 outline-none" style={{ color: typeColors[type] }} />
+            </div>
+          </>}
           {/* 예산항목/세목 (출금전표에서만) - 통합 검색 + 기존 드롭다운 */}
           {type === 'withdrawal' && (
           <>
@@ -5526,40 +5552,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
             </div>
           </>
           )}
-          {/* 금액 (출금전표 외) */}
-          {type === 'income' && (
-          <div>
-            <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-              <label className="text-[10.5px] font-bold text-[var(--text-muted)]">금액 (원) *</label>
-              {selectedBudgetCat && (() => {
-                const allBudgets: BudgetItem[] = getItem('acct_budgets', [])
-                const catBudgets = allBudgets.filter(b => String(b.catId) === String(selectedBudgetCat))
-                const totalBudget = catBudgets.reduce((s, b) => s + (b.amount || 0), 0)
-                const allCfs: any[] = getItem('acct_cashflows', [])
-                const incomeCfs = allCfs.filter((c: any) => c.type === 'income' && (!c.budgetCatId || String(c.budgetCatId) === String(selectedBudgetCat)))
-                const totalIncome = incomeCfs.reduce((s: number, c: any) => s + (typeof c.amount === 'number' ? c.amount : (Number(String(c.amount || '0').replace(/,/g, '')) || 0)), 0)
-                const inputAmt = Number((form.amount || '0').replace(/,/g, '')) || 0
-                const afterIncome = totalIncome + inputAmt
-                const remaining = totalBudget - afterIncome
-                const incomePct = totalBudget > 0 ? Math.round(afterIncome / totalBudget * 100) : 0
-                return (
-                  <>
-                    <div className="flex items-center gap-0.5 px-1 py-px rounded bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800"><span className="text-[7px] text-blue-500 font-bold">총예산</span><span className="text-[9px] font-extrabold text-blue-600">{totalBudget.toLocaleString('ko-KR')}</span></div>
-                    <div className="flex items-center gap-0.5 px-1 py-px rounded bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800"><span className="text-[7px] text-emerald-500 font-bold">총입금</span><span className="text-[9px] font-extrabold text-emerald-600">{afterIncome.toLocaleString('ko-KR')}</span></div>
-                    <div className={`flex items-center gap-0.5 px-1 py-px rounded border ${remaining < 0 ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800' : 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800'}`}>
-                      <span className={`text-[7px] font-bold ${remaining < 0 ? 'text-red-500' : 'text-amber-500'}`}>잔여</span>
-                      <span className={`text-[9px] font-extrabold ${remaining < 0 ? 'text-red-600' : 'text-amber-600'}`}>{remaining.toLocaleString('ko-KR')}</span>
-                    </div>
-                    <div className={`flex items-center gap-0.5 px-1 py-px rounded border ${incomePct >= 100 ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800' : 'bg-violet-50 dark:bg-violet-900/10 border-violet-200 dark:border-violet-800'}`}>
-                      <span className={`text-[9px] font-extrabold ${incomePct >= 100 ? 'text-emerald-600' : 'text-violet-600'}`}>{incomePct}%</span>
-                    </div>
-                  </>
-                )
-              })()}
-            </div>
-            <input value={form.amount} onChange={e => handleAmtInput(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm font-bold text-right focus:border-primary-500 outline-none" style={{ color: typeColors[type] }} />
-          </div>
-          )}
+
           {type === 'expense' && (
           <div>
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">금액 (원) *</label>
