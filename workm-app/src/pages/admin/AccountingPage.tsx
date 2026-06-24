@@ -5716,8 +5716,8 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
             <Save size={14} /> {type === 'income' ? '입금 등록' : (type === 'withdrawal' && (!form.manager || form.manager === currentUserName) ? '결의품의' : '지출 등록')}
           </button>
         </div>
-      )}
       </div>
+      )}
       </>
       )}
 
