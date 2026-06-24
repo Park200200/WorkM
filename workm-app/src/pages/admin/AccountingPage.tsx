@@ -4937,7 +4937,10 @@ export function AcctApproval({ year }: { year: number }) {
                 </label>
                 {((resubmitForm as any).attachments||[]).length > 0 && (
                   <button onClick={() => {
+                    if (!confirm('승인요청을 진행하시겠습니까?\n품의 내용과 증빙이 저장되고 승인자에게 승인 요청됩니다.')) return
                     setResubmitEvidenceOpen(false)
+                    // handleResubmitConfirm과 동일한 로직 수행
+                    handleResubmitConfirm()
                   }} className="px-4 py-2 rounded-lg bg-[#8b5cf6] text-white text-sm font-bold hover:bg-[#7c3aed] cursor-pointer flex items-center gap-1 shadow-sm"><Send size={13} /> 승인요청</button>
                 )}
               </>
