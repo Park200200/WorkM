@@ -10664,7 +10664,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
               className="flex-1 px-3.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-white dark:bg-gray-900 text-sm text-[var(--text-primary)] outline-none focus:border-emerald-400 transition-colors"
             >
               <option value="">— 수익계정 선택 —</option>
-              {allAccounts.filter(a => a.active !== false && a.type === 'revenue').map(a => (
+              {allAccounts.filter(a => a.active !== false && (a as any).incomeEnabled === true).map(a => (
                 <option key={a.code} value={`${a.code} ${a.name}`}>{a.code} {a.name}</option>
               ))}
             </select>
