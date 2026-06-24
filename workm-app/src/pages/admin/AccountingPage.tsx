@@ -251,19 +251,19 @@ export function initAccountingSeed() {
   }
 
   /* ── 선지출/대체 품의가 approved/toResolve 상태인 경우 completed로 자동 마이그레이션 ── */
-  if (!localStorage.getItem('_acct_preexp_completed_v2')) {
+  if (!localStorage.getItem('_acct_preexp_completed_v3')) {
     const existingApprovals = getItem<any[]>('acct_approvals', [])
     let patchedPre = false
     const updatedApprovals = existingApprovals.map((a: any) => {
-      if ((a.status === 'approved' || a.status === 'toResolve') && (a.isPreExpense || (a.title || '').startsWith('[선지출]') || (a.title || '').startsWith('[대체]'))) {
+      const isPreExpItem = a.isPreExpense || a.selfExpense || (a.title || '').startsWith('[선지출]') || (a.title || '').startsWith('[대체]')
+      if ((a.status === 'approved' || a.status === 'toResolve') && isPreExpItem) {
         patchedPre = true
         return { ...a, status: 'completed', completedAt: a.completedAt || new Date().toISOString() }
       }
       return a
     })
     if (patchedPre) setItem('acct_approvals', updatedApprovals)
-    localStorage.setItem('_acct_preexp_resolve_v1', '1')
-    localStorage.setItem('_acct_preexp_completed_v2', '1')
+    localStorage.setItem('_acct_preexp_completed_v3', '1')
   }
 
   /* ── 시드 버전 변경 시 회계 데이터 초기화 후 재시드 ── */
@@ -3573,7 +3573,7 @@ export function AcctApproval({ year }: { year: number }) {
   const handleApproveConfirm = () => {
     if (!detailApproval) return
     const isGeneral = !!(detailApproval as any).isGeneral
-    const isPreExp = !!(detailApproval as any).isPreExpense || detailApproval.status === 'preExpense' || (detailApproval.title || '').startsWith('[선지출]')
+    const isPreExp = !!(detailApproval as any).isPreExpense || !!(detailApproval as any).selfExpense || detailApproval.status === 'preExpense' || (detailApproval.title || '').startsWith('[선지출]')
     if (isGeneral) {
       // 일반품의: 비밀번호/예산 검증 없이 바로 완료
       if (!approvePw.trim()) { setApprovePwError('비밀번호를 입력해주세요'); return }
