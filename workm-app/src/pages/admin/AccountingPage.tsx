@@ -4550,7 +4550,7 @@ export function AcctApproval({ year }: { year: number }) {
                     }} />
                   </label>
                   {((detailApproval as any).attachments||[]).length>0 && (
-                    <button onClick={() => { if(!confirm('정산요청을 진행하시겠습니까?\n정산중 목록으로 이동됩니다.'))return; const approvals:any[]=getItem('acct_approvals',[]); const idx=approvals.findIndex(a=>a.id===detailApproval.id); if(idx>=0){approvals[idx].status='confirming';approvals[idx].confirmedAt=new Date().toISOString();setItem('acct_approvals',approvals);setRefresh(r=>r+1)} resetApproveState();setDetailApproval(null) }} className="px-4 py-2 rounded-lg bg-[#8b5cf6] text-white text-sm font-bold hover:bg-[#7c3aed] cursor-pointer flex items-center gap-1 shadow-sm"><Send size={13} /> 정산요청</button>
+                    <button onClick={() => { if(!confirm('승인요청을 진행하시겠습니까?\n정산중 목록으로 이동됩니다.'))return; const approvals:any[]=getItem('acct_approvals',[]); const idx=approvals.findIndex(a=>a.id===detailApproval.id); if(idx>=0){approvals[idx].status='confirming';approvals[idx].confirmedAt=new Date().toISOString();setItem('acct_approvals',approvals);setRefresh(r=>r+1)} resetApproveState();setDetailApproval(null) }} className="px-4 py-2 rounded-lg bg-[#8b5cf6] text-white text-sm font-bold hover:bg-[#7c3aed] cursor-pointer flex items-center gap-1 shadow-sm"><Send size={13} /> 승인요청</button>
                   )}
                 </>
               )}
@@ -4741,26 +4741,54 @@ export function AcctApproval({ year }: { year: number }) {
                         })()}
                       </div>
                     </div>
-                    {/* 증빙 첨부 - 출금전표와 동일한 UI */}
+                    {/* 증빙 첨부 - toResolve 상태와 동일한 UI */}
                     <div className="pt-1">
                       <div className="flex items-center gap-2">
                         <label className="text-[10.5px] font-bold text-[var(--text-muted)]">📎 첨부파일 (영수증/증빙)</label>
                         {((resubmitForm as any).attachments || []).length > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-bold">{((resubmitForm as any).attachments || []).length}건</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-1.5">
-                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-[var(--border-default)] text-[11px] font-bold text-[var(--text-muted)] hover:border-primary-400 hover:text-primary-500 cursor-pointer transition-colors">
-                          📎 {((resubmitForm as any).attachments || []).length > 0 ? '증빙 편집' : '증빙 첨부'}
-                          <input type="file" accept="image/*,.pdf" multiple className="hidden" onChange={e => {
-                            const files = Array.from(e.target.files || [])
-                            files.forEach(file => {
-                              const reader = new FileReader()
-                              reader.onload = () => {
-                                const newAtt = { name: file.name, data: reader.result as string, size: file.size, title: file.name, printWidth: 100 }
-                                setResubmitForm(f => ({ ...f, attachments: [...((f as any).attachments || []), newAtt] } as any))
+                        <label className="px-4 py-2 rounded-lg bg-[#4f6ef7] text-white text-sm font-bold hover:bg-[#3b5de7] cursor-pointer flex items-center gap-1">
+                          <Paperclip size={13} /> 증빙첨부
+                          <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.hwp" className="hidden" onChange={async e => {
+                            const fileList = e.target.files; if(!fileList||fileList.length===0)return
+                            const fileArr = Array.from(fileList); e.target.value = ''
+                            const existing:any[] = (resubmitForm as any).attachments||[]
+                            const newFiles:any[] = []
+                            for(const f of fileArr){
+                              const imageKey = `att_resubmit_${Date.now()}_${Math.random().toString(36).slice(2,8)}`
+                              const entry:any = {name:f.name,size:f.size,type:f.type,addedAt:new Date().toISOString(),title:f.name.replace(/\.[^/.]+$/,''),printWidth:150,imageKey}
+                              if(f.type.startsWith('image/')){
+                                try{
+                                  const dataUrl:string = await new Promise((resolve,reject)=>{
+                                    const reader=new FileReader()
+                                    reader.onload=()=>{
+                                      const img=new Image()
+                                      img.onload=()=>{
+                                        const MAX=800; let w=img.width,h=img.height
+                                        if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX}else{w=Math.round(w*MAX/h);h=MAX}}
+                                        const c=document.createElement('canvas');c.width=w;c.height=h
+                                        const ctx=c.getContext('2d');ctx?.drawImage(img,0,0,w,h)
+                                        resolve(c.toDataURL('image/jpeg',0.7))
+                                      }
+                                      img.onerror=reject; img.src=reader.result as string
+                                    }
+                                    reader.onerror=reject; reader.readAsDataURL(f)
+                                  })
+                                  entry.dataUrl = dataUrl; entry.data = dataUrl
+                                }catch(err){console.error('이미지 저장 실패',err)}
+                              } else {
+                                const dataUrl:string = await new Promise((resolve,reject)=>{
+                                  const reader=new FileReader()
+                                  reader.onload=()=>resolve(reader.result as string)
+                                  reader.onerror=reject; reader.readAsDataURL(f)
+                                })
+                                entry.data = dataUrl
                               }
-                              reader.readAsDataURL(file)
-                            })
-                            e.target.value = ''
+                              newFiles.push(entry)
+                            }
+                            const updated=[...existing,...newFiles]
+                            setResubmitForm(f => ({ ...f, attachments: updated } as any))
                           }} />
                         </label>
                       </div>
