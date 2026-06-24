@@ -1112,9 +1112,7 @@ export function AccountingPage() {
       (c.approvers && c.approvers.includes(userName)) ||
       (c.approver === userName)
     )
-    const approvals = JSON.parse(localStorage.getItem('acct_approvals') || '[]') as any[]
-    const isApproverInApprovals = approvals.some((a: any) => a.approver === userName)
-    const hasBudgetAccess = isAdmin || isBudgetHandler || isApproverInApprovals
+    const hasBudgetAccess = isAdmin || isBudgetHandler
     const allowedTabs = ['approval']
     if (!hasBudgetAccess && !allowedTabs.includes(activeSub)) {
       setActiveSub('approval')

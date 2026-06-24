@@ -170,9 +170,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               (c.approver === userName)
             )
             // 품의에서 승인자로 지정된 경우도 관련자
-            const approvals = JSON.parse(localStorage.getItem('acct_approvals') || '[]') as any[]
-            const isApproverInApprovals = approvals.some((a: any) => a.approver === userName)
-            const hasBudgetAccess = isAdmin || isBudgetHandler || isApproverInApprovals
+            const hasBudgetAccess = isAdmin || isBudgetHandler
             // 품의하기만 허용, 나머지 모든 탭 제한 (화이트리스트 방식)
             const allowedTabs = ['approval']
 
