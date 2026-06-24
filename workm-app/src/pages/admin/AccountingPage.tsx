@@ -4258,7 +4258,7 @@ export function AcctApproval({ year }: { year: number }) {
             return {
             date: (detailApproval.date || detailApproval.createdAt || '').slice(0, 10),
             expenseDate: linkedCf?.tradeDate || (((detailApproval as any).isPreExpense || detailApproval.status === 'preExpense') ? (detailApproval.date || detailApproval.createdAt || '').slice(0, 10) : ''),
-            settleDate: linkedCf?.inputDate || (detailApproval.status === 'preExpense' ? (detailApproval.date || detailApproval.createdAt || '').slice(0, 10) : ''),
+            settleDate: linkedCf?.inputDate || linkedCf?.writeDate || linkedCf?.date || (detailApproval.status === 'preExpense' ? (detailApproval.date || detailApproval.createdAt || '').slice(0, 10) : ''),
             accountName: (() => {
               // linkedCf에서 계정과목 가져오기
               if (linkedCf?.accountCode) {
@@ -5285,6 +5285,8 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
       id: cfId, date: form.tradeDate, type: type === 'withdrawal' ? 'expense' : type,
       amount: amt, description: form.desc, accountCode: type === 'income' ? '4030' : '5110',
       counter: form.counter, writeDate: form.writeDate,
+      tradeDate: form.tradeDate, inputDate: form.inputDate,
+      method: form.method || '',
       manager: form.manager,
       budgetCatId: selectedBudgetCat || '',
       createdBy: currentUserName,
