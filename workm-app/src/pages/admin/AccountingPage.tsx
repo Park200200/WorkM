@@ -8703,10 +8703,18 @@ function AcctAccountsMgmt() {
         <div className="text-[11px] text-[var(--text-muted)] bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 rounded-lg px-3 py-2">
           💡 스위치를 켜면 해당 계정이 <span className="font-bold text-emerald-600">입금전표</span>의 입금내용 선택 시 나타납니다.
         </div>
-        <div className="flex-1 relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="계정 검색..."
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] outline-none focus:border-emerald-400" />
+        <div className="flex items-center gap-2">
+          <div className="flex-1 relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="계정 검색..."
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] outline-none focus:border-emerald-400" />
+          </div>
+          <div className="flex items-center bg-[var(--bg-muted)] rounded-lg border border-[var(--border-default)] overflow-hidden shrink-0">
+            <button onClick={() => setFilterType('all')} className={cn('px-2.5 py-2 text-[11px] font-bold transition-all cursor-pointer', filterType === 'all' ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)]')}>전체</button>
+            {ACCT_TYPES.map(t => (
+              <button key={t.value} onClick={() => setFilterType(t.value)} className={cn('px-2.5 py-2 text-[11px] font-bold transition-all cursor-pointer', filterType === t.value ? 'text-white shadow-sm' : 'text-[var(--text-muted)]')} style={filterType === t.value ? { background: t.color } : {}}>{t.label}</button>
+            ))}
+          </div>
         </div>
         <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
           {/* 헤더 */}
@@ -8721,6 +8729,7 @@ function AcctAccountsMgmt() {
           <div className="max-h-[500px] overflow-y-auto">
             {accounts
               .filter(a => {
+                if (filterType !== 'all' && a.type !== filterType) return false
                 if (search.trim()) {
                   const q = search.toLowerCase()
                   return a.code.includes(q) || a.name.toLowerCase().includes(q) || (a.group || '').toLowerCase().includes(q)
