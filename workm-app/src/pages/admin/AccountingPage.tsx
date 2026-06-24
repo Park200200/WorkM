@@ -9429,9 +9429,21 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
                     </span>
                     <input value={item.name} onChange={e => { e.stopPropagation(); updateField(item.id, 'name', e.target.value) }} onClick={e => e.stopPropagation()} placeholder="이름 입력" className="text-sm font-semibold text-[var(--text-primary)] flex-1 bg-transparent border-none outline-none focus:bg-[var(--bg-muted)] focus:px-2 focus:rounded-md transition-all" />
                     {/* 현금 계정과목 고정 표시 */}
-                    {activeCategory === '현금' && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap">1-01-01 현금</span>
-                    )}
+                    {activeCategory === '현금' && (() => {
+                      const cfs: CashFlow[] = getItem('acct_cashflows', [])
+                      const cashIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const cashOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '현금' && (cf as any).creditDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const cashOutE = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '현금' && (cf as any).payDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const bal = cashIn - cashOutT - cashOutE
+                      return (
+                        <>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap">1-01-01 현금</span>
+                          <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap ${bal < 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-600' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600'}`}>
+                            💰 {bal.toLocaleString('ko-KR')}원
+                          </span>
+                        </>
+                      )
+                    })()}
                     {activeCategory === '상품권' && (
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-pink-50 dark:bg-pink-900/20 text-pink-600 whitespace-nowrap">1-01-08 상품권</span>
                     )}
