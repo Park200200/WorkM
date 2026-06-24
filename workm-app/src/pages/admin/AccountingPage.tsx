@@ -10931,9 +10931,21 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                   <div className="flex items-center gap-3 px-3.5 py-2.5 cursor-pointer group" onClick={() => setExpandedId(isOpen ? null : item.id)}>
                     <span className="text-[10px] font-bold w-5 text-center shrink-0 rounded-full py-0.5" style={{ color: activeCatInfo.color, background: `${activeCatInfo.color}15` }}>{idx + 1}</span>
                     <input value={item.name} onChange={e => { e.stopPropagation(); updateField(item.id, 'name', e.target.value) }} onClick={e => e.stopPropagation()} placeholder="이름 입력" className="text-sm font-semibold text-[var(--text-primary)] flex-1 bg-transparent border-none outline-none focus:bg-[var(--bg-muted)] focus:px-2 focus:rounded-md transition-all" />
-                    {activeCategory === '현금' && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap">1-01-01 현금</span>
-                    )}
+                    {activeCategory === '현금' && (() => {
+                      const cfs: CashFlow[] = getItem('acct_cashflows', [])
+                      const cashIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const cashOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '현금' && (cf as any).creditDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const cashOutE = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '현금' && (cf as any).payDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const bal = cashIn - cashOutT - cashOutE
+                      return (
+                        <>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap">1-01-01 현금</span>
+                          <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap ${bal < 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-600' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600'}`}>
+                            💰 {bal.toLocaleString('ko-KR')}원
+                          </span>
+                        </>
+                      )
+                    })()}
                     {activeCategory === '상품권' && (
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-pink-50 dark:bg-pink-900/20 text-pink-600 whitespace-nowrap">1-01-08 상품권</span>
                     )}
@@ -11034,6 +11046,34 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                               <option value="">선택하세요</option>
                               {staffList.map((s: any) => (<option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}{s.dept ? ` - ${s.dept}` : ''}</option>))}
                             </select>
+                          </div>
+                          <div>
+                            <label className={DETAIL_FIELD_LABEL}>한도액</label>
+                            <input
+                              value={item.cashLimit ? item.cashLimit.toLocaleString() : ''}
+                              onChange={e => {
+                                const num = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0
+                                saveAll(allItems.map(i => i.id === item.id ? { ...i, cashLimit: num } : i))
+                              }}
+                              placeholder="500,000"
+                              className={DETAIL_INPUT}
+                            />
+                          </div>
+                          <div>
+                            <label className={DETAIL_FIELD_LABEL}>💰 현금잔액</label>
+                            {(() => {
+                              const cfs: CashFlow[] = getItem('acct_cashflows', [])
+                              const cashIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                              const cashOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '현금' && (cf as any).creditDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                              const cashOutE = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '현금' && (cf as any).payDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                              const balance = cashIn - cashOutT - cashOutE
+                              const isOver = item.cashLimit && balance > item.cashLimit
+                              return (
+                                <div className={`w-full px-3 py-2.5 rounded-lg border text-sm font-extrabold text-right ${balance < 0 ? 'border-red-300 bg-red-50 dark:bg-red-900/10 text-red-600' : isOver ? 'border-amber-300 bg-amber-50 dark:bg-amber-900/10 text-amber-600' : 'border-emerald-300 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600'}`}>
+                                  {balance.toLocaleString('ko-KR')}원
+                                </div>
+                              )
+                            })()}
                           </div>
                           <div><label className={DETAIL_FIELD_LABEL}>용도</label><input value={item.purpose || ''} onChange={e => updateField(item.id, 'purpose', e.target.value)} placeholder="소액경비 등" className={DETAIL_INPUT} /></div>
                           <div><label className={DETAIL_FIELD_LABEL}>메모</label><input value={item.memo || ''} onChange={e => updateField(item.id, 'memo', e.target.value)} placeholder="참고사항" className={DETAIL_INPUT} /></div>
