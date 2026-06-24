@@ -2924,10 +2924,7 @@ function AcctBudget({ year }: { year: number }) {
                         <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">용도</label>
                         <input value={form.purpose} onChange={e => setForm(f => ({ ...f, purpose: e.target.value }))} placeholder="운영비, 인건비 등" className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors" />
                       </div>
-                      <div>
-                        <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">담당자</label>
-                        <input value={form.manager} onChange={e => setForm(f => ({ ...f, manager: e.target.value }))} placeholder="담당자명" className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors" />
-                      </div>
+
                       <div>
                         <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">메모</label>
                         <input value={form.memo} onChange={e => setForm(f => ({ ...f, memo: e.target.value }))} placeholder="비고" className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors" />
@@ -2973,7 +2970,7 @@ function AcctBudget({ year }: { year: number }) {
                               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-secondary)]">
                                 {acc.accountHolder && <span>예금주: <b>{acc.accountHolder}</b></span>}
                                 {acc.purpose && <span>용도: {acc.purpose}</span>}
-                                {acc.manager && <span>담당자: {acc.manager}</span>}
+
                                 {acc.memo && <span className="text-[var(--text-muted)]">({acc.memo})</span>}
                               </div>
                             </div>
