@@ -4839,7 +4839,7 @@ export function AcctApproval({ year }: { year: number }) {
         const da = detailApproval as any
         const catName = da.budgetCatName || budgetCats.find((c: any) => String(c.id) === String(da.budgetCatId))?.name || ''
         const amt = typeof detailApproval.amount === 'number' ? detailApproval.amount : (parseInt(String(detailApproval.amount || '0').replace(/,/g, '')) || 0)
-        const applicantStaff = staffList.find(s => s.name === da.applicant)
+        const applicantStaff = staffList.find(s => s.name === currentUserName)
         const approverName = (() => {
           const cat = budgetCats.find((c: any) => String(c.id) === String(da.budgetCatId))
           if (cat && (cat as any).approvers && (cat as any).approvers.length > 0) return (cat as any).approvers[0]
@@ -4868,7 +4868,7 @@ export function AcctApproval({ year }: { year: number }) {
               purpose: da.budgetSubItem || '',
               amount: amt,
               memo: resubmitForm.description || da.description || '',
-              applicant: da.applicant || '',
+              applicant: currentUserName,
               approver: approverName,
               applicantSealImg: applicantStaff?.sealImg || '',
               approverSealImg: '',
