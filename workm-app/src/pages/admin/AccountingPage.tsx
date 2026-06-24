@@ -5588,21 +5588,37 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
       ]
     }
     vouchers.push({
-      id: vId, date: form.tradeDate, type: type === 'withdrawal' ? 'expense' : type,
+      id: vId, date: form.tradeDate, type: type,
       description: form.desc, entries: vEntries,
       budgetCatId: selectedBudgetCat || '',
       createdAt: getLocalISOString(),
     } as any)
     setItem('acct_vouchers', vouchers)
 
-    // 캐시플로 등록
+    // 캐시플로 등록 — payMethod/payDetail 분리 저장
+    const methodVal = form.method || ''
+    let payMethod = ''
+    let payDetail = ''
+    if (methodVal.startsWith('계좌:')) { payMethod = '계좌'; payDetail = methodVal.split(':')[1] || '' }
+    else if (methodVal.startsWith('카드:')) { payMethod = '카드'; payDetail = methodVal.split(':')[1] || '' }
+    else if (methodVal.startsWith('어음:')) { payMethod = '어음'; payDetail = methodVal.split(':').slice(1).join(':') }
+    else if (type === 'income') { payMethod = methodVal; payDetail = '' }
+    else {
+      // 현금/상품권 등 — payItems에서 카테고리 조회
+      const _allPI: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
+      const matchPI = _allPI.find(p => p.name === methodVal)
+      payMethod = matchPI ? matchPI.category : methodVal
+      payDetail = matchPI ? matchPI.name : ''
+    }
     const cfs = getItem<CashFlow[]>('acct_cashflows', [])
     const newCf: any = {
-      id: cfId, date: form.tradeDate, type: type === 'withdrawal' ? 'expense' : type,
+      id: cfId, date: form.tradeDate, type: type,
       amount: amt, description: form.desc, accountCode: type === 'income' ? '4030' : '5110',
       counter: form.counter, writeDate: form.writeDate,
       tradeDate: form.tradeDate, inputDate: form.inputDate,
-      method: form.method || '',
+      method: methodVal,
+      payMethod: payMethod,
+      payDetail: payDetail,
       manager: form.manager,
       budgetCatId: selectedBudgetCat || '',
       createdBy: currentUserName,
@@ -5866,23 +5882,26 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                     <CustomSelect value={transferForm.debitDetail} onChange={v => setTransferForm(f => ({ ...f, debitDetail: v }))} placeholder="— 세부 선택 —"
                       options={[{ value: '', label: '— 세부 선택 —' }, ...items.map(p => {
                         const cfs: CashFlow[] = getItem('acct_cashflows', [])
+                        const cfPM = (cf: any) => cf.payMethod || (cf.method?.includes(':') ? cf.method.split(':')[0] : cf.method) || ''
+                        const cfPD = (cf: any) => cf.payDetail || (cf.method?.includes(':') ? cf.method.split(':')[1] : '') || ''
+                        const isWd = (cf: any) => cf.type === 'withdrawal' || cf.type === 'expense'
                         let balText = ''
                         if (transferForm.debit === '계좌') {
-                          const acctIn = cfs.filter(cf => cf.type === 'income' && (cf as any).payMethod === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const acctIn = cfs.filter(cf => cf.type === 'income' && cfPM(cf) === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                           const acctInT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '계좌' && (cf as any).debitDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                          const acctOut = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '계좌' && (cf as any).payDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const acctOut = cfs.filter(cf => isWd(cf) && cfPM(cf) === '계좌' && cfPD(cf) === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                           const acctOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '계좌' && (cf as any).creditDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                           const bal = (p.initialBalance || 0) + acctIn + acctInT - acctOut - acctOutT
                           balText = ` [잔액 ${bal.toLocaleString()}원]`
                         } else if (transferForm.debit === '현금') {
                           const cashIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                           const cashOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '현금' && (cf as any).creditDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                          const cashOutE = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '현금' && (cf as any).payDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                          const bal = cashIn - cashOutT - cashOutE
+                          const cashOutE = cfs.filter(cf => isWd(cf) && cfPM(cf) === '현금' && cfPD(cf) === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const bal = (p.initialBalance || 0) + cashIn - cashOutT - cashOutE
                           balText = ` [잔액 ${bal.toLocaleString()}원]`
                         } else if (transferForm.debit === '상품권') {
                           const qty = p.voucherQty || 0
-                          const usedQty = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '상품권' && (cf as any).payDetail === p.name).length
+                          const usedQty = cfs.filter(cf => isWd(cf) && cfPM(cf) === '상품권' && cfPD(cf) === p.name).length
                           balText = ` [잔여 ${qty - usedQty}매/${qty}매]`
                         }
                         return {
@@ -5909,23 +5928,26 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                     <CustomSelect value={transferForm.creditDetail} onChange={v => setTransferForm(f => ({ ...f, creditDetail: v }))} placeholder="— 세부 선택 —"
                       options={[{ value: '', label: '— 세부 선택 —' }, ...items.map(p => {
                         const cfs: CashFlow[] = getItem('acct_cashflows', [])
+                        const cfPM = (cf: any) => cf.payMethod || (cf.method?.includes(':') ? cf.method.split(':')[0] : cf.method) || ''
+                        const cfPD = (cf: any) => cf.payDetail || (cf.method?.includes(':') ? cf.method.split(':')[1] : '') || ''
+                        const isWd = (cf: any) => cf.type === 'withdrawal' || cf.type === 'expense'
                         let balText = ''
                         if (transferForm.credit === '계좌') {
-                          const acctIn = cfs.filter(cf => cf.type === 'income' && (cf as any).payMethod === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const acctIn = cfs.filter(cf => cf.type === 'income' && cfPM(cf) === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                           const acctInT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '계좌' && (cf as any).debitDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                          const acctOut = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '계좌' && (cf as any).payDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const acctOut = cfs.filter(cf => isWd(cf) && cfPM(cf) === '계좌' && cfPD(cf) === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                           const acctOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '계좌' && (cf as any).creditDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                           const bal = (p.initialBalance || 0) + acctIn + acctInT - acctOut - acctOutT
                           balText = ` [잔액 ${bal.toLocaleString()}원]`
                         } else if (transferForm.credit === '현금') {
                           const cashIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                           const cashOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '현금' && (cf as any).creditDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                          const cashOutE = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '현금' && (cf as any).payDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                          const bal = cashIn - cashOutT - cashOutE
+                          const cashOutE = cfs.filter(cf => isWd(cf) && cfPM(cf) === '현금' && cfPD(cf) === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                          const bal = (p.initialBalance || 0) + cashIn - cashOutT - cashOutE
                           balText = ` [잔액 ${bal.toLocaleString()}원]`
                         } else if (transferForm.credit === '상품권') {
                           const qty = p.voucherQty || 0
-                          const usedQty = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '상품권' && (cf as any).payDetail === p.name).length
+                          const usedQty = cfs.filter(cf => isWd(cf) && cfPM(cf) === '상품권' && cfPD(cf) === p.name).length
                           balText = ` [잔여 ${qty - usedQty}매/${qty}매]`
                         }
                         return {
@@ -6512,11 +6534,15 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                 return true
               })
               const cfs: CashFlow[] = getItem('acct_cashflows', [])
+              // 헬퍼: cf에서 payMethod/payDetail 추출 (기존 데이터 호환)
+              const cfPM = (cf: any) => cf.payMethod || (cf.method?.includes(':') ? cf.method.split(':')[0] : cf.method) || ''
+              const cfPD = (cf: any) => cf.payDetail || (cf.method?.includes(':') ? cf.method.split(':')[1] : '') || ''
+              const isWd = (cf: any) => cf.type === 'withdrawal' || cf.type === 'expense'
               // 계좌 잔액 계산 헬퍼
               const calcAcctBal = (p: PayMethodItem) => {
-                const acctIn = cfs.filter(cf => cf.type === 'income' && (cf as any).payMethod === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                const acctIn = cfs.filter(cf => cf.type === 'income' && cfPM(cf) === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                 const acctInT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '계좌' && (cf as any).debitDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                const acctOut = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '계좌' && (cf as any).payDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                const acctOut = cfs.filter(cf => isWd(cf) && cfPM(cf) === '계좌' && cfPD(cf) === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                 const acctOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '계좌' && (cf as any).creditDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                 return (p.initialBalance || 0) + acctIn + acctInT - acctOut - acctOutT
               }
@@ -6524,13 +6550,13 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
               const calcCashBal = (p: PayMethodItem) => {
                 const cashIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                 const cashOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '현금' && (cf as any).creditDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                const cashOutE = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '현금' && (cf as any).payDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                return cashIn - cashOutT - cashOutE
+                const cashOutE = cfs.filter(cf => isWd(cf) && cfPM(cf) === '현금' && cfPD(cf) === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                return (p.initialBalance || 0) + cashIn - cashOutT - cashOutE
               }
               // 상품권 잔여수 계산 헬퍼
               const calcVoucherRemain = (p: PayMethodItem) => {
                 const qty = p.voucherQty || 0
-                const usedQty = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '상품권' && (cf as any).payDetail === p.name).length
+                const usedQty = cfs.filter(cf => isWd(cf) && cfPM(cf) === '상품권' && cfPD(cf) === p.name).length
                 return qty - usedQty
               }
               // 계좌 + 하위 카드 그룹
@@ -9598,8 +9624,8 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
                       const cfs: CashFlow[] = getItem('acct_cashflows', [])
                       const cashIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                       const cashOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '현금' && (cf as any).creditDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                      const cashOutE = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '현금' && (cf as any).payDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                      const bal = cashIn - cashOutT - cashOutE
+                      const cashOutE = cfs.filter(cf => (cf.type === 'withdrawal' || cf.type === 'expense') && ((cf as any).payMethod || (cf as any).method) === '현금' && ((cf as any).payDetail || '') === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const bal = (item.initialBalance || 0) + cashIn - cashOutT - cashOutE
                       return (
                         <>
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap">1-01-01 현금</span>
@@ -9891,9 +9917,9 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
                             ).reduce((s, cf) => s + (cf.amount || 0), 0)
                             // 현금 지출(출금전표에서 이 현금수단 사용)
                             const cashOutExpense = cfs.filter(cf =>
-                              cf.type === 'withdrawal' &&
-                              (cf as any).payMethod === '현금' &&
-                              (cf as any).payDetail === item.name
+                              (cf.type === 'withdrawal' || cf.type === 'expense') &&
+                              ((cf as any).payMethod || (cf as any).method) === '현금' &&
+                              ((cf as any).payDetail || '') === item.name
                             ).reduce((s, cf) => s + (cf.amount || 0), 0)
                             const balance = cashIn - cashOutTransfer - cashOutExpense
                             const isOver = item.cashLimit && balance > item.cashLimit
@@ -11193,7 +11219,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                       const cfs: CashFlow[] = getItem('acct_cashflows', [])
                       const cashIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                       const cashOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '현금' && (cf as any).creditDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                      const cashOutE = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '현금' && (cf as any).payDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const cashOutE = cfs.filter(cf => (cf.type === 'withdrawal' || cf.type === 'expense') && ((cf as any).payMethod || (cf as any).method) === '현금' && ((cf as any).payDetail || '') === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                       const bal = cashIn - cashOutT - cashOutE
                       return (
                         <>
@@ -11207,7 +11233,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                     {activeCategory === '상품권' && (() => {
                       const qty = item.voucherQty || 0
                       const cfs: CashFlow[] = getItem('acct_cashflows', [])
-                      const usedQty = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '상품권' && (cf as any).payDetail === item.name).length
+                      const usedQty = cfs.filter(cf => (cf.type === 'withdrawal' || cf.type === 'expense') && ((cf as any).payMethod || (cf as any).method) === '상품권' && ((cf as any).payDetail || '') === item.name).length
                       const remain = qty - usedQty
                       return (
                         <>
@@ -11222,9 +11248,9 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                     })()}
                     {activeCategory === '계좌' && (() => {
                       const cfs: CashFlow[] = getItem('acct_cashflows', [])
-                      const acctIn = cfs.filter(cf => cf.type === 'income' && (cf as any).payMethod === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const acctIn = cfs.filter(cf => cf.type === 'income' && ((cf as any).payMethod || (cf as any).method) === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                       const acctInT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '계좌' && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                      const acctOut = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '계좌' && (cf as any).payDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const acctOut = cfs.filter(cf => (cf.type === 'withdrawal' || cf.type === 'expense') && ((cf as any).payMethod || (cf as any).method?.split(':')[0]) === '계좌' && ((cf as any).payDetail || (cf as any).method?.split(':')[1] || '') === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                       const acctOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '계좌' && (cf as any).creditDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                       const bal = (item.initialBalance || 0) + acctIn + acctInT - acctOut - acctOutT
                       return (
@@ -11385,9 +11411,9 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                             </div>
                             {(() => {
                               const cfs: CashFlow[] = getItem('acct_cashflows', [])
-                              const acctIn = cfs.filter(cf => cf.type === 'income' && (cf as any).payMethod === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                              const acctIn = cfs.filter(cf => cf.type === 'income' && ((cf as any).payMethod || (cf as any).method) === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                               const acctInT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '계좌' && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                              const acctOut = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '계좌' && (cf as any).payDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                              const acctOut = cfs.filter(cf => (cf.type === 'withdrawal' || cf.type === 'expense') && ((cf as any).payMethod || (cf as any).method?.split(':')[0]) === '계좌' && ((cf as any).payDetail || (cf as any).method?.split(':')[1] || '') === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                               const acctOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '계좌' && (cf as any).creditDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                               const totalIn = acctIn + acctInT
                               const totalOut = acctOut + acctOutT
@@ -11445,7 +11471,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                               const cfs: CashFlow[] = getItem('acct_cashflows', [])
                               const cashIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                               const cashOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '현금' && (cf as any).creditDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                              const cashOutE = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '현금' && (cf as any).payDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                              const cashOutE = cfs.filter(cf => (cf.type === 'withdrawal' || cf.type === 'expense') && ((cf as any).payMethod || (cf as any).method) === '현금' && ((cf as any).payDetail || '') === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
                               const balance = cashIn - cashOutT - cashOutE
                               const isOver = item.cashLimit && balance > item.cashLimit
                               return (
@@ -11821,7 +11847,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                             {(() => {
                               const qty = item.voucherQty || 0
                               const cfs: CashFlow[] = getItem('acct_cashflows', [])
-                              const usedQty = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '상품권' && (cf as any).payDetail === item.name).length
+                              const usedQty = cfs.filter(cf => (cf.type === 'withdrawal' || cf.type === 'expense') && ((cf as any).payMethod || (cf as any).method) === '상품권' && ((cf as any).payDetail || '') === item.name).length
                               const remain = qty - usedQty
                               const totalValue = remain * (item.voucherAmount || 0)
                               return (
