@@ -10395,11 +10395,12 @@ function AcctCashflowList({ year }: { year: number }) {
       {/* ── 필터 바 ── */}
       <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-2.5 sm:p-3 space-y-2">
         {/* 기간 행 */}
-        <div className="hidden sm:grid sm:grid-cols-[50px_1fr_1fr_auto] items-center gap-2">
+        <div className="hidden sm:grid sm:grid-cols-[50px_1fr_auto_1fr_auto] items-center gap-2">
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--text-muted)]">
             <Calendar size={13} /> 기간
           </div>
           <DatePicker value={dateFrom} onChange={v => setDateFrom(v)} />
+          <span className="text-[11px] text-[var(--text-muted)] text-center">~</span>
           <DatePicker value={dateTo} onChange={v => setDateTo(v)} />
           <div className="flex gap-1 items-center">
             {[{label:'오늘',key:'today'},{label:'이번주',key:'week'},{label:'이번달',key:'month'},{label:'분기',key:'quarter'},{label:'연간',key:'year'}].map(p => (
@@ -10408,7 +10409,7 @@ function AcctCashflowList({ year }: { year: number }) {
           </div>
         </div>
         {/* 필터 행 */}
-        <div className="hidden sm:grid sm:grid-cols-[50px_1fr_1fr_auto] items-center gap-2">
+        <div className="hidden sm:grid sm:grid-cols-[50px_1fr_auto_1fr_auto] items-center gap-2">
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--text-muted)]">
             <Filter size={13} /> 필터
           </div>
@@ -10418,6 +10419,7 @@ function AcctCashflowList({ year }: { year: number }) {
               <option key={c.id} value={String(c.id)}>{c.name}</option>
             ))}
           </select>
+          <span className="text-transparent text-center text-[11px] select-none">~</span>
           <select value={filterManager} onChange={e => setFilterManager(e.target.value)} className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)]">
             <option value="">전체 담당자</option>
             {managers.map(m => <option key={m} value={m}>{m}</option>)}
