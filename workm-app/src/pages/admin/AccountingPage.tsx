@@ -3594,6 +3594,12 @@ export function AcctApproval({ year }: { year: number }) {
     const acctList: { code: string; name: string }[] = getItem('acct_accounts', [])
     const result: { catId: string; catName: string; itemId: string; itemName: string; subId?: string; subName?: string; detailId?: string; detailName?: string; accountCode?: string; accountName?: string; aliases: string; path: string; amount: number; spent: number; remaining: number }[] = []
     budgetCats.forEach(cat => {
+      // 승인권자의 해당 예산건만 필터링
+      const catAny = cat as any
+      const isMyBudget = (catAny.approvers && catAny.approvers.includes(currentUserName)) ||
+        catAny.approver === currentUserName ||
+        (catAny.users && catAny.users.includes(currentUserName))
+      if (!isMyBudget) return
       const catItems = budgetItems.filter(b => String(b.catId) === String(cat.id))
       // 고유 itemName별 그룹
       const itemGroups = new Map<string, BudgetItem[]>()
@@ -3660,7 +3666,7 @@ export function AcctApproval({ year }: { year: number }) {
       })
     })
     return result
-  }, [budgetCats, budgetItems, approveBudgetDefs, refresh])
+  }, [budgetCats, budgetItems, approveBudgetDefs, refresh, currentUserName])
 
   // 통합 검색 필터 결과
   const budgetSearchResults = useMemo(() => {
