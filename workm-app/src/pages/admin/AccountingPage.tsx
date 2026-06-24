@@ -6104,8 +6104,6 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                     const label = `📄 ${p.name} - ${typeLabel} ${note.noteNumber || ''} ${amt}`.trim()
                     payOpts.push({ value: `어음:${p.name}:${note.id}`, label, group: '어음' })
                   })
-                } else {
-                  payOpts.push({ value: p.name, label: `📄 ${p.name}`, group: '어음' })
                 }
               })
               payItems.filter(p => p.category === '상품권').forEach(p => payOpts.push({ value: p.name, label: `🎟️ ${p.name}`, group: '상품권' }))
@@ -6753,8 +6751,6 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                           const label = `📄 ${p.name} - ${typeLabel} ${note.noteNumber || ''} ${amt}`.trim()
                           payOptions.push({ value: `어음:${p.name}:${note.id}`, label, group: '어음' })
                         })
-                      } else {
-                        payOptions.push({ value: p.name, label: `📄 ${p.name}`, group: '어음' })
                       }
                     })
                     filteredPM.filter(p => p.category === '상품권').forEach(p => payOptions.push({ value: p.name, label: `🎟️ ${p.name}`, group: '상품권' }))
