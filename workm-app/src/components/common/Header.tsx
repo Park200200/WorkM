@@ -127,8 +127,8 @@ export function Header() {
             }</span>
           </div>
 
-          {/* 회계년도 + 예산구분 (품의하기 탭에서만 숨김) */}
-          {activeTab !== 'approval' && (() => {
+          {/* 회계년도 + 예산구분 */}
+          {(() => {
             // 해당 연도 전체 카테고리
             const allCatsForYear = budgetCats.filter((c: any) => {
               const catYear = c.year || (c.periodFrom ? parseInt(c.periodFrom.substring(0, 4)) : currentYear)
