@@ -6568,16 +6568,14 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                 const bal = calcCashBal(p)
                 payOpts.push({ value: p.name, label: `현금 ${p.name} [잔액 ${bal.toLocaleString()}원]`, group: '현금' })
               })
-              // 어음: 발행어음만 (수신어음은 출금 불가)
-              payItems.filter(p => p.category === '어음').forEach(p => {
-                if (p.notes && p.notes.length > 0) {
-                  p.notes.forEach((note: any) => {
-                    const typeLabel = p.noteType === '발행' ? '발행' : '수신'
-                    const amt = note.amount ? Number(note.amount).toLocaleString() + '원' : ''
-                    const label = `${p.name} - ${typeLabel} ${note.noteNumber || ''} ${amt}`.trim()
-                    payOpts.push({ value: `어음:${p.name}:${note.id}`, label, group: '어음' })
-                  })
-                }
+              // 어음: notes(실제 어음 리스트)가 있는 항목만 표시
+              payItems.filter(p => p.category === '어음' && p.notes && p.notes.length > 0).forEach(p => {
+                p.notes.forEach((note: any) => {
+                  const typeLabel = p.noteType === '발행' ? '발행' : '수신'
+                  const amt = note.amount ? Number(note.amount).toLocaleString() + '원' : ''
+                  const label = `${p.name} - ${typeLabel} ${note.noteNumber || ''} ${amt}`.trim()
+                  payOpts.push({ value: `어음:${p.name}:${note.id}`, label, group: '어음' })
+                })
               })
               payItems.filter(p => p.category === '상품권').forEach(p => {
                 const remain = calcVoucherRemain(p)
@@ -7292,16 +7290,14 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                       bankGroups2.push({ bank: p, cards: p.cards || [] })
                     })
                     filteredPM.filter(p => p.category === '현금').forEach(p => payOptions.push({ value: p.name, label: `💵 ${p.name}`, group: '현금' }))
-                    // 어음: 개별 발행 노트 리스트
-                    filteredPM.filter(p => p.category === '어음').forEach(p => {
-                      if (p.notes && p.notes.length > 0) {
-                        p.notes.forEach((note: any) => {
-                          const typeLabel = p.noteType === '발행' ? '발행' : '수신'
-                          const amt = note.amount ? Number(note.amount).toLocaleString() + '원' : ''
-                          const label = `📄 ${p.name} - ${typeLabel} ${note.noteNumber || ''} ${amt}`.trim()
-                          payOptions.push({ value: `어음:${p.name}:${note.id}`, label, group: '어음' })
-                        })
-                      }
+                    // 어음: notes(실제 어음 리스트)가 있는 항목만 표시
+                    filteredPM.filter(p => p.category === '어음' && p.notes && p.notes.length > 0).forEach(p => {
+                      p.notes.forEach((note: any) => {
+                        const typeLabel = p.noteType === '발행' ? '발행' : '수신'
+                        const amt = note.amount ? Number(note.amount).toLocaleString() + '원' : ''
+                        const label = `📄 ${p.name} - ${typeLabel} ${note.noteNumber || ''} ${amt}`.trim()
+                        payOptions.push({ value: `어음:${p.name}:${note.id}`, label, group: '어음' })
+                      })
                     })
                     filteredPM.filter(p => p.category === '상품권').forEach(p => payOptions.push({ value: p.name, label: `🎟️ ${p.name}`, group: '상품권' }))
                     return (
