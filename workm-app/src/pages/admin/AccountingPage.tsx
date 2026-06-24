@@ -4534,7 +4534,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const [wdEvidenceEdit, setWdEvidenceEdit] = useState(true)
   const [withdrawalMode, setWithdrawalMode] = useState<'withdrawal' | 'transfer'>('withdrawal')
   const transferAccounts = ['현금', '상품권', '어음', '계좌'] as const
-  const [transferForm, setTransferForm] = useState({ debit: '', debitDetail: '', credit: '', creditDetail: '', amount: '', tradeDate: today, description: '', memo: '' })
+  const [transferForm, setTransferForm] = useState({ debit: '', debitDetail: '', credit: '', creditDetail: '', amount: '', tradeDate: today, description: '', memo: '', reason: '' })
   const transferPayMethods: any[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
   const staffList = useStaffStore(s => s.staff).filter(s => !s.resignedAt)
   const [counterSearch, setCounterSearch] = useState('')
@@ -4839,7 +4839,50 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
         createdBy: currentUserName,
       } as any)
       setItem('acct_cashflows', cfs)
-      setTransferForm({ debit: '', debitDetail: '', credit: '', creditDetail: '', amount: '', tradeDate: today, description: '', memo: '' })
+      // 대체결의서(품의) 자동 생성
+      const approvals = getItem<Approval[]>('acct_approvals', [])
+      const budgetCats: BudgetCat[] = getItem('acct_budget_cats', [])
+      // 승인권자 자동 설정
+      let autoApprover = ''
+      const staffData = getItem<any[]>('ws_users', [])
+      // 예산구분에서 승인권자 찾기
+      for (const cat of budgetCats) {
+        if ((cat as any).approvers?.length > 0) { autoApprover = (cat as any).approvers[0]; break }
+      }
+      if (!autoApprover) {
+        const approverStaff = staffData.find(s => s.approverType === 'approver')
+        if (approverStaff) autoApprover = approverStaff.name
+      }
+      const preApprovalId = uid()
+      approvals.push({
+        id: preApprovalId,
+        status: 'preExpense',
+        isPreExpense: true,
+        selfExpense: true,
+        title: `[대체] ${transferForm.description || (creditLabel + ' → ' + debitLabel)}`,
+        amount: tAmt,
+        date: transferForm.tradeDate,
+        createdAt: new Date().toISOString(),
+        accountCode: '',
+        description: transferForm.reason || `대체전표 - ${creditLabel} → ${debitLabel}`,
+        applicant: currentUserName,
+        approver: autoApprover,
+        budgetItem: '',
+        budgetSubItem: '',
+        budgetCatId: '',
+        budgetCatName: '',
+        transferType: true,
+        debitAccount: transferForm.debit,
+        debitDetail: transferForm.debitDetail,
+        creditAccount: transferForm.credit,
+        creditDetail: transferForm.creditDetail,
+      } as any)
+      setItem('acct_approvals', approvals)
+      // cashflow에 approvalId 연결
+      const allCfs2 = getItem<CashFlow[]>('acct_cashflows', [])
+      const cfIdx2 = allCfs2.findIndex(x => String(x.id) === String(tId))
+      if (cfIdx2 >= 0) { (allCfs2[cfIdx2] as any).approvalId = String(preApprovalId); setItem('acct_cashflows', allCfs2) }
+      setTransferForm({ debit: '', debitDetail: '', credit: '', creditDetail: '', amount: '', tradeDate: today, description: '', memo: '', reason: '' })
       setRefresh(r => r + 1)
       return
     }
@@ -5133,6 +5176,10 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
             <div className="md:col-span-2">
               <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">적요 *</label>
               <input value={transferForm.description} onChange={e => setTransferForm(f => ({ ...f, description: e.target.value }))} placeholder={transferForm.debit && transferForm.credit ? `${transferForm.credit} → ${transferForm.debit} 전환` : '대체 내용 입력'} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">대체사유</label>
+              <textarea value={transferForm.reason} onChange={e => setTransferForm(f => ({ ...f, reason: e.target.value }))} placeholder="대체 사유를 입력하세요" rows={2} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none resize-none" />
             </div>
             <div className="md:col-span-2">
               <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">비고</label>
