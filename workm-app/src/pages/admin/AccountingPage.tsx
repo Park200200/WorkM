@@ -250,19 +250,20 @@ export function initAccountingSeed() {
     localStorage.setItem('_acct_voucher_acct_patch_v1', '1')
   }
 
-  /* ── 선지출 품의가 approved 상태인 경우 toResolve로 자동 마이그레이션 ── */
-  if (!localStorage.getItem('_acct_preexp_resolve_v1')) {
+  /* ── 선지출/대체 품의가 approved/toResolve 상태인 경우 completed로 자동 마이그레이션 ── */
+  if (!localStorage.getItem('_acct_preexp_completed_v2')) {
     const existingApprovals = getItem<any[]>('acct_approvals', [])
     let patchedPre = false
     const updatedApprovals = existingApprovals.map((a: any) => {
-      if (a.status === 'approved' && (a.isPreExpense || (a.title || '').startsWith('[선지출]'))) {
+      if ((a.status === 'approved' || a.status === 'toResolve') && (a.isPreExpense || (a.title || '').startsWith('[선지출]') || (a.title || '').startsWith('[대체]'))) {
         patchedPre = true
-        return { ...a, status: 'toResolve' }
+        return { ...a, status: 'completed', completedAt: a.completedAt || new Date().toISOString() }
       }
       return a
     })
     if (patchedPre) setItem('acct_approvals', updatedApprovals)
     localStorage.setItem('_acct_preexp_resolve_v1', '1')
+    localStorage.setItem('_acct_preexp_completed_v2', '1')
   }
 
   /* ── 시드 버전 변경 시 회계 데이터 초기화 후 재시드 ── */
