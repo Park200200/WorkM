@@ -4534,7 +4534,8 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const [wdEvidenceEdit, setWdEvidenceEdit] = useState(true)
   const [withdrawalMode, setWithdrawalMode] = useState<'withdrawal' | 'transfer'>('withdrawal')
   const transferAccounts = ['현금', '상품권', '어음', '계좌'] as const
-  const [transferForm, setTransferForm] = useState({ debit: '', credit: '', amount: '', tradeDate: today, description: '', memo: '' })
+  const [transferForm, setTransferForm] = useState({ debit: '', debitDetail: '', credit: '', creditDetail: '', amount: '', tradeDate: today, description: '', memo: '' })
+  const transferPayMethods: any[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
   const staffList = useStaffStore(s => s.staff).filter(s => !s.resignedAt)
   const [counterSearch, setCounterSearch] = useState('')
   const [showCounterList, setShowCounterList] = useState(false)
@@ -4821,20 +4822,24 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
         createdAt: new Date().toISOString(),
       })
       setItem('acct_vouchers', vouchers)
+      const debitLabel = transferForm.debitDetail ? `${transferForm.debit}(${transferForm.debitDetail})` : transferForm.debit
+      const creditLabel = transferForm.creditDetail ? `${transferForm.credit}(${transferForm.creditDetail})` : transferForm.credit
       const cfs = getItem<CashFlow[]>('acct_cashflows', [])
       cfs.push({
         id: tId, date: transferForm.tradeDate, type: 'transfer' as any,
         amount: tAmt, description: transferForm.description,
         accountCode: acctMap[transferForm.debit] || '1010',
-        counter: `${transferForm.credit} → ${transferForm.debit}`,
+        counter: `${creditLabel} → ${debitLabel}`,
         writeDate: today,
         debitAccount: transferForm.debit,
+        debitDetail: transferForm.debitDetail,
         creditAccount: transferForm.credit,
+        creditDetail: transferForm.creditDetail,
         memo: transferForm.memo,
         createdBy: currentUserName,
       } as any)
       setItem('acct_cashflows', cfs)
-      setTransferForm({ debit: '', credit: '', amount: '', tradeDate: today, description: '', memo: '' })
+      setTransferForm({ debit: '', debitDetail: '', credit: '', creditDetail: '', amount: '', tradeDate: today, description: '', memo: '' })
       setRefresh(r => r + 1)
       return
     }
@@ -5077,11 +5082,45 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">차변 (받는쪽) *</label>
-              <CustomSelect value={transferForm.debit} onChange={v => setTransferForm(f => ({ ...f, debit: v }))} placeholder="— 선택 —" options={[{ value: '', label: '— 선택 —' }, ...transferAccounts.map(a => ({ value: a, label: a }))]} />
+              <CustomSelect value={transferForm.debit} onChange={v => setTransferForm(f => ({ ...f, debit: v, debitDetail: '' }))} placeholder="— 선택 —" options={[{ value: '', label: '— 선택 —' }, ...transferAccounts.map(a => ({ value: a, label: a }))]} />
+              {transferForm.debit && (() => {
+                const items = transferPayMethods.filter(p => p.category === transferForm.debit)
+                if (items.length === 0) return null
+                return (
+                  <div className="mt-1.5">
+                    <CustomSelect value={transferForm.debitDetail} onChange={v => setTransferForm(f => ({ ...f, debitDetail: v }))} placeholder="— 세부 선택 —"
+                      options={[{ value: '', label: '— 세부 선택 —' }, ...items.map(p => ({
+                        value: p.name,
+                        label: transferForm.debit === '계좌' ? `${p.name} (${p.bankName || ''} ${p.accountNumber || ''})` :
+                               transferForm.debit === '현금' ? `${p.name} (${p.custodian || ''} · ${p.storageLocation || ''})` :
+                               transferForm.debit === '상품권' ? `${p.name} (${p.voucherManager || ''} · ${(p.voucherAmount||0).toLocaleString()}원)` :
+                               transferForm.debit === '어음' ? `${p.name} (${p.noteBank || ''} · ${p.noteManager || ''})` : p.name
+                      }))]}
+                    />
+                  </div>
+                )
+              })()}
             </div>
             <div>
               <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">대변 (보내는쪽) *</label>
-              <CustomSelect value={transferForm.credit} onChange={v => setTransferForm(f => ({ ...f, credit: v }))} placeholder="— 선택 —" options={[{ value: '', label: '— 선택 —' }, ...transferAccounts.filter(a => a !== transferForm.debit).map(a => ({ value: a, label: a }))]} />
+              <CustomSelect value={transferForm.credit} onChange={v => setTransferForm(f => ({ ...f, credit: v, creditDetail: '' }))} placeholder="— 선택 —" options={[{ value: '', label: '— 선택 —' }, ...transferAccounts.filter(a => a !== transferForm.debit).map(a => ({ value: a, label: a }))]} />
+              {transferForm.credit && (() => {
+                const items = transferPayMethods.filter(p => p.category === transferForm.credit)
+                if (items.length === 0) return null
+                return (
+                  <div className="mt-1.5">
+                    <CustomSelect value={transferForm.creditDetail} onChange={v => setTransferForm(f => ({ ...f, creditDetail: v }))} placeholder="— 세부 선택 —"
+                      options={[{ value: '', label: '— 세부 선택 —' }, ...items.map(p => ({
+                        value: p.name,
+                        label: transferForm.credit === '계좌' ? `${p.name} (${p.bankName || ''} ${p.accountNumber || ''})` :
+                               transferForm.credit === '현금' ? `${p.name} (${p.custodian || ''} · ${p.storageLocation || ''})` :
+                               transferForm.credit === '상품권' ? `${p.name} (${p.voucherManager || ''} · ${(p.voucherAmount||0).toLocaleString()}원)` :
+                               transferForm.credit === '어음' ? `${p.name} (${p.noteBank || ''} · ${p.noteManager || ''})` : p.name
+                      }))]}
+                    />
+                  </div>
+                )
+              })()}
             </div>
             <div>
               <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">금액 (원) *</label>
@@ -5102,7 +5141,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           </div>
           {transferForm.debit && transferForm.credit && (
             <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-700 dark:text-amber-400 font-bold">
-              🔄 {transferForm.credit} → {transferForm.debit} 대체전표가 생성됩니다.
+              🔄 {transferForm.creditDetail ? `${transferForm.credit}(${transferForm.creditDetail})` : transferForm.credit} → {transferForm.debitDetail ? `${transferForm.debit}(${transferForm.debitDetail})` : transferForm.debit} 대체전표가 생성됩니다.
             </div>
           )}
           <div className="flex justify-end">
