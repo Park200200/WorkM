@@ -4676,14 +4676,14 @@ export function AcctApproval({ year }: { year: number }) {
       {/* ── 수정 폼 모달 (PrintApprovalForm 위에 표시) ── */}
       {resubmitMode && detailApproval && createPortal(
         <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) { setResubmitMode(false); setApprovePwError('') } }}>
-          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-fadeIn">
+          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-fadeIn max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border-default)]">
               <span className="text-sm font-extrabold text-[var(--text-primary)]">
                 {detailApproval.status === 'preExpense' ? '선지출 품의 수정' : detailApproval.status === 'rejected' ? '반려 품의 수정 (재품의)' : '품의 수정'}
               </span>
               <button onClick={() => { setResubmitMode(false); setApprovePwError('') }} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer"><X size={18} /></button>
             </div>
-            <div className="p-5 space-y-3">
+            <div className="p-5 space-y-3 flex-1 overflow-y-auto">
               <div>
                 <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">품의명</label>
                 <input value={resubmitForm.title} onChange={e => setResubmitForm(f => ({ ...f, title: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-500" placeholder="품의명을 입력해주세요" />
@@ -4741,21 +4741,15 @@ export function AcctApproval({ year }: { year: number }) {
                         })()}
                       </div>
                     </div>
-                    {/* 증빙 첨부 */}
-                    <div>
-                      <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">📎 증빙 첨부 (영수증/증빙)</label>
-                      <div className="space-y-1.5">
-                        {((resubmitForm as any).attachments || []).map((att: any, i: number) => (
-                          <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[var(--bg-muted)] border border-[var(--border-default)]">
-                            <span className="text-[11px] text-[var(--text-primary)] font-bold truncate flex-1">{att.name || `파일 ${i + 1}`}</span>
-                            <button type="button" onClick={() => {
-                              const updated = [...((resubmitForm as any).attachments || [])]; updated.splice(i, 1)
-                              setResubmitForm(f => ({ ...f, attachments: updated } as any))
-                            }} className="text-[#ef4444] text-[12px] hover:text-[#dc2626] cursor-pointer shrink-0">✕</button>
-                          </div>
-                        ))}
-                        <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-primary-400 bg-primary-50/30 text-primary-600 text-[11px] font-bold cursor-pointer hover:bg-primary-50/50 transition-colors">
-                          <span>+ 증빙 파일 추가</span>
+                    {/* 증빙 첨부 - 출금전표와 동일한 UI */}
+                    <div className="pt-1">
+                      <div className="flex items-center gap-2">
+                        <label className="text-[10.5px] font-bold text-[var(--text-muted)]">📎 첨부파일 (영수증/증빙)</label>
+                        {((resubmitForm as any).attachments || []).length > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-bold">{((resubmitForm as any).attachments || []).length}건</span>}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-[var(--border-default)] text-[11px] font-bold text-[var(--text-muted)] hover:border-primary-400 hover:text-primary-500 cursor-pointer transition-colors">
+                          📎 {((resubmitForm as any).attachments || []).length > 0 ? '증빙 편집' : '증빙 첨부'}
                           <input type="file" accept="image/*,.pdf" multiple className="hidden" onChange={e => {
                             const files = Array.from(e.target.files || [])
                             files.forEach(file => {
@@ -4770,6 +4764,19 @@ export function AcctApproval({ year }: { year: number }) {
                           }} />
                         </label>
                       </div>
+                      {((resubmitForm as any).attachments || []).length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {((resubmitForm as any).attachments || []).map((att: any, i: number) => (
+                            <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[var(--bg-muted)] border border-[var(--border-default)]">
+                              <span className="text-[11px] text-[var(--text-primary)] font-bold truncate flex-1">📄 {att.name || `파일 ${i + 1}`}</span>
+                              <button type="button" onClick={() => {
+                                const updated = [...((resubmitForm as any).attachments || [])]; updated.splice(i, 1)
+                                setResubmitForm(f => ({ ...f, attachments: updated } as any))
+                              }} className="text-[#ef4444] text-[12px] hover:text-[#dc2626] cursor-pointer shrink-0">✕</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     </>
                   )
