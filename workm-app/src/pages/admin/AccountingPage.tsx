@@ -4735,7 +4735,14 @@ export function AcctApproval({ year }: { year: number }) {
                   ) : (() => {
                     const selCatId = (form as any).budgetCatId || ''
                     const selCat = selCatId ? budgetCats.find(c => String(c.id) === selCatId) as any : null
-                    const catApprovers: string[] = selCat?.approvers || []
+                    // approvers 배열 + approver 필드 + 기본 승인권자를 모두 합침
+                    const defaultApprover = staffList.find(s => (s as any).approverType === 'approver')?.name || ''
+                    const rawApprovers = [
+                      ...(selCat?.approvers || []),
+                      selCat?.approver || '',
+                      defaultApprover,
+                    ].filter(Boolean)
+                    const catApprovers: string[] = [...new Set(rawApprovers)]
                     if (catApprovers.length > 1) {
                       // 여러 승인권자: 드롭다운 선택
                       return (
