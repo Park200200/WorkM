@@ -6101,8 +6101,8 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                     {type !== 'income' && (() => {
                       // 연결된 품의의 실제 진행상태 자동 표시
                       const sMap: Record<string, { label: string; color: string; bg: string }> = {
-                        preExpense: { label: '선지출', color: '#f97316', bg: 'rgba(249,115,22,.12)' },
-                        pending: { label: '후품의', color: '#3b82f6', bg: 'rgba(59,130,246,.12)' },
+                        preExpense: { label: (c as any).type === 'transfer' ? '전대체' : type === 'income' ? '전입금' : '전지출', color: '#f97316', bg: 'rgba(249,115,22,.12)' },
+                        pending: { label: '품의중', color: '#3b82f6', bg: 'rgba(59,130,246,.12)' },
                         approved: { label: '승인', color: '#22c55e', bg: 'rgba(34,197,94,.12)' },
                         rejected: { label: '반려', color: '#ef4444', bg: 'rgba(239,68,68,.12)' },
                         expensed: { label: '지출', color: '#8b5cf6', bg: 'rgba(139,92,246,.12)' },
@@ -6130,7 +6130,6 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                           if (ci >= 0) { (allCfs[ci] as any).approvalId = aId; setItem('acct_cashflows', allCfs) }
                         }
                       }
-                      let isLinkedPreExp = false
                       if (aId) {
                         const linked = allAp.find((a: any) => String(a.id) === String(aId))
                         if (linked) {
@@ -6138,13 +6137,12 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                           statusLabel = si.label
                           statusColor = si.color
                           statusBg = si.bg
-                          isLinkedPreExp = !!(linked.isPreExpense) || linked.status === 'preExpense' || (linked.title || '').startsWith('[선지출]')
                         }
                       }
                       return (
                         <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: statusBg, color: statusColor }}>
-                            {isLinkedPreExp && <span style={{ color: '#ef4444', marginRight: '2px' }}>후</span>}{statusLabel}
+                            {statusLabel}
                           </span>
                         </td>
                       )
