@@ -5098,7 +5098,11 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const [wdEvidenceOpen, setWdEvidenceOpen] = useState(false)
   const [wdEvidenceEdit, setWdEvidenceEdit] = useState(true)
   const [withdrawalMode, setWithdrawalMode] = useState<'withdrawal' | 'transfer'>('withdrawal')
-  const transferAccounts = ['현금', '상품권', '어음', '계좌'] as const
+  const allTransferCategories = ['현금', '상품권', '어음', '계좌'] as const
+  const transferAccounts = (() => {
+    const pm: any[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
+    return allTransferCategories.filter(cat => pm.some(p => p.category === cat))
+  })()
   const [transferForm, setTransferForm] = useState({ debit: '', debitDetail: '', credit: '', creditDetail: '', amount: '', tradeDate: today, description: '', memo: '', reason: '' })
   const transferPayMethods: any[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
   const [transferAttachments, setTransferAttachments] = useState<{name:string; data:string; size:number; title:string; printWidth:number; row?:number}[]>([])
