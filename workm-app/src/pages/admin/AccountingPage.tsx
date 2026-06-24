@@ -5445,7 +5445,8 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
               </div>
               <input value={form.amount} onChange={e => handleAmtInput(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm font-bold text-right focus:border-primary-500 outline-none" style={{ color: typeColors[type] }} />
             </div>
-          </>}
+          </>
+          )}
           {/* 예산항목/세목 (출금전표에서만) - 통합 검색 + 기존 드롭다운 */}
           {type === 'withdrawal' && (
           <>
