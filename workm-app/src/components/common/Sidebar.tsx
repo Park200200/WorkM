@@ -173,13 +173,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             const approvals = JSON.parse(localStorage.getItem('acct_approvals') || '[]') as any[]
             const isApproverInApprovals = approvals.some((a: any) => a.approver === userName)
             const hasBudgetAccess = isAdmin || isBudgetHandler || isApproverInApprovals
-            // 예산관련자만 접근 가능한 탭
-            const restrictedTabs = ['overview', 'base_budget', 'expense', 'income', 'withdrawal', 'payment', 'reports', 'vendors', 'budgetTree', 'accounts', 'hq_vendor', 'payMethods', 'acct_mgmt']
+            // 품의하기만 허용, 나머지 모든 탭 제한 (화이트리스트 방식)
+            const allowedTabs = ['approval']
 
             return acctNav.map((entry) => {
               const Icon = entry.icon
               const isActive = currentTab === entry.tab
-              const isRestricted = !hasBudgetAccess && restrictedTabs.includes(entry.tab)
+              const isRestricted = !hasBudgetAccess && !allowedTabs.includes(entry.tab)
 
               return (
                 <button
