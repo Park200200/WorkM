@@ -354,14 +354,14 @@ export function DashboardPage() {
         const completed = approvals.filter(a => ['completed', 'vouchered'].includes(a.status) && (a.applicant === userName || a.approver === userName || isInMyCat(a))).length
         const total = pendingApprove + rejected + preExpense + toResolve + toExpense + toSettle
         const allItems = [
-          { label: '승인할', value: pendingApprove, icon: Stamp, color: '#f59e0b', bg: 'rgba(245,158,11,.12)', tab: 'approval', group: 'process', subtab: 'ap_pending' },
-          { label: '반려된', value: rejected, icon: AlertCircle, color: '#ef4444', bg: 'rgba(239,68,68,.12)', tab: 'approval', group: 'inbox', subtab: 'rejected' },
+          ...(isApprover ? [{ label: '승인할', value: pendingApprove, icon: Stamp, color: '#f59e0b', bg: 'rgba(245,158,11,.12)', tab: 'approval', group: 'process', subtab: 'ap_pending' }] : []),
+          ...(rejected > 0 ? [{ label: '반려된', value: rejected, icon: AlertCircle, color: '#ef4444', bg: 'rgba(239,68,68,.12)', tab: 'approval', group: 'inbox', subtab: 'rejected' }] : []),
           { label: '품의할', value: preExpense, icon: FileEdit, color: '#f97316', bg: 'rgba(249,115,22,.12)', tab: 'approval', group: 'inbox', subtab: 'preExpense' },
           { label: '결의할', value: toResolve, icon: FileCheck, color: '#8b5cf6', bg: 'rgba(139,92,246,.12)', tab: 'approval', group: 'inbox', subtab: 'toResolve' },
-          { label: '지출할', value: toExpense, icon: CreditCard, color: '#3b82f6', bg: 'rgba(59,130,246,.12)', tab: 'expense', group: '', subtab: '' },
-          { label: '정산할', value: toSettle, icon: Receipt, color: '#06b6d4', bg: 'rgba(6,182,212,.12)', tab: 'approval', group: 'inbox', subtab: 'confirming' },
+          ...(isExpenseManager ? [{ label: '지출할', value: toExpense, icon: CreditCard, color: '#3b82f6', bg: 'rgba(59,130,246,.12)', tab: 'expense', group: '', subtab: '' }] : []),
+          ...(isExpenseManager ? [{ label: '정산할', value: toSettle, icon: Receipt, color: '#06b6d4', bg: 'rgba(6,182,212,.12)', tab: 'approval', group: 'inbox', subtab: 'confirming' }] : []),
         ]
-        const items = allItems.filter(i => i.value > 0)
+        const items = allItems
         return (
           <div className="mb-4">
             <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4">
