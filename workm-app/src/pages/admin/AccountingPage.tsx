@@ -10788,6 +10788,92 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                                           </div>
                                         )}
 
+                                        {/* 수신어음: 스캔본 첨부 */}
+                                        {item.noteType === '수신' && (
+                                          <div className="mt-2 pt-2 border-t border-dashed border-amber-200 dark:border-amber-800/40">
+                                            <div className="flex items-center justify-between mb-1.5">
+                                              <div className="flex items-center gap-1.5">
+                                                <span className="text-[10px] font-extrabold text-teal-600">📎 어음 스캔본</span>
+                                                {(note.attachments || []).length > 0 && (
+                                                  <span className="text-[9px] font-bold bg-teal-50 dark:bg-teal-900/20 text-teal-500 px-1.5 py-0.5 rounded">{(note.attachments || []).length}건</span>
+                                                )}
+                                              </div>
+                                              <label className="text-[10px] font-bold text-teal-500 hover:text-teal-700 cursor-pointer flex items-center gap-0.5 px-2 py-0.5 rounded-md hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors">
+                                                <Plus size={10} /> 파일 첨부
+                                                <input type="file" accept="image/*,.pdf" multiple className="hidden" onChange={e => {
+                                                  const files = Array.from(e.target.files || [])
+                                                  if (files.length === 0) return
+                                                  const existing = note.attachments || []
+                                                  let processed = 0
+                                                  const newAttachments: any[] = []
+                                                  files.forEach(file => {
+                                                    const reader = new FileReader()
+                                                    reader.onload = () => {
+                                                      newAttachments.push({
+                                                        id: Date.now() + processed,
+                                                        name: file.name,
+                                                        size: file.size,
+                                                        type: file.type,
+                                                        data: reader.result as string,
+                                                        uploadDate: new Date().toISOString().slice(0, 10)
+                                                      })
+                                                      processed++
+                                                      if (processed === files.length) {
+                                                        updateNote(item.id, note.id, 'attachments', [...existing, ...newAttachments])
+                                                      }
+                                                    }
+                                                    reader.readAsDataURL(file)
+                                                  })
+                                                  e.target.value = ''
+                                                }} />
+                                              </label>
+                                            </div>
+                                            {(note.attachments || []).length === 0 ? (
+                                              <div className="text-[10px] text-[var(--text-muted)] text-center py-2 rounded-md border border-dashed border-[var(--border-default)]">첨부된 스캔본이 없습니다</div>
+                                            ) : (
+                                              <div className="grid grid-cols-3 gap-2">
+                                                {(note.attachments || []).map((att: any) => (
+                                                  <div key={att.id} className="relative group rounded-lg border border-[var(--border-default)] overflow-hidden bg-white dark:bg-gray-900">
+                                                    {att.type?.startsWith('image/') ? (
+                                                      <img
+                                                        src={att.data}
+                                                        alt={att.name}
+                                                        className="w-full h-20 object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                                        onClick={() => window.open(att.data, '_blank')}
+                                                      />
+                                                    ) : (
+                                                      <div
+                                                        className="w-full h-20 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 transition-colors"
+                                                        onClick={() => {
+                                                          const link = document.createElement('a')
+                                                          link.href = att.data
+                                                          link.download = att.name
+                                                          link.click()
+                                                        }}
+                                                      >
+                                                        <span className="text-lg">📄</span>
+                                                        <span className="text-[9px] text-[var(--text-muted)] mt-0.5">PDF</span>
+                                                      </div>
+                                                    )}
+                                                    <div className="px-1.5 py-1 flex items-center justify-between">
+                                                      <span className="text-[9px] text-[var(--text-secondary)] truncate flex-1" title={att.name}>{att.name}</span>
+                                                      <button
+                                                        onClick={() => {
+                                                          const updated = (note.attachments || []).filter((a: any) => a.id !== att.id)
+                                                          updateNote(item.id, note.id, 'attachments', updated)
+                                                        }}
+                                                        className="text-red-400 hover:text-red-600 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1"
+                                                      >
+                                                        <Trash2 size={10} />
+                                                      </button>
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+
                                       </div>
                                     )
                                   })}
