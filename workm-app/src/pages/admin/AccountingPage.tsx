@@ -10946,9 +10946,22 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                         </>
                       )
                     })()}
-                    {activeCategory === '상품권' && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-pink-50 dark:bg-pink-900/20 text-pink-600 whitespace-nowrap">1-01-08 상품권</span>
-                    )}
+                    {activeCategory === '상품권' && (() => {
+                      const qty = item.voucherQty || 0
+                      const cfs: CashFlow[] = getItem('acct_cashflows', [])
+                      const usedQty = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '상품권' && (cf as any).payDetail === item.name).length
+                      const remain = qty - usedQty
+                      return (
+                        <>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-pink-50 dark:bg-pink-900/20 text-pink-600 whitespace-nowrap">1-01-08 상품권</span>
+                          {qty > 0 && (
+                            <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap ${remain <= 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-600' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600'}`}>
+                              🎫 {remain}매 / {qty}매
+                            </span>
+                          )}
+                        </>
+                      )
+                    })()}
                     {activeCategory === '계좌' && item.bankName && !isOpen && (
                       <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[200px]">{item.bankName} {item.accountNumber ? `• ${item.accountNumber}` : ''}</span>
                     )}
@@ -10971,33 +10984,66 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                         {direction === 'income' ? (
                           <>
                             <label className="text-[11px] font-bold text-violet-600 mb-2 block">📋 계정과목 연결 (입금전표 자동 설정)</label>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="text-[10px] font-bold text-blue-500 mb-1 block">💰 차변 (입금처 - 자산계정)</label>
-                                <select
-                                  value={(item as any).accountCode || ''}
-                                  onChange={e => updateField(item.id, 'accountCode', e.target.value)}
-                                  className={DETAIL_INPUT}
+                            <div className="mb-3">
+                              <label className="text-[10px] font-bold text-blue-500 mb-1 block">💰 차변 (입금처 - 자산계정) — 고정</label>
+                              <select
+                                value={(item as any).accountCode || ''}
+                                onChange={e => updateField(item.id, 'accountCode', e.target.value)}
+                                className={DETAIL_INPUT}
+                              >
+                                <option value="">— 입금계정 선택 —</option>
+                                {allAccounts.filter(a => a.active !== false && (a as any).incomeEnabled === true).map(a => (
+                                  <option key={a.code} value={`${a.code} ${a.name}`}>{a.code} {a.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <label className="text-[10px] font-bold text-emerald-500">📈 대변 (수익계정) — 복수 등록 가능</label>
+                                <button
+                                  onClick={() => {
+                                    const codes: string[] = (item as any).revenueAccountCodes || ((item as any).revenueAccountCode ? [(item as any).revenueAccountCode] : [])
+                                    codes.push('')
+                                    saveAll(allItems.map(i => i.id === item.id ? { ...i, revenueAccountCodes: codes } : i))
+                                  }}
+                                  className="text-[10px] font-bold text-emerald-500 hover:text-emerald-700 cursor-pointer flex items-center gap-0.5 px-1.5 py-0.5 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
                                 >
-                                  <option value="">— 입금계정 선택 —</option>
-                                  {allAccounts.filter(a => a.active !== false && (a as any).incomeEnabled === true).map(a => (
-                                    <option key={a.code} value={`${a.code} ${a.name}`}>{a.code} {a.name}</option>
-                                  ))}
-                                </select>
+                                  <Plus size={10} /> 추가
+                                </button>
                               </div>
-                              <div>
-                                <label className="text-[10px] font-bold text-emerald-500 mb-1 block">📈 대변 (수익계정)</label>
-                                <select
-                                  value={(item as any).revenueAccountCode || ''}
-                                  onChange={e => updateField(item.id, 'revenueAccountCode', e.target.value)}
-                                  className={DETAIL_INPUT}
-                                >
-                                  <option value="">— 수익계정 선택 —</option>
-                                  {allAccounts.filter(a => a.active !== false && a.type === 'revenue').map(a => (
-                                    <option key={a.code} value={`${a.code} ${a.name}`}>{a.code} {a.name}</option>
-                                  ))}
-                                </select>
-                              </div>
+                              {(() => {
+                                const codes: string[] = (item as any).revenueAccountCodes || ((item as any).revenueAccountCode ? [(item as any).revenueAccountCode] : [''])
+                                if (codes.length === 0) codes.push('')
+                                return codes.map((code: string, ci: number) => (
+                                  <div key={ci} className="flex items-center gap-1.5 mb-1.5">
+                                    <select
+                                      value={code}
+                                      onChange={e => {
+                                        const newCodes = [...codes]
+                                        newCodes[ci] = e.target.value
+                                        saveAll(allItems.map(i => i.id === item.id ? { ...i, revenueAccountCodes: newCodes } : i))
+                                      }}
+                                      className={DETAIL_INPUT + ' flex-1'}
+                                    >
+                                      <option value="">— 수익계정 선택 —</option>
+                                      {allAccounts.filter(a => a.active !== false && a.type === 'revenue').map(a => (
+                                        <option key={a.code} value={`${a.code} ${a.name}`}>{a.code} {a.name}</option>
+                                      ))}
+                                    </select>
+                                    {codes.length > 1 && (
+                                      <button
+                                        onClick={() => {
+                                          const newCodes = codes.filter((_, idx) => idx !== ci)
+                                          saveAll(allItems.map(i => i.id === item.id ? { ...i, revenueAccountCodes: newCodes } : i))
+                                        }}
+                                        className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-400 hover:text-red-600 cursor-pointer"
+                                      >
+                                        <Trash2 size={11} />
+                                      </button>
+                                    )}
+                                  </div>
+                                ))
+                              })()}
                             </div>
                           </>
                         ) : (
@@ -11422,8 +11468,12 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                       {activeCategory === '상품권' && (
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className={DETAIL_FIELD_LABEL}>금액 *</label>
+                            <label className={DETAIL_FIELD_LABEL}>액면가 *</label>
                             <input value={item.voucherAmount ? item.voucherAmount.toLocaleString() : ''} onChange={e => { const num = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0; saveAll(allItems.map(i => i.id === item.id ? { ...i, voucherAmount: num } : i)) }} placeholder="50,000" className={DETAIL_INPUT} />
+                          </div>
+                          <div>
+                            <label className={DETAIL_FIELD_LABEL}>보유수량</label>
+                            <input value={item.voucherQty || ''} onChange={e => { const num = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0; saveAll(allItems.map(i => i.id === item.id ? { ...i, voucherQty: num } : i)) }} placeholder="10" className={DETAIL_INPUT} />
                           </div>
                           <div>
                             <label className={DETAIL_FIELD_LABEL}>담당자 *</label>
@@ -11432,6 +11482,22 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                               {staffList.map((s: any) => (<option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}{s.dept ? ` - ${s.dept}` : ''}</option>))}
                             </select>
                           </div>
+                          <div>
+                            <label className={DETAIL_FIELD_LABEL}>🎫 잔여수량</label>
+                            {(() => {
+                              const qty = item.voucherQty || 0
+                              const cfs: CashFlow[] = getItem('acct_cashflows', [])
+                              const usedQty = cfs.filter(cf => cf.type === 'withdrawal' && (cf as any).payMethod === '상품권' && (cf as any).payDetail === item.name).length
+                              const remain = qty - usedQty
+                              const totalValue = remain * (item.voucherAmount || 0)
+                              return (
+                                <div className={`w-full px-3 py-2.5 rounded-lg border text-sm font-extrabold text-right ${remain <= 0 ? 'border-red-300 bg-red-50 dark:bg-red-900/10 text-red-600' : remain <= 2 ? 'border-amber-300 bg-amber-50 dark:bg-amber-900/10 text-amber-600' : 'border-emerald-300 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600'}`}>
+                                  {remain}매 ({totalValue.toLocaleString('ko-KR')}원)
+                                </div>
+                              )
+                            })()}
+                          </div>
+                          <div><label className={DETAIL_FIELD_LABEL}>보관장소</label><input value={item.voucherStorage || ''} onChange={e => updateField(item.id, 'voucherStorage', e.target.value)} placeholder="금고, 사무실 등" className={DETAIL_INPUT} /></div>
                           <div><label className={DETAIL_FIELD_LABEL}>메모</label><input value={item.memo || ''} onChange={e => updateField(item.id, 'memo', e.target.value)} placeholder="참고사항" className={DETAIL_INPUT} /></div>
                         </div>
                       )}
