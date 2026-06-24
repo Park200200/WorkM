@@ -10558,6 +10558,30 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
 
   const dirLabel = direction === 'expense' ? '지출수단' : '입금계정'
 
+  if (!catId || catId === 'all') {
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-extrabold text-[var(--text-primary)] flex items-center gap-2">
+              💳 수단등록
+            </h2>
+            <p className="text-[11px] text-[var(--text-muted)] mt-0.5">예산구분별 지출수단과 입금계정을 통합 관리합니다</p>
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+            <span className="text-3xl">⚠️</span>
+          </div>
+          <h3 className="text-lg font-extrabold text-red-500">예산을 먼저 선택해주세요</h3>
+          <p className="text-sm text-[var(--text-muted)] text-center">
+            상단 예산 탭에서 관리할 예산을 선택한 후<br/>수단등록을 이용할 수 있습니다.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-5">
       {/* 헤더 */}
