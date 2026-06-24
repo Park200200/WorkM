@@ -5717,11 +5717,16 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
             {(() => {
               // 지출수단 관리에서 등록된 수단만 사용 (예산구분별 필터)
               const catIdVal = selectedBudgetCat
+              if (!catIdVal) {
+                return (
+                  <select disabled className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-[12px] text-[var(--text-muted)] cursor-not-allowed outline-none">
+                    <option value="">— 예산을 먼저 선택하세요 —</option>
+                  </select>
+                )
+              }
               const payOpts: {value:string; label:string; group:string}[] = []
               const allPayItems: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
-              const payItemsRaw = catIdVal
-                ? allPayItems.filter(p => String(p.budgetCatId) === String(catIdVal))
-                : allPayItems
+              const payItemsRaw = allPayItems.filter(p => String(p.budgetCatId) === String(catIdVal))
               // 같은 이름+카테고리 중복 제거
               const seen = new Set<string>()
               const payItems = payItemsRaw.filter(p => {
