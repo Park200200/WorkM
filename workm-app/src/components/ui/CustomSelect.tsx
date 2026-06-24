@@ -92,7 +92,7 @@ export function CustomSelect({
         )}
         style={{ borderRadius: 'var(--radius-sm)' }}
       >
-        <span className={cn('truncate', !value && 'text-[var(--text-muted)]')} style={!value && placeholderStyle ? placeholderStyle : undefined}>
+        <span className={cn('truncate', !value && !placeholderStyle && 'text-[var(--text-muted)]')} style={!value && placeholderStyle ? placeholderStyle : undefined}>
           {selectedLabel}
         </span>
         <ChevronDown
