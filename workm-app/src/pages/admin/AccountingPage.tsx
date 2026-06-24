@@ -5622,7 +5622,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
         })()}
         <div className="flex justify-end">
           <button onClick={saveEntry} className={`flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-white text-sm font-bold cursor-pointer shadow-md bg-gradient-to-r ${typeGrads[type]}`}>
-            <Save size={14} /> {type === 'income' ? '입금' : '지출'} 등록
+            <Save size={14} /> {type === 'income' ? '입금 등록' : (type === 'withdrawal' && (!form.manager || form.manager === currentUserName) ? '결의품의' : '지출 등록')}
           </button>
         </div>
       </div>
