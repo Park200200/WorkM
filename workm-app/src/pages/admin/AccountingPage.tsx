@@ -5099,12 +5099,14 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
   const [wdEvidenceEdit, setWdEvidenceEdit] = useState(true)
   const [withdrawalMode, setWithdrawalMode] = useState<'withdrawal' | 'transfer'>('withdrawal')
   const allTransferCategories = ['현금', '상품권', '어음', '계좌'] as const
+  const allPayMethodsRaw: any[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
+  const transferPayMethods: any[] = selectedBudgetCat
+    ? allPayMethodsRaw.filter(p => String(p.budgetCatId || '') === String(selectedBudgetCat))
+    : allPayMethodsRaw
   const transferAccounts = (() => {
-    const pm: any[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
-    return allTransferCategories.filter(cat => pm.some(p => p.category === cat))
+    return allTransferCategories.filter(cat => transferPayMethods.some(p => p.category === cat))
   })()
   const [transferForm, setTransferForm] = useState({ debit: '', debitDetail: '', credit: '', creditDetail: '', amount: '', tradeDate: today, description: '', memo: '', reason: '' })
-  const transferPayMethods: any[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
   const [transferAttachments, setTransferAttachments] = useState<{name:string; data:string; size:number; title:string; printWidth:number; row?:number}[]>([])
   const [transferEvidenceOpen, setTransferEvidenceOpen] = useState(false)
   const [transferEvidenceEdit, setTransferEvidenceEdit] = useState(true)
