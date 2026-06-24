@@ -4813,7 +4813,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
       const vouchers = getItem<Voucher[]>('acct_vouchers', [])
       vouchers.push({
         id: vId, date: transferForm.tradeDate, type: 'transfer',
-        description: `${transferForm.debit} → ${transferForm.credit}`,
+        description: `${transferForm.credit} → ${transferForm.debit}`,
         entries: [
           { side: 'debit', accountCode: acctMap[transferForm.debit] || '1010', amount: tAmt },
           { side: 'credit', accountCode: acctMap[transferForm.credit] || '1020', amount: tAmt },
@@ -4826,7 +4826,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
         id: tId, date: transferForm.tradeDate, type: 'transfer' as any,
         amount: tAmt, description: transferForm.description,
         accountCode: acctMap[transferForm.debit] || '1010',
-        counter: `${transferForm.debit} → ${transferForm.credit}`,
+        counter: `${transferForm.credit} → ${transferForm.debit}`,
         writeDate: today,
         debitAccount: transferForm.debit,
         creditAccount: transferForm.credit,
@@ -5093,7 +5093,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
             </div>
             <div className="md:col-span-2">
               <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">적요 *</label>
-              <input value={transferForm.description} onChange={e => setTransferForm(f => ({ ...f, description: e.target.value }))} placeholder={transferForm.debit && transferForm.credit ? `${transferForm.debit} → ${transferForm.credit} 전환` : '대체 내용 입력'} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
+              <input value={transferForm.description} onChange={e => setTransferForm(f => ({ ...f, description: e.target.value }))} placeholder={transferForm.debit && transferForm.credit ? `${transferForm.credit} → ${transferForm.debit} 전환` : '대체 내용 입력'} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
             </div>
             <div className="md:col-span-2">
               <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">비고</label>
@@ -5102,7 +5102,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           </div>
           {transferForm.debit && transferForm.credit && (
             <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-700 dark:text-amber-400 font-bold">
-              🔄 {transferForm.debit} → {transferForm.credit} 대체전표가 생성됩니다.
+              🔄 {transferForm.credit} → {transferForm.debit} 대체전표가 생성됩니다.
             </div>
           )}
           <div className="flex justify-end">
