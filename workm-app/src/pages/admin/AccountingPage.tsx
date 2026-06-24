@@ -3786,14 +3786,27 @@ export function AcctApproval({ year }: { year: number }) {
   }
 
   const deleteApproval = (id: string | number) => {
-    // 선지출 품의는 삭제 불가
-    const target = getItem<Approval[]>('acct_approvals', []).find(a => String(a.id) === String(id))
+    const allApprovals = getItem<Approval[]>('acct_approvals', [])
+    const target = allApprovals.find(a => String(a.id) === String(id))
+    // 선지출 품의(preExpense 상태)는 삭제 불가
     if (target && target.status === 'preExpense') {
       alert('선지출된 품의는 삭제할 수 없습니다.')
       return
     }
+    // 품의한(pending) 상태의 선지출건은 삭제 시 preExpense로 되돌림
+    if (target && target.status === 'pending' && (target as any).isPreExpense) {
+      if (!confirm('이 품의를 취소하고 선지출 상태로 되돌리시겠습니까?')) return
+      const updated = allApprovals.map(a =>
+        String(a.id) === String(id)
+          ? { ...a, status: 'preExpense' as const }
+          : a
+      )
+      setItem('acct_approvals', updated)
+      setRefresh(r => r + 1)
+      return
+    }
     if (!confirm('이 품의를 삭제하시겠습니까?')) return
-    const all = getItem<Approval[]>('acct_approvals', []).filter(a => String(a.id) !== String(id))
+    const all = allApprovals.filter(a => String(a.id) !== String(id))
     setItem('acct_approvals', all)
     setRefresh(r => r + 1)
   }
