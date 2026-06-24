@@ -1576,7 +1576,7 @@ function AcctBaseBudget({ year: propYear }: { year: number }) {
             <button
               onClick={() => setInnerTab('budget')}
               className={cn(
-                'px-4 py-2 rounded-lg text-[13px] font-bold transition-all cursor-pointer',
+                'px-4 py-2 rounded-lg text-[13px] font-bold transition-all cursor-pointer flex items-center gap-1.5',
                 innerTab === 'budget'
                   ? 'bg-primary-500 text-white shadow-md'
                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
@@ -1587,7 +1587,7 @@ function AcctBaseBudget({ year: propYear }: { year: number }) {
             <button
               onClick={isBudgetApprover ? () => setInnerTab('balance') : undefined}
               className={cn(
-                'px-4 py-2 rounded-lg text-[13px] font-bold transition-all',
+                'px-4 py-2 rounded-lg text-[13px] font-bold transition-all flex items-center gap-1.5',
                 isBudgetApprover ? 'cursor-pointer' : 'cursor-not-allowed opacity-50',
                 innerTab === 'balance'
                   ? 'bg-emerald-500 text-white shadow-md'
