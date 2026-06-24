@@ -1852,11 +1852,16 @@ function AcctBudget({ year }: { year: number }) {
       const updated = all.map(c => {
         if (String(c.id) !== String(catEditId)) return c
         const y = catForm.periodFrom ? parseInt(catForm.periodFrom.substring(0, 4)) : year
-        return { ...c, name: catForm.name.trim(), description: catForm.description.trim(), bank: catForm.accounts[0]?.bankName || catForm.bank, bankInfo: catForm.accounts[0]?.bankName || catForm.bank, accounts: catForm.accounts, periodFrom: catForm.periodFrom, periodTo: catForm.periodTo, year: y, users: catForm.users, approver: catForm.approver }
+        // 기본 승인권자 + 추가 승인권자를 합쳐 approvers 배열 생성
+        const defaultApprover = staffListForBudget.find(s => (s as any).approverType === 'approver')?.name || ''
+        const approversList = [defaultApprover, catForm.approver].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i)
+        return { ...c, name: catForm.name.trim(), description: catForm.description.trim(), bank: catForm.accounts[0]?.bankName || catForm.bank, bankInfo: catForm.accounts[0]?.bankName || catForm.bank, accounts: catForm.accounts, periodFrom: catForm.periodFrom, periodTo: catForm.periodTo, year: y, users: catForm.users, approver: catForm.approver, approvers: approversList }
       })
       localStorage.setItem('acct_budget_cats', JSON.stringify(updated))
     } else {
       const y = catForm.periodFrom ? parseInt(catForm.periodFrom.substring(0, 4)) : year
+      const defaultApproverNew = staffListForBudget.find(s => (s as any).approverType === 'approver')?.name || ''
+      const approversListNew = [defaultApproverNew, catForm.approver].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i)
       const newCat: BudgetCat = {
         id: Date.now() + Math.floor(Math.random() * 1000),
         name: catForm.name.trim(),
@@ -1869,7 +1874,8 @@ function AcctBudget({ year }: { year: number }) {
         year: y,
         users: catForm.users,
         approver: catForm.approver,
-      }
+        approvers: approversListNew,
+      } as any
       all.push(newCat)
       localStorage.setItem('acct_budget_cats', JSON.stringify(all))
       setSelectedCatId(newCat.id)
