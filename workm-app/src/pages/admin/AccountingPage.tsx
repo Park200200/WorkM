@@ -95,17 +95,8 @@ export function importSettingsFromJson(json: string, overwrite = true): number {
 
 /* ─── 회계 시드 데이터 초기화 ── */
 export function initAccountingSeed() {
-  // ── 시드 데이터 버전 관리: 기초자료만 갱신, 사용자 데이터 보존 ──
-  const ACCT_SEED_VER = 'v11'
-  if (localStorage.getItem('_acct_seed_ver') !== ACCT_SEED_VER) {
-    // 기초자료 키만 삭제 (사용자 입력 데이터는 보존)
-    const seedKeys = ['acct_accounts', 'acct_budget_item_defs', 'acct_vendors', 'acct_payment_methods', 'acct_budgets', 'acct_budget_cats']
-    seedKeys.forEach(k => localStorage.removeItem(k))
-    localStorage.removeItem('_acct_desc_patch_v1')
-    // 기초자료 삭제 시 시드 버전 플래그도 제거 → 재시드 허용
-    localStorage.removeItem('_acct_react_seed_v10')
-    localStorage.setItem('_acct_seed_ver', ACCT_SEED_VER)
-  }
+  // 기존 데이터 보존: 시드는 데이터가 없을 때만 초기화
+  // (더 이상 시드 버전 변경 시 기존 데이터를 삭제하지 않음)
   /* ── 기존 계정에 description이 누락된 경우 보충 패치 (early return 이전 실행) ── */
   if (!localStorage.getItem('_acct_desc_patch_v1')) {
     const descMap: Record<string, string> = {
@@ -391,7 +382,9 @@ export function initAccountingSeed() {
       { code: '5-03-06', name: '잡손실', type: 'expense', group: '영업외비용', description: '기타 소액·비경상적 영업외 손실' },
       { code: '5-04-01', name: '법인세등', type: 'expense', group: '법인세비용', description: '당기 법인세 및 법인지방소득세' },
     ]
-    setItem('acct_accounts', defaultAccounts)
+    if (getItem<any[]>('acct_accounts', []).length === 0) {
+      setItem('acct_accounts', defaultAccounts)
+    }
   }
 
 
