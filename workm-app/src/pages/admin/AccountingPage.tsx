@@ -10393,9 +10393,9 @@ function AcctCashflowList({ year }: { year: number }) {
             <Calendar size={13} /> 기간
           </div>
           <div className="flex items-center gap-1 flex-wrap">
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="px-1.5 sm:px-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[10px] sm:text-[11px] text-[var(--text-primary)] w-[105px] sm:w-auto" />
+            <DatePicker value={dateFrom} onChange={v => setDateFrom(v)} />
             <span className="text-[11px] text-[var(--text-muted)]">~</span>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="px-1.5 sm:px-2 py-1 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-[10px] sm:text-[11px] text-[var(--text-primary)] w-[105px] sm:w-auto" />
+            <DatePicker value={dateTo} onChange={v => setDateTo(v)} />
           </div>
           <div className="flex gap-1 flex-wrap">
             {[{label:'오늘',key:'today'},{label:'이번주',key:'week'},{label:'이번달',key:'month'},{label:'분기',key:'quarter'},{label:'연간',key:'year'}].map(p => (
