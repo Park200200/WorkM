@@ -3404,9 +3404,21 @@ export function AcctApproval({ year }: { year: number }) {
 
     // ── 품의함: 내가 신청한 품의 (완료 전) ──
     if (group === 'inbox') {
-      if ((a as any).applicant !== currentUserName) {
-        if (tab === 'rejected' && a.status === 'rejected' && (a as any).approver === currentUserName) return true
-        return false
+      const isMyApplicant = (a as any).applicant === currentUserName
+      const isPreExp = !!(a as any).isPreExpense || a.status === 'preExpense' || (a.title || '').startsWith('[선지출]')
+      // 선지출: applicant 또는 해당 출금전표의 담당자도 볼 수 있음
+      if (!isMyApplicant) {
+        if (isPreExp && tab === 'preExpense') {
+          // 선지출건: 해당 예산 담당자이거나 cashflow manager가 나인 경우
+          const cfAll: CashFlow[] = getItem('acct_cashflows', [])
+          const linkedCf = cfAll.find(cf => String((cf as any).approvalId) === String(a.id))
+          const cfManager = linkedCf ? (linkedCf as any).manager || '' : ''
+          if (cfManager !== currentUserName && !isExpenseUser(a)) return false
+        } else if (tab === 'rejected' && a.status === 'rejected' && (a as any).approver === currentUserName) {
+          return true
+        } else {
+          return false
+        }
       }
       if (isCompleted) return false
       return a.status === tab
