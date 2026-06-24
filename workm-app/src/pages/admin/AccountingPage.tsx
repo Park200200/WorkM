@@ -22,7 +22,7 @@ import {
   TrendingDown, TrendingUp, Banknote, Clock, Search, ChevronDown,
   Plus, Edit3, Trash2, Save, X, Check, Ban, MoreHorizontal,
   Lock, ShieldCheck, RefreshCw, Printer, Paperclip, Send, Eye,
-  CreditCard, Settings, Smartphone, User, Phone, Mail,
+  CreditCard, Settings, Smartphone, User, Phone, Mail, Landmark,
 } from 'lucide-react'
 
 /* ─── 회계 시드 데이터 초기화 ── */
@@ -951,6 +951,7 @@ const SUB_PAGES = [
   { key: 'reports',      label: '회계현황',   icon: ScrollText },
   { key: 'vendors',      label: '거래처관리',   icon: ContactRound },
   { key: 'payMethods',   label: '지출수단',   icon: CreditCard },
+  { key: 'incomeMethods', label: '입금계정',   icon: Landmark },
   { key: 'budgetTree',   label: '예산과목',   icon: Settings },
   { key: 'hq_vendor',    label: '본사거래처',   icon: Building2 },
   { key: 'acct_mgmt',    label: '계정관리',   icon: Settings2 },
@@ -1042,10 +1043,11 @@ export function AccountingPage() {
       {activeSub === 'reports' && <AcctReports year={year} />}
       {activeSub === 'vendors' && <AcctVendors />}
       {activeSub === 'payMethods' && <AcctPayMethods catId={selectedOverviewCatId} />}
+      {activeSub === 'incomeMethods' && <AcctIncomeMethods catId={selectedOverviewCatId} />}
       {activeSub === 'hq_vendor' && <AcctHQVendor />}
       {activeSub === 'budgetTree' && <BudgetTreePanel />}
       {activeSub === 'acct_mgmt' && <AcctAccountsMgmt />}
-      {!['overview','base_budget','budget','balance','approval','expense','income','withdrawal','payment','reports','vendors','payMethods','hq_vendor','budgetTree','acct_mgmt'].includes(activeSub) && (
+      {!['overview','base_budget','budget','balance','approval','expense','income','withdrawal','payment','reports','vendors','payMethods','incomeMethods','hq_vendor','budgetTree','acct_mgmt'].includes(activeSub) && (
         <AcctSubPlaceholder
           pageKey={activeSub}
           label={SUB_PAGES.find(s => s.key === activeSub)?.label || ''}
@@ -5343,7 +5345,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
           <>
             {/* 출금/입금전표: 내용 + 예산선택 */}
             <div>
-              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'income' ? '계정과목' : (type === 'withdrawal' && (!form.manager || form.manager === currentUserName)) ? '품의명' : '지출내용'} *</label>
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'income' ? '입금계정' : (type === 'withdrawal' && (!form.manager || form.manager === currentUserName)) ? '품의명' : '지출내용'} *</label>
               {type === 'income' ? (
                 <CustomSelect
                   value={form.desc}
@@ -5352,8 +5354,14 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                   options={[
                     { value: '', label: '— 입금계정 선택 —' },
                     ...(() => {
-                      const allAccts: AcctAccount[] = getItem('acct_accounts', [])
-                      return allAccts.filter(a => (a as any).incomeEnabled === true).map(a => ({ value: a.name, label: `${a.code} ${a.name}` }))
+                      const allIM: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_income_methods') || '[]') } catch { return [] } })()
+                      const filtered = selectedBudgetCat
+                        ? allIM.filter(p => String(p.budgetCatId) === String(selectedBudgetCat))
+                        : allIM
+                      return filtered.map(a => {
+                        const detail = a.category === '계좌' && a.bankName ? ` (${a.bankName} ${a.accountNumber || ''})` : a.category === '현금' ? ` (현금)` : ''
+                        return { value: a.name, label: `${a.category} • ${a.name}${detail}` }
+                      })
                     })(),
                   ]}
                 />
@@ -9063,3 +9071,343 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
 }
 
 // build-force-v7
+
+/* ═══ 입금계정 관리 ═══ */
+const INCOME_CATEGORIES = [
+  { key: '계좌' as const, label: '계좌', icon: '🏦', color: '#3b82f6', bg: 'bg-blue-50 dark:bg-blue-900/10', border: 'border-blue-200 dark:border-blue-800', desc: '계좌입금, 자동이체 수신 등' },
+  { key: '현금' as const, label: '현금', icon: '💵', color: '#22c55e', bg: 'bg-emerald-50 dark:bg-emerald-900/10', border: 'border-emerald-200 dark:border-emerald-800', desc: '현금 수입, 현장 수납 등' },
+  { key: '어음' as const, label: '어음', icon: '📄', color: '#f59e0b', bg: 'bg-amber-50 dark:bg-amber-900/10', border: 'border-amber-200 dark:border-amber-800', desc: '수신어음, 수표 등' },
+  { key: '상품권' as const, label: '상품권', icon: '🎟️', color: '#8b5cf6', bg: 'bg-violet-50 dark:bg-violet-900/10', border: 'border-violet-200 dark:border-violet-800', desc: '상품권 수입 등' },
+]
+
+function AcctIncomeMethods({ catId }: { catId?: string | null }) {
+  const [refresh, setRefresh] = useState(0)
+  const [newName, setNewName] = useState('')
+  const [activeCategory, setActiveCategory] = useState<'계좌' | '현금' | '어음' | '상품권'>('계좌')
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const addToast = useToastStore(s => s.add)
+  const staffList = useMemo(() => getItem<any[]>('ws_users', []), [])
+
+  const currentYear = new Date().getFullYear()
+  const activeYear = parseInt(new URLSearchParams(window.location.hash.split('?')[1] || '').get('year') || '') || parseInt(localStorage.getItem('acct_active_year') || '') || currentYear
+
+  const budgetCats = useMemo(() => {
+    const all = getItem<BudgetCat[]>('acct_budget_cats', [])
+    return all.filter(c => {
+      const cy = c.year || (c.periodFrom ? parseInt(c.periodFrom.substring(0, 4)) : currentYear)
+      return cy === activeYear
+    })
+  }, [refresh, activeYear])
+
+  const selectedCatId = catId || (budgetCats.length > 0 ? String(budgetCats[0].id) : '')
+  const selectedCatName = budgetCats.find(c => String(c.id) === selectedCatId)?.name || ''
+
+  void refresh
+  const allItems: PayMethodItem[] = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('acct_income_methods')
+      if (!raw) return []
+      const parsed = JSON.parse(raw)
+      return Array.isArray(parsed) ? parsed : []
+    } catch { return [] }
+  }, [refresh])
+
+  const filteredItems = selectedCatId
+    ? allItems.filter(i => String(i.budgetCatId) === selectedCatId)
+    : allItems
+  const catItems = filteredItems.filter(i => i.category === activeCategory)
+  const activeCatInfo = INCOME_CATEGORIES.find(c => c.key === activeCategory)!
+
+  const defaultManager = useMemo(() => {
+    const cat = budgetCats.find(c => String(c.id) === selectedCatId)
+    if (cat?.users && cat.users.length > 0) return cat.users[0]
+    return ''
+  }, [budgetCats, selectedCatId])
+
+  const saveAll = (updated: PayMethodItem[]) => {
+    localStorage.setItem('acct_income_methods', JSON.stringify(updated))
+    setRefresh(r => r + 1)
+  }
+
+  const handleAdd = () => {
+    if (!newName.trim()) return
+    const isDuplicate = allItems.some(i =>
+      i.name === newName.trim() &&
+      i.category === activeCategory &&
+      String(i.budgetCatId) === selectedCatId
+    )
+    if (isDuplicate) {
+      addToast('error', '이 예산구분에 이미 존재하는 입금계정입니다')
+      return
+    }
+    const newItem: PayMethodItem = {
+      id: Date.now(),
+      name: newName.trim(),
+      category: activeCategory,
+      budgetCatId: selectedCatId || undefined,
+      manager: activeCategory === '계좌' ? defaultManager : undefined,
+      custodian: activeCategory === '현금' ? defaultManager : undefined,
+      noteManager: activeCategory === '어음' ? defaultManager : undefined,
+      voucherManager: activeCategory === '상품권' ? defaultManager : undefined,
+    }
+    saveAll([...allItems, newItem])
+    addToast('success', `"${newName.trim()}" 추가됨`)
+    setNewName('')
+    setExpandedId(newItem.id)
+  }
+
+  const handleDelete = (id: number) => {
+    const item = allItems.find(i => i.id === id)
+    if (!item) return
+    if (!confirm(`"${item.name}"을(를) 삭제하시겠습니까?`)) return
+    saveAll(allItems.filter(i => i.id !== id))
+    addToast('warning', `"${item.name}" 삭제됨`)
+    if (expandedId === id) setExpandedId(null)
+  }
+
+  const updateField = (id: number, field: keyof PayMethodItem, value: string) => {
+    saveAll(allItems.map(i => i.id === id ? { ...i, [field]: value } : i))
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-extrabold text-[var(--text-primary)] flex items-center gap-2">
+            🏦 입금계정 관리
+          </h2>
+          <p className="text-[11px] text-[var(--text-muted)] mt-0.5">상단에서 예산구분을 선택하여 입금계정을 관리합니다</p>
+        </div>
+        <span className="text-xs font-bold text-white bg-emerald-500 px-3 py-1.5 rounded-full">
+          {selectedCatName || '전체'} {filteredItems.length}건
+        </span>
+      </div>
+
+      {/* 카테고리 탭 */}
+      <div className="flex gap-2">
+        {INCOME_CATEGORIES.map(cat => {
+          const count = filteredItems.filter(i => i.category === cat.key).length
+          const isActive = activeCategory === cat.key
+          return (
+            <button
+              key={cat.key}
+              onClick={() => { setActiveCategory(cat.key); setExpandedId(null) }}
+              className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all cursor-pointer ${
+                isActive
+                  ? `${cat.bg} ${cat.border} shadow-sm`
+                  : 'bg-[var(--bg-surface)] border-transparent hover:border-[var(--border-default)]'
+              }`}
+            >
+              <div className="text-center">
+                <span className="text-lg">{cat.icon}</span>
+                <div className={`text-[12px] font-extrabold mt-1 ${isActive ? '' : 'text-[var(--text-secondary)]'}`} style={isActive ? { color: cat.color } : undefined}>
+                  {cat.label}
+                </div>
+                <div className="text-[10px] font-bold text-[var(--text-muted)] mt-0.5">{count}건</div>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* 선택된 카테고리 영역 */}
+      <div className={`rounded-2xl border-2 ${activeCatInfo.border} ${activeCatInfo.bg} p-5`}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">{activeCatInfo.icon}</span>
+            <div>
+              <h3 className="text-sm font-extrabold" style={{ color: activeCatInfo.color }}>{activeCatInfo.label}</h3>
+              <p className="text-[10px] text-[var(--text-muted)]">{activeCatInfo.desc}</p>
+            </div>
+          </div>
+          <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ color: activeCatInfo.color, background: `${activeCatInfo.color}15` }}>
+            {catItems.length}건
+          </span>
+        </div>
+
+        {/* 추가 폼 */}
+        <div className="flex gap-2 mb-4">
+          <input
+            placeholder={`새 ${activeCatInfo.label} 입금계정 입력...`}
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+            className="flex-1 px-3.5 py-2.5 rounded-xl border border-[var(--border-default)] bg-white dark:bg-gray-900 text-sm text-[var(--text-primary)] outline-none focus:border-primary-400 transition-colors placeholder:text-[var(--text-muted)]"
+          />
+          <button
+            onClick={handleAdd}
+            className="px-4 py-2.5 rounded-xl text-white text-sm font-bold transition-all cursor-pointer hover:shadow-md flex items-center gap-1.5"
+            style={{ background: activeCatInfo.color }}
+          >
+            <Plus size={14} /> 추가
+          </button>
+        </div>
+
+        {/* 항목 리스트 */}
+        {catItems.length === 0 ? (
+          <div className="py-8 text-center text-sm text-[var(--text-muted)] rounded-xl border border-dashed border-[var(--border-default)] bg-white/50 dark:bg-gray-900/50">
+            등록된 {activeCatInfo.label} 입금계정이 없습니다
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            {catItems.map((item, idx) => {
+              const isOpen = expandedId === item.id
+              return (
+                <div key={item.id} className={`rounded-xl transition-all border ${isOpen ? 'border-[var(--border-default)] bg-white dark:bg-gray-900/60 shadow-sm' : 'border-transparent bg-white/70 dark:bg-gray-900/30 hover:bg-white dark:hover:bg-gray-800/50 hover:border-[var(--border-default)]'}`}>
+                  <div
+                    className="flex items-center gap-3 px-3.5 py-2.5 cursor-pointer group"
+                    onClick={() => setExpandedId(isOpen ? null : item.id)}
+                  >
+                    <span className="text-[10px] font-bold w-5 text-center shrink-0 rounded-full py-0.5" style={{ color: activeCatInfo.color, background: `${activeCatInfo.color}15` }}>
+                      {idx + 1}
+                    </span>
+                    <span className="text-sm font-semibold text-[var(--text-primary)] flex-1">{item.name}</span>
+                    {activeCategory === '계좌' && item.bankName && !isOpen && (
+                      <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[200px]">
+                        {item.bankName} {item.accountNumber ? `• ${item.accountNumber}` : ''}
+                      </span>
+                    )}
+                    <ChevronDown size={14} className={`text-[var(--text-muted)] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    <button
+                      onClick={e => { e.stopPropagation(); handleDelete(item.id) }}
+                      className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+
+                  {/* 상세 필드 (계좌) */}
+                  {isOpen && activeCategory === '계좌' && (
+                    <div className="px-4 pb-4 pt-1 border-t border-[var(--border-default)] mx-3">
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>은행명 *</label>
+                          <input value={item.bankName || ''} onChange={e => updateField(item.id, 'bankName', e.target.value)} placeholder="국민은행" className={DETAIL_INPUT} />
+                        </div>
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>계좌번호 *</label>
+                          <input value={item.accountNumber || ''} onChange={e => updateField(item.id, 'accountNumber', e.target.value)} placeholder="110-234-567890" className={DETAIL_INPUT} />
+                        </div>
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>예금주 *</label>
+                          <input value={item.accountHolder || ''} onChange={e => updateField(item.id, 'accountHolder', e.target.value)} placeholder="(주)문화재청" className={DETAIL_INPUT} />
+                        </div>
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>계좌관리자 *</label>
+                          <select value={item.manager || ''} onChange={e => updateField(item.id, 'manager', e.target.value)} className={DETAIL_INPUT}>
+                            <option value="">선택하세요</option>
+                            {staffList.map((s: any) => (
+                              <option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}{s.dept ? ` - ${s.dept}` : ''}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>용도</label>
+                          <input value={item.purpose || ''} onChange={e => updateField(item.id, 'purpose', e.target.value)} placeholder="보조금 수입, 사업비 등" className={DETAIL_INPUT} />
+                        </div>
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>메모</label>
+                          <input value={item.memo || ''} onChange={e => updateField(item.id, 'memo', e.target.value)} placeholder="참고사항" className={DETAIL_INPUT} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 상세 필드 (현금) */}
+                  {isOpen && activeCategory === '현금' && (
+                    <div className="px-4 pb-4 pt-1 border-t border-[var(--border-default)] mx-3">
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>보관처 *</label>
+                          <input value={item.storageLocation || ''} onChange={e => updateField(item.id, 'storageLocation' as any, e.target.value)} placeholder="사무실 금고 등" className={DETAIL_INPUT} />
+                        </div>
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>보관책임자 *</label>
+                          <select value={item.custodian || ''} onChange={e => updateField(item.id, 'custodian' as any, e.target.value)} className={DETAIL_INPUT}>
+                            <option value="">선택하세요</option>
+                            {staffList.map((s: any) => (
+                              <option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}{s.dept ? ` - ${s.dept}` : ''}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>용도</label>
+                          <input value={item.purpose || ''} onChange={e => updateField(item.id, 'purpose', e.target.value)} placeholder="현금 수납 등" className={DETAIL_INPUT} />
+                        </div>
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>메모</label>
+                          <input value={item.memo || ''} onChange={e => updateField(item.id, 'memo', e.target.value)} placeholder="참고사항" className={DETAIL_INPUT} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 상세 필드 (어음) */}
+                  {isOpen && activeCategory === '어음' && (
+                    <div className="px-4 pb-4 pt-1 border-t border-[var(--border-default)] mx-3">
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>구분 *</label>
+                          <select value={item.noteType || ''} onChange={e => updateField(item.id, 'noteType' as any, e.target.value)} className={DETAIL_INPUT}>
+                            <option value="">선택하세요</option>
+                            <option value="수신">수신 (받을어음)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>담당자 *</label>
+                          <select value={item.noteManager || ''} onChange={e => updateField(item.id, 'noteManager' as any, e.target.value)} className={DETAIL_INPUT}>
+                            <option value="">선택하세요</option>
+                            {staffList.map((s: any) => (
+                              <option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}{s.dept ? ` - ${s.dept}` : ''}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>메모</label>
+                          <input value={item.memo || ''} onChange={e => updateField(item.id, 'memo', e.target.value)} placeholder="참고사항" className={DETAIL_INPUT} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 상세 필드 (상품권) */}
+                  {isOpen && activeCategory === '상품권' && (
+                    <div className="px-4 pb-4 pt-1 border-t border-[var(--border-default)] mx-3">
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>금액 *</label>
+                          <input
+                            value={item.voucherAmount ? item.voucherAmount.toLocaleString() : ''}
+                            onChange={e => {
+                              const num = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0
+                              saveAll(allItems.map(i => i.id === item.id ? { ...i, voucherAmount: num } : i))
+                            }}
+                            placeholder="50,000"
+                            className={DETAIL_INPUT}
+                          />
+                        </div>
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>담당자 *</label>
+                          <select value={item.voucherManager || ''} onChange={e => updateField(item.id, 'voucherManager' as any, e.target.value)} className={DETAIL_INPUT}>
+                            <option value="">선택하세요</option>
+                            {staffList.map((s: any) => (
+                              <option key={s.id || s.name} value={s.name}>{s.name}{s.role ? ` (${s.role})` : ''}{s.dept ? ` - ${s.dept}` : ''}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className={DETAIL_FIELD_LABEL}>메모</label>
+                          <input value={item.memo || ''} onChange={e => updateField(item.id, 'memo', e.target.value)} placeholder="참고사항" className={DETAIL_INPUT} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
