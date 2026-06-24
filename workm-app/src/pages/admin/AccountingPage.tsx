@@ -4347,11 +4347,11 @@ export function AcctApproval({ year }: { year: number }) {
             })(),
             amount: detailApproval.amount || 0,
             memo: (detailApproval as any).description || '',
-            applicant: detailApproval.status === 'preExpense' ? currentUserName : ((detailApproval as any).applicant || ''),
+            applicant: (detailApproval as any).applicant || '',
             approver: detailApproval.approver || '',
-            applicantSealImg: staffList.find(s => s.name === (detailApproval.status === 'preExpense' ? currentUserName : (detailApproval as any).applicant))?.sealImg || '',
+            applicantSealImg: staffList.find(s => s.name === (detailApproval as any).applicant)?.sealImg || '',
             approverSealImg: staffList.find(s => s.name === detailApproval.approver)?.sealImg || '',
-            applicantPosition: staffList.find(s => s.name === (detailApproval.status === 'preExpense' ? currentUserName : (detailApproval as any).applicant))?.position || '',
+            applicantPosition: staffList.find(s => s.name === (detailApproval as any).applicant)?.position || '',
             approverPosition: staffList.find(s => s.name === detailApproval.approver)?.position || '',
             approvalStatus: detailApproval.status || '',
             approvedMemo: (detailApproval as any).approvedMemo || '',
@@ -4855,7 +4855,7 @@ export function AcctApproval({ year }: { year: number }) {
         const da = detailApproval as any
         const catName = da.budgetCatName || budgetCats.find((c: any) => String(c.id) === String(da.budgetCatId))?.name || ''
         const amt = typeof detailApproval.amount === 'number' ? detailApproval.amount : (parseInt(String(detailApproval.amount || '0').replace(/,/g, '')) || 0)
-        const applicantStaff = staffList.find(s => s.name === currentUserName)
+        const applicantStaff = staffList.find(s => s.name === da.applicant)
         const approverName = (() => {
           const cat = budgetCats.find((c: any) => String(c.id) === String(da.budgetCatId))
           if (cat && (cat as any).approvers && (cat as any).approvers.length > 0) return (cat as any).approvers[0]
@@ -4884,7 +4884,7 @@ export function AcctApproval({ year }: { year: number }) {
               purpose: da.budgetSubItem || '',
               amount: amt,
               memo: resubmitForm.description || da.description || '',
-              applicant: currentUserName,
+              applicant: da.applicant || '',
               approver: approverName,
               applicantSealImg: applicantStaff?.sealImg || '',
               approverSealImg: '',

@@ -163,6 +163,7 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
   }
 
   // data.attachments가 변경될 때 localAttachments 동기화 + IndexedDB 이미지 로드
+  const attKeys = JSON.stringify((data.attachments || []).map((a: any) => a.imageKey || a.name))
   useEffect(() => {
     const atts = data.attachments || []
     // 우선 전달받은 데이터를 즉시 반영 (새로 추가된 파일도 바로 표시)
@@ -179,7 +180,7 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
       })
       setLocalAttachments(updated)
     }).catch(err => console.error('IndexedDB 이미지 로드 실패', err))
-  }, [data.attachments])
+  }, [attKeys])
 
   const handlePrint = () => {
     window.print()
@@ -575,7 +576,7 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
                   {att.title && <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', marginBottom: 6, textAlign: 'left' }}>{att.title}</div>}
                   {/* 이미지 또는 파일 */}
                   <div style={{ textAlign: 'center', marginBottom: 12 }}>
-                    {att.dataUrl && att.type?.startsWith('image/') ? (
+                    {att.dataUrl && (att.type?.startsWith('image/') || att.dataUrl.startsWith('data:image')) ? (
                       <img src={att.dataUrl} alt={att.title} style={{ width: att.printWidth, maxWidth: '100%', objectFit: 'contain', border: '1px solid #e2e8f0', borderRadius: 4 }} />
                     ) : (
                       <div style={{ display: 'inline-block', padding: '10px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#64748b' }}>📎 {att.name}</div>
