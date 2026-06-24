@@ -4562,6 +4562,18 @@ export function AcctApproval({ year }: { year: number }) {
                         📅 {resubmitForm.date}
                       </div>
                     </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">지출승인권자</label>
+                      <div className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] font-bold">
+                        👤 {(() => {
+                          const cat = budgetCats.find(c => String(c.id) === String((detailApproval as any).budgetCatId))
+                          if (cat && (cat as any).approvers && (cat as any).approvers.length > 0) {
+                            return (cat as any).approvers.join(', ')
+                          }
+                          return (detailApproval as any).approver || '미지정'
+                        })()}
+                      </div>
+                    </div>
                     </>
                   )
                 }
