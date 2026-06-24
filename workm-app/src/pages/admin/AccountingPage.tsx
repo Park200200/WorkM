@@ -6661,10 +6661,11 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                                 const cf = c as any
                                 const apAll: any[] = getItem('acct_approvals', [])
                                 const ap = apAll.find((a: any) => String(a.id) === String(aId))
+                                const rawAmt = cf.amount || ap?.amount || 0
                                 setForm(prev => ({
                                   ...prev,
                                   desc: cf.description || ap?.title?.replace('[선지출] ', '') || '',
-                                  amount: String(cf.amount || ap?.amount || ''),
+                                  amount: rawAmt ? Number(rawAmt).toLocaleString('ko-KR') : '',
                                   writeDate: cf.date || today,
                                   tradeDate: cf.tradeDate || cf.date || today,
                                   manager: cf.manager || ap?.applicant || '',
@@ -6685,6 +6686,11 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                                 // 예산 카테고리명
                                 const catName = ap?.budgetCatName || cf.budgetCatName || ''
                                 if (catName) setWdCatName(catName)
+                                // 예산 통합 검색 필드에 선택된 값 표시
+                                const subItem = cf.subItem || ap?.budgetSubItem || ''
+                                const detailItem = cf.detailItem || ap?.budgetDetailItem || ''
+                                const searchLabel = [catName, budgetItem, subItem, detailItem].filter(Boolean).join(' > ')
+                                if (searchLabel) setWdSearchSelected(searchLabel)
                                 // 첨부파일 (approval에서 우선)
                                 const attachments = ap?.attachments || cf.attachments
                                 if (attachments) setWdAttachments(attachments)
