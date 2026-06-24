@@ -4268,7 +4268,7 @@ export function AcctApproval({ year }: { year: number }) {
                         const allBudgets: any[] = getItem('acct_budgets', [])
                         const catName = budgetCats.find(c => String(c.id) === String(approveBudgetCat || da.budgetCatId))?.name || da.budgetCatName || '-'
                         const foundItem = allBudgets.find(b => String(b.id) === String(approveBudgetItem || da.budgetItemId)) || budgetItems.find(b => String(b.id) === String(approveBudgetItem || da.budgetItemId))
-                        const itemName = foundItem?.itemName || da.budgetItem || '-'
+                        const itemName = foundItem?.itemName || da.budgetItem || linkedCf?.accountName || linkedCf?.desc || '-'
                         const subItemName = (() => {
                           if (da.budgetSubItem) return da.budgetSubItem
                           if (approveBudgetSub) {
