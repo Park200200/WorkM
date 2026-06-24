@@ -10858,7 +10858,6 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                 const subCount = filteredItems.filter(i => i.category === '어음' && (i.noteType || '') === sub).length
                 const isActive = noteSubTab === sub
                 const subColor = sub === '수신' ? '#3b82f6' : '#ef4444'
-                const subIcon = sub === '수신' ? '📥' : '📤'
                 return (
                   <button
                     key={sub}
@@ -10869,7 +10868,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                     style={isActive ? { borderColor: subColor, background: `${subColor}08` } : undefined}
                   >
                     <div className="flex items-center justify-center gap-2">
-                      <span className="text-sm">{subIcon}</span>
+                      {sub === '수신' ? <ArrowDownCircle size={14} style={{ color: subColor }} /> : <ArrowUpCircle size={14} style={{ color: subColor }} />}
                       <span className="text-[12px] font-extrabold" style={isActive ? { color: subColor } : { color: 'var(--text-secondary)' }}>{sub === '수신' ? '수신어음 (받을어음)' : '발행어음 (지급어음)'}</span>
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ color: subColor, background: `${subColor}15` }}>{subCount}</span>
                     </div>
