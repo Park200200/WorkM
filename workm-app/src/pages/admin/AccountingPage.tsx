@@ -5403,36 +5403,76 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
       // 이름으로 budgetItemId, budgetSubId 매핑
       const matchedItem = budgets.find(b => String(b.catId) === String(selectedBudgetCat) && b.itemName === wdBudgetItem)
       const matchedSub = form.subItem ? budgets.find(b => String(b.catId) === String(selectedBudgetCat) && b.itemName === wdBudgetItem && b.subItemName === form.subItem) : null
-      const preApprovalId = uid()
-      approvals.push({
-        id: preApprovalId,
-        status: 'preExpense',
-        isPreExpense: true,
-        selfExpense: isSelfExpense,
-        title: `[선지출] ${form.desc || wdBudgetItem}`,
-        amount: amt,
-        date: form.tradeDate,
-        createdAt: new Date().toISOString(),
-        accountCode: '',
-        description: (form as any).memo || `출금전표 선지출 - ${wdBudgetItem}${form.subItem ? ' > ' + form.subItem : ''}`,
-        applicant: currentUserName,
-        approver: autoApprover,
-        budgetItem: wdBudgetItem,
-        budgetSubItem: form.subItem || '',
-        budgetDetailItem: form.detailItem || '',
-        budgetCatId: selectedBudgetCat,
-        budgetCatName: catName,
-        budgetItemId: matchedItem ? String(matchedItem.id) : '',
-        budgetSubId: matchedSub ? String(matchedSub.id) : '',
-        counter: form.counter || '',
-        method: form.method || '',
-        attachments: wdAttachments.length > 0 ? wdAttachments : undefined,
-      } as any)
-      setItem('acct_approvals', approvals)
+
+      // 반려된 품의 재지출: 기존 approval 업데이트
+      const existingRejected = selectedApprovalId ? approvals.find(a => String(a.id) === String(selectedApprovalId) && a.status === 'rejected') : null
+      let finalApprovalId: string | number
+      if (existingRejected) {
+        // 기존 반려 approval을 preExpense로 업데이트
+        const updatedApprovals = approvals.map(a => {
+          if (String(a.id) === String(selectedApprovalId)) {
+            return {
+              ...a,
+              status: 'preExpense' as const,
+              isPreExpense: true,
+              selfExpense: isSelfExpense,
+              title: `[선지출] ${form.desc || wdBudgetItem}`,
+              amount: amt,
+              date: form.tradeDate,
+              description: (form as any).memo || `출금전표 선지출 - ${wdBudgetItem}${form.subItem ? ' > ' + form.subItem : ''}`,
+              applicant: currentUserName,
+              approver: autoApprover || (a as any).approver || '',
+              budgetItem: wdBudgetItem,
+              budgetSubItem: form.subItem || '',
+              budgetDetailItem: form.detailItem || '',
+              budgetCatId: selectedBudgetCat,
+              budgetCatName: catName,
+              budgetItemId: matchedItem ? String(matchedItem.id) : '',
+              budgetSubId: matchedSub ? String(matchedSub.id) : '',
+              counter: form.counter || '',
+              method: form.method || '',
+              attachments: wdAttachments.length > 0 ? wdAttachments : (a as any).attachments,
+              resubmittedAt: new Date().toISOString(),
+            } as any
+          }
+          return a
+        })
+        setItem('acct_approvals', updatedApprovals)
+        finalApprovalId = selectedApprovalId!
+      } else {
+        // 새 approval 생성
+        const preApprovalId = uid()
+        approvals.push({
+          id: preApprovalId,
+          status: 'preExpense',
+          isPreExpense: true,
+          selfExpense: isSelfExpense,
+          title: `[선지출] ${form.desc || wdBudgetItem}`,
+          amount: amt,
+          date: form.tradeDate,
+          createdAt: new Date().toISOString(),
+          accountCode: '',
+          description: (form as any).memo || `출금전표 선지출 - ${wdBudgetItem}${form.subItem ? ' > ' + form.subItem : ''}`,
+          applicant: currentUserName,
+          approver: autoApprover,
+          budgetItem: wdBudgetItem,
+          budgetSubItem: form.subItem || '',
+          budgetDetailItem: form.detailItem || '',
+          budgetCatId: selectedBudgetCat,
+          budgetCatName: catName,
+          budgetItemId: matchedItem ? String(matchedItem.id) : '',
+          budgetSubId: matchedSub ? String(matchedSub.id) : '',
+          counter: form.counter || '',
+          method: form.method || '',
+          attachments: wdAttachments.length > 0 ? wdAttachments : undefined,
+        } as any)
+        setItem('acct_approvals', approvals)
+        finalApprovalId = preApprovalId
+      }
       // cashflow에 approvalId 연결
       const allCfs = getItem<CashFlow[]>('acct_cashflows', [])
       const cfIdx = allCfs.findIndex(x => String(x.id) === String(cfId))
-      if (cfIdx >= 0) { (allCfs[cfIdx] as any).approvalId = String(preApprovalId); setItem('acct_cashflows', allCfs) }
+      if (cfIdx >= 0) { (allCfs[cfIdx] as any).approvalId = String(finalApprovalId); setItem('acct_cashflows', allCfs) }
     }
 
     setForm({ desc: '', subItem: '', detailItem: '', amount: '', counter: '', method: type === 'income' ? '계좌이체' : '계좌이체', writeDate: today, tradeDate: today, inputDate: today, manager: '', expenseManager: '', approvalStatus: '품의준비' })
@@ -5440,6 +5480,9 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
     setIsFromApproval(false)
     setWdBudgetItem('')
     setWdAttachments([])
+    setWdSearchSelected('')
+    setWdSearchText('')
+    setSelectedApprovalId(null)
     setRefresh(r => r + 1)
   }
 
