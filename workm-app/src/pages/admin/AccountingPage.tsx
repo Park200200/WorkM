@@ -3547,6 +3547,7 @@ export function AcctApproval({ year }: { year: number }) {
   // ── 승인/반려 워크플로우 상태 ──
   const [approveMode, setApproveMode] = useState(false)
   const [rejectMode, setRejectMode] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
   const [resubmitMode, setResubmitMode] = useState(false)
   const [resubmitForm, setResubmitForm] = useState({ title: '', amount: '', date: '', description: '' })
   const [approvePw, setApprovePw] = useState('')
@@ -3834,10 +3835,12 @@ export function AcctApproval({ year }: { year: number }) {
       status: 'rejected',
       approver: currentUserName,
       rejectedAt: new Date().toISOString(),
+      rejectReason: rejectReason.trim() || undefined,
     } : a)
     setItem('acct_approvals', updated)
     setRefresh(r => r + 1)
     resetApproveState()
+    setRejectReason('')
     setDetailApproval(null)
   }
 
@@ -3956,7 +3959,14 @@ export function AcctApproval({ year }: { year: number }) {
                               a.status === 'approved' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
                               a.status === 'rejected' ? 'bg-red-50 dark:bg-red-900/20 text-red-500' :
                               'bg-amber-50 dark:bg-amber-900/20 text-amber-600'
-                            )}>{a.status === 'approved' ? '승인' : a.status === 'rejected' ? '반려' : '승인'}-{(a as any).approver}</span>
+                            )}>
+                              {a.status === 'approved' ? '승인' : a.status === 'rejected' ? '반려' : '승인'}-{(a as any).approver}
+                            </span>
+                          )}
+                          {a.status === 'rejected' && (a as any).rejectReason && (
+                            <span className="px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-900/20 text-red-400 font-bold text-[9px] max-w-[120px] truncate" title={(a as any).rejectReason}>
+                              💬 {(a as any).rejectReason}
+                            </span>
                           )}
                         </div>
                       </td>
@@ -4511,6 +4521,16 @@ export function AcctApproval({ year }: { year: number }) {
             <div className="p-5 space-y-3">
               <div className="text-[12px] text-[var(--text-secondary)]">
                 <strong>{detailApproval.title}</strong> (₩{(detailApproval.amount || 0).toLocaleString()}) 을 반려합니다.
+              </div>
+              <div>
+                <label className="block text-[11px] font-extrabold text-[var(--text-primary)] mb-1">📝 반려 사유</label>
+                <textarea
+                  value={rejectReason}
+                  onChange={e => setRejectReason(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-base)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-red-400 resize-none"
+                  placeholder="반려 사유를 입력해주세요 (선택)"
+                />
               </div>
               <div>
                 <label className="block text-[11px] font-extrabold text-[var(--text-primary)] mb-1">🔒 비밀번호 확인</label>
