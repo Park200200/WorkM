@@ -153,7 +153,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         <nav className="flex-1 overflow-y-auto px-2.5 py-3 space-y-0.5">
           <SectionLabel collapsed={collapsed}>회계관리</SectionLabel>
           {(() => {
-            const userName = user?.name || JSON.parse(localStorage.getItem('ws_current_user') || '{}')?.name || ''
+            const userName = user?.name || JSON.parse(localStorage.getItem('ws_user') || '{}')?.name || ''
             const staffList = JSON.parse(localStorage.getItem('ws_users') || '[]') as any[]
             const currentStaff = staffList.find((s: any) => s.name === userName)
             const isAdmin = currentStaff?.role === 'admin'

@@ -1086,7 +1086,7 @@ export function AccountingPage() {
 
   // ── 권한 없는 탭 접근 시 리디렉트 ──
   useEffect(() => {
-    const userName = JSON.parse(localStorage.getItem('ws_current_user') || '{}')?.name || ''
+    const userName = JSON.parse(localStorage.getItem('ws_user') || '{}')?.name || ''
     const staffList = JSON.parse(localStorage.getItem('ws_users') || '[]') as any[]
     const currentStaff = staffList.find((s: any) => s.name === userName)
     const isAdmin = currentStaff?.role === 'admin'
