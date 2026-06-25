@@ -3621,8 +3621,8 @@ export function AcctApproval({ year }: { year: number }) {
       // 일반품의: 비밀번호/예산 검증 없이 바로 완료
       if (!approvePw.trim()) { setApprovePwError('비밀번호를 입력해주세요'); return }
       const myStaff = staffList.find(s => s.name === currentUserName)
-      if (myStaff && myStaff.pw && myStaff.pw !== approvePw) {
-        setApprovePwError('비밀번호가 일치하지 않습니다'); return
+      if (myStaff && (!myStaff.pw || myStaff.pw !== approvePw)) {
+        setApprovePwError(myStaff.pw ? '비밀번호가 일치하지 않습니다' : '비밀번호가 설정되지 않았습니다. 직원관리에서 비밀번호를 설정해주세요'); return
       }
       const all = getItem<Approval[]>('acct_approvals', [])
       const updated = all.map(a => String(a.id) === String(detailApproval.id) ? {
@@ -3644,8 +3644,8 @@ export function AcctApproval({ year }: { year: number }) {
     }
     if (!approvePw.trim()) { setApprovePwError('비밀번호를 입력해주세요'); return }
     const myStaff = staffList.find(s => s.name === currentUserName)
-    if (myStaff && myStaff.pw && myStaff.pw !== approvePw) {
-      setApprovePwError('비밀번호가 일치하지 않습니다'); return
+    if (myStaff && (!myStaff.pw || myStaff.pw !== approvePw)) {
+      setApprovePwError(myStaff.pw ? '비밀번호가 일치하지 않습니다' : '비밀번호가 설정되지 않았습니다. 직원관리에서 비밀번호를 설정해주세요'); return
     }
     const all = getItem<Approval[]>('acct_approvals', [])
     const selectedBudgetItem = budgetItems.find(b => String(b.id) === String(approveBudgetItem))
@@ -4164,8 +4164,8 @@ export function AcctApproval({ year }: { year: number }) {
   const handleRejectConfirm = () => {
     if (!approvePw.trim()) { setApprovePwError('비밀번호를 입력해주세요'); return }
     const myStaff = staffList.find(s => s.name === currentUserName)
-    if (myStaff && myStaff.pw && myStaff.pw !== approvePw) {
-      setApprovePwError('비밀번호가 일치하지 않습니다'); return
+    if (myStaff && (!myStaff.pw || myStaff.pw !== approvePw)) {
+      setApprovePwError(myStaff.pw ? '비밀번호가 일치하지 않습니다' : '비밀번호가 설정되지 않았습니다. 직원관리에서 비밀번호를 설정해주세요'); return
     }
     if (!detailApproval) return
     // 반려 처리 + approver를 현재 사용자로 갱신
@@ -5658,8 +5658,8 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
       setSelectedApprovalId(null)
     }
 
-    // 출금전표: 예산 집행액(spent) 업데이트
-    if (type === 'withdrawal' && selectedBudgetCat && wdBudgetItem) {
+    // 출금전표: 예산 집행액(spent) 업데이트 (지출하기에서 이미 반영된 건은 제외)
+    if (type === 'withdrawal' && selectedBudgetCat && wdBudgetItem && !isFromApproval) {
       const budgets: BudgetItem[] = getItem('acct_budgets', [])
       const updated = budgets.map(b => {
         const catMatch = String(b.catId) === String(selectedBudgetCat)
