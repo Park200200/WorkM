@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react'
 import { getItem } from '../../../utils/storage'
 import { formatNumber } from '../../../utils/format'
-import type { BudgetCat, BudgetItem, CashFlow, Approval } from './types'
+import { useAuthStore } from '../../../stores/authStore'
+import type { BudgetCat, BudgetItem, CashFlow, Approval, Voucher } from './types'
 
 export default function AcctOverview({ year, selectedCatId }: { year: number; selectedCatId: string | number | null }) {
   const budgetCats = useMemo(() => getItem<BudgetCat[]>('acct_budget_cats', []), [])

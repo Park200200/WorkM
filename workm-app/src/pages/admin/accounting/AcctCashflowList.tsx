@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { getItem, setItem } from '../../../utils/storage'
 import { formatNumber } from '../../../utils/format'
+import { useAuthStore } from '../../../stores/authStore'
 import type { BudgetCat, CashFlow, PayMethodItem } from './types'
 import { getLocalDate } from './utils'
 
