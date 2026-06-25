@@ -5634,6 +5634,8 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
       payDetail: payDetail,
       manager: form.manager,
       budgetCatId: selectedBudgetCat || '',
+      budgetItem: type === 'withdrawal' ? (wdBudgetItem || '') : (form.desc || ''),
+      budgetSubItem: form.subItem || '',
       createdBy: currentUserName,
       ...(type === 'income' && (form as any).incomeNote ? { incomeNote: (form as any).incomeNote } : {}),
       ...(type === 'income' && isReceivable ? { receivable: true, received: false, expectedDate: expectedDate || '' } : {}),
