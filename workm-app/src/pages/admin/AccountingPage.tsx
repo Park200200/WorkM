@@ -5473,7 +5473,7 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
         if (myCatIds.length === 0) return false
       }
       return true
-    }).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+    }).sort((a, b) => (b.date || '').localeCompare(a.date || '') || Number(b.id) - Number(a.id))
   }, [year, type, refresh, user])
 
   const totalAmount = cashflows.reduce((a, c) => a + (c.amount || 0), 0)
@@ -7460,7 +7460,7 @@ function AcctPaymentLedger({ year, catId }: { year: number; catId?: string | nul
   const vouchers = useMemo(() => {
     const all = getItem<Voucher[]>('acct_vouchers', [])
     return all.filter(v => v.date && parseInt(v.date.substring(0, 4)) === year)
-      .sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.createdAt || '').localeCompare(a.createdAt || ''))
+      .sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.createdAt || '').localeCompare(a.createdAt || '') || Number(b.id) - Number(a.id))
   }, [year, refresh])
 
   const incCnt = vouchers.filter(v => v.type === 'income').length
