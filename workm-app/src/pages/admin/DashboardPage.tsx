@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
 import { InstructionModal, DailyReportModal, ScheduleModal, ProgressReportModal } from '../../components/modals/DashboardModals'
-import { AcctApproval } from './AccountingPage'
+import AcctApproval from './accounting/AcctApproval'
 
 import { Avatar } from '../../components/ui/Avatar'
 import { EmptyState } from '../../components/common/EmptyState'
