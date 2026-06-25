@@ -3,7 +3,7 @@ import { getItem, setItem } from '../../../utils/storage'
 import { formatNumber } from '../../../utils/format'
 import { useToastStore } from '../../../stores/toastStore'
 import type { BudgetCat, PayMethodItem } from './types'
-import { Landmark, Coins, FileText, Ticket, Plus, Trash2, Search } from 'lucide-react'
+import { Landmark, Coins, FileText, Ticket, Plus, Trash2, Search, ChevronDown } from 'lucide-react'
 
 
 export default function AcctIncomeMethods({ catId }: { catId?: string | null }) {

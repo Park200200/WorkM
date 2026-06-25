@@ -7,6 +7,7 @@ import { saveAttachmentImage, deleteAttachmentImage } from '../../../utils/attac
 import { PrintApprovalForm } from '../../../components/accounting/PrintApprovalForm'
 import type { BudgetCat, BudgetItem, BudgetItemDef, CashFlow, Approval, Voucher, PayMethodItem } from './types'
 import { getLocalDate, getLocalISOString, uid } from './utils'
+import { Wallet, ArrowDownCircle, ArrowUpCircle, ScrollText, Clock, ChevronDown, Trash2, Save, X, Check, ShieldCheck, RefreshCw, Paperclip, Eye, ArrowLeftRight } from 'lucide-react'
 
 export default function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense' | 'income' | 'withdrawal'; catId?: string | null }) {
   const [refresh, setRefresh] = useState(0)

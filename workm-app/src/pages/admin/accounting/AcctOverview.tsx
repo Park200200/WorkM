@@ -3,6 +3,8 @@ import { getItem } from '../../../utils/storage'
 import { formatNumber } from '../../../utils/format'
 import { useAuthStore } from '../../../stores/authStore'
 import type { BudgetCat, BudgetItem, CashFlow, Approval, Voucher } from './types'
+import { cn } from '../../../utils/cn'
+import { FileCheck, ArrowDownCircle, ArrowUpCircle, PieChart, ScrollText, Settings2, Banknote, Settings } from 'lucide-react'
 
 export default function AcctOverview({ year, selectedCatId }: { year: number; selectedCatId: string | number | null }) {
   const budgetCats = useMemo(() => getItem<BudgetCat[]>('acct_budget_cats', []), [])

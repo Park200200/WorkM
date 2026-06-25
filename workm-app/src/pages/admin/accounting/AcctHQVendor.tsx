@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react'
 import { getItem, setItem } from '../../../utils/storage'
 import { formatNumber } from '../../../utils/format'
 import type { HQV } from './types'
+import { fmtPhone, fmtBizNo } from './utils'
+import { Building2, Search, ChevronDown, Plus, Edit3, Trash2, Save, X, MoreHorizontal, Paperclip } from 'lucide-react'
 
 
 export default function AcctHQVendor() {

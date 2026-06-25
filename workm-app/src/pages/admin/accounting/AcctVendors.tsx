@@ -3,6 +3,7 @@ import { getItem, setItem } from '../../../utils/storage'
 import { formatNumber } from '../../../utils/format'
 import type { Vendor } from './types'
 import { fmtPhone, fmtBizNo } from './utils'
+import { ContactRound, Plus, Edit3, Save, X } from 'lucide-react'
 
 
 export default function AcctVendors() {

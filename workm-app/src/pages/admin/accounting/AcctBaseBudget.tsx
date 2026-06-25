@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { getItem, setItem } from '../../../utils/storage'
 import { formatNumber } from '../../../utils/format'
 import type { BudgetCat } from './types'
+import { Landmark, BarChart2 } from 'lucide-react'
 
 export default function AcctBaseBudget({ year: propYear }: { year: number }) {
   const [searchParams, setSearchParams] = useSearchParams()

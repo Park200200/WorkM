@@ -6,6 +6,7 @@ import { saveAttachmentImage, deleteAttachmentImage } from '../../../utils/attac
 import { PrintApprovalForm } from '../../../components/accounting/PrintApprovalForm'
 import type { BudgetCat, BudgetItem, Approval } from './types'
 import { getLocalDate, getLocalISOString, uid } from './utils'
+import { Wallet, FileCheck, Search, Plus, Edit3, Trash2, X, Check, Ban, MoreHorizontal, RefreshCw, Paperclip, Send, Eye, CheckCircle2, Archive, ClipboardList } from 'lucide-react'
 
 export default function AcctApproval({ year }: { year: number }) {
   const [searchParams, setSearchParams] = useSearchParams()

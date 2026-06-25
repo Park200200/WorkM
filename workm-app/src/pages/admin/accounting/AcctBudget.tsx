@@ -3,7 +3,7 @@ import { getItem, setItem } from '../../../utils/storage'
 import { formatNumber } from '../../../utils/format'
 import { useToastStore } from '../../../stores/toastStore'
 import type { BudgetCat, BudgetItem, BudgetItemDef, BudgetSubDef, BudgetDetailDef, AccountPoolEntry } from './types'
-import { Settings, Plus, Trash2, ChevronDown, ChevronUp, Search, Edit3 } from 'lucide-react'
+import { Settings, Plus, Trash2, ChevronDown, ChevronUp, Search, Edit3, PieChart, ScrollText, X, Check, Ban, CreditCard, User, Landmark, Calendar, Filter, CheckCircle2 } from 'lucide-react'
 
 export default function AcctBudget({ year }: { year: number }) {
   const [selectedCatId, setSelectedCatId] = useState<string | number | null>(null)
