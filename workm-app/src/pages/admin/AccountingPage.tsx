@@ -7168,12 +7168,12 @@ function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense'
                     <td className="py-2.5 px-3.5 text-[12px] font-extrabold text-right" style={{ color: typeColors[type] }}>{formatNumber(c.amount || 0)}원</td>
                     <td className="py-2.5 px-3.5 text-center">
                       {(() => {
-                        // 연결된 품의가 결의 이후 상태이면 삭제 불가
+                        // 정산중/완료 상태만 삭제 불가 (결의 전은 삭제 가능)
                         const allAp: any[] = getItem('acct_approvals', [])
                         const linkedAp = (c as any).approvalId ? allAp.find((a: any) => String(a.id) === String((c as any).approvalId)) : null
-                        const resolvedStatuses = ['toResolve', 'confirming', 'completed']
-                        const isResolved = linkedAp && resolvedStatuses.includes(linkedAp.status)
-                        if (isResolved) return <span className="text-[10px] text-[var(--text-muted)]">🔒</span>
+                        const lockedStatuses = ['confirming', 'completed']
+                        const isLocked = linkedAp && lockedStatuses.includes(linkedAp.status)
+                        if (isLocked) return <span className="text-[10px] text-[var(--text-muted)]">🔒</span>
                         return <button onClick={() => deleteEntry(c.id)} className="p-1 rounded-md bg-[rgba(239,68,68,.08)] text-[#ef4444] hover:bg-[rgba(239,68,68,.15)] cursor-pointer"><Trash2 size={13} /></button>
                       })()}
                     </td>
