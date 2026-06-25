@@ -291,6 +291,30 @@ export function initAccountingSeed() {
     localStorage.setItem('_acct_preexp_completed_v4', '1')
   }
 
+  // ── 예산구분 없는 테스트 데이터 일괄 삭제 패치 ──
+  if (!localStorage.getItem('_acct_clean_no_budgetcat_v1')) {
+    const cfs: any[] = getItem('acct_cashflows', [])
+    const removeCfIds = cfs.filter(c => !c.budgetCatId && c.type !== 'transfer').map(c => String(c.id))
+    if (removeCfIds.length > 0) {
+      // cashflow 삭제
+      const cleanedCfs = cfs.filter(c => !removeCfIds.includes(String(c.id)))
+      setItem('acct_cashflows', cleanedCfs)
+      // 연결된 voucher 삭제
+      const vouchers: any[] = getItem('acct_vouchers', [])
+      const cleanedVouchers = vouchers.filter(v => !removeCfIds.includes(String(v.id)))
+      setItem('acct_vouchers', cleanedVouchers)
+      // 연결된 approval 상태 복원
+      const approvals: any[] = getItem('acct_approvals', [])
+      const linkedApIds = cfs.filter(c => removeCfIds.includes(String(c.id)) && c.approvalId).map(c => String(c.approvalId))
+      if (linkedApIds.length > 0) {
+        const updatedAps = approvals.map(a => linkedApIds.includes(String(a.id)) ? { ...a, status: 'approved' } : a)
+        setItem('acct_approvals', updatedAps)
+      }
+      console.log(`[patch] 예산구분 없는 데이터 ${removeCfIds.length}건 삭제`)
+    }
+    localStorage.setItem('_acct_clean_no_budgetcat_v1', '1')
+  }
+
   /* ── 시드 버전 변경 시 회계 데이터 초기화 후 재시드 ── */
   const currentSeedVer = '_acct_react_seed_v11'
   const acctSeedDone = !!localStorage.getItem(currentSeedVer)  // early return 제거: 개별 키 체크로 복구
