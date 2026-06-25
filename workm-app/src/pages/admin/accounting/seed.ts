@@ -2,6 +2,77 @@ import { getItem, setItem } from '../../../utils/storage'
 import { getLocalISOString } from './utils'
 import type { BudgetCat, BudgetItem } from './types'
 
+const SYNC_KEYS = [
+  'acct_budget_cats', 'acct_budgets', 'acct_budget_item_defs',
+  'acct_accounts', 'acct_vendors', 'acct_cashflows', 'acct_approvals', 'acct_vouchers',
+  'acct_opening_balances', 'acct_pay_methods_v2', 'acct_payment_methods',
+  'acct_income_methods', 'acct_hq_vendors', 'acct_hq_vendors_v2',
+  'acct_company_accounts',
+]
+
+export async function loadSettingsFromServer() {
+  try {
+    const base = (import.meta as any).env?.BASE_URL || '/'
+    const res = await fetch(`${base}data/settings.json?t=${Date.now()}`)
+    if (!res.ok) return false
+    const data = await res.json()
+    if (!data || typeof data !== 'object') return false
+    let loaded = 0
+    for (const key of Object.keys(data)) {
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, typeof data[key] === 'string' ? data[key] : JSON.stringify(data[key]))
+        loaded++
+      }
+    }
+    return loaded > 0
+  } catch { return false }
+}
+
+export function exportSettingsJson(): string {
+  const data: Record<string, any> = {}
+  for (const key of SYNC_KEYS) {
+    const val = localStorage.getItem(key)
+    if (val) {
+      try { data[key] = JSON.parse(val) } catch { data[key] = val }
+    }
+  }
+  return JSON.stringify(data, null, 2)
+}
+
+export function downloadSettingsJson() {
+  const json = exportSettingsJson()
+  const blob = new Blob([json], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'settings.json'
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export function importSettingsFromJson(json: string, overwrite = true): number {
+  try {
+    const data = JSON.parse(json)
+    const keysToSet: { key: string; value: string }[] = []
+    for (const key of Object.keys(data)) {
+      if (overwrite || !localStorage.getItem(key)) {
+        keysToSet.push({ key, value: typeof data[key] === 'string' ? data[key] : JSON.stringify(data[key]) })
+      }
+    }
+    const backup = keysToSet.map(({ key }) => ({ key, prev: localStorage.getItem(key) }))
+    try {
+      keysToSet.forEach(({ key, value }) => localStorage.setItem(key, value))
+    } catch (e) {
+      backup.forEach(({ key, prev }) => {
+        if (prev === null) localStorage.removeItem(key)
+        else localStorage.setItem(key, prev)
+      })
+      return 0
+    }
+    return keysToSet.length
+  } catch { return 0 }
+}
+
 export function initAccountingSeed() {
   // 기존 데이터 보존: 시드는 데이터가 없을 때만 초기화
   // (더 이상 시드 버전 변경 시 기존 데이터를 삭제하지 않음)

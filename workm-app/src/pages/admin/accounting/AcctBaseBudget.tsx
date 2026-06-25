@@ -4,6 +4,10 @@ import { getItem, setItem } from '../../../utils/storage'
 import { formatNumber } from '../../../utils/format'
 import type { BudgetCat } from './types'
 import { Landmark, BarChart2 } from 'lucide-react'
+import { cn } from '../../../utils/cn'
+import { useAuthStore } from '../../../stores/authStore'
+import AcctBudget from './AcctBudget'
+import { AcctBalance } from '../../../components/accounting/AcctBalance'
 
 export default function AcctBaseBudget({ year: propYear }: { year: number }) {
   const [searchParams, setSearchParams] = useSearchParams()

@@ -4,6 +4,8 @@ import { formatNumber } from '../../../utils/format'
 import type { HQV } from './types'
 import { fmtPhone, fmtBizNo } from './utils'
 import { Building2, Search, ChevronDown, Plus, Edit3, Trash2, Save, X, MoreHorizontal, Paperclip } from 'lucide-react'
+import { cn } from '../../../utils/cn'
+import { createPortal } from 'react-dom'
 
 
 export default function AcctHQVendor() {

@@ -4,8 +4,9 @@ import { formatNumber } from '../../../utils/format'
 import { useToastStore } from '../../../stores/toastStore'
 import type { BudgetCat, PayMethodItem, PayMethodCard, PayMethodNote } from './types'
 import { getLocalDate } from './utils'
-import { Landmark, Coins, FileText, Ticket, CreditCard, Plus, Trash2, ChevronDown, ChevronUp, Search } from 'lucide-react'
+import { Landmark, Coins, FileText, Ticket, CreditCard, Plus, Trash2, ChevronDown, ChevronUp, Search, ScrollText } from 'lucide-react'
 import { cn } from '../../../utils/cn'
+import { DatePicker } from '../../../components/ui/DatePicker'
 
 
 const DETAIL_FIELD_LABEL = 'text-[11px] font-bold text-[var(--text-muted)] mb-1 block'

@@ -4,6 +4,7 @@ import { formatNumber } from '../../../utils/format'
 import type { Vendor } from './types'
 import { fmtPhone, fmtBizNo } from './utils'
 import { ContactRound, Plus, Edit3, Save, X } from 'lucide-react'
+import { createPortal } from 'react-dom'
 
 
 export default function AcctVendors() {
