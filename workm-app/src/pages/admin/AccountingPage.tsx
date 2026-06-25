@@ -248,7 +248,7 @@ export function initAccountingSeed() {
         setItem('acct_accounts', updated)
       }
     }
-    localStorage.setItem('_acct_desc_patch_v1', '1')
+    setItem('_acct_desc_patch_v1', '1')
   }
 
   /* ── 보조금수익 계정과목 패치 ── */
@@ -258,7 +258,7 @@ export function initAccountingSeed() {
       existing.push({ code: '4-02-08', name: '보조금수익', type: 'revenue', group: '영업외수익', description: '국가·지자체 등으로부터 받은 보조금 수익', active: true })
       setItem('acct_accounts', existing)
     }
-    localStorage.setItem('_acct_subsidy_patch_v1', '1')
+    setItem('_acct_subsidy_patch_v1', '1')
   }
 
   /* ── 상품권 계정과목 패치 ── */
@@ -268,7 +268,7 @@ export function initAccountingSeed() {
       existing.push({ code: '1-01-20', name: '상품권', type: 'asset', group: '유동자산', description: '문화상품권·백화점상품권 등 유가증권 성격의 상품권', active: true })
       setItem('acct_accounts', existing)
     }
-    localStorage.setItem('_acct_voucher_acct_patch_v1', '1')
+    setItem('_acct_voucher_acct_patch_v1', '1')
   }
 
   /* ── 선지출/대체 품의가 approved/toResolve 상태인 경우 completed로 자동 마이그레이션 ── */
@@ -288,7 +288,7 @@ export function initAccountingSeed() {
       return a
     })
     if (patchedPre) setItem('acct_approvals', updatedApprovals)
-    localStorage.setItem('_acct_preexp_completed_v4', '1')
+    setItem('_acct_preexp_completed_v4', '1')
   }
 
   // ── 예산구분 없는 테스트 데이터 일괄 삭제 패치 ──
@@ -312,7 +312,7 @@ export function initAccountingSeed() {
       }
       console.log(`[patch] 예산구분 없는 데이터 ${removeCfIds.length}건 삭제`)
     }
-    localStorage.setItem('_acct_clean_no_budgetcat_v1', '1')
+    setItem('_acct_clean_no_budgetcat_v1', '1')
   }
 
   /* ── 시드 버전 변경 시 회계 데이터 초기화 후 재시드 ── */
@@ -968,7 +968,7 @@ export function initAccountingSeed() {
     setItem('acct_opening_balances', [{"year":2026,"accountCode":"1010","amount":5000000},{"year":2026,"accountCode":"1020","amount":50000000},{"year":2026,"accountCode":"1030","amount":2000000},{"year":2026,"accountCode":"1040","amount":1000000},{"year":2026,"accountCode":"1530","amount":3000000},{"year":2026,"accountCode":"1540","amount":10000000},{"year":2026,"accountCode":"2010","amount":5000000},{"year":2026,"accountCode":"2030","amount":3000000},{"year":2026,"accountCode":"3010","amount":50000000},{"year":2026,"accountCode":"3020","amount":13000000}])
   }
 
-  localStorage.setItem(currentSeedVer, '1')
+  setItem(currentSeedVer, '1')
 }
 
 /* ─────────────────────────────────────────────
@@ -1673,7 +1673,7 @@ function AcctBaseBudget({ year: propYear }: { year: number }) {
           {/* 회계년도 적용 버튼 */}
           <button
             onClick={isBudgetApprover ? () => {
-              localStorage.setItem('acct_active_year', String(propYear))
+              setItem('acct_active_year', String(propYear))
               setAppliedYear(propYear)
               const tab = searchParams.get('tab') || 'base_budget'
               const params: Record<string, string> = { tab, year: String(propYear) }
@@ -1907,7 +1907,7 @@ function AcctBudget({ year }: { year: number }) {
         const approversList = [defaultApprover, catForm.approver].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i)
         return { ...c, name: catForm.name.trim(), description: catForm.description.trim(), bank: catForm.accounts[0]?.bankName || catForm.bank, bankInfo: catForm.accounts[0]?.bankName || catForm.bank, accounts: catForm.accounts, periodFrom: catForm.periodFrom, periodTo: catForm.periodTo, year: y, users: catForm.users, approver: catForm.approver, approvers: approversList }
       })
-      localStorage.setItem('acct_budget_cats', JSON.stringify(updated))
+      setItem('acct_budget_cats', updated)
     } else {
       const y = catForm.periodFrom ? parseInt(catForm.periodFrom.substring(0, 4)) : year
       const defaultApproverNew = staffListForBudget.find(s => (s as any).approverType === 'approver')?.name || ''
@@ -1927,7 +1927,7 @@ function AcctBudget({ year }: { year: number }) {
         approvers: approversListNew,
       } as any
       all.push(newCat)
-      localStorage.setItem('acct_budget_cats', JSON.stringify(all))
+      setItem('acct_budget_cats', all)
       setSelectedCatId(newCat.id)
     }
     setCatModalOpen(false)
@@ -1939,8 +1939,8 @@ function AcctBudget({ year }: { year: number }) {
     const sid = String(id)
     const cats = getItem<BudgetCat[]>('acct_budget_cats', []).filter(c => String(c.id) !== sid)
     const bds = getItem<BudgetItem[]>('acct_budgets', []).filter(b => String(b.catId) !== sid)
-    localStorage.setItem('acct_budget_cats', JSON.stringify(cats))
-    localStorage.setItem('acct_budgets', JSON.stringify(bds))
+    setItem('acct_budget_cats', cats)
+    setItem('acct_budgets', bds)
     if (String(selectedCatId) === sid) setSelectedCatId(null)
     setRefresh(r => r + 1)
   }
@@ -1978,7 +1978,7 @@ function AcctBudget({ year }: { year: number }) {
         if (b.id !== budgetEditId) return b
         return { ...b, itemName: budgetForm.itemName.trim(), subItemName: budgetForm.subItemName.trim(), detailItemName: budgetForm.detailItemName.trim(), accountCode: budgetForm.accountCode, contraAccountCode: budgetForm.contraAccountCode, amount: amt, memo: budgetForm.memo, budgetItemDefId: budgetForm.budgetItemDefId, budgetSubDefId: budgetForm.budgetSubDefId }
       })
-      localStorage.setItem('acct_budgets', JSON.stringify(updated))
+      setItem('acct_budgets', updated)
     } else {
       all.push({
         id: Date.now() + Math.floor(Math.random() * 1000),
@@ -1995,7 +1995,7 @@ function AcctBudget({ year }: { year: number }) {
         budgetItemDefId: budgetForm.budgetItemDefId,
         budgetSubDefId: budgetForm.budgetSubDefId,
       })
-      localStorage.setItem('acct_budgets', JSON.stringify(all))
+      setItem('acct_budgets', all)
     }
     // 새 예산목이면 히스토리에 자동 추가
     const trimName = budgetForm.itemName.trim()
@@ -2011,7 +2011,7 @@ function AcctBudget({ year }: { year: number }) {
   const deleteBudgetItem = (id: number) => {
     if (!confirm('이 예산항목을 삭제하시겠습니까?')) return
     const bds = getItem<BudgetItem[]>('acct_budgets', []).filter(b => b.id !== id)
-    localStorage.setItem('acct_budgets', JSON.stringify(bds))
+    setItem('acct_budgets', bds)
     setRefresh(r => r + 1)
   }
 
@@ -2109,7 +2109,7 @@ function AcctBudget({ year }: { year: number }) {
       }
     })
 
-    localStorage.setItem('acct_budgets', JSON.stringify([...otherBudgets, ...newBudgets]))
+    setItem('acct_budgets', [...otherBudgets, ...newBudgets])
     setBudgetPickerOpen(false)
     setRefresh(r => r + 1)
   }
@@ -2119,7 +2119,7 @@ function AcctBudget({ year }: { year: number }) {
     const amt = parseInt(editingAmountVal.replace(/,/g, '')) || 0
     const all = getItem<BudgetItem[]>('acct_budgets', [])
     const updated = all.map(b => b.id === budgetId ? { ...b, amount: amt } : b)
-    localStorage.setItem('acct_budgets', JSON.stringify(updated))
+    setItem('acct_budgets', updated)
     setEditingAmountId(null)
     setEditingAmountVal('')
     setRefresh(r => r + 1)
@@ -2147,7 +2147,7 @@ function AcctBudget({ year }: { year: number }) {
       }
       return b
     })
-    localStorage.setItem('acct_budgets', JSON.stringify(updated))
+    setItem('acct_budgets', updated)
     setAliasDropId(null)
     setRefresh(r => r + 1)
   }
@@ -9452,9 +9452,9 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
           else if (['약속어음', '환어음', '수표', '어음'].includes(name)) cat = '어음'
           return { id: Date.now() + i, name, category: cat }
         })
-        localStorage.setItem('acct_pay_methods_v2', JSON.stringify(migrated))
+        setItem('acct_pay_methods_v2', migrated)
       } else {
-        localStorage.setItem('acct_pay_methods_v2', JSON.stringify(DEFAULT_PAY_ITEMS))
+        setItem('acct_pay_methods_v2', DEFAULT_PAY_ITEMS)
       }
       setRefresh(r => r + 1)
     }
@@ -9486,8 +9486,8 @@ function AcctPayMethods({ catId }: { catId?: string | null }) {
   }, [budgetCats, selectedPayCatId])
 
   const saveAll = (updated: PayMethodItem[]) => {
-    localStorage.setItem('acct_pay_methods_v2', JSON.stringify(updated))
-    localStorage.setItem('acct_payment_methods', JSON.stringify(updated.map(i => i.name)))
+    setItem('acct_pay_methods_v2', updated)
+    setItem('acct_payment_methods', updated.map(i => i.name))
     setRefresh(r => r + 1)
   }
 
@@ -10385,7 +10385,7 @@ function AcctIncomeMethods({ catId }: { catId?: string | null }) {
   }, [budgetCats, selectedCatId])
 
   const saveAll = (updated: PayMethodItem[]) => {
-    localStorage.setItem('acct_income_methods', JSON.stringify(updated))
+    setItem('acct_income_methods', updated)
     setRefresh(r => r + 1)
   }
 
@@ -10749,9 +10749,9 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
   }, [budgetCats, selectedCatId])
 
   const saveAll = (updated: PayMethodItem[]) => {
-    localStorage.setItem(storageKey, JSON.stringify(updated))
+    setItem(storageKey, updated)
     if (direction === 'expense') {
-      localStorage.setItem('acct_payment_methods', JSON.stringify(updated.map(i => i.name)))
+      setItem('acct_payment_methods', updated.map(i => i.name))
     }
     setRefresh(r => r + 1)
   }
@@ -11192,7 +11192,7 @@ function AcctMethodReg({ catId }: { catId?: string | null }) {
                         const incomeAll: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_income_methods') || '[]') } catch { return [] } })()
                         const toAdd = filteredExpenseItems.filter(ei => checkedExpenseIds.includes(ei.id) && !catItems.some(ci => ci.name === ei.name))
                         const newItems = toAdd.map((ei, i) => ({ ...ei, id: Date.now() + i, budgetCatId: selectedCatId || undefined }))
-                        localStorage.setItem('acct_income_methods', JSON.stringify([...incomeAll, ...newItems]))
+                        setItem('acct_income_methods', [...incomeAll, ...newItems])
                         setRefresh(r => r + 1)
                         addToast('success', `${newItems.length}건 입금계정에 추가됨`)
                         setShowExpenseList(false)
