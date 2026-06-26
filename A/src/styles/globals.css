@@ -770,6 +770,21 @@ select optgroup {
   transition: all .2s;
 }
 .print-btn-close:hover { background: #e2e8f0; color: #334155; }
+.pf-header-input {
+  padding: 4px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  background: #f8fafc;
+  outline: none;
+  transition: border-color .2s;
+}
+.pf-header-input:focus {
+  border-color: #4f6ef7;
+  background: #fff;
+}
 
 /* ── A4 용지 래퍼 (화면 미리보기) ── */
 .print-page-wrapper {
@@ -794,10 +809,7 @@ select optgroup {
 
 /* ── A4 페이지 ── */
 .print-a4-page {
-  width: 210mm;
-  height: 297mm;
-  min-height: 297mm;
-  max-height: 297mm;
+  /* width / height는 인라인 스타일로 동적 제어 */
   background: #ffffff;
   color: #000000;
   box-shadow: 0 4px 24px rgba(0,0,0,.12);
@@ -808,6 +820,22 @@ select optgroup {
   line-height: 1.6;
   position: relative;
   overflow: hidden;
+}
+
+/* ── 증빙서류 페이지 (자연 흐름) ── */
+.print-evidence-page {
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 0 4px 24px rgba(0,0,0,.12);
+  padding: 10mm;
+  box-sizing: border-box;
+  font-family: 'Malgun Gothic', '맑은 고딕', 'Nanum Gothic', '나눔고딕', sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.pf-evidence-item {
+  page-break-inside: avoid;
+  margin-bottom: 12px;
 }
 
 /* ── 결재란 (우측 상단) ── */
@@ -1054,6 +1082,18 @@ select optgroup {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+  }
+
+  /* 증빙서류 페이지 인쇄 설정 (자연 흐름) */
+  .print-evidence-page {
+    width: 100%;
+    box-shadow: none;
+    padding: 10mm;
+    margin: 0;
+    page-break-before: always;
+  }
+  .pf-evidence-item {
+    page-break-inside: avoid;
   }
 
   @page {

@@ -1,14 +1,15 @@
 /* ══════════════════════════════════════════════
    기존 앱과 동일한 샘플 데이터 시드
+   - 버전이 같아도 개별 키가 비어있으면 자동 복구
    ══════════════════════════════════════════════ */
 import { getItem, setItem } from './storage'
 
-const SEED_VERSION = 'v7'
+const SEED_VERSION = 'v11'  // v10: 사용자명-품의 데이터 정합성 보장을 위한 전체 리셋
 
 export function seedIfEmpty() {
   const prevVersion = getItem<string>('ws_seed_version', '')
-  // 이미 시드된 경우 스킵
-  if (prevVersion === SEED_VERSION) return
+  const isUpgrade = prevVersion !== SEED_VERSION
+  // early return 제거: 버전이 같더라도 데이터 유실 시 개별 복구
 
   // 버전 업그레이드 시에도 기존 데이터 유지 (삭제 없이 새 시드만 추가)
   // v7: 상세업무 시드 추가
@@ -123,8 +124,8 @@ export function seedIfEmpty() {
     ])
   }
 
-  // ── 직원 (사용자) ──
-  if (!getItem('ws_users', null)) {
+  // ── 직원 (사용자) ── v8: 직원명 갱신 시 강제 리셋
+  if (!getItem('ws_users', null) || getItem('ws_users', []).length === 0 || isUpgrade) {
     setItem('ws_users', [
       {
         id: 1, name: '최대표', role: 'admin', rank: '대표', dept: '경영지원팀', avatar: 'CD', color: '#4f6ef7',
@@ -134,38 +135,38 @@ export function seedIfEmpty() {
         position: 'CEO', approverType: 'approver'
       },
       {
-        id: 2, name: '박팀장', role: 'admin', rank: '팀장', dept: '개발팀', avatar: 'PT', color: '#8b5cf6',
+        id: 2, name: '박팀장', role: 'user', rank: '팀장', dept: '개발팀', avatar: 'PT', color: '#8b5cf6',
         email: '박팀장@workm.kr', phone: '010-1000-0002', birthday: '1982-07-20',
         hiredAt: '2018-03-01', resignedAt: null, address: '경기도 성남시 분당구 판교로 200',
         loginId: '박팀장', pw: '1234', status: '근무', note: '개발팀 팀장', photo: '',
         position: '팀장', approverType: 'approver'
       },
       {
-        id: 3, name: '하팀원', role: 'user', rank: '사원', dept: '개발팀', avatar: 'HT', color: '#06b6d4',
-        email: '하팀원@workm.kr', phone: '010-1000-0003', birthday: '1998-11-05',
-        hiredAt: '2024-03-01', resignedAt: null, address: '서울시 마포구 월드컵로 300',
-        loginId: '하팀원', pw: '1234', status: '근무', note: '개발팀 신입사원', photo: '',
-        position: '팀원', approverType: 'requester'
-      },
-      {
-        id: 4, name: '최경리', role: 'user', rank: '대리', dept: '경영지원팀', avatar: 'CK', color: '#22c55e',
-        email: '최경리@workm.kr', phone: '010-1000-0004', birthday: '1992-04-18',
+        id: 3, name: '한경리', role: 'user', rank: '대리', dept: '경영지원팀', avatar: 'HK', color: '#22c55e',
+        email: '한경리@workm.kr', phone: '010-1000-0003', birthday: '1992-04-18',
         hiredAt: '2020-06-01', resignedAt: null, address: '서울시 서초구 서초대로 400',
-        loginId: '최경리', pw: '1234', status: '근무', note: '경리/회계 담당', photo: '',
+        loginId: '한경리', pw: '1234', status: '근무', note: '경리/회계 담당', photo: '',
         position: '팀원', approverType: 'requester'
       },
       {
-        id: 5, name: '강선임', role: 'user', rank: '선임', dept: '기획팀', avatar: 'KS', color: '#f59e0b',
-        email: '강선임@workm.kr', phone: '010-1000-0005', birthday: '1990-09-25',
+        id: 4, name: '강선임', role: 'user', rank: '선임', dept: '기획팀', avatar: 'KS', color: '#f59e0b',
+        email: '강선임@workm.kr', phone: '010-1000-0004', birthday: '1990-09-25',
         hiredAt: '2019-09-01', resignedAt: null, address: '서울시 종로구 종로 500',
         loginId: '강선임', pw: '1234', status: '근무', note: '기획팀 선임', photo: '',
         position: '선임', approverType: 'requester'
       },
       {
-        id: 6, name: '조영업', role: 'user', rank: '과장', dept: '영업팀', avatar: 'JY', color: '#ef4444',
-        email: '조영업@workm.kr', phone: '010-1000-0006', birthday: '1987-12-10',
+        id: 5, name: '조영업', role: 'user', rank: '과장', dept: '영업팀', avatar: 'JY', color: '#ef4444',
+        email: '조영업@workm.kr', phone: '010-1000-0005', birthday: '1987-12-10',
         hiredAt: '2018-08-01', resignedAt: null, address: '서울시 강남구 학동로 600',
         loginId: '조영업', pw: '1234', status: '근무', note: '영업팀 과장', photo: '',
+        position: '팀원', approverType: 'requester'
+      },
+      {
+        id: 6, name: '하팀원', role: 'user', rank: '사원', dept: '개발팀', avatar: 'HT', color: '#06b6d4',
+        email: '하팀원@workm.kr', phone: '010-1000-0006', birthday: '1998-11-05',
+        hiredAt: '2024-03-01', resignedAt: null, address: '서울시 마포구 월드컵로 300',
+        loginId: '하팀원', pw: '1234', status: '근무', note: '개발팀 신입사원', photo: '',
         position: '팀원', approverType: 'requester'
       },
       {
@@ -176,16 +177,41 @@ export function seedIfEmpty() {
         position: '팀원', approverType: 'requester'
       },
       {
-        id: 8, name: '오개발', role: 'user', rank: '주임', dept: '개발팀', avatar: 'OG', color: '#14b8a6',
-        email: '오개발@workm.kr', phone: '010-1000-0008', birthday: '1995-01-22',
+        id: 8, name: '이연구', role: 'user', rank: '연구원', dept: '개발팀', avatar: 'IY', color: '#14b8a6',
+        email: '이연구@workm.kr', phone: '010-1000-0008', birthday: '1995-01-22',
         hiredAt: '2022-04-01', resignedAt: null, address: '서울시 송파구 올림픽로 800',
-        loginId: '오개발', pw: '1234', status: '근무', note: '개발팀 주임', photo: '',
+        loginId: '이연구', pw: '1234', status: '근무', note: '개발팀 연구원', photo: '',
+        position: '팀원', approverType: 'requester'
+      },
+      {
+        id: 9, name: '김과장', role: 'user', rank: '과장', dept: '마케팅팀', avatar: 'KK', color: '#a855f7',
+        email: '김과장@workm.kr', phone: '010-1000-0009', birthday: '1988-08-15',
+        hiredAt: '2017-05-01', resignedAt: null, address: '서울시 영등포구 여의대로 900',
+        loginId: '김과장', pw: '1234', status: '근무', note: '마케팅팀 과장', photo: '',
+        position: '팀원', approverType: 'requester'
+      },
+      {
+        id: 10, name: '오사원', role: 'user', rank: '주임', dept: '디자인팀', avatar: 'OS', color: '#64748b',
+        email: '오사원@workm.kr', phone: '010-1000-0010', birthday: '1997-03-05',
+        hiredAt: '2023-01-01', resignedAt: null, address: '경기도 수원시 팔달구 1000',
+        loginId: '오사원', pw: '1234', status: '근무', note: '디자인팀 주임', photo: '',
         position: '팀원', approverType: 'requester'
       },
     ])
   }
 
-  // ── 업무 (tasks) ── v2: 20개 샘플
+  // ── 박팀장 role 패치: admin → user (일회성) ──
+  if (!localStorage.getItem('_fix_park_role_v1')) {
+    const users = getItem<any[]>('ws_users', [])
+    const park = users.find((u: any) => u.name === '박팀장')
+    if (park && park.role === 'admin') {
+      park.role = 'user'
+      setItem('ws_users', users)
+    }
+    localStorage.setItem('_fix_park_role_v1', '1')
+  }
+
+  // ── 업무 (tasks)// ── 업무 (tasks) ── v2: 20개 샘플
   const existingTasks = getItem('ws_tasks', null) as any[] | null
   if (!existingTasks || existingTasks.length < 10) {
     const today = new Date().toISOString().slice(0, 10)
@@ -230,7 +256,7 @@ export function seedIfEmpty() {
   }
 
   // ── 게시판 데이터 갱신 (v4: 50개 샘플) ──
-  localStorage.removeItem('board_items')
+  if (isUpgrade) localStorage.removeItem('board_items')
 
   setItem('ws_seed_version', SEED_VERSION)
 }

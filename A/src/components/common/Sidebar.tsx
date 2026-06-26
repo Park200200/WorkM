@@ -7,12 +7,12 @@ import { useThemeStore, SIDEBAR_WIDTH_VALUES } from '../../stores/themeStore'
 import {
   Home, Building2, Info, Contact, SlidersHorizontal, Users,
   Settings, Calendar, BarChart3, Briefcase, Globe, Calculator,
-  ChevronDown, ArrowLeft,
+  ChevronDown, ArrowLeft, Lock,
   /* 회계 전용 아이콘 (레거시 매칭) */
   LayoutDashboard, Wallet, Landmark, FileCheck, CreditCard,
-  ArrowDownCircle, ArrowUpCircle, ScrollText, ContactRound,
+  ArrowDownCircle, ArrowUpCircle, ScrollText, ContactRound, ArrowLeftRight,
   /* 홈페이지 전용 아이콘 (레거시 매칭) */
-  Settings2, MenuSquare, LayoutPanelLeft, ClipboardList, Film, FileText,
+  Settings2, MenuSquare, LayoutPanelLeft, ClipboardList, Film, FileText, PenLine,
 } from 'lucide-react'
 
 interface NavEntry {
@@ -20,6 +20,7 @@ interface NavEntry {
   label: string
   icon: React.ElementType
   badge?: number
+  disabled?: boolean
 }
 
 interface NavGroup {
@@ -49,7 +50,6 @@ const mainNav: NavItem[] = [
     ],
   },
   { path: '/progress', label: '진행현황', icon: Settings },
-  { path: '/accounting?tab=approval', label: '품의하기', icon: FileCheck },
 ]
 
 const analyticsNav: NavItem[] = [
@@ -78,10 +78,13 @@ const acctNav: { tab: string; label: string; icon: React.ElementType }[] = [
   { tab: 'income',       label: '입금전표',   icon: ArrowDownCircle },
   { tab: 'withdrawal',   label: '출금전표',   icon: ArrowUpCircle },
   { tab: 'payment',      label: '전표장부',   icon: ScrollText },
+  { tab: 'cashflow_list', label: '입출금내역', icon: ArrowLeftRight },
   { tab: 'reports',      label: '회계현황',   icon: BarChart3 },
   { tab: 'vendors',      label: '거래처관리',   icon: ContactRound },
-  { tab: 'accounts',     label: '계정관리',   icon: Settings2 },
+  { tab: 'methodReg',    label: '수단등록',   icon: CreditCard },
+  { tab: 'budgetTree',   label: '예산과목',   icon: Wallet },
   { tab: 'hq_vendor',    label: '본사거래처',   icon: Building2 },
+  { tab: 'acct_mgmt',    label: '계정관리',   icon: Settings2 },
 ]
 
 /* ═══════════════════════════════════════════
@@ -95,6 +98,7 @@ const hpNav: { tab: string; label: string; icon: React.ElementType }[] = [
   { tab: 'media',    label: '미디어자료',        icon: Film },
   { tab: 'terms',    label: '약관관리',          icon: ScrollText },
   { tab: 'workshop', label: '신청서', icon: FileText },
+  { tab: 'formBuilder', label: '신청서작성', icon: PenLine },
 ]
 
 interface SidebarProps {
@@ -148,29 +152,59 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {/* 네비게이션 */}
         <nav className="flex-1 overflow-y-auto px-2.5 py-3 space-y-0.5">
           <SectionLabel collapsed={collapsed}>회계관리</SectionLabel>
-          {acctNav.map((entry) => {
-            const Icon = entry.icon
-            const isActive = currentTab === entry.tab
-
-            return (
-              <button
-                key={entry.tab}
-                onClick={() => navigate(`/accounting?tab=${entry.tab}${currentYear ? `&year=${currentYear}` : ''}`)}
-                className={cn(
-                  'flex items-center gap-3 rounded-lg h-9 w-full transition-all duration-150 cursor-pointer',
-                  collapsed ? 'justify-center px-0 mx-1' : 'px-3',
-                  isActive
-                    ? 'font-bold'
-                    : 'text-[var(--sidebar-text)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-title)]',
-                )}
-                style={isActive ? { color: 'var(--sidebar-active)', background: 'color-mix(in srgb, var(--sidebar-active) 10%, transparent)' } : undefined}
-                title={collapsed ? entry.label : undefined}
-              >
-                <Icon size={18} className="shrink-0" style={isActive ? { color: 'var(--sidebar-active)' } : undefined} />
-                {!collapsed && <span className="text-[13px] truncate" style={isActive ? { color: 'var(--sidebar-active)' } : undefined}>{entry.label}</span>}
-              </button>
+          {(() => {
+            const userName = user?.name || JSON.parse(localStorage.getItem('ws_user') || '{}')?.name || ''
+            const staffList = JSON.parse(localStorage.getItem('ws_users') || '[]') as any[]
+            const currentStaff = staffList.find((s: any) => s.name === userName)
+            const isAdmin = currentStaff?.role === 'admin'
+            // 현재 선택된 회계연도 기준으로 예산 권한 확인
+            const currentYear = parseInt(new URLSearchParams(location.search).get('year') || String(new Date().getFullYear()))
+            const budgetCats = JSON.parse(localStorage.getItem('acct_budget_cats') || '[]') as any[]
+            const yearCats = budgetCats.filter((c: any) => {
+              const catYear = c.year || (c.periodFrom ? parseInt(c.periodFrom.substring(0, 4)) : 0)
+              return catYear === currentYear
+            })
+            const isBudgetHandler = yearCats.some((c: any) =>
+              (c.users && c.users.includes(userName)) ||
+              (c.approvers && c.approvers.includes(userName)) ||
+              (c.approver === userName)
             )
-          })}
+            // 품의에서 승인자로 지정된 경우도 관련자
+            const hasBudgetAccess = isAdmin || isBudgetHandler
+            // 품의하기만 허용, 나머지 모든 탭 제한 (화이트리스트 방식)
+            const allowedTabs = ['approval']
+
+            return acctNav.map((entry) => {
+              const Icon = entry.icon
+              const isActive = currentTab === entry.tab
+              const isRestricted = !hasBudgetAccess && !allowedTabs.includes(entry.tab)
+
+              return (
+                <button
+                  key={entry.tab}
+                  onClick={isRestricted ? undefined : () => navigate(`/accounting?tab=${entry.tab}${currentYear ? `&year=${currentYear}` : ''}`)}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg h-9 w-full transition-all duration-150',
+                    collapsed ? 'justify-center px-0 mx-1' : 'px-3',
+                    isRestricted
+                      ? 'opacity-40 cursor-not-allowed'
+                      : 'cursor-pointer',
+                    isActive && !isRestricted
+                      ? 'font-bold'
+                      : isRestricted
+                        ? ''
+                        : 'text-[var(--sidebar-text)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-title)]',
+                  )}
+                  style={isActive && !isRestricted ? { color: 'var(--sidebar-active)', background: 'color-mix(in srgb, var(--sidebar-active) 10%, transparent)' } : undefined}
+                  title={isRestricted ? '예산담당자 또는 지출승인권자만 사용 가능' : (collapsed ? entry.label : undefined)}
+                >
+                  <Icon size={18} className="shrink-0" style={isActive && !isRestricted ? { color: 'var(--sidebar-active)' } : undefined} />
+                  {!collapsed && <span className="text-[13px] truncate" style={isActive && !isRestricted ? { color: 'var(--sidebar-active)' } : undefined}>{entry.label}</span>}
+                  {!collapsed && isRestricted && <span className="ml-auto text-[8px]"><Lock size={10} /></span>}
+                </button>
+              )
+            })
+          })()}
         </nav>
 
         {/* 내 책상으로 */}
@@ -306,9 +340,31 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* 네비게이션 */}
       <nav className="flex-1 overflow-y-auto px-2.5 py-3 space-y-0.5">
         <SectionLabel collapsed={collapsed}>Main</SectionLabel>
-        {mainNav.map((item, i) => (
-          <NavItemRenderer key={i} item={item} collapsed={collapsed} currentPath={location.pathname} />
-        ))}
+        {(() => {
+          const userName = user?.name || ''
+          const staffList = JSON.parse(localStorage.getItem('ws_users') || '[]') as any[]
+          const currentStaff = staffList.find((s: any) => s.name === userName)
+          const isBudgetApprover = currentStaff?.approverType === 'approver'
+          
+          // 사원관리(/staff)는 지출승인권자만 클릭 가능
+          const filteredMainNav = mainNav.map(item => {
+            if (isGroup(item) && item.label === '기본관리') {
+              return {
+                ...item,
+                children: item.children.map(child => 
+                  child.path === '/staff' && !isBudgetApprover
+                    ? { ...child, disabled: true }
+                    : child
+                )
+              }
+            }
+            return item
+          })
+          
+          return filteredMainNav.map((item, i) => (
+            <NavItemRenderer key={i} item={item} collapsed={collapsed} currentPath={location.pathname} />
+          ))
+        })()}
 
         <SectionLabel collapsed={collapsed}>Analytics</SectionLabel>
         {analyticsNav.map((item, i) => (
@@ -382,6 +438,25 @@ function NavSingleItem({ entry, collapsed }: { entry: NavEntry; collapsed: boole
   const location = useLocation()
   const nav = useNavigate()
   const hasQuery = entry.path.includes('?')
+
+  // disabled 상태
+  if (entry.disabled) {
+    return (
+      <div
+        className={cn(
+          'flex items-center gap-3 rounded-lg h-9 w-full opacity-40 cursor-not-allowed',
+          collapsed ? 'justify-center px-0 mx-1' : 'px-3',
+        )}
+        title={collapsed ? entry.label : '접근 권한이 없습니다'}
+      >
+        <span className="shrink-0 flex items-center text-[var(--sidebar-text)]">
+          <Icon size={18} />
+        </span>
+        {!collapsed && <span className="text-[13px] truncate text-[var(--sidebar-text)]">{entry.label}</span>}
+        {!collapsed && <span className="ml-auto text-[8px] text-[var(--text-muted)]"><Lock size={10} /></span>}
+      </div>
+    )
+  }
 
   // 쿼리 파라미터가 있는 경우: button + useNavigate 방식
   if (hasQuery) {

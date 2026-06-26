@@ -100,83 +100,100 @@ export function Header() {
     }, 2000)
   }
 
+  const renderBudgetSelectBar = (isMobile = false) => {
+    const budgetCats = JSON.parse(localStorage.getItem('acct_budget_cats') || '[]') as any[]
+    const activeTab = searchParams.get('tab') || 'overview'
+    const acctYear = parseInt(searchParams.get('year') || '') || parseInt(localStorage.getItem('acct_active_year') || '') || currentYear
+
+    const allCatsForYear = budgetCats.filter((c: any) => {
+      const catYear = c.year || (c.periodFrom ? parseInt(c.periodFrom.substring(0, 4)) : currentYear)
+      return catYear === acctYear
+    })
+
+    const userName = user?.name || ''
+    const staffList = JSON.parse(localStorage.getItem('ws_users') || '[]') as any[]
+    const currentStaff = staffList.find((s: any) => s.name === userName)
+    const isBudgetApprover = currentStaff?.approverType === 'approver'
+
+    let budgetCatsForYear = allCatsForYear
+    if (!isBudgetApprover && userName) {
+      budgetCatsForYear = allCatsForYear.filter((c: any) =>
+        (c.users && c.users.length > 0 && c.users.includes(userName)) ||
+        (c.approvers && c.approvers.length > 0 && c.approvers.includes(userName))
+      )
+    }
+
+    const isBudgetHandler = allCatsForYear.some((c: any) =>
+      (c.users && c.users.includes(userName)) ||
+      (c.approvers && c.approvers.includes(userName))
+    )
+    const hasBudgetAccess = isBudgetApprover || isBudgetHandler
+    const currentCat = searchParams.get('cat') || 'all'
+    const isApprovalTab = ['approval', 'vendors', 'budgetTree', 'hq_vendor', 'acct_mgmt'].includes(activeTab)
+
+    const setCat = (catId: string) => {
+      if (isApprovalTab) return
+      const params: Record<string, string> = { tab: activeTab, year: String(acctYear), cat: catId }
+      setSearchParams(params)
+    }
+
+    return (
+      <div className={cn(
+        "items-center gap-1 bg-[var(--bg-muted)] rounded-lg px-1 py-0.5 border border-[var(--border-default)]",
+        isMobile ? "flex w-full overflow-x-auto whitespace-nowrap scrollbar-none" : "hidden md:flex"
+      )}>
+        <span className="px-2 py-1 text-[11px] font-bold text-[var(--text-muted)] shrink-0">예산구분</span>
+        {(() => {
+          const appliedYear = parseInt(localStorage.getItem('acct_active_year') || '') || acctYear
+          return (
+            <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-500 text-white border border-emerald-500 shadow-sm flex items-center gap-0.5 shrink-0">
+              ✓ {appliedYear}년
+            </span>
+          )
+        })()}
+        <div className="w-px h-4 bg-[var(--border-default)] mx-0.5 shrink-0" />
+        <button onClick={() => setCat('all')}
+          className={cn('px-2.5 py-1 rounded-md text-[11px] font-bold transition-all shrink-0',
+            isApprovalTab ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
+            currentCat === 'all' ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)]' + (!isApprovalTab ? ' hover:text-[var(--text-primary)]' : ''))}
+          title={isApprovalTab ? '품의하기에서는 예산선택 불가' : undefined}>
+          전체
+        </button>
+        {budgetCatsForYear.map((c: any) => (
+          <button key={c.id} onClick={() => setCat(String(c.id))}
+            className={cn('px-2.5 py-1 rounded-md text-[11px] font-bold transition-all shrink-0',
+              isApprovalTab ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
+              currentCat === String(c.id) ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)]' + (!isApprovalTab ? ' hover:text-[var(--text-primary)]' : ''))}
+            title={isApprovalTab ? '품의하기에서는 예산선택 불가' : undefined}>
+            {c.name}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
   /* ══════════════════════════════════════════
      좌측 영역: 모드별 분기
      ══════════════════════════════════════════ */
   const renderLeft = () => {
     if (isAcctMode) {
-      /* ── 회계관리 모드: 배지 + 회계연도 탭 ── */
-      /* 예산설정에 등록된 년도 목록을 동적으로 가져옴 */
-      const budgetCats = JSON.parse(localStorage.getItem('acct_budget_cats') || '[]') as any[]
-      
       const activeTab = searchParams.get('tab') || 'overview'
 
       return (
         <div className="flex items-center gap-2 min-w-0">
-          {/* > 구분 아이콘 */}
           <ChevronRight size={14} className="text-[var(--text-muted)] shrink-0 hidden md:block" />
 
-          {/* 모드별 배지 */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-500 text-white shrink-0">
-            <Calculator size={13} />
+            <Calculator size={14} />
             <span className="text-[12px] font-bold">{
-              activeTab === 'approval' ? '품의하기' : '기초예산'
+              (() => {
+                const tabLabels: Record<string, string> = { overview: '기본현황', base_budget: '기초예산', approval: '품의하기', expense: '지출하기', income: '입금전표', withdrawal: '출금전표', payment: '전표장부', cashflow_list: '입출금내역', reports: '회계현황', vendors: '거래처관리', methodReg: '수단등록', budgetTree: '예산과목', hq_vendor: '본사거래처', acct_mgmt: '계정관리' }
+                return tabLabels[activeTab] || '기본현황'
+              })()
             }</span>
           </div>
 
-          {/* 회계년도 + 예산구분 (품의하기 탭에서만 숨김) */}
-          {activeTab !== 'approval' && (() => {
-            // 해당 연도 전체 카테고리
-            const allCatsForYear = budgetCats.filter((c: any) => {
-              const catYear = c.year || (c.periodFrom ? parseInt(c.periodFrom.substring(0, 4)) : currentYear)
-              return catYear === acctYear
-            })
-            // 집출담당(users) 필터 + 폴백
-            const userCats = allCatsForYear.filter((c: any) =>
-              c.users && c.users.length > 0 && c.users.includes(user?.name || '')
-            )
-            const budgetCatsForYear = userCats.length > 0 ? userCats : allCatsForYear
-
-            const currentCat = searchParams.get('cat') || 'all'
-            const setCat = (catId: string) => {
-              const params: Record<string, string> = { tab: activeTab, year: String(acctYear), cat: catId }
-              setSearchParams(params)
-            }
-
-            return (
-              <div className="hidden md:flex items-center gap-1 bg-[var(--bg-muted)] rounded-lg px-1 py-0.5 border border-[var(--border-default)]">
-                {/* 회계년도 라벨 */}
-                <span className="px-2 py-1 text-[11px] font-bold text-[var(--text-muted)]">회계년도</span>
-                {/* 적용된 회계년도 (한 개만 표시) */}
-                {(() => {
-                  const appliedYear = parseInt(localStorage.getItem('acct_active_year') || '') || acctYear
-                  return (
-                    <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-500 text-white border border-emerald-500 shadow-sm flex items-center gap-0.5">
-                      ✓ {appliedYear}년
-                    </span>
-                  )
-                })()}
-                {/* 구분선 */}
-                <div className="w-px h-4 bg-[var(--border-default)] mx-0.5" />
-                {/* 전체 + 예산구분 */}
-                {/* 전체 버튼 (지출하기 탭에서는 숨김) */}
-                {activeTab !== 'expense' && (
-                <button onClick={() => setCat('all')}
-                  className={cn('px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer',
-                    currentCat === 'all' ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]')}>
-                  전체
-                </button>
-                )}
-                {budgetCatsForYear.map((c: any) => (
-                  <button key={c.id} onClick={() => setCat(String(c.id))}
-                    className={cn('px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer',
-                      currentCat === String(c.id) ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]')}>
-                    {c.name}
-                  </button>
-                ))}
-              </div>
-            )
-          })()}
+          {renderBudgetSelectBar(false)}
         </div>
       )
     }
@@ -185,7 +202,7 @@ export function Header() {
         <div className="flex items-center gap-2 min-w-0">
           <ChevronRight size={14} className="text-[var(--text-muted)] shrink-0 hidden md:block" />
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500 text-white shrink-0">
-            <Globe size={13} />
+            <Globe size={14} />
             <span className="text-[12px] font-bold">홈페이지</span>
           </div>
         </div>
@@ -246,17 +263,17 @@ export function Header() {
         {/* ── 출퇴근 위젯 (데스크탑) ── */}
         <div className="hidden lg:flex items-center gap-0.5 bg-[var(--bg-muted)] rounded-xl px-1 py-0.5 border border-[var(--border-default)] mx-auto">
           <div className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold text-[var(--text-muted)]">
-            <ArrowRight size={11} className="text-green-500" />
+            <ArrowRight size={12} className="text-green-500" />
             <span className="text-green-600 dark:text-green-400 font-extrabold">{checkInTime}</span>
           </div>
           <div className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold text-[var(--text-muted)]">
-            <Clock size={11} className="text-primary-500" />
+            <Clock size={12} className="text-primary-500" />
             <span className="text-[var(--text-primary)] font-extrabold tabular-nums">
               {`${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`}
             </span>
           </div>
           <div className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-bold text-[var(--text-muted)]">
-            <Timer size={11} className="text-amber-500" />
+            <Timer size={12} className="text-amber-500" />
             <span className="text-amber-600 dark:text-amber-400 font-extrabold tabular-nums">{workTime}</span>
           </div>
           <button
@@ -264,7 +281,7 @@ export function Header() {
             className="ml-0.5 w-7 h-7 rounded-lg bg-primary-500 hover:bg-primary-600 flex items-center justify-center cursor-pointer transition-colors shadow-sm"
             title="퇴근하기"
           >
-            <ArrowRight size={13} className="text-white" />
+            <ArrowRight size={14} className="text-white" />
           </button>
         </div>
 
@@ -325,14 +342,14 @@ export function Header() {
                     onClick={() => setProfileOpen(false)}
                     className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer"
                   >
-                    <User size={15} /> 개인설정
+                    <User size={16} /> 개인설정
                   </button>
                   <div className="h-px bg-[var(--border-default)]" />
                   <button
                     onClick={() => { logout(); window.location.hash = '#/login' }}
                     className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-danger hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors cursor-pointer"
                   >
-                    <LogOut size={15} /> 로그아웃
+                    <LogOut size={16} /> 로그아웃
                   </button>
                 </div>
               )}
@@ -345,7 +362,7 @@ export function Header() {
       {!isAcctMode && !isHpMode && (
         <div className="md:hidden px-3 pb-2">
           <div className="relative">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
               type="text"
               placeholder="업무, 담당자, 키워드 검색..."
@@ -358,6 +375,12 @@ export function Header() {
               )}
             />
           </div>
+        </div>
+      )}
+      {/* ── 2줄: 예산선택바 (모바일 전용) ── */}
+      {isAcctMode && (
+        <div className="md:hidden px-3 pb-2 border-t border-[var(--border-default)] pt-2 bg-[var(--bg-surface)]">
+          {renderBudgetSelectBar(true)}
         </div>
       )}
     </header>

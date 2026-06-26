@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { initAccountingSeed } from './AccountingPage'
 import { PageHeader } from '../../components/common/PageHeader'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
@@ -13,6 +14,7 @@ import {
   Building2, Medal, Briefcase, ListChecks, FileText, Layers,
   Plus, Pencil, Trash2, GripVertical, Calculator, Wallet, CreditCard,
   Palette, Sun, Moon, Check, X, RotateCcw, ChevronRight, ContactRound,
+  ClipboardList,
 } from 'lucide-react'
 import { ICON_MAP, renderIcon } from '../../utils/iconMap'
 import { Badge } from '../../components/ui/Badge'
@@ -41,16 +43,12 @@ interface Tab {
 const tabs: Tab[] = [
   { key: 'dept',       label: '부서',                icon: Building2,  color: '#4f6ef7' },
   { key: 'rank',       label: '직급',                icon: Medal,      color: '#9747ff' },
-  { key: 'position',   label: '직책',                icon: Briefcase,  color: '#f59e0b' },
+  { key: 'position',   label: '직함',                icon: Briefcase,  color: '#f59e0b' },
   { key: 'result',     label: '예상결과물', icon: ListChecks, color: '#22c55e' },
   { key: 'reportType', label: '진행절차',        icon: FileText,   color: '#8b5cf6' },
   { key: 'detailTask', label: '상세업무',             icon: Layers,     color: '#4f6ef7' },
   { key: 'importance', label: '중요도',          icon: Building2,  color: '#ef4444' },
   { key: 'taskStatus', label: '진행상태',             icon: Layers,     color: '#06b6d4' },
-  { key: 'accounts',   label: '계정과목',             icon: Calculator, color: '#0ea5e9' },
-  { key: 'budgetItems',label: '예산항목',               icon: Wallet,     color: '#f97316' },
-  { key: 'budgetSub',  label: '예산세목',               icon: Layers,     color: '#ea580c' },
-  { key: 'payMethods', label: '지출수단',             icon: CreditCard, color: '#ec4899' },
   { key: 'bizCategory',label: '거래처구분',            icon: ContactRound, color: '#14b8a6' },
 ]
 
@@ -160,8 +158,6 @@ export function SettingsPage() {
       {activeTab === 'importance' && <ImportancePanel />}
       {activeTab === 'taskStatus' && <TaskStatusPanel />}
       {activeTab === 'accounts' && <AccountPanel />}
-      {activeTab === 'budgetItems' && <BudgetItemPanel />}
-      {activeTab === 'budgetSub' && <BudgetSubPanel />}
       {activeTab === 'payMethods' && <PaymentMethodPanel />}
       {activeTab === 'bizCategory' && <BizCategoryPanel />}
     </div>
@@ -192,7 +188,7 @@ function DeptPanel() {
       {/* 부서별 상세업무 배정 */}
       {departments.length > 0 && detailTasks.length > 0 && (
         <Card>
-          <div className="text-[12px] font-extrabold text-[var(--text-secondary)] mb-1">📋 부서별 상세업무 배정</div>
+          <div className="text-[12px] font-extrabold text-[var(--text-secondary)] mb-1"><ClipboardList size={12} className="inline -mt-0.5" /> 부서별 상세업무 배정</div>
           <div className="text-[10px] text-[var(--text-muted)] mb-3">부서를 클릭하여 해당 부서에 배정할 상세업무를 선택하세요.</div>
 
           <div className="space-y-2">
@@ -299,13 +295,13 @@ function PositionPanel() {
   const { positions, addPos, updatePos, deletePos, reorderItems } = useSettingsStore()
   return (
     <CrudListPanel
-      title="직책"
+      title="직함"
       items={positions.map(p => ({ id: p.id, name: p.name }))}
       onAdd={(name) => addPos(name)}
       onUpdate={(id, name) => updatePos(id, name)}
       onDelete={deletePos}
       onReorder={(ids) => reorderItems('positions', ids)}
-      placeholder="새 직책명 입력"
+      placeholder="새 직함명 입력"
       color="#22c55e"
     />
   )
@@ -385,7 +381,7 @@ function DetailTaskPanel() {
       {/* 부서별 상세업무 배정 */}
       {departments.length > 0 && detailTasks.length > 0 && (
         <Card>
-          <div className="text-[12px] font-extrabold text-[var(--text-secondary)] mb-3">📋 부서별 상세업무 배정</div>
+          <div className="text-[12px] font-extrabold text-[var(--text-secondary)] mb-3"><ClipboardList size={12} className="inline -mt-0.5" /> 부서별 상세업무 배정</div>
           <div className="text-[10px] text-[var(--text-muted)] mb-3">부서를 선택한 후 체크박스로 해당 부서에 배정할 상세업무를 선택하세요.</div>
 
           {/* 부서 탭 */}
@@ -1091,203 +1087,811 @@ function AccountPanel() {
 }
 
 /* ══════════════════════════════════════════════
-   예산항목 관리 패널
+   예산목·세목 통합 트리 패널
    ══════════════════════════════════════════════ */
-function BudgetItemPanel() {
-  const [refresh, setRefresh] = useState(0)
-  const [newName, setNewName] = useState('')
-  const addToast = useToastStore((s) => s.add)
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  // 예산 데이터에서 사용된 예산항목 + 히스토리
-  const budgets: { itemName: string }[] = getItem('acct_budgets', [])
-  const hist: string[] = getItem('acct_itemName_history', [])
-  void refresh
-
-  const allNames = Array.from(new Set([
-    ...budgets.map(b => b.itemName).filter(Boolean),
-    ...hist.filter(Boolean),
-  ])).sort()
-
-  const handleAdd = () => {
-    if (!newName.trim()) return
-    if (allNames.includes(newName.trim())) {
-      addToast('error', '이미 존재하는 예산항목입니다')
-      return
-    }
-    const updated = [...hist, newName.trim()]
-    localStorage.setItem('acct_itemName_history', JSON.stringify(updated))
-    addToast('success', `예산항목 "${newName.trim()}" 추가 완료`)
-    setNewName('')
-    setRefresh(r => r + 1)
-    inputRef.current?.focus()
-  }
-
-  const handleDelete = (name: string) => {
-    if (!confirm(`"${name}" 예산항목을 삭제하시겠습니까?`)) return
-    // hist에서만 삭제 (실제 예산 데이터의 예산항목은 유지)
-    const updated = hist.filter(h => h !== name)
-    localStorage.setItem('acct_itemName_history', JSON.stringify(updated))
-    addToast('warning', `예산항목 "${name}" 삭제 완료`)
-    setRefresh(r => r + 1)
-  }
-
-  return (
-    <Card>
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <div className="text-sm font-extrabold text-[var(--text-primary)]">예산항목 관리</div>
-          <div className="text-[11px] text-[var(--text-muted)]">예산 등록 시 자동완성에 표시되는 예산항목 목록입니다</div>
-        </div>
-      </div>
-
-      {/* 추가 폼 */}
-      <div className="flex gap-2 mb-4">
-        <div className="flex-1">
-          <Input
-            ref={inputRef}
-            placeholder="새 예산항목 입력 (예: 인건비, 소모품비)"
-            value={newName}
-            onChange={e => setNewName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAdd()}
-          />
-        </div>
-        <Button onClick={handleAdd} icon={<Plus size={15} />} size="md" className="shrink-0">
-          <span className="hidden sm:inline">추가</span>
-        </Button>
-      </div>
-
-      {/* 헤더 */}
-      <div className="flex items-center justify-between pb-2 mb-2 border-b border-[var(--border-default)]">
-        <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">예산항목 목록</span>
-        <span className="text-[11px] font-bold text-[#f97316]">{allNames.length}건</span>
-      </div>
-
-      {allNames.length === 0 ? (
-        <div className="py-10 text-center text-sm text-[var(--text-muted)]">등록된 예산항목이 없습니다</div>
-      ) : (
-        <div className="space-y-0.5">
-          {allNames.map((name, idx) => {
-            const inBudget = budgets.some(b => b.itemName === name)
-            return (
-              <div key={name} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--bg-muted)] transition-all group">
-                <span className="text-[11px] font-bold text-[var(--text-muted)] w-5 text-center shrink-0">{idx + 1}</span>
-                <span className="text-sm font-semibold text-[var(--text-primary)] flex-1 truncate">{name}</span>
-                {inBudget && (
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/20 text-green-600">사용중</span>
-                )}
-                <button
-                  onClick={() => handleDelete(name)}
-                  className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 size={13} />
-                </button>
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </Card>
-  )
+interface AccountPoolEntry {
+  accountCode: string
+  contraAccountCode?: string
+}
+interface BudgetDetailDef {
+  id: number
+  name: string
+  parentId: number
+  aliases: string[]
+  accountCode?: string
+  sortOrder: number
+}
+interface BudgetSubDef {
+  id: number
+  name: string
+  parentId: number
+  aliases: string[]
+  accountCode?: string
+  detailItems?: BudgetDetailDef[]
+  sortOrder: number
+}
+interface BudgetItemDef {
+  id: number
+  name: string
+  aliases: string[]
+  accountPool: AccountPoolEntry[]
+  defaultAccountCode?: string
+  subItems: BudgetSubDef[]
+  sortOrder: number
 }
 
-/* ══════════════════════════════════════════════
-   예산세목 관리 패널
-   ══════════════════════════════════════════════ */
-function BudgetSubPanel() {
+export function BudgetTreePanel() {
   const [refresh, setRefresh] = useState(0)
-  const [newName, setNewName] = useState('')
   const addToast = useToastStore((s) => s.add)
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  // 예산 데이터에서 사용된 세목 + 히스토리
-  const budgets: { subName?: string }[] = getItem('acct_budgets', [])
-  const hist: string[] = getItem('acct_subName_history', [])
   void refresh
 
-  const allNames = Array.from(new Set([
-    ...budgets.map(b => b.subName).filter(Boolean) as string[],
-    ...hist.filter(Boolean),
-  ])).sort()
+  // ── 데이터 로드 (비어있으면 기본 시드 자동 생성) ──
+  let items: BudgetItemDef[] = getItem('acct_budget_item_defs', [])
+  let accounts: AcctAccount[] = getItem('acct_accounts', [])
+  // 계정과목이 비어있으면 시드 트리거
+  if (accounts.length === 0) {
+    initAccountingSeed()
+    accounts = getItem('acct_accounts', [])
+  }
 
-  const handleAdd = () => {
-    if (!newName.trim()) return
-    if (allNames.includes(newName.trim())) {
-      addToast('error', '이미 존재하는 예산세목입니다')
-      return
+  // 시드가 아직 로드되지 않은 경우 기본 데이터 생성
+  if (items.length === 0 && refresh === 0) {
+    const defaultDefs: BudgetItemDef[] = [{"id":1,"name":"인건비","aliases":["전문인력인건비","인건비(보조)"],"sortOrder":1,"accountPool":[{"accountCode":"5-02-01","contraAccountCode":"1-01-03"},{"accountCode":"5-02-02","contraAccountCode":"1-01-03"},{"accountCode":"5-02-03","contraAccountCode":"2-02-02"},{"accountCode":"5-02-04","contraAccountCode":"1-01-03"},{"accountCode":"5-01-04","contraAccountCode":"1-01-03"}],"defaultAccountCode":"5-02-01","subItems":[{"id":101,"name":"고정인력","parentId":1,"aliases":["고정급여","정규직인건비"],"accountCode":"5-02-01","sortOrder":1},{"id":102,"name":"일용인력","parentId":1,"aliases":["일용직","임시직인건비"],"accountCode":"5-01-04","sortOrder":2},{"id":103,"name":"퇴직적립금","parentId":1,"aliases":["퇴직급여","퇴직금"],"accountCode":"5-02-03","sortOrder":3},{"id":104,"name":"사회보험금","parentId":1,"aliases":["4대보험","사회보험료"],"accountCode":"5-02-04","sortOrder":4},{"id":105,"name":"원천세","parentId":1,"aliases":["원천징수세","소득세"],"accountCode":"5-02-04","sortOrder":5}]},{"id":2,"name":"문화재보수비","aliases":["문화재보수정비사업비","보수비","보수공사비"],"sortOrder":2,"accountPool":[{"accountCode":"5-02-13","contraAccountCode":"1-01-03"},{"accountCode":"5-01-06","contraAccountCode":"2-01-04"},{"accountCode":"5-02-26","contraAccountCode":"1-01-03"}],"defaultAccountCode":"5-02-13","subItems":[{"id":201,"name":"석조보수","parentId":2,"aliases":["석조문화재보수"],"accountCode":"5-02-13","sortOrder":1},{"id":202,"name":"목조보수","parentId":2,"aliases":["목조문화재보수"],"accountCode":"5-02-13","sortOrder":2},{"id":203,"name":"단청보수","parentId":2,"aliases":["단청보수정비"],"accountCode":"5-01-06","sortOrder":3},{"id":204,"name":"현장인부","parentId":2,"aliases":["현장인력","시공인력"],"accountCode":"5-02-26","sortOrder":4}]},{"id":3,"name":"발굴조사비","aliases":["발굴비","조사비"],"sortOrder":3,"accountPool":[{"accountCode":"5-01-06","contraAccountCode":"2-01-04"},{"accountCode":"5-02-26","contraAccountCode":"1-01-03"},{"accountCode":"5-02-13","contraAccountCode":"1-01-03"}],"defaultAccountCode":"5-01-06","subItems":[{"id":301,"name":"발굴장비임대","parentId":3,"aliases":["장비임대"],"accountCode":"5-01-06","sortOrder":1},{"id":302,"name":"시굴조사","parentId":3,"aliases":["시굴"],"accountCode":"5-01-06","sortOrder":2},{"id":303,"name":"조사인력","parentId":3,"aliases":["조사원인건비"],"accountCode":"5-02-26","sortOrder":3}]},{"id":4,"name":"장비구입비","aliases":["장비·기자재구입비","시설장비비","장비비"],"sortOrder":4,"accountPool":[{"accountCode":"1-02-10","contraAccountCode":"2-01-04"},{"accountCode":"1-02-06","contraAccountCode":"2-01-04"},{"accountCode":"5-02-20","contraAccountCode":"1-01-03"}],"defaultAccountCode":"1-02-10","subItems":[{"id":401,"name":"측량장비","parentId":4,"aliases":["측량기기"],"accountCode":"1-02-06","sortOrder":1},{"id":402,"name":"촬영장비","parentId":4,"aliases":["카메라","드론"],"accountCode":"1-02-10","sortOrder":2},{"id":403,"name":"안전장비","parentId":4,"aliases":["안전용품"],"accountCode":"5-02-20","sortOrder":3},{"id":404,"name":"사무기기","parentId":4,"aliases":["PC","프린터"],"accountCode":"1-02-10","sortOrder":4}]},{"id":5,"name":"안전관리비","aliases":["현장안전관리비","안전비"],"sortOrder":5,"accountPool":[{"accountCode":"5-02-20","contraAccountCode":"1-01-03"},{"accountCode":"5-02-14","contraAccountCode":"1-01-03"},{"accountCode":"5-02-04","contraAccountCode":"1-01-03"}],"defaultAccountCode":"5-02-20","subItems":[{"id":501,"name":"안전장비","parentId":5,"aliases":["안전용품구입"],"accountCode":"5-02-20","sortOrder":1},{"id":502,"name":"안전보험","parentId":5,"aliases":["산재보험"],"accountCode":"5-02-14","sortOrder":2},{"id":503,"name":"안전교육","parentId":5,"aliases":["안전교육훈련"],"accountCode":"5-02-04","sortOrder":3}]},{"id":6,"name":"사무용품비","aliases":["사무비","소모품"],"sortOrder":6,"accountPool":[{"accountCode":"5-02-19","contraAccountCode":"1-01-03"},{"accountCode":"5-02-18","contraAccountCode":"1-01-03"},{"accountCode":"5-02-20","contraAccountCode":"1-01-03"}],"defaultAccountCode":"5-02-19","subItems":[{"id":601,"name":"사무용품","parentId":6,"aliases":["문구류"],"accountCode":"5-02-19","sortOrder":1},{"id":602,"name":"인쇄비","parentId":6,"aliases":["보고서인쇄","명함인쇄"],"accountCode":"5-02-18","sortOrder":2},{"id":603,"name":"소모품","parentId":6,"aliases":["일반소모품"],"accountCode":"5-02-20","sortOrder":3}]},{"id":7,"name":"통신비","aliases":["통신요금"],"sortOrder":7,"accountPool":[{"accountCode":"5-02-07","contraAccountCode":"1-01-03"}],"defaultAccountCode":"5-02-07","subItems":[{"id":701,"name":"전화요금","parentId":7,"aliases":["유선전화"],"accountCode":"5-02-07","sortOrder":1},{"id":702,"name":"인터넷","parentId":7,"aliases":["인터넷요금"],"accountCode":"5-02-07","sortOrder":2},{"id":703,"name":"우편비","parentId":7,"aliases":["우편요금","택배비"],"accountCode":"5-02-07","sortOrder":3}]},{"id":8,"name":"차량유지비","aliases":["차량비","운행비"],"sortOrder":8,"accountPool":[{"accountCode":"5-02-15","contraAccountCode":"1-01-03"}],"defaultAccountCode":"5-02-15","subItems":[{"id":801,"name":"유류비","parentId":8,"aliases":["주유비"],"accountCode":"5-02-15","sortOrder":1},{"id":802,"name":"정비비","parentId":8,"aliases":["수리비","차량수리"],"accountCode":"5-02-15","sortOrder":2},{"id":803,"name":"주차비","parentId":8,"aliases":["주차요금"],"accountCode":"5-02-15","sortOrder":3}]},{"id":9,"name":"복리후생비","aliases":["후생비","직원복지"],"sortOrder":9,"accountPool":[{"accountCode":"5-02-04","contraAccountCode":"1-01-03"},{"accountCode":"5-02-17","contraAccountCode":"1-01-03"}],"defaultAccountCode":"5-02-04","subItems":[{"id":901,"name":"식대","parentId":9,"aliases":["중식대","식비"],"accountCode":"5-02-04","sortOrder":1},{"id":902,"name":"건강검진","parentId":9,"aliases":["건강검진비"],"accountCode":"5-02-04","sortOrder":2},{"id":903,"name":"경조사비","parentId":9,"aliases":["경조금"],"accountCode":"5-02-04","sortOrder":3},{"id":904,"name":"행사비","parentId":9,"aliases":["행사운영비","체육행사"],"accountCode":"5-02-04","sortOrder":4},{"id":905,"name":"교육비","parentId":9,"aliases":["교육훈련비","연수비"],"accountCode":"5-02-17","sortOrder":5}]},{"id":10,"name":"여비교통비","aliases":["출장비","교통비"],"sortOrder":10,"accountPool":[{"accountCode":"5-02-05","contraAccountCode":"1-01-03"}],"defaultAccountCode":"5-02-05","subItems":[{"id":1001,"name":"국내출장비","parentId":10,"aliases":["국내출장"],"accountCode":"5-02-05","sortOrder":1},{"id":1002,"name":"교통비","parentId":10,"aliases":["대중교통"],"accountCode":"5-02-05","sortOrder":2},{"id":1003,"name":"숙박비","parentId":10,"aliases":["숙박료"],"accountCode":"5-02-05","sortOrder":3}]},{"id":11,"name":"관광홍보비","aliases":["홍보비","광고비"],"sortOrder":11,"accountPool":[{"accountCode":"5-02-22","contraAccountCode":"1-01-03"},{"accountCode":"5-02-21","contraAccountCode":"1-01-03"}],"defaultAccountCode":"5-02-22","subItems":[{"id":1101,"name":"홍보인쇄물","parentId":11,"aliases":["리플렛","브로셔"],"accountCode":"5-02-22","sortOrder":1},{"id":1102,"name":"광고비","parentId":11,"aliases":["온라인광고"],"accountCode":"5-02-22","sortOrder":2},{"id":1103,"name":"행사운영비","parentId":11,"aliases":["이벤트비"],"accountCode":"5-02-21","sortOrder":3}]},{"id":12,"name":"시설유지비","aliases":["시설관리비","유지보수비"],"sortOrder":12,"accountPool":[{"accountCode":"5-02-13","contraAccountCode":"1-01-03"},{"accountCode":"5-02-12","contraAccountCode":"1-01-03"},{"accountCode":"5-02-08","contraAccountCode":"1-01-03"},{"accountCode":"5-02-09","contraAccountCode":"1-01-03"}],"defaultAccountCode":"5-02-13","subItems":[{"id":1201,"name":"시설보수","parentId":12,"aliases":["건물수선"],"accountCode":"5-02-13","sortOrder":1},{"id":1202,"name":"임차료","parentId":12,"aliases":["사무실임대료"],"accountCode":"5-02-12","sortOrder":2},{"id":1203,"name":"수도광열","parentId":12,"aliases":["수도료","가스비"],"accountCode":"5-02-08","sortOrder":3},{"id":1204,"name":"전기료","parentId":12,"aliases":["전력비"],"accountCode":"5-02-09","sortOrder":4}]},{"id":13,"name":"조경공사비","aliases":["조경비","조경정비비"],"sortOrder":13,"accountPool":[{"accountCode":"5-01-06","contraAccountCode":"2-01-04"},{"accountCode":"5-02-13","contraAccountCode":"1-01-03"}],"defaultAccountCode":"5-01-06","subItems":[{"id":1301,"name":"조경공사","parentId":13,"aliases":["조경시공"],"accountCode":"5-01-06","sortOrder":1},{"id":1302,"name":"조경유지","parentId":13,"aliases":["조경유지보수"],"accountCode":"5-02-13","sortOrder":2}]},{"id":1304,"name":"운영비","aliases":["운용비","운영관리비","기타관리비","소모품구매비"],"accountPool":[{"accountCode":"5-02-19","contraAccountCode":"1-01-03"},{"accountCode":"5-02-18","contraAccountCode":"1-01-03"},{"accountCode":"5-02-22","contraAccountCode":"1-01-03"},{"accountCode":"5-02-20","contraAccountCode":"1-01-03"},{"accountCode":"5-02-13","contraAccountCode":"1-01-03"},{"accountCode":"5-02-10","contraAccountCode":"1-01-03"},{"accountCode":"5-02-26","contraAccountCode":"1-01-03"},{"accountCode":"5-02-12","contraAccountCode":"1-01-03"}],"subItems":[{"id":1305,"name":"일반수용비","parentId":1304,"aliases":["소모품 구매비"],"sortOrder":0,"detailItems":[{"id":1306,"name":"사무용품 구입","parentId":1305,"aliases":["사무용품구입비","사무실비품구입비"],"sortOrder":0,"accountCode":"5-02-19"},{"id":1307,"name":"인쇄비 및 유인비","parentId":1305,"aliases":["인쇄및유인비"],"sortOrder":1,"accountCode":"5-02-18"},{"id":1308,"name":"홍보비","parentId":1305,"aliases":["안내홍보물등 제작비","홍보물제작비"],"sortOrder":2,"accountCode":"5-02-22"},{"id":1309,"name":"물품구입비","parentId":1305,"aliases":["소모성 물품 구입비","소모품구입"],"sortOrder":3,"accountCode":"5-02-20"},{"id":1310,"name":"수선비","parentId":1305,"aliases":["수리비","시설수선비"],"sortOrder":4,"accountCode":"5-02-13"},{"id":1316,"name":"제세공과금","parentId":1305,"aliases":["공과금","세금과공과"],"sortOrder":5,"accountCode":"5-02-10"},{"id":1317,"name":"강사료","parentId":1305,"aliases":["강사비","강의료"],"sortOrder":6,"accountCode":"5-02-26"}]},{"id":1311,"name":"임차료","parentId":1304,"aliases":["임대료","사무실임대료"],"sortOrder":1,"accountCode":"5-02-12","detailItems":[{"id":1318,"name":"임차료","parentId":1311,"aliases":["건물임차료"],"sortOrder":0,"accountCode":"5-02-12"}]},{"id":1319,"name":"재료비","parentId":1304,"aliases":["재료구입비"],"sortOrder":2,"accountCode":"5-02-20","detailItems":[{"id":1320,"name":"체험 재료","parentId":1319,"aliases":["체험재료비","체험용재료"],"sortOrder":0,"accountCode":"5-02-20"}]},{"id":1321,"name":"일반용역비","parentId":1304,"aliases":["용역비","외주용역비"],"sortOrder":3,"accountCode":"5-02-26","detailItems":[{"id":1322,"name":"음향장비","parentId":1321,"aliases":["음향장비임대","음향설비"],"sortOrder":0,"accountCode":"5-02-12"},{"id":1323,"name":"공연","parentId":1321,"aliases":["공연비","공연용역"],"sortOrder":1,"accountCode":"5-02-26"}]}],"sortOrder":13},{"id":1400,"name":"업무추진비","aliases":["업무추진경비","업무추진"],"sortOrder":14,"accountPool":[{"accountCode":"5-02-16","contraAccountCode":"1-01-03"}],"defaultAccountCode":"5-02-16","subItems":[{"id":1401,"name":"기관운영비","parentId":1400,"aliases":["기관운영경비"],"accountCode":"5-02-16","sortOrder":1},{"id":1402,"name":"회의비","parentId":1400,"aliases":["회의운영비","회의경비"],"accountCode":"5-02-16","sortOrder":2}]},{"id":1500,"name":"여비","aliases":["출장여비","여행비"],"sortOrder":15,"accountPool":[{"accountCode":"5-02-05","contraAccountCode":"1-01-03"}],"defaultAccountCode":"5-02-05","subItems":[{"id":1501,"name":"국내여비","parentId":1500,"aliases":["국내출장비","국내출장"],"accountCode":"5-02-05","sortOrder":1},{"id":1502,"name":"국외업무여비","parentId":1500,"aliases":["해외출장비","국외출장"],"accountCode":"5-02-05","sortOrder":2}]}]
+    localStorage.setItem('acct_budget_item_defs', JSON.stringify(defaultDefs))
+    items = defaultDefs
+  }
+
+  const save = (next: BudgetItemDef[]) => {
+    localStorage.setItem('acct_budget_item_defs', JSON.stringify(next))
+    setRefresh(r => r + 1)
+  }
+  const nextId = () => {
+    const all = items.flatMap(it => [it.id, ...it.subItems.flatMap(s => [s.id, ...(s.detailItems || []).map(d => d.id)])])
+    return all.length > 0 ? Math.max(...all) + 1 : 1
+  }
+  const acctName = (code?: string) => accounts.find(a => a.code === code)?.name || code || ''
+
+  // ── 펼침 상태 ──
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+
+  // ── 예산목 추가/수정 모달 ──
+  const [itemModal, setItemModal] = useState<{ mode: 'add' | 'edit'; item?: BudgetItemDef } | null>(null)
+  const [imName, setImName] = useState('')
+  const [imAliases, setImAliases] = useState<string[]>([])
+  const [imAliasInput, setImAliasInput] = useState('')
+  const [imPool, setImPool] = useState<AccountPoolEntry[]>([])
+  const [imDefaultAcct, setImDefaultAcct] = useState<string | undefined>(undefined)
+  const [imAcctSearch, setImAcctSearch] = useState('')
+
+  // ── 세목 추가/수정 모달 ──
+  const [subModal, setSubModal] = useState<{ mode: 'add' | 'edit'; parentId: number; sub?: BudgetSubDef } | null>(null)
+  const [smName, setSmName] = useState('')
+  const [smAliases, setSmAliases] = useState<string[]>([])
+  const [smAliasInput, setSmAliasInput] = useState('')
+  const [smAcctCode, setSmAcctCode] = useState<string | undefined>(undefined)
+
+  // ── 세세항목 추가/수정 모달 ──
+  const [detailModal, setDetailModal] = useState<{ mode: 'add' | 'edit'; itemId: number; subId: number; detail?: BudgetDetailDef } | null>(null)
+  const [dmName, setDmName] = useState('')
+  const [dmAliases, setDmAliases] = useState<string[]>([])
+  const [dmAliasInput, setDmAliasInput] = useState('')
+  const [dmAcctCode, setDmAcctCode] = useState<string | undefined>(undefined)
+
+  // ── 삭제 모달 ──
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'item' | 'sub' | 'detail'; id: number; parentId?: number; grandParentId?: number; name: string } | null>(null)
+
+  // ── 세목 드래그 ──
+  const [dragIdx, setDragIdx] = useState<number | null>(null)
+  const [overIdx, setOverIdx] = useState<number | null>(null)
+
+  // ── 세목 펼침 (세세항목 표시) ──
+  const [expandedSubId, setExpandedSubId] = useState<number | null>(null)
+
+  // ── 예산목 모달 열기 ──
+  const openItemModal = (mode: 'add' | 'edit', item?: BudgetItemDef) => {
+    setItemModal({ mode, item })
+    setImName(item?.name || '')
+    setImAliases(item?.aliases || [])
+    setImAliasInput('')
+    setImPool(item?.accountPool || [])
+    setImDefaultAcct(item?.defaultAccountCode)
+    setImAcctSearch('')
+  }
+
+  const saveItemModal = () => {
+    if (!imName.trim()) { addToast('error', '예산목명을 입력하세요'); return }
+    if (!itemModal) return
+    if (itemModal.mode === 'add') {
+      const newItem: BudgetItemDef = {
+        id: nextId(),
+        name: imName.trim(),
+        aliases: imAliases,
+        accountPool: imPool,
+        defaultAccountCode: imDefaultAcct,
+        subItems: [],
+        sortOrder: items.length,
+      }
+      save([...items, newItem])
+      addToast('success', `예산목 "${imName.trim()}" 추가 완료`)
+    } else {
+      const updated = items.map(it =>
+        it.id === itemModal.item!.id
+          ? { ...it, name: imName.trim(), aliases: imAliases, accountPool: imPool, defaultAccountCode: imDefaultAcct }
+          : it
+      )
+      save(updated)
+      addToast('info', '예산목이 수정되었습니다')
     }
-    const updated = [...hist, newName.trim()]
-    localStorage.setItem('workm_acct_subName_history', JSON.stringify(updated))
-    addToast('success', `예산세목 "${newName.trim()}" 추가 완료`)
-    setNewName('')
-    setRefresh(r => r + 1)
-    inputRef.current?.focus()
+    setItemModal(null)
   }
 
-  const handleDelete = (name: string) => {
-    if (!confirm(`"${name}" 예산세목을 삭제하시겠습니까?`)) return
-    const updated = hist.filter(h => h !== name)
-    localStorage.setItem('workm_acct_subName_history', JSON.stringify(updated))
-    addToast('warning', `예산세목 "${name}" 삭제 완료`)
-    setRefresh(r => r + 1)
+  // ── 세목 모달 열기 ──
+  const openSubModal = (mode: 'add' | 'edit', parentId: number, sub?: BudgetSubDef) => {
+    setSubModal({ mode, parentId, sub })
+    setSmName(sub?.name || '')
+    setSmAliases(sub?.aliases || [])
+    setSmAliasInput('')
+    setSmAcctCode(sub?.accountCode)
   }
+
+  const saveSubModal = () => {
+    if (!smName.trim()) { addToast('error', '세목명을 입력하세요'); return }
+    if (!subModal) return
+    const updated = items.map(it => {
+      if (it.id !== subModal.parentId) return it
+      if (subModal.mode === 'add') {
+        const newSub: BudgetSubDef = {
+          id: nextId(),
+          name: smName.trim(),
+          parentId: subModal.parentId,
+          aliases: smAliases,
+          accountCode: smAcctCode,
+          sortOrder: it.subItems.length,
+        }
+        return { ...it, subItems: [...it.subItems, newSub] }
+      } else {
+        return {
+          ...it,
+          subItems: it.subItems.map(s =>
+            s.id === subModal.sub!.id
+              ? { ...s, name: smName.trim(), aliases: smAliases, accountCode: smAcctCode }
+              : s
+          ),
+        }
+      }
+    })
+    save(updated)
+    addToast(subModal.mode === 'add' ? 'success' : 'info', subModal.mode === 'add' ? `세목 "${smName.trim()}" 추가 완료` : '세목이 수정되었습니다')
+    setSubModal(null)
+  }
+
+  // ── 삭제 ──
+  const handleDelete = () => {
+    if (!deleteTarget) return
+    if (deleteTarget.type === 'item') {
+      save(items.filter(it => it.id !== deleteTarget.id))
+      if (expandedId === deleteTarget.id) setExpandedId(null)
+    } else if (deleteTarget.type === 'sub') {
+      const updated = items.map(it =>
+        it.id === deleteTarget.parentId
+          ? { ...it, subItems: it.subItems.filter(s => s.id !== deleteTarget.id) }
+          : it
+      )
+      save(updated)
+    } else if (deleteTarget.type === 'detail') {
+      const updated = items.map(it =>
+        it.id === deleteTarget.grandParentId
+          ? {
+              ...it,
+              subItems: it.subItems.map(s =>
+                s.id === deleteTarget.parentId
+                  ? { ...s, detailItems: (s.detailItems || []).filter(d => d.id !== deleteTarget.id) }
+                  : s
+              ),
+            }
+          : it
+      )
+      save(updated)
+    }
+    addToast('warning', `"${deleteTarget.name}" 삭제 완료`)
+    setDeleteTarget(null)
+  }
+
+  // ── 세세항목 모달 열기 ──
+  const openDetailModal = (mode: 'add' | 'edit', itemId: number, subId: number, detail?: BudgetDetailDef) => {
+    setDetailModal({ mode, itemId, subId, detail })
+    setDmName(detail?.name || '')
+    setDmAliases(detail?.aliases || [])
+    setDmAliasInput('')
+    setDmAcctCode(detail?.accountCode)
+  }
+
+  const saveDetailModal = () => {
+    if (!dmName.trim()) { addToast('error', '세세항목명을 입력하세요'); return }
+    if (!detailModal) return
+    const updated = items.map(it => {
+      if (it.id !== detailModal.itemId) return it
+      return {
+        ...it,
+        subItems: it.subItems.map(s => {
+          if (s.id !== detailModal.subId) return s
+          const existing = s.detailItems || []
+          if (detailModal.mode === 'add') {
+            const newDetail: BudgetDetailDef = {
+              id: nextId(),
+              name: dmName.trim(),
+              parentId: detailModal.subId,
+              aliases: dmAliases,
+              accountCode: dmAcctCode,
+              sortOrder: existing.length,
+            }
+            return { ...s, detailItems: [...existing, newDetail] }
+          } else {
+            return {
+              ...s,
+              detailItems: existing.map(d =>
+                d.id === detailModal.detail!.id
+                  ? { ...d, name: dmName.trim(), aliases: dmAliases, accountCode: dmAcctCode }
+                  : d
+              ),
+            }
+          }
+        }),
+      }
+    })
+    save(updated)
+    addToast(detailModal.mode === 'add' ? 'success' : 'info', detailModal.mode === 'add' ? `세세항목 "${dmName.trim()}" 추가 완료` : '세세항목이 수정되었습니다')
+    setDetailModal(null)
+  }
+
+  // ── 세목 드래그 정렬 ──
+  const handleSubDrop = (parentId: number, fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx) return
+    const updated = items.map(it => {
+      if (it.id !== parentId) return it
+      const reordered = [...it.subItems]
+      const [moved] = reordered.splice(fromIdx, 1)
+      reordered.splice(toIdx, 0, moved)
+      return { ...it, subItems: reordered.map((s, i) => ({ ...s, sortOrder: i })) }
+    })
+    save(updated)
+    setDragIdx(null)
+    setOverIdx(null)
+  }
+
+  // ── 계정 검색 결과 (예산목 모달) ──
+  const acctSearchResults = imAcctSearch.trim()
+    ? accounts.filter(a =>
+        (a.code.includes(imAcctSearch) || a.name.includes(imAcctSearch)) &&
+        !imPool.some(p => p.accountCode === a.code)
+      ).slice(0, 8)
+    : []
 
   return (
-    <Card>
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <div className="text-sm font-extrabold text-[var(--text-primary)]">예산세목 관리</div>
-          <div className="text-[11px] text-[var(--text-muted)]">예산 등록 시 자동완성에 표시되는 예산세목 목록입니다</div>
+    <>
+      <Card>
+        {/* 헤더 */}
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="text-sm font-extrabold text-[var(--text-primary)]">예산목·세목 관리</div>
+            <div className="text-[11px] text-[var(--text-muted)]">예산목을 정의하고 하위 세목을 관리합니다</div>
+          </div>
+          <Button onClick={() => openItemModal('add')} icon={<Plus size={15} />} size="md">
+            예산목 추가
+          </Button>
         </div>
-      </div>
 
-      {/* 추가 폼 */}
-      <div className="flex gap-2 mb-4">
-        <div className="flex-1">
+        {/* 예산목 리스트 */}
+        {items.length === 0 ? (
+          <div className="py-10 text-center text-sm text-[var(--text-muted)]">등록된 예산목이 없습니다</div>
+        ) : (
+          <div className="space-y-2">
+            {items.map(item => {
+              const isExpanded = expandedId === item.id
+              return (
+                <div key={item.id} className="border border-[var(--border-default)] rounded-xl overflow-hidden">
+                  {/* 예산목 헤더 */}
+                  <div className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[var(--bg-muted)] transition-colors">
+                    <button
+                      onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                      className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                    >
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-extrabold shrink-0" style={{ background: '#f97316' }}>
+                        {item.name.charAt(0)}
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <div className="text-[12px] font-bold text-[var(--text-primary)]">{item.name}</div>
+                        {item.accountPool.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-0.5">
+                            {item.accountPool.map(p => (
+                              <span key={p.accountCode} className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600">
+                                {p.accountCode} {acctName(p.accountCode)}
+                                {item.defaultAccountCode === p.accountCode && ' ★'}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <span
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
+                        style={{ background: item.subItems.length > 0 ? '#f9731618' : '#6b728018', color: item.subItems.length > 0 ? '#f97316' : '#6b7280' }}
+                      >
+                        세목 {item.subItems.length}건
+                      </span>
+                      <ChevronRight
+                        size={14}
+                        className={cn(
+                          'text-[var(--text-muted)] transition-transform duration-200',
+                          isExpanded && 'rotate-90'
+                        )}
+                      />
+                    </button>
+                    {/* 수정/삭제 */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => openItemModal('edit', item)}
+                        className="p-1.5 rounded-md hover:bg-primary-50 dark:hover:bg-primary-900/20 text-primary-500 cursor-pointer transition-colors"
+                        title="수정"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget({ type: 'item', id: item.id, name: item.name })}
+                        className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer transition-colors"
+                        title="삭제"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 펼침: 세목 테이블 */}
+                  {isExpanded && (
+                    <div className="border-t border-[var(--border-default)] bg-[var(--bg-muted)]/50">
+                      <div className="px-4 py-2 text-[10px] font-bold text-[var(--text-muted)] flex justify-between">
+                        <span>하위 세목</span>
+                        <Button size="sm" onClick={() => openSubModal('add', item.id)} icon={<Plus size={12} />}>
+                          세목 추가
+                        </Button>
+                      </div>
+
+                      {item.subItems.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-[11px] text-[var(--text-muted)]">등록된 세목이 없습니다</div>
+                      ) : (
+                        <>
+                          {/* 테이블 헤더 */}
+                          <div className="grid grid-cols-[28px_32px_1fr_120px_1fr_64px] gap-2 px-4 py-1.5 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider border-b border-[var(--border-default)]">
+                            <span></span>
+                            <span>#</span>
+                            <span>세목명</span>
+                            <span>연결 계정</span>
+                            <span>동의어</span>
+                            <span className="text-center">관리</span>
+                          </div>
+                          {/* 세목 행 */}
+                          <div className="divide-y divide-[var(--border-default)]">
+                            {item.subItems.map((sub, idx) => {
+                              const details = sub.detailItems || []
+                              const isSubExpanded = expandedSubId === sub.id
+                              return (
+                                <div key={sub.id}>
+                                  <div
+                                    draggable
+                                    onDragStart={() => setDragIdx(idx)}
+                                    onDragOver={(e) => { e.preventDefault(); setOverIdx(idx) }}
+                                    onDrop={() => handleSubDrop(item.id, dragIdx!, idx)}
+                                    onDragEnd={() => { setDragIdx(null); setOverIdx(null) }}
+                                    className={cn(
+                                      'grid grid-cols-[28px_32px_1fr_120px_1fr_64px] gap-2 px-4 py-2.5 items-center hover:bg-[var(--bg-surface)] transition-all group',
+                                      dragIdx === idx && 'opacity-40 scale-95',
+                                      overIdx === idx && dragIdx !== idx && 'ring-2 ring-primary-300 bg-primary-50/50 dark:bg-primary-900/10',
+                                    )}
+                                  >
+                                    <span className="cursor-grab active:cursor-grabbing text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors">
+                                      <GripVertical size={14} />
+                                    </span>
+                                    <span className="text-[11px] font-bold text-[var(--text-muted)] text-center">{idx + 1}</span>
+                                    <span className="flex items-center gap-1.5">
+                                      {details.length > 0 && (
+                                        <button onClick={() => setExpandedSubId(isSubExpanded ? null : sub.id)} className="cursor-pointer">
+                                          <ChevronRight size={12} className={cn('text-[var(--text-muted)] transition-transform', isSubExpanded && 'rotate-90')} />
+                                        </button>
+                                      )}
+                                      <span className="text-[12px] font-semibold text-[var(--text-primary)] truncate">{sub.name}</span>
+                                      {details.length > 0 && (
+                                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/20 text-violet-600">{details.length}</span>
+                                      )}
+                                    </span>
+                                    <span className="text-[11px] text-[var(--text-secondary)] truncate">
+                                      {sub.accountCode
+                                        ? <>{sub.accountCode} {acctName(sub.accountCode)}</>
+                                        : <span className="text-[var(--text-muted)] italic">기본값</span>
+                                      }
+                                    </span>
+                                    <div className="flex flex-wrap gap-1">
+                                      {sub.aliases.map(a => (
+                                        <span key={a} className="text-[9px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[var(--text-secondary)]">{a}</span>
+                                      ))}
+                                    </div>
+                                    <div className="flex items-center gap-1 justify-center">
+                                      <button
+                                        onClick={() => openDetailModal('add', item.id, sub.id)}
+                                        className="p-1 rounded-md hover:bg-violet-50 dark:hover:bg-violet-900/20 text-violet-500 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="세세항목 추가"
+                                      >
+                                        <Plus size={12} />
+                                      </button>
+                                      <button
+                                        onClick={() => openSubModal('edit', item.id, sub)}
+                                        className="p-1 rounded-md hover:bg-primary-50 dark:hover:bg-primary-900/20 text-primary-500 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                                      >
+                                        <Pencil size={12} />
+                                      </button>
+                                      <button
+                                        onClick={() => setDeleteTarget({ type: 'sub', id: sub.id, parentId: item.id, name: sub.name })}
+                                        className="p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  {/* 세세항목 펼침 */}
+                                  {isSubExpanded && details.length > 0 && (
+                                    <div className="bg-violet-50/30 dark:bg-violet-900/5 border-t border-dashed border-violet-200 dark:border-violet-800">
+                                      {details.map((d, di) => (
+                                        <div key={d.id} className="grid grid-cols-[28px_32px_28px_1fr_120px_1fr_64px] gap-2 px-4 py-1.5 items-center hover:bg-violet-50/50 dark:hover:bg-violet-900/10 group/detail">
+                                          <span />
+                                          <span />
+                                          <span className="text-[10px] font-bold text-violet-400 text-center">{di + 1}</span>
+                                          <span className="text-[11px] text-[var(--text-primary)] truncate pl-1">↳ {d.name}</span>
+                                          <span className="text-[10px] text-[var(--text-secondary)] truncate">
+                                            {d.accountCode ? <>{d.accountCode} {acctName(d.accountCode)}</> : <span className="text-[var(--text-muted)] italic">상위값</span>}
+                                          </span>
+                                          <div className="flex flex-wrap gap-1">
+                                            {d.aliases.map(a => (
+                                              <span key={a} className="text-[8px] px-1 py-0.5 rounded bg-violet-100 dark:bg-violet-800/30 text-violet-600">{a}</span>
+                                            ))}
+                                          </div>
+                                          <div className="flex items-center gap-1 justify-center">
+                                            <button
+                                              onClick={() => openDetailModal('edit', item.id, sub.id, d)}
+                                              className="p-1 rounded-md hover:bg-primary-50 dark:hover:bg-primary-900/20 text-primary-500 cursor-pointer opacity-0 group-hover/detail:opacity-100 transition-opacity"
+                                            >
+                                              <Pencil size={10} />
+                                            </button>
+                                            <button
+                                              onClick={() => setDeleteTarget({ type: 'detail', id: d.id, parentId: sub.id, grandParentId: item.id, name: d.name })}
+                                              className="p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer opacity-0 group-hover/detail:opacity-100 transition-opacity"
+                                            >
+                                              <Trash2 size={10} />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </Card>
+
+      {/* ── 예산목 추가/수정 모달 ── */}
+      <Modal
+        open={itemModal !== null}
+        onClose={() => setItemModal(null)}
+        title={itemModal?.mode === 'add' ? '예산목 추가' : '예산목 수정'}
+      >
+        <ModalBody className="space-y-4">
+          {/* 예산목명 */}
           <Input
-            ref={inputRef}
-            placeholder="새 예산세목 입력 (예: 석조문화재 보수, 발굴장비 구입비)"
-            value={newName}
-            onChange={e => setNewName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+            label="예산목명"
+            value={imName}
+            onChange={(e) => setImName(e.target.value)}
+            placeholder="예: 인건비, 소모품비"
+            autoFocus
           />
-        </div>
-        <Button onClick={handleAdd} icon={<Plus size={15} />} size="md" className="shrink-0">
-          <span className="hidden sm:inline">추가</span>
-        </Button>
-      </div>
 
-      {/* 헤더 */}
-      <div className="flex items-center justify-between pb-2 mb-2 border-b border-[var(--border-default)]">
-        <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">예산세목 목록</span>
-        <span className="text-[11px] font-bold text-[#ea580c]">{allNames.length}건</span>
-      </div>
+          {/* 동의어 */}
+          <div>
+            <span className="text-[11px] font-bold text-[var(--text-muted)] mb-1.5 block">동의어</span>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {imAliases.map(a => (
+                <span key={a} className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-[var(--text-secondary)]">
+                  {a}
+                  <button onClick={() => setImAliases(imAliases.filter(x => x !== a))} className="hover:text-danger cursor-pointer">
+                    <X size={10} />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="동의어 입력 후 Enter"
+                value={imAliasInput}
+                onChange={(e) => setImAliasInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && imAliasInput.trim()) {
+                    e.preventDefault()
+                    if (!imAliases.includes(imAliasInput.trim())) {
+                      setImAliases([...imAliases, imAliasInput.trim()])
+                    }
+                    setImAliasInput('')
+                  }
+                }}
+              />
+            </div>
+          </div>
 
-      {allNames.length === 0 ? (
-        <div className="py-10 text-center text-sm text-[var(--text-muted)]">등록된 예산세목이 없습니다</div>
-      ) : (
-        <div className="space-y-0.5">
-          {allNames.map((name, idx) => {
-            const inBudget = budgets.some(b => b.subName === name)
+          {/* 허용 계정 풀 */}
+          <div>
+            <span className="text-[11px] font-bold text-[var(--text-muted)] mb-1.5 block">허용 계정 풀</span>
+            {imPool.length > 0 && (
+              <div className="space-y-1.5 mb-2">
+                {imPool.map(p => (
+                  <div key={p.accountCode} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--bg-muted)]">
+                    <button
+                      onClick={() => setImDefaultAcct(imDefaultAcct === p.accountCode ? undefined : p.accountCode)}
+                      className={cn('text-[14px] cursor-pointer shrink-0', imDefaultAcct === p.accountCode ? 'text-yellow-500' : 'text-[var(--text-muted)] hover:text-yellow-400')}
+                      title="기본 계정 지정"
+                    >
+                      ★
+                    </button>
+                    <span className="text-[12px] font-semibold text-[var(--text-primary)] flex-1">
+                      {p.accountCode} {acctName(p.accountCode)}
+                    </span>
+                    {/* 상대계정 선택 */}
+                    <select
+                      className="text-[11px] bg-[var(--bg-surface)] border border-[var(--border-default)] rounded px-1.5 py-0.5 text-[var(--text-secondary)] max-w-[140px]"
+                      value={p.contraAccountCode || ''}
+                      onChange={(e) => {
+                        setImPool(imPool.map(pp =>
+                          pp.accountCode === p.accountCode
+                            ? { ...pp, contraAccountCode: e.target.value || undefined }
+                            : pp
+                        ))
+                      }}
+                    >
+                      <option value="">상대계정 선택</option>
+                      {accounts.map(a => (
+                        <option key={a.code} value={a.code}>{a.code} {a.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => {
+                        setImPool(imPool.filter(pp => pp.accountCode !== p.accountCode))
+                        if (imDefaultAcct === p.accountCode) setImDefaultAcct(undefined)
+                      }}
+                      className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* 계정 검색 */}
+            <Input
+              placeholder="계정 코드 또는 이름으로 검색"
+              value={imAcctSearch}
+              onChange={(e) => setImAcctSearch(e.target.value)}
+            />
+            {acctSearchResults.length > 0 && (
+              <div className="mt-1 border border-[var(--border-default)] rounded-lg max-h-[160px] overflow-y-auto">
+                {acctSearchResults.map(a => (
+                  <button
+                    key={a.code}
+                    onClick={() => {
+                      setImPool([...imPool, { accountCode: a.code }])
+                      setImAcctSearch('')
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-[var(--bg-muted)] transition-colors cursor-pointer text-[12px]"
+                  >
+                    <span className="font-mono text-[var(--text-muted)]">{a.code}</span>
+                    <span className="font-semibold text-[var(--text-primary)]">{a.name}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] ml-auto">{a.group}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="ghost" onClick={() => setItemModal(null)}>취소</Button>
+          <Button onClick={saveItemModal}>저장</Button>
+        </ModalFooter>
+      </Modal>
+
+      {/* ── 세목 추가/수정 모달 ── */}
+      <Modal
+        open={subModal !== null}
+        onClose={() => setSubModal(null)}
+        title={subModal?.mode === 'add' ? '세목 추가' : '세목 수정'}
+      >
+        <ModalBody className="space-y-4">
+          {/* 세목명 */}
+          <Input
+            label="세목명"
+            value={smName}
+            onChange={(e) => setSmName(e.target.value)}
+            placeholder="예: 기본급, 상여금"
+            autoFocus
+          />
+
+          {/* 동의어 */}
+          <div>
+            <span className="text-[11px] font-bold text-[var(--text-muted)] mb-1.5 block">동의어</span>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {smAliases.map(a => (
+                <span key={a} className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-[var(--text-secondary)]">
+                  {a}
+                  <button onClick={() => setSmAliases(smAliases.filter(x => x !== a))} className="hover:text-danger cursor-pointer">
+                    <X size={10} />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="동의어 입력 후 Enter"
+                value={smAliasInput}
+                onChange={(e) => setSmAliasInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && smAliasInput.trim()) {
+                    e.preventDefault()
+                    if (!smAliases.includes(smAliasInput.trim())) {
+                      setSmAliases([...smAliases, smAliasInput.trim()])
+                    }
+                    setSmAliasInput('')
+                  }
+                }}
+              />
+            </div>
+          </div>
+
+          {/* 계정과목 선택 (부모 풀에서만) */}
+          <div>
+            <span className="text-[11px] font-bold text-[var(--text-muted)] mb-1.5 block">계정과목</span>
+            {(() => {
+              const parent = items.find(it => it.id === subModal?.parentId)
+              if (!parent || parent.accountPool.length === 0) {
+                return <div className="text-[11px] text-[var(--text-muted)] italic">부모 예산목에 허용 계정 풀이 없습니다</div>
+              }
+              return (
+                <div className="space-y-1.5">
+                  {parent.accountPool.map(p => (
+                    <label key={p.accountCode} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--bg-muted)] transition-colors cursor-pointer">
+                      <input
+                        type="radio"
+                        name="sub_acct"
+                        checked={smAcctCode === p.accountCode}
+                        onChange={() => setSmAcctCode(p.accountCode)}
+                        className="accent-[var(--color-primary-500)]"
+                      />
+                      <span className="text-[12px] font-mono text-[var(--text-muted)]">{p.accountCode}</span>
+                      <span className="text-[12px] font-semibold text-[var(--text-primary)]">{acctName(p.accountCode)}</span>
+                      {parent.defaultAccountCode === p.accountCode && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600">기본</span>
+                      )}
+                    </label>
+                  ))}
+                  <button
+                    onClick={() => setSmAcctCode(undefined)}
+                    className="text-[11px] text-primary-500 hover:underline cursor-pointer px-3"
+                  >
+                    선택 해제 (기본 계정 사용)
+                  </button>
+                  {!smAcctCode && parent.defaultAccountCode && (
+                    <div className="text-[10px] text-[var(--text-muted)] italic px-3">
+                      미선택 시 예산목의 기본 계정 ({acctName(parent.defaultAccountCode)})이 적용됩니다
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="ghost" onClick={() => setSubModal(null)}>취소</Button>
+          <Button onClick={saveSubModal}>저장</Button>
+        </ModalFooter>
+      </Modal>
+
+      {/* ── 세세항목 추가/수정 모달 ── */}
+      <Modal
+        open={detailModal !== null}
+        onClose={() => setDetailModal(null)}
+        title={detailModal?.mode === 'add' ? '세세항목 추가' : '세세항목 수정'}
+      >
+        <ModalBody className="space-y-4">
+          {/* 세세항목명 */}
+          <div>
+            <label className="text-[11px] font-bold text-[var(--text-secondary)] mb-1 block">세세항목명 *</label>
+            <Input value={dmName} onChange={e => setDmName(e.target.value)} placeholder="예) 정규직기본급" />
+          </div>
+          {/* 동의어 */}
+          <div>
+            <label className="text-[11px] font-bold text-[var(--text-secondary)] mb-1 block">동의어</label>
+            <div className="flex flex-wrap gap-1 mb-2">
+              {dmAliases.map(a => (
+                <span key={a} className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full bg-violet-50 dark:bg-violet-900/20 text-violet-600">
+                  {a}
+                  <button onClick={() => setDmAliases(prev => prev.filter(x => x !== a))} className="hover:text-danger cursor-pointer"><X size={10} /></button>
+                </span>
+              ))}
+            </div>
+            <Input
+              value={dmAliasInput}
+              onChange={e => setDmAliasInput(e.target.value)}
+              placeholder="동의어 입력 후 Enter"
+              onKeyDown={e => {
+                if (e.key === 'Enter' && dmAliasInput.trim()) {
+                  e.preventDefault()
+                  if (!dmAliases.includes(dmAliasInput.trim())) setDmAliases(prev => [...prev, dmAliasInput.trim()])
+                  setDmAliasInput('')
+                }
+              }}
+            />
+          </div>
+          {/* 계정 선택 (부모 세목의 계정 풀에서) */}
+          {detailModal && (() => {
+            const parentItem = items.find(it => it.id === detailModal.itemId)
+            const pool = parentItem?.accountPool || []
             return (
-              <div key={name} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--bg-muted)] transition-all group">
-                <span className="text-[11px] font-bold text-[var(--text-muted)] w-5 text-center shrink-0">{idx + 1}</span>
-                <span className="text-sm font-semibold text-[var(--text-primary)] flex-1 truncate">{name}</span>
-                {inBudget && (
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/20 text-green-600">사용중</span>
-                )}
-                <button
-                  onClick={() => handleDelete(name)}
-                  className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 size={13} />
-                </button>
+              <div>
+                <label className="text-[11px] font-bold text-[var(--text-secondary)] mb-1 block">계정과목 (미선택 시 세목 계정 사용)</label>
+                <div className="space-y-1">
+                  <label className="flex items-center gap-2 px-2 py-1 rounded hover:bg-[var(--bg-muted)] cursor-pointer">
+                    <input type="radio" name="dm_acct" checked={!dmAcctCode} onChange={() => setDmAcctCode(undefined)} />
+                    <span className="text-[11px] text-[var(--text-muted)] italic">상위 세목 계정 사용</span>
+                  </label>
+                  {pool.map(p => (
+                    <label key={p.accountCode} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-[var(--bg-muted)] cursor-pointer">
+                      <input type="radio" name="dm_acct" checked={dmAcctCode === p.accountCode} onChange={() => setDmAcctCode(p.accountCode)} />
+                      <span className="text-[11px]">{p.accountCode} {acctName(p.accountCode)}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             )
-          })}
-        </div>
-      )}
-    </Card>
+          })()}
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="ghost" onClick={() => setDetailModal(null)}>취소</Button>
+          <Button onClick={saveDetailModal}>{detailModal?.mode === 'add' ? '추가' : '저장'}</Button>
+        </ModalFooter>
+      </Modal>
+
+      {/* ── 삭제 확인 모달 ── */}
+      <Modal
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        title="삭제 확인"
+      >
+        <ModalBody>
+          <p className="text-sm text-[var(--text-secondary)]">
+            <strong>"{deleteTarget?.name}"</strong> {deleteTarget?.type === 'item' ? '예산목' : '세목'}을(를) 삭제하시겠습니까?
+          </p>
+          {deleteTarget?.type === 'item' && (
+            <p className="text-xs text-danger mt-2">하위 세목도 함께 삭제됩니다.</p>
+          )}
+          <p className="text-xs text-danger mt-1">이 작업은 되돌릴 수 없습니다.</p>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="ghost" onClick={() => setDeleteTarget(null)}>취소</Button>
+          <Button variant="danger" onClick={handleDelete}>삭제</Button>
+        </ModalFooter>
+      </Modal>
+    </>
   )
 }
 
@@ -1390,7 +1994,7 @@ function PaymentMethodPanel() {
 }
 
 /* ══════════════════════════════════════════════
-   🎨 테마 설정 패널
+   테마 설정 패널
    ══════════════════════════════════════════════ */
 export function ThemePanel() {
   const { theme, accent, radius, density, fontScale, fontColor, datePickerStyle, checkboxStyle, checkboxSize, tabStyle, buttonSize, toastPosition, tableStripe, tableDensity, badgeShape, sidebarWidth, progressColor, toggle, setAccent, setRadius, setDensity, setFontScale, setFontColor, setDatePickerStyle, setCheckboxStyle, setCheckboxSize, setTabStyle, setButtonSize, setToastPosition, setTableStripe, setTableDensity, setBadgeShape, setSidebarWidth, setProgressColor, customAccents, addCustomAccent, removeCustomAccent, typography, setTypo, resetTypo } = useThemeStore()

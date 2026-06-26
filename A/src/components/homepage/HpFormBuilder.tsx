@@ -18,7 +18,7 @@ type FieldType = 'text' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'file' 
 interface FormField {
   id: string; label: string; type: FieldType
   placeholder?: string; required: boolean; options?: string[]
-  inline?: boolean; optionMode?: 'dropdown' | 'manual'
+  inline?: boolean
 }
 interface FormSection {
   id: string; type: SectionType
@@ -36,12 +36,6 @@ interface FormTemplate {
   sections: FormSection[]
   managedFields: string[]
   workflow: WorkflowStep[]
-}
-
-interface FormSubmission {
-  id: string; tplId: string; templateId?: string; tplName: string
-  date: string; submittedAt?: string; data: Record<string, any>
-  selectedFields?: Record<string, string[]>; pwd?: string; phone?: string; status: string
 }
 
 const STORAGE_KEY = 'hp_form_templates'

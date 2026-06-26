@@ -98,7 +98,7 @@ export function ProfilePage() {
             </div>
           </div>
 
-          <Button className="w-full" icon={<LogOut size={15} />}>로그아웃</Button>
+          <Button className="w-full" icon={<LogOut size={16} />}>로그아웃</Button>
         </Card>
 
         {/* ── 우측: 탭 콘텐츠 ── */}
@@ -160,7 +160,7 @@ export function ProfilePage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <FieldRow label="직급" value={currentUser.role || '-'} />
-                  <FieldRow label="직책" value={currentUser.pos || '-'} />
+                  <FieldRow label="직함" value={currentUser.pos || '-'} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <FieldRow label="이메일" value={currentUser.email || '-'} />

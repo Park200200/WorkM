@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type ReactNode } from 'react'
+import { useState, useRef, useEffect, type ReactNode, type CSSProperties } from 'react'
 import { ChevronDown, Check } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { cn } from '../../utils/cn'
@@ -14,6 +14,7 @@ interface CustomSelectProps {
   onChange: (value: string) => void
   options: SelectOption[]
   placeholder?: string
+  placeholderStyle?: CSSProperties
   className?: string
   disabled?: boolean
 }
@@ -23,6 +24,7 @@ export function CustomSelect({
   onChange,
   options,
   placeholder = '— 선택 —',
+  placeholderStyle,
   className,
   disabled = false,
 }: CustomSelectProps) {
@@ -90,7 +92,7 @@ export function CustomSelect({
         )}
         style={{ borderRadius: 'var(--radius-sm)' }}
       >
-        <span className={cn('truncate', !value && 'text-[var(--text-muted)]')}>
+        <span className={cn('truncate', !value && !placeholderStyle && 'text-[var(--text-muted)]')} style={!value && placeholderStyle ? placeholderStyle : undefined}>
           {selectedLabel}
         </span>
         <ChevronDown

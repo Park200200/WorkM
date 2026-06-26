@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 import { getItem, setItem } from '../../utils/storage'
-import { ScrollText, Save, FileText, Shield, BookOpen } from 'lucide-react'
+import { ScrollText, Save, FileText, Shield, BookOpen, Link } from 'lucide-react'
 
 /* ── 타입 ── */
 type TermsTab = 'tos' | 'privacy' | 'post'
@@ -245,7 +245,7 @@ export function HpTermsMgmt() {
             <button key={t.key} onClick={() => switchTab(t.key)}
               className="flex items-center gap-1.5 px-4 py-2.5 border-none bg-transparent cursor-pointer text-[13px] font-bold transition-colors rounded-t-lg"
               style={{ color: active ? '#6366f1' : 'var(--text-muted)', borderBottom: active ? '2.5px solid #6366f1' : '2.5px solid transparent', position:'relative', top:'1px' }}>
-              <Icon size={13}/> {t.label}
+              <Icon size={14}/> {t.label}
             </button>
           )
         })}
@@ -282,7 +282,7 @@ export function HpTermsMgmt() {
           HL <input type="color" defaultValue="#fef08a" onChange={e => execCmd('hiliteColor', e.target.value)} className="w-5 h-5 border-none cursor-pointer rounded" />
         </label>
         <div className="w-px h-5 bg-[var(--border-default)] mx-0.5" />
-        <button onClick={insertLink} className={tbBtnCls} style={{ fontSize:'13px' }}>🔗</button>
+        <button onClick={insertLink} className={tbBtnCls} style={{ fontSize:'13px' }}><Link size={14} /></button>
         <button onClick={() => execCmd('insertHorizontalRule')} className={tbBtnCls} style={{ fontSize:'12px' }}>—</button>
         <div className="ml-auto">
           <button onClick={doSave} className="px-3.5 py-1.5 rounded-lg text-white text-[12px] font-bold cursor-pointer border-none" style={{ background:'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>저장</button>

@@ -3,7 +3,7 @@ import { PageHeader } from '../../components/common/PageHeader'
 import { cn } from '../../utils/cn'
 import { getItem } from '../../utils/storage'
 import { useAuthStore } from '../../stores/authStore'
-import { BarChart3, TrendingUp, Trophy, Target, Users } from 'lucide-react'
+import { BarChart3, TrendingUp, Trophy, Target, Users, Medal } from 'lucide-react'
 
 /* ─────────────────────────────────────────────
    타입
@@ -39,7 +39,7 @@ const PERIOD_LABELS: Record<PeriodKey, string> = {
   yearly: '연간',
 }
 
-const MEDALS = ['🥇', '🥈', '🥉']
+const MEDAL_COLORS = ['#fbbf24', '#9ca3af', '#cd7f32']
 
 /* ─── 기간 필터 ─── */
 function inPeriod(dateStr: string | undefined, period: PeriodKey, now: Date): boolean {
@@ -147,7 +147,7 @@ export function PerformancePage() {
         {/* 테이블 */}
         {stats.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="text-4xl mb-3">📊</p>
+            <p className="text-4xl mb-3"><BarChart3 size={40} className="mx-auto text-[var(--text-muted)]" /></p>
             <p className="text-sm font-bold text-[var(--text-secondary)]">직원 데이터가 없습니다</p>
           </div>
         ) : (
@@ -198,7 +198,7 @@ export function PerformancePage() {
                       {/* 순위 */}
                       <td className="py-3 px-3.5 text-center">
                         {rank <= 3 ? (
-                          <span className="text-[17px]">{MEDALS[rank - 1]}</span>
+                          <Medal size={17} style={{ color: MEDAL_COLORS[rank - 1] }} />
                         ) : (
                           <span className="text-[13px] font-extrabold text-[var(--text-muted)]">{rank}위</span>
                         )}
@@ -255,7 +255,7 @@ export function PerformancePage() {
 
                       {/* 진행중 */}
                       <td className="py-3 px-3.5 text-center">
-                        <div className="text-[15px] font-extrabold text-[#06b6d4]">{s.prog}</div>
+                        <div className="text-[15px] font-extrabold text-cyan-500">{s.prog}</div>
                         <div className="text-[10px] text-[var(--text-muted)]">진행중</div>
                       </td>
 
@@ -295,7 +295,7 @@ export function PerformancePage() {
               )}
             >
               <div className="flex items-center gap-3 mb-3">
-                {rank <= 3 && <span className="text-lg">{MEDALS[rank - 1]}</span>}
+                {rank <= 3 && <Medal size={18} style={{ color: MEDAL_COLORS[rank - 1] }} />}
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-extrabold shrink-0"
                   style={{ background: `linear-gradient(135deg, ${s.u.color || '#4f6ef7'}, #9747ff)` }}

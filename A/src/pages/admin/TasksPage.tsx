@@ -9,7 +9,7 @@ import { EmptyState } from '../../components/common/EmptyState'
 import { cn } from '../../utils/cn'
 import { getItem, setItem } from '../../utils/storage'
 
-import { Star, UserPlus, Settings2, Plus, Check, X, Pencil, Trash2, Users as UsersIcon } from 'lucide-react'
+import { Star, UserPlus, Settings2, Plus, Check, X, Pencil, Trash2, Users as UsersIcon, ClipboardList, User, Building2 } from 'lucide-react'
 import { DatePicker } from '../../components/ui/DatePicker'
 import { CustomSelect } from '../../components/ui/CustomSelect'
 
@@ -318,7 +318,7 @@ export function TasksPage() {
                         <div className="text-[10.5px] text-[var(--text-muted)]">{t.team || ''}</div>
                       </div>
                       <span
-                        className="text-[9px] font-bold px-1.5 py-0.5 rounded-md shrink-0"
+                        className="text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0"
                         style={{ background: `${getStatusColor(t.status)}18`, color: getStatusColor(t.status) }}
                       >{getStatusLabel(t.status)}</span>
                       {isAssigned && (
@@ -394,7 +394,7 @@ export function TasksPage() {
                             ? 'bg-primary-500 border-primary-500'
                             : 'border-[var(--border-default)]',
                         )}>
-                          {isAssigned && <Check size={13} className="text-white" />}
+                          {isAssigned && <Check size={14} className="text-white" />}
                         </div>
 
                         <div className="flex-1 min-w-0">
@@ -526,7 +526,7 @@ export function TasksPage() {
                         'w-4.5 h-4.5 rounded border-2 flex items-center justify-center shrink-0',
                         sel ? 'bg-primary-500 border-primary-500' : 'border-[var(--border-default)]',
                       )}>
-                        {sel && <Check size={11} className="text-white" />}
+                        {sel && <Check size={12} className="text-white" />}
                       </div>
                       <span className="text-[12px] font-semibold text-[var(--text-primary)]">{d.name}</span>
                     </div>
@@ -556,7 +556,7 @@ export function TasksPage() {
                         'w-4.5 h-4.5 rounded border-2 flex items-center justify-center shrink-0',
                         sel ? 'bg-primary-500 border-primary-500' : 'border-[var(--border-default)]',
                       )}>
-                        {sel && <Check size={11} className="text-white" />}
+                        {sel && <Check size={12} className="text-white" />}
                       </div>
                       <div
                         className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
@@ -588,7 +588,7 @@ export function TasksPage() {
                         <button
                           onClick={(e) => { e.stopPropagation(); setSelSteps(selSteps.filter((_, i) => i !== idx)) }}
                           className="ml-0.5 text-[var(--text-muted)] hover:text-red-500 cursor-pointer"
-                        ><X size={11} /></button>
+                        ><X size={12} /></button>
                       </div>
                     )
                   })}
@@ -644,7 +644,7 @@ function AssignByTask({ tasks, getUser, onManage }: {
   getUser: (id?: number) => UserItem | undefined
   onManage: (taskId: number) => void
 }) {
-  if (!tasks.length) return <Card><EmptyState emoji="📋" title="등록된 업무가 없습니다" /></Card>
+  if (!tasks.length) return <Card><EmptyState icon={<ClipboardList size={28} />} title="등록된 업무가 없습니다" /></Card>
 
   return (
     <Card className="p-0 overflow-hidden">
@@ -762,7 +762,7 @@ function AssignByStaff({ tasks, users, onManage }: {
   tasks: TaskItem[]; users: UserItem[]
   onManage: (userId: number) => void
 }) {
-  if (!users.length) return <Card><EmptyState emoji="👤" title="등록된 직원이 없습니다" /></Card>
+  if (!users.length) return <Card><EmptyState icon={<User size={28} />} title="등록된 직원이 없습니다" /></Card>
 
   return (
     <Card className="p-0 overflow-hidden">
@@ -897,7 +897,7 @@ function AssignByTeam({ tasks, getUser, onManage }: { tasks: TaskItem[]; getUser
     })
   }, [tasks, departments, users, getUser])
 
-  if (!byTeam.length) return <Card><EmptyState emoji="🏢" title="팀별 업무가 없습니다" /></Card>
+  if (!byTeam.length) return <Card><EmptyState icon={<Building2 size={28} />} title="팀별 업무가 없습니다" /></Card>
 
   return (
     <Card className="p-0 overflow-hidden">
@@ -1004,7 +1004,7 @@ function TaskListView({ tasks, getUser, detailTasks, taskResults, reportTypes, o
   onEdit: (taskId: number) => void
   onDelete: (taskId: number) => void
 }) {
-  if (!tasks.length) return <Card><EmptyState emoji="📋" title="등록된 업무가 없습니다" /></Card>
+  if (!tasks.length) return <Card><EmptyState icon={<ClipboardList size={28} />} title="등록된 업무가 없습니다" /></Card>
 
   return (
     <div className="space-y-2">
@@ -1030,8 +1030,8 @@ function TaskListView({ tasks, getUser, detailTasks, taskResults, reportTypes, o
                 style={{ background: `${getStatusColor(t.status)}18`, color: getStatusColor(t.status) }}
               >{getStatusLabel(t.status)}</span>
               <div className="flex gap-1 shrink-0 ml-1">
-                <button onClick={() => onEdit(t.id)} className="p-1 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 text-[var(--text-muted)] hover:text-primary-500 cursor-pointer transition-colors" title="수정"><Pencil size={13} /></button>
-                <button onClick={() => { if (confirm('이 업무를 삭제하시겠습니까?')) onDelete(t.id) }} className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-[var(--text-muted)] hover:text-red-500 cursor-pointer transition-colors" title="삭제"><Trash2 size={13} /></button>
+                <button onClick={() => onEdit(t.id)} className="p-1 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/20 text-[var(--text-muted)] hover:text-primary-500 cursor-pointer transition-colors" title="수정"><Pencil size={14} /></button>
+                <button onClick={() => { if (confirm('이 업무를 삭제하시겠습니까?')) onDelete(t.id) }} className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-[var(--text-muted)] hover:text-red-500 cursor-pointer transition-colors" title="삭제"><Trash2 size={14} /></button>
               </div>
             </div>
             <div className="flex items-center gap-3 mb-2.5 flex-wrap">
@@ -1039,7 +1039,7 @@ function TaskListView({ tasks, getUser, detailTasks, taskResults, reportTypes, o
                 const assigner = getUser(t.assignerId)
                 return assigner ? (
                   <div className="flex items-center gap-1">
-                    <span className="text-[9px] font-bold text-[var(--text-muted)]">지시자</span>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)]">지시자</span>
                     <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-full pl-0.5 pr-2 py-0.5">
                       <Avatar name={assigner.name} color={assigner.color} size="xs" />
                       <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400">{assigner.name}</span>
@@ -1050,7 +1050,7 @@ function TaskListView({ tasks, getUser, detailTasks, taskResults, reportTypes, o
               {t.team && <span className="text-[10px] font-semibold bg-[var(--bg-muted)] text-[var(--text-muted)] px-2 py-0.5 rounded-md">{t.team}</span>}
               {assignees.length > 0 && (
                 <div className="flex items-center gap-1">
-                  <span className="text-[9px] font-bold text-[var(--text-muted)]">수신자</span>
+                  <span className="text-[10px] font-bold text-[var(--text-muted)]">수신자</span>
                   {assignees.map(u => (
                     <div key={u.id} className="flex items-center gap-1 bg-[var(--bg-muted)] rounded-full pl-0.5 pr-2 py-0.5">
                       <Avatar name={u.name} color={u.color} size="xs" />
@@ -1062,7 +1062,7 @@ function TaskListView({ tasks, getUser, detailTasks, taskResults, reportTypes, o
             </div>
             {details.length > 0 && (
               <div className="mb-2">
-                <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">세부업무</div>
+                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">세부업무</div>
                 <div className="flex flex-wrap gap-1">
                   {details.map(d => (
                     <span key={d.id} className="text-[10px] font-semibold bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md">{d.name}</span>
@@ -1072,7 +1072,7 @@ function TaskListView({ tasks, getUser, detailTasks, taskResults, reportTypes, o
             )}
             {results.length > 0 && (
               <div className="mb-2">
-                <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">예상결과물</div>
+                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">예상결과물</div>
                 <div className="flex flex-wrap gap-1">
                   {results.map(r => (
                     <span key={r.id} className="text-[10px] font-semibold px-2 py-0.5 rounded-md" style={{ background: `${r.color || '#6b7280'}18`, color: r.color || '#6b7280' }}>{r.name}</span>
@@ -1082,12 +1082,12 @@ function TaskListView({ tasks, getUser, detailTasks, taskResults, reportTypes, o
             )}
             {steps.length > 0 && (
               <div>
-                <div className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">진행순서</div>
+                <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">진행순서</div>
                 <div className="flex flex-wrap gap-1 items-center">
                   {steps.map((s, idx) => (
                     <div key={s.id} className="flex items-center gap-0.5">
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1" style={{ background: `${s.color || '#6b7280'}18`, color: s.color || '#6b7280' }}>
-                        <span className="text-[9px] font-bold">{idx + 1}.</span>
+                        <span className="text-[10px] font-bold">{idx + 1}.</span>
                         {s.label}
                       </span>
                       {idx < steps.length - 1 && <span className="text-[10px] text-[var(--text-muted)]">→</span>}

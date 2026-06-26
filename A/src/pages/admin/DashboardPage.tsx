@@ -1,7 +1,9 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
 import { InstructionModal, DailyReportModal, ScheduleModal, ProgressReportModal } from '../../components/modals/DashboardModals'
+import AcctApproval from './accounting/AcctApproval'
 
 import { Avatar } from '../../components/ui/Avatar'
 import { EmptyState } from '../../components/common/EmptyState'
@@ -13,6 +15,8 @@ import {
   ClipboardList, PlayCircle, AlertTriangle, Zap, CheckCircle2,
   ChevronDown, ChevronUp, Star, Send as SendIcon, Download, Calendar as CalIcon,
   AlertCircle, MessageSquare, FileText, Lightbulb, ArrowRight,
+  FileCheck, Stamp, CreditCard, Receipt, CheckCircle, FileEdit, Plus,
+  MailOpen, Sparkles, CalendarDays, PartyPopper, X, Inbox,
 } from 'lucide-react'
 import { setItem as setStorageItem } from '../../utils/storage'
 import { formatDate } from '../../utils/format'
@@ -85,6 +89,7 @@ function getDdayBadge(dueDate: string) {
    ───────────────────────────────────────────── */
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user)
+  const navigate = useNavigate()
   const [refreshKey, setRefreshKey] = useState(0)
 
   const tasks = useMemo(() => getItem<TaskItem[]>('ws_tasks', []), [refreshKey])
@@ -271,6 +276,19 @@ export function DashboardPage() {
     }
   }, [mobileChatOpen])
 
+  const location = useLocation()
+  const panel = new URLSearchParams(location.search).get('panel')
+
+  // panel=approval 인 경우, 품의하기 패널만 표시
+  if (panel === 'approval') {
+    const currentYear = new Date().getFullYear()
+    return (
+      <div className="animate-fadeIn">
+        <AcctApproval year={currentYear} />
+      </div>
+    )
+  }
+
   return (
     <div className="animate-fadeIn">
       {/* ── 대시보드 헤더 ── */}
@@ -301,17 +319,114 @@ export function DashboardPage() {
           </div>
           <div className="flex items-center gap-2 ml-auto">
             <button onClick={() => setInstrOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs font-bold text-[var(--text-secondary)] hover:border-primary-400 hover:text-primary-500 transition-all cursor-pointer">
-              <FileText size={13} /> 지시사항
+              <FileText size={14} /> 지시사항
             </button>
             <button onClick={() => setReportOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs font-bold text-[var(--text-secondary)] hover:border-primary-400 hover:text-primary-500 transition-all cursor-pointer">
-              <ClipboardList size={13} /> 일보작성
+              <ClipboardList size={14} /> 일보작성
             </button>
             <button onClick={() => setScheduleOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-500 text-white text-xs font-bold hover:bg-primary-600 transition-colors shadow-sm cursor-pointer">
-              <Lightbulb size={13} /> 내가기획
+              <Lightbulb size={14} /> 내가기획
             </button>
           </div>
         </div>
       </div>
+
+      {/* ── 결제업무 카드 ── */}
+      {(() => {
+        const userName = user?.name || ''
+        const approvals: any[] = getItem('acct_approvals', [])
+        const currentYear = new Date().getFullYear()
+        const budgetCats: any[] = getItem('acct_budget_cats', []).filter((c: any) => c.year === currentYear)
+        const isApprover = budgetCats.some((c: any) => (c.approvers || []).includes(userName)) || budgetCats.some((c: any) => c.approver === userName) || approvals.some((a: any) => a.approver === userName)
+        const userCatIds = new Set(budgetCats.filter((c: any) => c.users && c.users.includes(userName)).map((c: any) => String(c.id)))
+        const userCatNames = new Set(budgetCats.filter((c: any) => c.users && c.users.includes(userName)).map((c: any) => c.name))
+        const isExpenseManager = userCatIds.size > 0
+        const isInMyCat = (a: any) => {
+          if (a.budgetCatId && userCatIds.has(String(a.budgetCatId))) return true
+          if (a.budgetCatName && userCatNames.has(a.budgetCatName)) return true
+          return false
+        }
+        const pendingApprove = isApprover ? approvals.filter(a => a.status === 'pending' && a.approver === userName).length : 0
+        const rejected = approvals.filter(a => a.status === 'rejected' && a.applicant === userName).length
+        const cashflows: any[] = getItem('acct_cashflows', [])
+        const preExpense = approvals.filter(a => {
+          if (a.status !== 'preExpense') return false
+          if (a.applicant === userName) return true
+          // 출금전표 담당자
+          const linkedCf = cashflows.find((cf: any) => String(cf.approvalId) === String(a.id))
+          if (linkedCf && (linkedCf.manager === userName || linkedCf.createdBy === userName)) return true
+          // 지출담당자
+          if (isInMyCat(a)) return true
+          return false
+        }).length
+        const toResolve = approvals.filter(a => a.status === 'toResolve' && a.applicant === userName).length
+        const toExpense = isExpenseManager ? approvals.filter(a => a.status === 'approved' && isInMyCat(a)).length : 0
+        const toSettle = isExpenseManager ? approvals.filter(a => a.status === 'confirming' && isInMyCat(a)).length : 0
+        const completed = approvals.filter(a => ['completed', 'vouchered'].includes(a.status) && (a.applicant === userName || a.approver === userName || isInMyCat(a))).length
+        const total = pendingApprove + rejected + preExpense + toResolve + toExpense + toSettle
+        const allItems = [
+          ...(isApprover ? [{ label: '승인할', value: pendingApprove, icon: Stamp, color: '#f59e0b', bg: 'rgba(245,158,11,.12)', tab: 'approval', group: 'process', subtab: 'ap_pending' }] : []),
+          ...(rejected > 0 ? [{ label: '반려된', value: rejected, icon: AlertCircle, color: '#ef4444', bg: 'rgba(239,68,68,.12)', tab: 'approval', group: 'inbox', subtab: 'rejected' }] : []),
+          { label: '품의할', value: preExpense, icon: FileEdit, color: '#f97316', bg: 'rgba(249,115,22,.12)', tab: 'approval', group: 'inbox', subtab: 'preExpense' },
+          { label: '결의할', value: toResolve, icon: FileCheck, color: '#8b5cf6', bg: 'rgba(139,92,246,.12)', tab: 'approval', group: 'inbox', subtab: 'toResolve' },
+          ...(isExpenseManager ? [{ label: '지출할', value: toExpense, icon: CreditCard, color: '#3b82f6', bg: 'rgba(59,130,246,.12)', tab: 'expense', group: '', subtab: '' }] : []),
+          ...(isExpenseManager ? [{ label: '정산할', value: toSettle, icon: Receipt, color: '#06b6d4', bg: 'rgba(6,182,212,.12)', tab: 'approval', group: 'process', subtab: 'ex_settle' }] : []),
+        ]
+        const items = allItems.filter(i => i.value > 0)
+        return (
+          <div className="mb-4">
+            <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-violet-500 flex items-center justify-center shadow-sm">
+                    <FileCheck size={16} className="text-white" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-extrabold text-[var(--text-primary)]">결제업무</span>
+                      {total > 0 && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-sm animate-pulse">
+                          {total}건 미처리
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-[var(--text-muted)]">품의·승인·지출·정산 업무</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate('/accounting?tab=approval')}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-primary-500 to-violet-500 text-white text-[11px] font-bold hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer shadow-md"
+                >
+                  <Plus size={14} />
+                  품의하기
+                </button>
+              </div>
+              {items.length === 0 ? (
+                <div className="text-center py-4 text-[11px] text-[var(--text-muted)] bg-[var(--bg-muted)] rounded-lg">처리할 결제업무가 없습니다</div>
+              ) : (
+              <div className={`grid gap-2`} style={{ gridTemplateColumns: `repeat(${Math.min(items.length, 6)}, minmax(0, 1fr))` }}>
+                {items.map(item => {
+                  const Icon = item.icon
+                  return (
+                    <div
+                      key={item.label}
+                      onClick={() => navigate(`/accounting?tab=${item.tab}${(item as any).group ? `&group=${(item as any).group}` : ''}${(item as any).subtab ? `&subtab=${(item as any).subtab}` : ''}`)}
+                      className="bg-[var(--bg-muted)] rounded-lg p-2.5 text-center cursor-pointer hover:border-primary-400 border border-transparent transition-all group hover:shadow-sm"
+                    >
+                      <div className="w-7 h-7 rounded-lg mx-auto mb-1.5 flex items-center justify-center" style={{ background: item.bg, color: item.color }}>
+                        <Icon size={14} />
+                      </div>
+                      <div className="text-lg font-extrabold text-[var(--text-primary)] leading-none" style={{ color: item.color }}>{item.value}</div>
+                      <div className="text-[10px] font-bold text-[var(--text-muted)] mt-0.5">{item.label}</div>
+                    </div>
+                  )
+                })}
+              </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── 5개 통계 카드 ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3 mb-5">
@@ -327,7 +442,7 @@ export function DashboardPage() {
                   className="w-8 h-8 md:w-9 md:h-9 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: s.bg, color: s.color }}
                 >
-                  <Icon size={17} />
+                  <Icon size={16} />
                 </div>
               </div>
               <div className="text-xl md:text-2xl font-extrabold text-[var(--text-primary)] tracking-tight">{s.value}</div>
@@ -341,6 +456,8 @@ export function DashboardPage() {
       {/* ── 간트 차트 ── */}
       <GanttChart tasks={ganttTasks} users={users} onProgress={(t) => setProgressTask(t)} />
 
+
+
       {/* ── 메인 그리드: 채팅 + 아코디언 (2컬럼) ── */}
       <div className="mt-4 md:mt-5 grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-3">
         {/* 채팅 위젯 (데스크톱만) */}
@@ -353,7 +470,7 @@ export function DashboardPage() {
             <span className="text-[13px] font-bold text-[var(--text-primary)] truncate flex-1 min-w-0">{channelTitle}</span>
             {activeTaskChannel && (
               <button onClick={() => setActiveTaskChannel(null)}
-                className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--bg-muted)] text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer transition-colors"
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--bg-muted)] text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer transition-colors"
               >전체채널</button>
             )}
             {/* 멤버 아바타 */}
@@ -361,7 +478,7 @@ export function DashboardPage() {
               {channelMembers.map((u, i) => (
                 <div
                   key={u.id}
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white border-2 border-[var(--bg-surface)] shrink-0"
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white border-2 border-[var(--bg-surface)] shrink-0"
                   style={{
                     background: `linear-gradient(135deg, ${u.color || '#4f6ef7'}, #9747ff)`,
                     marginLeft: i > 0 ? '-8px' : '0',
@@ -389,7 +506,7 @@ export function DashboardPage() {
                   <div key={m.id} className={cn('flex gap-2', isMe && 'flex-row-reverse')}>
                     {!isMe && (
                       <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white shrink-0"
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white shrink-0"
                         style={{ background: `linear-gradient(135deg, ${sender?.color || '#9747ff'}, #4f6ef7)` }}
                       >
                         {sender?.avatar || sender?.name?.charAt(0) || '?'}
@@ -410,7 +527,7 @@ export function DashboardPage() {
                         >
                           {m.text}
                         </div>
-                        <span className="text-[9px] text-[var(--text-muted)] shrink-0">{m.time}</span>
+                        <span className="text-[10px] text-[var(--text-muted)] shrink-0">{m.time}</span>
                       </div>
                     </div>
                   </div>
@@ -505,7 +622,7 @@ export function DashboardPage() {
         onClick={() => setMobileChatOpen(true)}
         className="lg:hidden fixed bottom-20 right-4 z-50 w-14 h-14 rounded-full bg-primary-500 hover:bg-primary-600 text-white shadow-xl flex items-center justify-center transition-transform active:scale-90 cursor-pointer"
       >
-        <MessageSquare size={22} />
+        <MessageSquare size={20} />
         {messages.length > 0 && (
           <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-danger text-white text-[10px] font-bold flex items-center justify-center">
             {messages.length > 9 ? '9+' : messages.length}
@@ -560,13 +677,13 @@ export function DashboardPage() {
             </div>
             {activeTaskChannel && (
               <button onClick={() => setActiveTaskChannel(null)}
-                className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--bg-muted)] text-[var(--text-muted)] cursor-pointer shrink-0">전체채널</button>
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--bg-muted)] text-[var(--text-muted)] cursor-pointer shrink-0">전체채널</button>
             )}
             <button
               onClick={() => setMobileChatOpen(false)}
               className="w-8 h-8 rounded-lg bg-[var(--bg-muted)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer shrink-0"
             >
-              ✕
+              <X size={16} />
             </button>
           </div>
 
@@ -584,7 +701,7 @@ export function DashboardPage() {
                   <div key={m.id} className={cn('flex gap-2', isMe && 'flex-row-reverse')}>
                     {!isMe && (
                       <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white shrink-0"
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white shrink-0"
                         style={{ background: `linear-gradient(135deg, ${sender?.color || '#9747ff'}, #4f6ef7)` }}
                       >
                         {sender?.avatar || sender?.name?.charAt(0) || '?'}
@@ -605,7 +722,7 @@ export function DashboardPage() {
                         >
                           {m.text}
                         </div>
-                        <span className="text-[9px] text-[var(--text-muted)] shrink-0">{m.time}</span>
+                        <span className="text-[10px] text-[var(--text-muted)] shrink-0">{m.time}</span>
                       </div>
                     </div>
                   </div>
@@ -681,7 +798,7 @@ function GanttChart({ tasks, users, onProgress }: { tasks: TaskItem[]; users: Us
           <span className="text-[10px] font-bold bg-[var(--bg-muted)] text-[var(--text-muted)] rounded-md px-1.5 py-0.5">0건</span>
         </div>
         <div className="py-8 text-center">
-          <div className="text-2xl mb-2">📭</div>
+          <div className="text-2xl mb-2"><Inbox size={28} /></div>
           <div className="text-sm text-[var(--text-muted)]">진행 중인 업무가 없습니다</div>
         </div>
       </div>
@@ -740,7 +857,7 @@ function GanttChart({ tasks, users, onProgress }: { tasks: TaskItem[]; users: Us
                     className="h-full rounded-full transition-all duration-500 flex items-center justify-center"
                     style={{ width: `${Math.max(t.progress || 0, 8)}%`, background: `linear-gradient(135deg, ${barColor}, ${barColor}cc)`, minWidth: '36px' }}
                   >
-                    <span className="text-[9px] font-bold text-white">
+                    <span className="text-[10px] font-bold text-white">
                       {t.progress}% ({ddayText})
                     </span>
                   </div>
@@ -801,12 +918,12 @@ function GanttChart({ tasks, users, onProgress }: { tasks: TaskItem[]; users: Us
               {/* 업무 정보 */}
               <div className="w-[200px] shrink-0 px-3 py-2 border-b border-[var(--border-default)]">
                 <div className="flex items-center gap-1.5">
-                  {t.isImportant && <Star size={11} className="text-amber-500 fill-amber-500 shrink-0" />}
+                  {t.isImportant && <Star size={12} className="text-amber-500 fill-amber-500 shrink-0" />}
                   <span className="text-[12px] font-bold text-[var(--text-primary)] truncate">{t.title}</span>
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="text-[10px] text-[var(--text-muted)]">{assignee?.name || '-'}</span>
-                  <span className={cn('text-[9px] font-bold px-1 py-0.5 rounded', dd.cls)}>{dd.label}</span>
+                  <span className={cn('text-[10px] font-bold px-1 py-0.5 rounded', dd.cls)}>{dd.label}</span>
                 </div>
               </div>
 
@@ -819,7 +936,7 @@ function GanttChart({ tasks, users, onProgress }: { tasks: TaskItem[]; users: Us
                 />
                 {/* 바 */}
                 <div
-                  className="absolute top-1/2 -translate-y-1/2 h-5 rounded-full text-[9px] font-bold text-white flex items-center justify-center"
+                  className="absolute top-1/2 -translate-y-1/2 h-5 rounded-full text-[10px] font-bold text-white flex items-center justify-center"
                   style={{
                     left: `${barStart}%`,
                     width: `${barWidth}%`,
@@ -868,9 +985,9 @@ function TaskTable({
   const instrList = getItem<Array<Record<string, unknown>>>('ws_instructions', [])
 
   if (tasks.length === 0) {
-    const emojis = { byMe: '📭', received: '✨', schedule: '📅', dueToday: '🎉' }
+    const icons: Record<string, ReactNode> = { byMe: <MailOpen size={28} />, received: <Sparkles size={28} />, schedule: <CalendarDays size={28} />, dueToday: <PartyPopper size={28} /> }
     const texts = { byMe: '지시한 업무가 없습니다', received: '지시받은 업무가 없습니다', schedule: '계획된 내업무가 없습니다', dueToday: '오늘 마감인 업무가 없습니다!' }
-    return <div className="p-6"><EmptyState emoji={emojis[type]} title={texts[type]} /></div>
+    return <div className="p-6"><EmptyState icon={icons[type]} title={texts[type]} /></div>
   }
 
   // 테이블 열 설정
@@ -915,8 +1032,8 @@ function TaskTable({
                       </span>
                     ) : null
                   })}
-                  {t.isImportant && <Star size={13} className="text-amber-500 fill-amber-500 shrink-0" />}
-                  {type === 'dueToday' && <AlertCircle size={13} className="text-danger shrink-0" />}
+                  {t.isImportant && <Star size={14} className="text-amber-500 fill-amber-500 shrink-0" />}
+                  {type === 'dueToday' && <AlertCircle size={14} className="text-danger shrink-0" />}
                   <span className={cn(
                     'text-[13px] font-bold truncate',
                     type === 'dueToday' ? 'text-danger' : 'text-[var(--text-primary)]',
@@ -1057,7 +1174,7 @@ function TaskTable({
                         })}
                       </div>
                       {ids.length > 4 && (
-                        <span className="text-[9px] text-[var(--text-muted)] ml-1">+{ids.length - 4}</span>
+                        <span className="text-[10px] text-[var(--text-muted)] ml-1">+{ids.length - 4}</span>
                       )}
                     </div>
                   ) : personUser ? (

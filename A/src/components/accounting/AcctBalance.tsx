@@ -21,9 +21,9 @@ interface OpeningBalance {
 }
 
 const GROUPS = [
-  { key: 'asset', label: '자산', sublabel: 'Assets', icon: Building2, color: '#4f6ef7', gradient: 'from-[#4f6ef7] to-[#6366f1]' },
-  { key: 'liability', label: '부채', sublabel: 'Liabilities', icon: CreditCard, color: '#ef4444', gradient: 'from-[#ef4444] to-[#dc2626]' },
-  { key: 'equity', label: '자본', sublabel: 'Equity', icon: Landmark, color: '#8b5cf6', gradient: 'from-[#8b5cf6] to-[#7c3aed]' },
+  { key: 'asset', label: '자산', sublabel: 'Assets', icon: Building2, color: '#4f6ef7', gradient: 'from-primary-500 to-indigo-500' },
+  { key: 'liability', label: '부채', sublabel: 'Liabilities', icon: CreditCard, color: '#ef4444', gradient: 'from-danger-500 to-danger-600' },
+  { key: 'equity', label: '자본', sublabel: 'Equity', icon: Landmark, color: '#8b5cf6', gradient: 'from-violet-500 to-violet-600' },
 ]
 
 export function AcctBalance({ year }: { year: number }) {
@@ -181,7 +181,7 @@ export function AcctBalance({ year }: { year: number }) {
   return (
     <div className="space-y-5">
       {/* ── 헤더 ── */}
-      <div className="bg-gradient-to-r from-[#6366f1] to-[#4f6ef7] rounded-2xl p-5 text-white">
+      <div className="bg-gradient-to-r from-indigo-500 to-primary-500 rounded-2xl p-5 text-white">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <div className="text-lg font-extrabold">기초잔액 설정</div>
@@ -204,9 +204,9 @@ export function AcctBalance({ year }: { year: number }) {
             </button>
             <button
               onClick={saveAll}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white text-[#4f6ef7] text-[12px] font-extrabold hover:bg-white/90 transition-all cursor-pointer shadow-md"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white text-primary-500 text-[12px] font-extrabold hover:bg-white/90 transition-all cursor-pointer shadow-md"
             >
-              <Save size={13} /> 저장
+              <Save size={14} /> 저장
             </button>
           </div>
         </div>
@@ -250,7 +250,7 @@ export function AcctBalance({ year }: { year: number }) {
       {/* ── 그룹별 테이블 ── */}
       {accounts.filter(a => ['asset', 'liability', 'equity'].includes(a.type)).length === 0 && (
         <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-10 text-center">
-          <div className="text-3xl mb-2">🏦</div>
+          <div className="text-3xl mb-2"><Landmark size={32} className="mx-auto text-[var(--text-muted)]" /></div>
           <div className="text-sm font-bold text-[var(--text-primary)] mb-1">등록된 계정과목이 없습니다</div>
           <div className="text-[12px] text-[var(--text-muted)]">
             설정 {'>'} 계정과목 관리에서 먼저 계정과목을 등록해주세요

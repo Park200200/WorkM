@@ -15,8 +15,12 @@ import { useToastStore } from '../../stores/toastStore'
 import { formatPhone } from '../../utils/format'
 import {
   Plus, Search, UserPlus, Phone, MapPin,
-  Pencil, Trash2, PhoneCall, Map, Briefcase, Camera, Eye, EyeOff, PenTool,
+  Pencil, Trash2, PhoneCall, Map, Briefcase, Camera, Eye, EyeOff, PenTool, User,
+  Lock,
 } from 'lucide-react'
+
+import { useAuthStore } from '../../stores/authStore'
+import { getItem } from '../../utils/storage'
 
 const statusVariant: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'default'> = {
   '근무': 'success', '근무(휴가)': 'info', '근무(출장)': 'warning',
@@ -27,6 +31,15 @@ export function StaffPage() {
   const { staff, add, update, remove } = useStaffStore()
   const { departments, ranks, positions } = useSettingsStore()
   const addToast = useToastStore((s) => s.add)
+  const user = useAuthStore(s => s.user)
+  
+  // 지출승인권자 확인
+  const isBudgetApprover = useMemo(() => {
+    const userName = user?.name || ''
+    const staffList = getItem<any[]>('ws_users', [])
+    const currentStaff = staffList.find(s => s.name === userName)
+    return currentStaff?.approverType === 'approver'
+  }, [user])
   const [search, setSearch] = useState('')
   const [filterDept, setFilterDept] = useState('all')
   const [modalOpen, setModalOpen] = useState(false)
@@ -98,10 +111,22 @@ export function StaffPage() {
     reader.readAsDataURL(file)
   }
 
+  if (!isBudgetApprover) {
+    return (
+      <div className="animate-fadeIn">
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="text-5xl mb-4"><Lock size={48} className="mx-auto text-[var(--text-muted)]" /></div>
+          <div className="text-lg font-bold text-[var(--text-primary)] mb-2">접근 권한이 없습니다</div>
+          <div className="text-sm text-[var(--text-muted)]">사원관리는 지출승인권자만 사용할 수 있습니다.</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="animate-fadeIn">
       <PageHeader title="직원관리" subtitle="명부 등록 및 인사 정보 관리">
-        <Button onClick={openAdd} icon={<UserPlus size={15} />} size="sm">
+        <Button onClick={openAdd} icon={<UserPlus size={16} />} size="sm">
           <span className="hidden sm:inline">등록+</span>
           <span className="sm:hidden">등록+</span>
         </Button>
@@ -127,7 +152,7 @@ export function StaffPage() {
 
       {filteredStaff.length === 0 ? (
         <Card>
-          <EmptyState emoji="👤" title="직원이 없습니다"
+          <EmptyState icon={<User size={28} />} title="직원이 없습니다"
             description={search ? '검색 결과가 없습니다.' : '첫 번째 직원을 등록해보세요!'}
             action={!search ? <Button onClick={openAdd} size="sm" icon={<Plus size={14} />}>등록+</Button> : undefined}
           />
@@ -143,7 +168,7 @@ export function StaffPage() {
                     <tr className="border-b border-[var(--border-default)] bg-[var(--bg-muted)]">
                       <th className="text-left px-4 py-3 text-[11px] font-bold text-[var(--text-muted)] uppercase">이름</th>
                       <th className="text-left px-3 py-3 text-[11px] font-bold text-[var(--text-muted)] uppercase">직급</th>
-                      <th className="text-left px-3 py-3 text-[11px] font-bold text-[var(--text-muted)] uppercase">직책</th>
+                      <th className="text-left px-3 py-3 text-[11px] font-bold text-[var(--text-muted)] uppercase">직함</th>
                       <th className="text-left px-3 py-3 text-[11px] font-bold text-[var(--text-muted)] uppercase">전화번호</th>
                       <th className="text-left px-3 py-3 text-[11px] font-bold text-[var(--text-muted)] uppercase">주소</th>
                       <th className="text-left px-3 py-3 text-[11px] font-bold text-[var(--text-muted)] uppercase">상태</th>
@@ -201,20 +226,20 @@ export function StaffPage() {
                   {s.position && <div className="flex items-center gap-1.5 px-4 py-1 text-[11px] text-[var(--text-muted)]"><Briefcase size={12} className="opacity-50" /><span>{s.position}</span></div>}
                   <div className="px-4 py-2 space-y-1.5">
                     <div className="flex items-center gap-2 text-[12px]">
-                      <Phone size={13} className="text-[var(--text-muted)] shrink-0" />
+                      <Phone size={14} className="text-[var(--text-muted)] shrink-0" />
                       <span className="text-[var(--text-primary)] flex-1">{s.phone || '-'}</span>
-                      {s.phone && <a href={`tel:${s.phone.replace(/[^0-9+]/g, '')}`} className="p-1.5 rounded-md bg-green-50 dark:bg-green-900/20 text-green-500" onClick={e => e.stopPropagation()}><PhoneCall size={13} /></a>}
+                      {s.phone && <a href={`tel:${s.phone.replace(/[^0-9+]/g, '')}`} className="p-1.5 rounded-md bg-green-50 dark:bg-green-900/20 text-green-500" onClick={e => e.stopPropagation()}><PhoneCall size={14} /></a>}
                     </div>
                     <div className="flex items-center gap-2 text-[12px]">
-                      <MapPin size={13} className="text-[var(--text-muted)] shrink-0" />
+                      <MapPin size={14} className="text-[var(--text-muted)] shrink-0" />
                       <span className="text-[var(--text-primary)] flex-1 truncate">{s.address || '-'}</span>
-                      {s.address && <a href={`https://maps.google.com/?q=${encodeURIComponent(s.address)}`} target="_blank" rel="noreferrer" className="p-1.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-500" onClick={e => e.stopPropagation()}><Map size={13} /></a>}
+                      {s.address && <a href={`https://maps.google.com/?q=${encodeURIComponent(s.address)}`} target="_blank" rel="noreferrer" className="p-1.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-500" onClick={e => e.stopPropagation()}><Map size={14} /></a>}
                     </div>
                   </div>
                   <div className="flex border-t border-[var(--border-default)]">
-                    <button onClick={() => openEdit(s)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-bold text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-colors cursor-pointer"><Pencil size={13} /> 정보 수정</button>
+                    <button onClick={() => openEdit(s)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-bold text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-colors cursor-pointer"><Pencil size={14} /> 정보 수정</button>
                     <div className="w-px bg-[var(--border-default)]" />
-                    <button onClick={() => setDeleteTarget(s)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-bold text-danger hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors cursor-pointer"><Trash2 size={13} /> 삭제</button>
+                    <button onClick={() => setDeleteTarget(s)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-bold text-danger hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors cursor-pointer"><Trash2 size={14} /> 삭제</button>
                   </div>
                 </Card>
               )
@@ -271,9 +296,9 @@ export function StaffPage() {
                   className="h-[44px]"
                 />
               </div>
-              {/* 직책 */}
+              {/* 직함 */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">직책 *</label>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">직함 *</label>
                 <CustomSelect
                   value={form.position || ''}
                   onChange={(v) => setForm({ ...form, position: v })}
@@ -349,7 +374,7 @@ export function StaffPage() {
                     onClick={() => setShowPw(!showPw)}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] cursor-pointer"
                   >
-                    {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
