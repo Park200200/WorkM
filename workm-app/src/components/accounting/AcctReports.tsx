@@ -5,7 +5,8 @@ import { formatNumber } from '../../utils/format'
 import { EmptyState } from '../common/EmptyState'
 import {
   Scale, TrendingUp, Table, Banknote, Building2,
-  Printer, CheckCircle, BookOpen, ChevronDown,
+  Printer, CheckCircle, BookOpen, ChevronDown, Coins,
+  CheckCircle2, XCircle,
 } from 'lucide-react'
 
 interface Account {
@@ -82,7 +83,7 @@ export function AcctReports({ year }: { year: number }) {
                     : 'text-[var(--text-secondary)] border-[var(--border-default)] bg-[var(--bg-surface)] hover:bg-[var(--bg-muted)]',
                 )}
               >
-                <Icon size={13} />
+                <Icon size={14} />
                 {t.label}
               </button>
             )
@@ -187,7 +188,7 @@ function BalanceSheet({ accounts, vouchers, balances, year }: { accounts: Accoun
               <span className="text-[13px] font-bold">부채+자본: {formatNumber(liabEqT)}원</span>
             </div>
             <span className="text-[12px] font-bold" style={{ color: ok ? '#22c55e' : '#ef4444' }}>
-              {ok ? '✅ 균형' : '❌ 불균형'}
+              {ok ? <><CheckCircle2 size={12} className="inline -mt-0.5" /> 균형</> : <><XCircle size={12} className="inline -mt-0.5" /> 불균형</>}
             </span>
           </div>
         )
@@ -238,8 +239,8 @@ function IncomeStatement({ accounts, vouchers, year }: { accounts: Account[]; vo
       </div>
 
       {/* 수익 */}
-      <div className="flex items-center gap-1.5 px-3.5 text-[13px] font-extrabold text-[#22c55e]">
-        <span className="w-2 h-2 rounded-full bg-[#22c55e]" /> 수익
+      <div className="flex items-center gap-1.5 px-3.5 text-[13px] font-extrabold text-success-500">
+        <span className="w-2 h-2 rounded-full bg-success-500" /> 수익
       </div>
       <table className="w-full">
         <colgroup><col className="w-[90px]" /><col /><col className="w-[150px]" /></colgroup>
@@ -247,14 +248,14 @@ function IncomeStatement({ accounts, vouchers, year }: { accounts: Account[]; vo
           {rev.rows}
           <tr style={{ borderTop: '2px solid #22c55e' }}>
             <td colSpan={2} className="py-2 px-3.5 text-[13px] font-extrabold text-right">수익 합계</td>
-            <td className="py-2 px-3.5 text-[14px] font-extrabold text-right text-[#22c55e]">{formatNumber(rev.total)}원</td>
+            <td className="py-2 px-3.5 text-[14px] font-extrabold text-right text-success-500">{formatNumber(rev.total)}원</td>
           </tr>
         </tbody>
       </table>
 
       {/* 비용 */}
-      <div className="flex items-center gap-1.5 px-3.5 text-[13px] font-extrabold text-[#ef4444]">
-        <span className="w-2 h-2 rounded-full bg-[#ef4444]" /> 비용
+      <div className="flex items-center gap-1.5 px-3.5 text-[13px] font-extrabold text-danger-500">
+        <span className="w-2 h-2 rounded-full bg-danger-500" /> 비용
       </div>
       <table className="w-full">
         <colgroup><col className="w-[90px]" /><col /><col className="w-[150px]" /></colgroup>
@@ -262,7 +263,7 @@ function IncomeStatement({ accounts, vouchers, year }: { accounts: Account[]; vo
           {exp.rows}
           <tr style={{ borderTop: '2px solid #ef4444' }}>
             <td colSpan={2} className="py-2 px-3.5 text-[13px] font-extrabold text-right">비용 합계</td>
-            <td className="py-2 px-3.5 text-[14px] font-extrabold text-right text-[#ef4444]">{formatNumber(exp.total)}원</td>
+            <td className="py-2 px-3.5 text-[14px] font-extrabold text-right text-danger-500">{formatNumber(exp.total)}원</td>
           </tr>
         </tbody>
       </table>
@@ -356,16 +357,16 @@ function TrialBalance({ accounts, vouchers, balances, year }: { accounts: Accoun
                 </td>
                 <td className="py-2 px-2.5 text-right text-[12.5px] whitespace-nowrap">{r.dr ? formatNumber(r.dr) + '원' : ''}</td>
                 <td className="py-2 px-2.5 text-right text-[12.5px] whitespace-nowrap">{r.cr ? formatNumber(r.cr) + '원' : ''}</td>
-                <td className="py-2 px-2.5 text-right text-[12.5px] font-semibold text-[#4f6ef7] whitespace-nowrap">{r.bDr ? formatNumber(r.bDr) + '원' : ''}</td>
-                <td className="py-2 px-2.5 text-right text-[12.5px] font-semibold text-[#ef4444] whitespace-nowrap">{r.bCr ? formatNumber(r.bCr) + '원' : ''}</td>
+                <td className="py-2 px-2.5 text-right text-[12.5px] font-semibold text-primary-500 whitespace-nowrap">{r.bDr ? formatNumber(r.bDr) + '원' : ''}</td>
+                <td className="py-2 px-2.5 text-right text-[12.5px] font-semibold text-danger-500 whitespace-nowrap">{r.bCr ? formatNumber(r.bCr) + '원' : ''}</td>
               </tr>
             ))}
             <tr className="border-t-2 border-[var(--text-primary)] bg-[var(--bg-muted)]">
               <td colSpan={2} className="py-2.5 px-2.5 text-center text-[13px] font-extrabold">합 계</td>
               <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold whitespace-nowrap">{formatNumber(totalDr)}원</td>
               <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold whitespace-nowrap">{formatNumber(totalCr)}원</td>
-              <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold text-[#4f6ef7] whitespace-nowrap">{formatNumber(balDr)}원</td>
-              <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold text-[#ef4444] whitespace-nowrap">{formatNumber(balCr)}원</td>
+              <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold text-primary-500 whitespace-nowrap">{formatNumber(balDr)}원</td>
+              <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold text-danger-500 whitespace-nowrap">{formatNumber(balCr)}원</td>
             </tr>
           </tbody>
         </table>
@@ -373,9 +374,9 @@ function TrialBalance({ accounts, vouchers, balances, year }: { accounts: Accoun
 
       <div className={cn(
         'text-center py-2 rounded-lg text-[12px] font-bold border',
-        ok ? 'bg-[rgba(34,197,94,.06)] text-[#22c55e] border-[rgba(34,197,94,.2)]' : 'bg-[rgba(239,68,68,.06)] text-[#ef4444] border-[rgba(239,68,68,.2)]',
+        ok ? 'bg-[rgba(34,197,94,.06)] text-success-500 border-[rgba(34,197,94,.2)]' : 'bg-[rgba(239,68,68,.06)] text-danger-500 border-[rgba(239,68,68,.2)]',
       )}>
-        {ok ? '✅ 차변합계 = 대변합계 (균형)' : `❌ 불균형 (차액: ${formatNumber(totalDr - totalCr)}원)`}
+        {ok ? <><CheckCircle2 size={12} className="inline -mt-0.5" /> 차변합계 = 대변합계 (균형)</> : <><XCircle size={12} className="inline -mt-0.5" /> 불균형 (차액: {formatNumber(totalDr - totalCr)}원)</>}
       </div>
     </div>
   )
@@ -506,7 +507,7 @@ function CashBook({ vouchers, balances, year }: { vouchers: Voucher[]; balances:
                   {filter === 'all' && (
                     <td className="py-2 px-2.5">
                       <span className={cn(
-                        'text-[9px] font-bold px-1.5 py-0.5 rounded-full',
+                        'text-[10px] font-bold px-1.5 py-0.5 rounded-full',
                         tx.acctCode === '1010'
                           ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-600'
                           : 'bg-blue-100 dark:bg-blue-900/20 text-blue-600',
@@ -515,16 +516,16 @@ function CashBook({ vouchers, balances, year }: { vouchers: Voucher[]; balances:
                       </span>
                     </td>
                   )}
-                  <td className="py-2 px-2.5 text-right text-[12.5px] text-[#22c55e] font-semibold whitespace-nowrap">{inAmt ? formatNumber(inAmt) + '원' : ''}</td>
-                  <td className="py-2 px-2.5 text-right text-[12.5px] text-[#ef4444] font-semibold whitespace-nowrap">{outAmt ? formatNumber(outAmt) + '원' : ''}</td>
+                  <td className="py-2 px-2.5 text-right text-[12.5px] text-success-500 font-semibold whitespace-nowrap">{inAmt ? formatNumber(inAmt) + '원' : ''}</td>
+                  <td className="py-2 px-2.5 text-right text-[12.5px] text-danger-500 font-semibold whitespace-nowrap">{outAmt ? formatNumber(outAmt) + '원' : ''}</td>
                   <td className="py-2 px-2.5 text-right text-[12.5px] font-bold whitespace-nowrap">{formatNumber(runBal)}원</td>
                 </tr>
               )
             })}
             <tr className="border-t-2 border-[var(--text-primary)] bg-[var(--bg-muted)]">
               <td colSpan={filter === 'all' ? 4 : 3} className="py-2.5 px-2.5 text-center text-[13px] font-extrabold">합계</td>
-              <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold text-[#22c55e]">{formatNumber(totalIn)}원</td>
-              <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold text-[#ef4444]">{formatNumber(totalOut)}원</td>
+              <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold text-success-500">{formatNumber(totalIn)}원</td>
+              <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold text-danger-500">{formatNumber(totalOut)}원</td>
               <td className="py-2.5 px-2.5 text-right text-[14px] font-extrabold">{formatNumber(runBal)}원</td>
             </tr>
           </tbody>
@@ -535,11 +536,11 @@ function CashBook({ vouchers, balances, year }: { vouchers: Voucher[]; balances:
       <div className="grid grid-cols-3 gap-2">
         <div className="text-center py-2.5 rounded-xl bg-[rgba(34,197,94,.06)] border border-[rgba(34,197,94,.15)]">
           <div className="text-[10px] text-[var(--text-muted)]">입금 합계</div>
-          <div className="text-[14px] font-extrabold text-[#22c55e]">{formatNumber(totalIn)}원</div>
+          <div className="text-[14px] font-extrabold text-success-500">{formatNumber(totalIn)}원</div>
         </div>
         <div className="text-center py-2.5 rounded-xl bg-[rgba(239,68,68,.06)] border border-[rgba(239,68,68,.15)]">
           <div className="text-[10px] text-[var(--text-muted)]">출금 합계</div>
-          <div className="text-[14px] font-extrabold text-[#ef4444]">{formatNumber(totalOut)}원</div>
+          <div className="text-[14px] font-extrabold text-danger-500">{formatNumber(totalOut)}원</div>
         </div>
         <div className="text-center py-2.5 rounded-xl bg-[rgba(79,110,247,.06)] border border-[rgba(79,110,247,.15)]">
           <div className="text-[10px] text-[var(--text-muted)]">기말잔액</div>
@@ -548,7 +549,7 @@ function CashBook({ vouchers, balances, year }: { vouchers: Voucher[]; balances:
       </div>
 
       {fundTxns.length === 0 && (
-        <EmptyState emoji="💰" title="해당 자금 거래 내역이 없습니다" />
+        <EmptyState icon={<Coins size={28} />} title="해당 자금 거래 내역이 없습니다" />
       )}
     </div>
   )
@@ -582,7 +583,7 @@ function AccountLedger({ vouchers, year }: { vouchers: Voucher[]; year: number }
       </div>
 
       {cpNames.length === 0 ? (
-        <EmptyState emoji="🏢" title="거래처 데이터가 없습니다" />
+        <EmptyState icon={<Building2 size={28} />} title="거래처 데이터가 없습니다" />
       ) : (
         cpNames.map(cp => {
           const txns = byCounterpart[cp].sort((a, b) => (a.date || '').localeCompare(b.date || ''))
@@ -625,15 +626,15 @@ function AccountLedger({ vouchers, year }: { vouchers: Voucher[]; year: number }
                         <tr key={i} className="border-b border-[var(--border-default)]">
                           <td className="py-2 px-2.5 text-[12px] text-[var(--text-muted)]">{v.date || ''}</td>
                           <td className="py-2 px-2.5 text-[12px]">{v.description || ''}</td>
-                          <td className="py-2 px-2.5 text-right text-[12px] font-semibold text-[#4f6ef7]">{dr ? formatNumber(dr) + '원' : ''}</td>
-                          <td className="py-2 px-2.5 text-right text-[12px] font-semibold text-[#ef4444]">{cr ? formatNumber(cr) + '원' : ''}</td>
+                          <td className="py-2 px-2.5 text-right text-[12px] font-semibold text-primary-500">{dr ? formatNumber(dr) + '원' : ''}</td>
+                          <td className="py-2 px-2.5 text-right text-[12px] font-semibold text-danger-500">{cr ? formatNumber(cr) + '원' : ''}</td>
                         </tr>
                       )
                     })}
                     <tr className="border-t-2 border-[var(--text-primary)] bg-[var(--bg-muted)]">
                       <td colSpan={2} className="py-2 px-2.5 text-right text-[12px] font-bold">소계</td>
-                      <td className="py-2 px-2.5 text-right text-[12px] font-bold text-[#4f6ef7]">{formatNumber(cpDr)}원</td>
-                      <td className="py-2 px-2.5 text-right text-[12px] font-bold text-[#ef4444]">{formatNumber(cpCr)}원</td>
+                      <td className="py-2 px-2.5 text-right text-[12px] font-bold text-primary-500">{formatNumber(cpDr)}원</td>
+                      <td className="py-2 px-2.5 text-right text-[12px] font-bold text-danger-500">{formatNumber(cpCr)}원</td>
                     </tr>
                   </tbody>
                 </table>
@@ -781,7 +782,7 @@ function GeneralLedger({ accounts, vouchers, balances, year }: { accounts: Accou
 
       {/* 테이블 */}
       {!acct ? (
-        <EmptyState emoji="📖" title="조회할 계정이 없습니다" />
+        <EmptyState icon={<BookOpen size={28} />} title="조회할 계정이 없습니다" />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[650px]">
@@ -797,8 +798,8 @@ function GeneralLedger({ accounts, vouchers, balances, year }: { accounts: Accou
                 <td className="py-2 px-2.5 text-[12px] font-bold text-[var(--text-muted)]">{year}-01-01</td>
                 <td className="py-2 px-2.5 text-[12px] font-bold text-primary-600 dark:text-primary-400">전기이월</td>
                 <td></td>
-                <td className="py-2 px-2.5 text-right text-[12px] font-semibold text-[#4f6ef7]">{isDebitNature && openingBal ? formatNumber(openingBal) + '원' : ''}</td>
-                <td className="py-2 px-2.5 text-right text-[12px] font-semibold text-[#ef4444]">{!isDebitNature && openingBal ? formatNumber(openingBal) + '원' : ''}</td>
+                <td className="py-2 px-2.5 text-right text-[12px] font-semibold text-primary-500">{isDebitNature && openingBal ? formatNumber(openingBal) + '원' : ''}</td>
+                <td className="py-2 px-2.5 text-right text-[12px] font-semibold text-danger-500">{!isDebitNature && openingBal ? formatNumber(openingBal) + '원' : ''}</td>
                 <td className="py-2 px-2.5 text-right text-[13px] font-bold">{formatNumber(openingBal)}원</td>
               </tr>
               {rows.length === 0 ? (
@@ -808,15 +809,15 @@ function GeneralLedger({ accounts, vouchers, balances, year }: { accounts: Accou
                   <td className="py-2 px-2.5 text-[12px] text-[var(--text-muted)] tabular-nums">{r.date}</td>
                   <td className="py-2 px-2.5 text-[12px] text-[var(--text-primary)]">{r.desc || '-'}</td>
                   <td className="py-2 px-2.5 text-[11px] text-[var(--text-muted)]">{r.counterpart || ''}</td>
-                  <td className="py-2 px-2.5 text-right text-[12px] font-semibold text-[#4f6ef7] tabular-nums whitespace-nowrap">{r.debit ? formatNumber(r.debit) + '원' : ''}</td>
-                  <td className="py-2 px-2.5 text-right text-[12px] font-semibold text-[#ef4444] tabular-nums whitespace-nowrap">{r.credit ? formatNumber(r.credit) + '원' : ''}</td>
+                  <td className="py-2 px-2.5 text-right text-[12px] font-semibold text-primary-500 tabular-nums whitespace-nowrap">{r.debit ? formatNumber(r.debit) + '원' : ''}</td>
+                  <td className="py-2 px-2.5 text-right text-[12px] font-semibold text-danger-500 tabular-nums whitespace-nowrap">{r.credit ? formatNumber(r.credit) + '원' : ''}</td>
                   <td className="py-2 px-2.5 text-right text-[12.5px] font-bold tabular-nums whitespace-nowrap">{formatNumber(r.balance)}원</td>
                 </tr>
               ))}
               <tr className="border-t-2 border-[var(--text-primary)] bg-[var(--bg-muted)]">
                 <td colSpan={3} className="py-2.5 px-2.5 text-right text-[13px] font-extrabold">합 계</td>
-                <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold text-[#4f6ef7] whitespace-nowrap">{formatNumber(totalDebit + (isDebitNature ? openingBal : 0))}원</td>
-                <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold text-[#ef4444] whitespace-nowrap">{formatNumber(totalCredit + (!isDebitNature ? openingBal : 0))}원</td>
+                <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold text-primary-500 whitespace-nowrap">{formatNumber(totalDebit + (isDebitNature ? openingBal : 0))}원</td>
+                <td className="py-2.5 px-2.5 text-right text-[13px] font-extrabold text-danger-500 whitespace-nowrap">{formatNumber(totalCredit + (!isDebitNature ? openingBal : 0))}원</td>
                 <td className="py-2.5 px-2.5 text-right text-[14px] font-extrabold whitespace-nowrap" style={{ color: TYPE_COLORS[acctType] }}>{formatNumber(rows.length > 0 ? rows[rows.length - 1].balance : openingBal)}원</td>
               </tr>
             </tbody>

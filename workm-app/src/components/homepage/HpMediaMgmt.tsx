@@ -115,7 +115,7 @@ export function HpMediaMgmt() {
             ))}
           </div>
           <button onClick={openAdd}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#3b82f6] text-white text-[13px] font-bold cursor-pointer border-none">
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-info-500 text-white text-[13px] font-bold cursor-pointer border-none">
             <Plus size={14}/> 미디어 추가
           </button>
         </div>
@@ -128,7 +128,7 @@ export function HpMediaMgmt() {
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="제목, 태그 검색..." className={`${inputCls} !pl-9`} />
         </div>
         <div className="flex gap-1.5">
-          {[{k:'all',l:'전체'},{k:'image',l:'🖼 이미지'},{k:'video',l:'🎬 동영상'}].map(f => (
+          {[{k:'all',l:'전체'},{k:'image',l:'이미지'},{k:'video',l:'동영상'}].map(f => (
             <button key={f.k} onClick={() => setFilter(f.k)}
               className="px-3.5 py-1.5 rounded-full text-[11.5px] font-bold cursor-pointer transition-all border-none"
               style={{ background:filter===f.k?'#3b82f6':'transparent', border:`1.5px solid ${filter===f.k?'#3b82f6':'var(--border-default)'}`, color:filter===f.k?'#fff':'var(--text-secondary)' }}>
@@ -142,7 +142,7 @@ export function HpMediaMgmt() {
       {/* 그리드/리스트 */}
       {filtered.length === 0 ? (
         <div className="py-20 text-center text-[var(--text-muted)]">
-          <div className="text-5xl mb-3">🖼</div>
+          <div className="text-5xl mb-3"><ImageIcon size={48} className="mx-auto text-[var(--text-muted)]" /></div>
           <div className="text-sm font-bold">등록된 미디어가 없습니다</div>
         </div>
       ) : viewMode === 'masonry' ? (
@@ -162,7 +162,7 @@ export function HpMediaMgmt() {
                 <div className="text-[13px] font-bold text-[var(--text-primary)] truncate">{it.title}</div>
                 <div className="text-[11px] text-[var(--text-muted)] mt-0.5 truncate">{it.desc}</div>
                 <div className="flex flex-wrap gap-1 mt-1.5">
-                  {it.tags.slice(0,3).map(t => <span key={t} className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-500/10 text-blue-500">#{t}</span>)}
+                  {it.tags.slice(0,3).map(t => <span key={t} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-500">#{t}</span>)}
                 </div>
                 <div className="text-[10px] text-[var(--text-muted)] mt-1">{it.regDate}</div>
               </div>
@@ -183,7 +183,7 @@ export function HpMediaMgmt() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex flex-col justify-end p-3">
                   <div className="text-[13px] font-bold text-white truncate">{it.title}</div>
                   <div className="flex gap-1 mt-1">
-                    {it.tags.slice(0,2).map(t => <span key={t} className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-white/20 text-white">#{t}</span>)}
+                    {it.tags.slice(0,2).map(t => <span key={t} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white/20 text-white">#{t}</span>)}
                   </div>
                 </div>
                 <button onClick={(e) => { e.stopPropagation(); deleteItem(it.id) }}
@@ -211,7 +211,7 @@ export function HpMediaMgmt() {
                 <div className="text-[13px] font-bold text-[var(--text-primary)] truncate">{it.title}</div>
                 <div className="text-[11px] text-[var(--text-muted)] mt-0.5 truncate">{it.desc}</div>
                 <div className="flex flex-wrap gap-1 mt-1.5">
-                  {it.tags.slice(0,3).map(t => <span key={t} className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-500/10 text-blue-500">#{t}</span>)}
+                  {it.tags.slice(0,3).map(t => <span key={t} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-500">#{t}</span>)}
                 </div>
                 <div className="text-[10px] text-[var(--text-muted)] mt-1">{it.regDate}</div>
               </div>
@@ -231,7 +231,7 @@ export function HpMediaMgmt() {
               </div>
               <div className="text-[10px] text-[var(--text-muted)] whitespace-nowrap">{it.regDate}</div>
               <button onClick={(e) => { e.stopPropagation(); deleteItem(it.id) }}
-                className="p-1.5 rounded-lg bg-red-500/10 text-red-500 cursor-pointer border-none hover:bg-red-500/20"><Trash2 size={13}/></button>
+                className="p-1.5 rounded-lg bg-red-500/10 text-red-500 cursor-pointer border-none hover:bg-red-500/20"><Trash2 size={14}/></button>
             </div>
           ))}
         </div>
@@ -303,11 +303,11 @@ export function HpMediaMgmt() {
               {/* 좋아요 / 조회수 */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 flex items-center gap-1"><Heart size={11} className="text-red-400"/> 좋아요</div>
+                  <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 flex items-center gap-1"><Heart size={12} className="text-red-400"/> 좋아요</div>
                   <input type="number" min="0" value={form.likes} onChange={e => setForm(f => ({...f, likes: e.target.value}))} placeholder="0" className={inputCls} />
                 </div>
                 <div>
-                  <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 flex items-center gap-1"><Eye size={11}/> 조회수</div>
+                  <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1.5 flex items-center gap-1"><Eye size={12}/> 조회수</div>
                   <input type="number" min="0" value={form.views} onChange={e => setForm(f => ({...f, views: e.target.value}))} placeholder="0" className={inputCls} />
                 </div>
               </div>

@@ -11,7 +11,10 @@ import { formatNumber } from '../../utils/format'
 // 분리된 모듈 (Phase 2)
 export type { BudgetCatAccount, BudgetCat, AccountPoolEntry, BudgetDetailDef, BudgetSubDef, BudgetItemDef, BudgetItem, CashFlow, Approval, Voucher, Vendor, HQV, PayMethodCard, PayMethodNote, PayMethodItem } from './accounting/types'
 export { getLocalDate, getLocalISOString, fmtPhone, fmtBizNo, uid } from './accounting/utils'
-export { initAccountingSeed } from './accounting/seed'
+import { initAccountingSeed } from './accounting/seed'
+export { initAccountingSeed }
+import { ACCT_TYPES, DEBIT_TYPES, CONTRA_CREDIT_CODES, CONTRA_DEBIT_CODES, getDebitCredit, SYSTEM_CODES } from './accounting/constants'
+import type { AcctAccount } from './accounting/constants'
 import AcctMethodReg from './accounting/AcctMethodReg'
 import AcctIncomeMethods from './accounting/AcctIncomeMethods'
 import AcctPayMethods from './accounting/AcctPayMethods'
@@ -40,7 +43,7 @@ import {
   Plus, Edit3, Trash2, Save, X, Check, Ban, MoreHorizontal,
   Lock, ShieldCheck, RefreshCw, Printer, Paperclip, Send, Eye,
   CreditCard, Settings, Smartphone, User, Phone, Mail, Landmark,
-  ArrowLeftRight, Calendar, Filter, Download, BarChart2, CheckCircle2, Archive, Ticket, FileText, Coins, ClipboardList,
+  ArrowLeftRight, Calendar, Filter, Download, BarChart2, CheckCircle2, Archive, Ticket, FileText, Coins, ClipboardList, Wrench,
 } from 'lucide-react'
 
 /* ─── 서버 설정 동기화 ── */
@@ -376,14 +379,14 @@ function AcctSubPlaceholder({ pageKey, label }: { pageKey: string; label: string
     reports: '수입·지출 현황을 분석합니다',
   }
 
-  const emojis: Record<string, string> = {
-    budget: '💰', balance: '🏦', approval: '📋', expense: '💸',
-    income: '💵', withdrawal: '🏧', payment: '📒', reports: '📊',
+  const acctIcons: Record<string, React.ReactNode> = {
+    budget: <Coins size={28} />, balance: <Landmark size={28} />, approval: <ClipboardList size={28} />, expense: <TrendingDown size={28} />,
+    income: <TrendingUp size={28} />, withdrawal: <Banknote size={28} />, payment: <BookOpen size={28} />, reports: <BarChart2 size={28} />,
   }
 
   return (
     <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl py-16 text-center">
-      <p className="text-4xl mb-3">{emojis[pageKey] || '🔧'}</p>
+      <div className="mb-3 text-[var(--text-muted)] flex justify-center">{acctIcons[pageKey] || <Wrench size={28} />}</div>
       <p className="text-base font-bold text-[var(--text-primary)]">{label}</p>
       <p className="text-[12px] text-[var(--text-muted)] mt-1 max-w-sm mx-auto">
         {descriptions[pageKey] || '이 기능은 준비 중입니다.'}
@@ -437,7 +440,7 @@ const EMPTY_VENDOR: Omit<Vendor, 'id'> = {
 }
 
 /* 섹션 헤더 */
-function SectionHeader({ icon, title, color }: { icon: string; title: string; color: string }) {
+function SectionHeader({ icon, title, color }: { icon: React.ReactNode; title: string; color: string }) {
   return (
     <div className="flex items-center gap-2 mb-3 mt-1">
       <span className="text-sm">{icon}</span>
@@ -522,53 +525,7 @@ function VendorRow({ v, idx, onView, onEdit, onDelete }: { v: any; idx: number; 
 /* ═══════════════════════════════════════════
    계정관리 (AcctAccountsMgmt)
    ═══════════════════════════════════════════ */
-type AcctAccount = { code: string; name: string; type: string; group?: string; source?: 'system' | 'user'; side?: 'debit' | 'credit'; description?: string; active?: boolean; incomeEnabled?: boolean }
-const ACCT_TYPES = [
-  { value: 'asset', label: '자산', color: '#4f6ef7' },
-  { value: 'liability', label: '부채', color: '#ef4444' },
-  { value: 'equity', label: '자본', color: '#8b5cf6' },
-  { value: 'revenue', label: '수익', color: '#22c55e' },
-  { value: 'expense', label: '비용', color: '#f59e0b' },
-]
-const DEBIT_TYPES = ['asset', 'expense']
-/* 차감계정(contra accounts): 자산이지만 대변 / 수익이지만 차변 */
-const CONTRA_CREDIT_CODES = new Set([
-  '1-01-08',  // 대손충당금
-  '1-02-03',  // 건물감가상각누계액
-  '1-02-05',  // 구축물감가상각누계액
-  '1-02-07',  // 기계장치감가상각누계액
-  '1-02-09',  // 차량운반구감가상각누계액
-  '1-02-11',  // 비품감가상각누계액
-  '1-02-13',  // 소프트웨어상각누계액
-])
-const CONTRA_DEBIT_CODES = new Set([
-  '4-01-04',  // 매출에누리및환입
-])
-const getDebitCredit = (type: string, code?: string, sideOverride?: string) => {
-  /* 사용자가 직접 지정한 side가 있으면 최우선 */
-  if (sideOverride === 'debit') return { label: '차변', color: '#4f6ef7' }
-  if (sideOverride === 'credit') return { label: '대변', color: '#ef4444' }
-  /* 차감계정 예외 */
-  if (code && CONTRA_CREDIT_CODES.has(code)) return { label: '대변', color: '#ef4444' }
-  if (code && CONTRA_DEBIT_CODES.has(code)) return { label: '차변', color: '#4f6ef7' }
-  return DEBIT_TYPES.includes(type) ? { label: '차변', color: '#4f6ef7' } : { label: '대변', color: '#ef4444' }
-}
-const SYSTEM_CODES = new Set([
-  '1-01-01','1-01-02','1-01-03','1-01-04','1-01-05','1-01-06','1-01-07','1-01-08','1-01-09','1-01-10',
-  '1-01-11','1-01-12','1-01-13','1-01-14','1-01-15','1-01-16','1-01-17','1-01-18','1-01-19',
-  '1-02-01','1-02-02','1-02-03','1-02-04','1-02-05','1-02-06','1-02-07','1-02-08','1-02-09','1-02-10',
-  '1-02-11','1-02-12','1-02-13','1-02-14','1-02-15','1-02-16','1-02-17','1-02-18',
-  '2-01-01','2-01-02','2-01-03','2-01-04','2-01-05','2-01-06','2-01-07','2-01-08','2-01-09','2-01-10','2-01-11','2-01-12',
-  '2-02-01','2-02-02','2-02-03','2-02-04',
-  '3-01-01','3-01-02','3-02-01','3-02-02','3-03-01','3-03-02','3-03-03','3-03-04',
-  '4-01-01','4-01-02','4-01-03','4-01-04','4-02-01','4-02-02','4-02-03','4-02-04','4-02-05','4-02-06','4-02-07',
-  '5-01-01','5-01-02','5-01-03','5-01-04','5-01-05','5-01-06',
-  '5-02-01','5-02-02','5-02-03','5-02-04','5-02-05','5-02-06','5-02-07','5-02-08','5-02-09','5-02-10',
-  '5-02-11','5-02-12','5-02-13','5-02-14','5-02-15','5-02-16','5-02-17','5-02-18','5-02-19','5-02-20',
-  '5-02-21','5-02-22','5-02-23','5-02-24','5-02-25','5-02-26',
-  '5-03-01','5-03-02','5-03-03','5-03-04','5-03-05','5-03-06',
-  '5-04-01',
-])
+
 
 /* ═══════════════════════════════════════════
    본사거래처 (AcctHQVendor) - 리스트 + 모달

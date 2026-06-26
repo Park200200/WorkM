@@ -4,7 +4,7 @@ import { formatNumber } from '../../../utils/format'
 import { useAuthStore } from '../../../stores/authStore'
 import type { BudgetCat, BudgetItem, CashFlow, Approval, Voucher } from './types'
 import { cn } from '../../../utils/cn'
-import { FileCheck, ArrowDownCircle, ArrowUpCircle, PieChart, ScrollText, Settings2, Banknote, Settings } from 'lucide-react'
+import { FileCheck, ArrowDownCircle, ArrowUpCircle, PieChart, ScrollText, Settings2, Banknote, Settings, BarChart2, ClipboardList, Package, ArrowUp, ArrowDown, Folder, AlertTriangle } from 'lucide-react'
 import { EmptyState } from '../../../components/common/EmptyState'
 import { useToastStore } from '../../../stores/toastStore'
 import { useSearchParams } from 'react-router-dom'
@@ -183,18 +183,18 @@ export default function AcctOverview({ year, selectedCatId }: { year: number; se
       <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <span className="text-sm font-extrabold text-[var(--text-primary)]">📦 데이터 동기화</span>
+            <span className="text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-1.5"><Package size={14} className="inline -mt-0.5" /> 데이터 동기화</span>
             <p className="text-[10px] text-[var(--text-muted)] mt-0.5">로컬 설정을 서버에 저장하거나, 서버에서 불러올 수 있습니다</p>
           </div>
           <div className="flex gap-2">
             <button onClick={handleServerSave} className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors flex items-center gap-1">
-              ⬆️ 서버 저장
+              <ArrowUp size={12} className="inline -mt-0.5" /> 서버 저장
             </button>
             <button onClick={handleServerLoad} className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-blue-500 text-white hover:bg-blue-600 transition-colors flex items-center gap-1">
-              ⬇️ 서버에서 불러오기
+              <ArrowDown size={12} className="inline -mt-0.5" /> 서버에서 불러오기
             </button>
             <button onClick={handleFileImport} className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-[var(--bg-muted)] text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-1">
-              📂 파일 불러오기
+              <Folder size={12} className="inline -mt-0.5" /> 파일 불러오기
             </button>
           </div>
         </div>
@@ -212,7 +212,7 @@ export default function AcctOverview({ year, selectedCatId }: { year: number; se
                 className="w-9 h-9 rounded-lg flex items-center justify-center mb-2"
                 style={{ background: `${card.color}22`, color: card.color }}
               >
-                <Icon size={17} />
+                <Icon size={16} />
               </div>
               <div className="text-[11px] font-bold text-[var(--text-muted)]">{card.label}</div>
               <div className="text-lg font-extrabold" style={{ color: card.color }}>{card.value}</div>
@@ -281,7 +281,7 @@ export default function AcctOverview({ year, selectedCatId }: { year: number; se
                       title={`지출 ${formatNumber(d.expense)}원`}
                     />
                   </div>
-                  <span className="text-[9px] font-bold text-[var(--text-muted)]">{key.slice(5)}월</span>
+                  <span className="text-[10px] font-bold text-[var(--text-muted)]">{key.slice(5)}월</span>
                 </div>
               )
             })}
@@ -302,7 +302,7 @@ export default function AcctOverview({ year, selectedCatId }: { year: number; se
             <PieChart size={16} className="text-primary-500" /> 예산 소진율 TOP 5
           </div>
           {budgetBars.length === 0 ? (
-            <EmptyState emoji="📊" title="등록된 예산이 없습니다" />
+            <EmptyState icon={<BarChart2 size={28} />} title="등록된 예산이 없습니다" />
           ) : (
             <div className="space-y-3">
               {budgetBars.map((b, i) => {
@@ -311,7 +311,7 @@ export default function AcctOverview({ year, selectedCatId }: { year: number; se
                   <div key={i}>
                     <div className="flex items-center justify-between text-[11px] mb-1">
                       <span className="font-bold text-[var(--text-primary)] truncate">{b.name}</span>
-                      <span className="font-extrabold" style={{ color }}>{b.pct}%{b.pct > 100 ? ' ⚠️' : ''}</span>
+                      <span className="font-extrabold" style={{ color }}>{b.pct}%{b.pct > 100 ? <><span className="ml-1"><AlertTriangle size={12} className="inline -mt-0.5" /></span></> : ''}</span>
                     </div>
                     <div className="h-2 rounded-full bg-[var(--bg-subtle)] overflow-hidden">
                       <div
@@ -338,7 +338,7 @@ export default function AcctOverview({ year, selectedCatId }: { year: number; se
         </div>
         {recentVouchers.length === 0 ? (
           <div className="p-6">
-            <EmptyState emoji="📋" title="등록된 전표가 없습니다" />
+            <EmptyState icon={<ClipboardList size={28} />} title="등록된 전표가 없습니다" />
           </div>
         ) : (
           <div className="overflow-x-auto">

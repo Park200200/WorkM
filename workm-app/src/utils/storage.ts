@@ -19,7 +19,7 @@ export function setItem<T>(key: string, value: T): boolean {
   } catch (e) {
     console.error(`[storage] Failed to set "${key}"`, e)
     if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.code === 22)) {
-      alert('⚠️ 저장 공간이 부족합니다. 불필요한 데이터를 삭제하거나 관리자에게 문의하세요.')
+      alert('저장 공간이 부족합니다. 불필요한 데이터를 삭제하거나 관리자에게 문의하세요.')
     }
     return false
   }

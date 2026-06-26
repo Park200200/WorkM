@@ -5,7 +5,7 @@ import { useToastStore } from '../../stores/toastStore'
 import { useThemeStore } from '../../stores/themeStore'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
-import { Moon, Sun } from 'lucide-react'
+import { Moon, Sun, Briefcase, UserCheck, Code2, BarChart2, ClipboardList, Handshake, Lightbulb, Settings, Target, Pin } from 'lucide-react'
 import { getItem } from '../../utils/storage'
 import { seedIfEmpty } from '../../utils/seedData'
 
@@ -52,7 +52,7 @@ export function LoginPage() {
         status: '근무',
         role: found.role === 'admin' ? 'admin' : 'user',
       })
-      addToast('success', `${found.name}님, 환영합니다! 👋`)
+      addToast('success', `${found.name}님, 환영합니다!`)
       navigate('/')
     } else {
       // 데모용: 아무 계정으로 로그인 허용
@@ -137,7 +137,7 @@ export function LoginPage() {
           </div>
           <div className="grid grid-cols-4 gap-2">
             {(() => {
-              const emojis = ['👔','🧑‍💼','👨‍💻','📊','📋','🤝','💡','⚙️','🎯','📌']
+              const icons = [Briefcase, UserCheck, Code2, BarChart2, ClipboardList, Handshake, Lightbulb, Settings, Target, Pin]
               const users = getItem<{ id: number; name: string; dept?: string; rank?: string; role?: string; color?: string }[]>('ws_users', [])
               return users.map((u, i) => (
               <button
@@ -154,14 +154,14 @@ export function LoginPage() {
                     status: '근무',
                     role: u.rank === '대표' || u.rank === '팀장' ? 'admin' : 'user',
                   })
-                  addToast('success', `${u.name}님으로 로그인! 👋`)
+                  addToast('success', `${u.name}님으로 로그인!`)
                   navigate('/')
                 }}
                 className="flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-default)] hover:border-primary-400 hover:shadow-md transition-all cursor-pointer group"
               >
-                <span className="text-lg group-hover:scale-110 transition-transform">{emojis[i % emojis.length]}</span>
+                <span className="text-lg group-hover:scale-110 transition-transform">{(() => { const Icon = icons[i % icons.length]; return <Icon size={20} /> })()}</span>
                 <span className="text-[11px] font-extrabold text-[var(--text-primary)]">{u.name}</span>
-                <span className="text-[9px] text-[var(--text-muted)]">{u.rank || u.role || '-'}</span>
+                <span className="text-[10px] text-[var(--text-muted)]">{u.rank || u.role || '-'}</span>
               </button>
               ))
             })()}

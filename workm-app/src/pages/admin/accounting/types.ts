@@ -77,7 +77,7 @@ export interface BudgetItem {
 
 export interface CashFlow {
   id: string | number
-  type: 'income' | 'expense'
+  type: 'income' | 'expense' | 'withdrawal'
   amount: number
   date: string
   description?: string
@@ -114,6 +114,8 @@ export interface Voucher {
 
 export interface Vendor {
   companyName: string
+  name?: string
+  budgetCatId?: string | number
   bizNo: string
   ceoName: string
   ceoPhone: string
@@ -137,7 +139,8 @@ export interface Vendor {
 
 export interface HQV {
   id: number
-  companyName: string
+  companyName?: string
+  company?: string
   [key: string]: any
 }
 
@@ -167,6 +170,8 @@ export interface PayMethodNote {
   bank: string
   status: '미결제' | '추심중' | '결제완료' | '부도'
   memo?: string
+  endorsements?: { id: number; endorser: string; endorseDate: string; reason: string }[]
+  attachments?: any[]
 }
 
 export interface PayMethodItem {

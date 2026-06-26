@@ -2,12 +2,29 @@ import React, { useState, useMemo, useEffect } from 'react'
 import { getItem, setItem } from '../../../utils/storage'
 import { formatNumber } from '../../../utils/format'
 import { useToastStore } from '../../../stores/toastStore'
-import type { BudgetCat, PayMethodItem, PayMethodCard, PayMethodNote } from './types'
+import type { BudgetCat, PayMethodItem, PayMethodCard, PayMethodNote, CashFlow } from './types'
 import { getLocalDate } from './utils'
 import { Landmark, Coins, FileText, Ticket, CreditCard, Plus, Trash2, ChevronDown, ChevronUp, Search, ScrollText } from 'lucide-react'
 import { cn } from '../../../utils/cn'
 import { DatePicker } from '../../../components/ui/DatePicker'
 
+
+const PAY_CATEGORIES = [
+  { key: '계좌' as const, label: '계좌', Icon: Landmark, color: '#3b82f6', bg: 'bg-blue-50 dark:bg-blue-900/10', border: 'border-blue-200 dark:border-blue-800', desc: '계좌이체, 자동이체 등' },
+  { key: '현금' as const, label: '현금', Icon: Coins, color: '#22c55e', bg: 'bg-emerald-50 dark:bg-emerald-900/10', border: 'border-emerald-200 dark:border-emerald-800', desc: '현금, 소액현금 등' },
+  { key: '어음' as const, label: '어음', Icon: FileText, color: '#f59e0b', bg: 'bg-amber-50 dark:bg-amber-900/10', border: 'border-amber-200 dark:border-amber-800', desc: '수신어음, 발행어음, 수표' },
+  { key: '상품권' as const, label: '상품권', Icon: Ticket, color: '#8b5cf6', bg: 'bg-violet-50 dark:bg-violet-900/10', border: 'border-violet-200 dark:border-violet-800', desc: '문화상품권, 백화점상품권 등' },
+]
+
+const DEFAULT_PAY_ITEMS: PayMethodItem[] = [
+  { id: 1, name: '계좌이체', category: '계좌' },
+  { id: 2, name: '자동이체', category: '계좌' },
+  { id: 3, name: '온라인뱅킹', category: '계좌' },
+  { id: 4, name: '현금', category: '현금' },
+  { id: 5, name: '소액현금', category: '현금' },
+  { id: 6, name: '수신어음', category: '어음', noteType: '수신' },
+  { id: 7, name: '발행어음', category: '어음', noteType: '발행' },
+]
 
 const DETAIL_FIELD_LABEL = 'text-[11px] font-bold text-[var(--text-muted)] mb-1 block'
 const DETAIL_INPUT = 'w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-white dark:bg-gray-900 text-[12px] text-[var(--text-primary)] outline-none focus:border-primary-400 transition-colors placeholder:text-[var(--text-muted)]'
@@ -17,6 +34,7 @@ export default function AcctPayMethods({ catId }: { catId?: string | null }) {
   const [newName, setNewName] = useState('')
   const [activeCategory, setActiveCategory] = useState<'계좌' | '현금' | '어음' | '상품권'>('계좌')
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [vendorDropKey, setVendorDropKey] = useState<string | null>(null)
   const addToast = useToastStore(s => s.add)
 
   // 직원 목록
@@ -618,7 +636,7 @@ export default function AcctPayMethods({ catId }: { catId?: string | null }) {
                             onChange={e => {
                               const v = e.target.value
                               const acctCode = v === '수신' ? '1-01-06' : v === '발행' ? '2-01-02' : ''
-                              saveAll(allItems.map(i => i.id === item.id ? { ...i, noteType: v, linkedAccountCode: acctCode } : i))
+                              saveAll(allItems.map(i => i.id === item.id ? { ...i, noteType: v as '수신' | '발행', linkedAccountCode: acctCode } : i))
                             }}
                             className={DETAIL_INPUT}
                           >

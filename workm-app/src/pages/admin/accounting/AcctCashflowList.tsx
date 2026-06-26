@@ -4,7 +4,7 @@ import { formatNumber } from '../../../utils/format'
 import { useAuthStore } from '../../../stores/authStore'
 import type { BudgetCat, CashFlow, PayMethodItem } from './types'
 import { getLocalDate, getLocalISOString } from './utils'
-import { Search, ArrowLeftRight, Calendar, Filter, Download } from 'lucide-react'
+import { Search, ArrowLeftRight, Calendar, Filter, Download, Banknote, CreditCard, TrendingUp, Landmark, Inbox, Send, Clock, X } from 'lucide-react'
 import { cn } from '../../../utils/cn'
 import { DatePicker } from '../../../components/ui/DatePicker'
 import { useToastStore } from '../../../stores/toastStore'
@@ -42,15 +42,19 @@ export default function AcctCashflowList({ year, catId }: { year: number; catId?
   const [cardFilter, setCardFilter] = useState<'' | 'receivable' | 'payable' | 'incomeScheduled' | 'expenseScheduled'>('')
 
   // ── 기간 프리셋 ──
+  const [activePreset, setActivePreset] = useState<string>('year')
+  const fmtLocal = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`
   const setPreset = (preset: string) => {
     const now = new Date()
     const y = now.getFullYear(), m = now.getMonth(), d = now.getDate()
     const dow = now.getDay()
-    if (preset === 'today') { const t = now.toISOString().slice(0,10); setDateFrom(t); setDateTo(t) }
-    else if (preset === 'week') { const mon = new Date(y,m,d-(dow===0?6:dow-1)); setDateFrom(mon.toISOString().slice(0,10)); setDateTo(now.toISOString().slice(0,10)) }
-    else if (preset === 'month') { setDateFrom(`${y}-${String(m+1).padStart(2,'0')}-01`); setDateTo(now.toISOString().slice(0,10)) }
-    else if (preset === 'quarter') { const qm = Math.floor(m/3)*3; setDateFrom(`${y}-${String(qm+1).padStart(2,'0')}-01`); setDateTo(now.toISOString().slice(0,10)) }
+    const todayStr = fmtLocal(now)
+    if (preset === 'today') { setDateFrom(todayStr); setDateTo(todayStr) }
+    else if (preset === 'week') { const mon = new Date(y,m,d-(dow===0?6:dow-1)); setDateFrom(fmtLocal(mon)); setDateTo(todayStr) }
+    else if (preset === 'month') { setDateFrom(`${y}-${String(m+1).padStart(2,'0')}-01`); setDateTo(todayStr) }
+    else if (preset === 'quarter') { const qm = Math.floor(m/3)*3; setDateFrom(`${y}-${String(qm+1).padStart(2,'0')}-01`); setDateTo(todayStr) }
     else if (preset === 'year') { setDateFrom(`${year}-01-01`); setDateTo(`${year}-12-31`) }
+    setActivePreset(preset)
   }
 
   // ── 담당자 목록 ──
@@ -161,7 +165,7 @@ export default function AcctCashflowList({ year, catId }: { year: number; catId?
       else { cfs[idx].paid = true; cfs[idx].paidAt = getLocalISOString() }
       setItem('acct_cashflows', cfs)
       setRefresh(r => r + 1)
-      useToastStore.getState().addToast({ type: 'success', message: settleType === 'received' ? '✅ 수금 완료 처리되었습니다' : '✅ 지급 완료 처리되었습니다' })
+      useToastStore.getState().add('success', settleType === 'received' ? '수금 완료 처리되었습니다' : '지급 완료 처리되었습니다')
     }
   }
 
@@ -173,7 +177,7 @@ export default function AcctCashflowList({ year, catId }: { year: number; catId?
           <ArrowLeftRight size={18} className="text-primary-500" />
           입출금내역
         </h2>
-        <button onClick={downloadCSV} className="px-2.5 py-1.5 rounded-lg bg-[#22c55e] text-white text-[10px] sm:text-[11px] font-bold hover:bg-[#16a34a] cursor-pointer flex items-center gap-1 shadow-sm">
+        <button onClick={downloadCSV} className="px-2.5 py-1.5 rounded-lg bg-success-500 text-white text-[10px] sm:text-[11px] font-bold hover:bg-success-600 cursor-pointer flex items-center gap-1 shadow-sm">
           <Download size={12} /> CSV
         </button>
       </div>
@@ -182,45 +186,45 @@ export default function AcctCashflowList({ year, catId }: { year: number; catId?
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         {/* 1행: 실적 */}
         <div className={cardStyle('#22c55e', 'from-emerald-50/80 to-emerald-100/40 dark:from-emerald-900/20 dark:to-emerald-800/10')}>
-          <div className="text-[9px] sm:text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mb-0.5 sm:mb-1">💵 총 입금</div>
+          <div className="text-[9px] sm:text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mb-0.5 sm:mb-1"><Banknote size={12} className="inline -mt-0.5" /> 총 입금</div>
           <div className="text-[14px] sm:text-[18px] font-extrabold text-emerald-700 dark:text-emerald-300">₩{stats.totalIn.toLocaleString()}</div>
           <div className="text-[9px] sm:text-[10px] text-transparent mt-0.5 select-none">-</div>
         </div>
         <div className={cardStyle('#ef4444', 'from-red-50/80 to-red-100/40 dark:from-red-900/20 dark:to-red-800/10')}>
-          <div className="text-[9px] sm:text-[10px] font-bold text-red-500 dark:text-red-400 mb-0.5 sm:mb-1">💸 총 출금</div>
+          <div className="text-[9px] sm:text-[10px] font-bold text-red-500 dark:text-red-400 mb-0.5 sm:mb-1"><CreditCard size={12} className="inline -mt-0.5" /> 총 출금</div>
           <div className="text-[14px] sm:text-[18px] font-extrabold text-red-600 dark:text-red-300">₩{stats.totalOut.toLocaleString()}</div>
           <div className="text-[9px] sm:text-[10px] text-transparent mt-0.5 select-none">-</div>
         </div>
         <div className={cardStyle('#3b82f6', 'from-blue-50/80 to-blue-100/40 dark:from-blue-900/20 dark:to-blue-800/10')}>
-          <div className="text-[9px] sm:text-[10px] font-bold text-blue-500 dark:text-blue-400 mb-0.5 sm:mb-1">📈 순 증감</div>
+          <div className="text-[9px] sm:text-[10px] font-bold text-blue-500 dark:text-blue-400 mb-0.5 sm:mb-1"><TrendingUp size={12} className="inline -mt-0.5" /> 순 증감</div>
           <div className={`text-[14px] sm:text-[18px] font-extrabold ${stats.net >= 0 ? 'text-blue-600 dark:text-blue-300' : 'text-red-600 dark:text-red-300'}`}>
             {stats.net >= 0 ? '+' : ''}₩{stats.net.toLocaleString()}
           </div>
           <div className="text-[9px] sm:text-[10px] text-transparent mt-0.5 select-none">-</div>
         </div>
         <div className={cardStyle('#1e293b', 'from-slate-50/80 to-slate-100/40 dark:from-slate-800/30 dark:to-slate-700/20')}>
-          <div className="text-[9px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1">🏦 현재 잔액</div>
+          <div className="text-[9px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-0.5 sm:mb-1"><Landmark size={12} className="inline -mt-0.5" /> 현재 잔액</div>
           <div className="text-[14px] sm:text-[18px] font-extrabold text-slate-700 dark:text-slate-200">₩{stats.net.toLocaleString()}</div>
           <div className="text-[9px] sm:text-[10px] text-transparent mt-0.5 select-none">-</div>
         </div>
         {/* 2행: 미수·미지급·예정 (클릭 가능) */}
         <div onClick={() => setCardFilter(cardFilter === 'receivable' ? '' : 'receivable')} className={cardStyle('#f97316', 'from-orange-50/80 to-orange-100/40 dark:from-orange-900/20 dark:to-orange-800/10', cardFilter === 'receivable') + ' cursor-pointer'}>
-          <div className="text-[9px] sm:text-[10px] font-bold text-orange-500 dark:text-orange-400 mb-0.5 sm:mb-1">📥 미수금</div>
+          <div className="text-[9px] sm:text-[10px] font-bold text-orange-500 dark:text-orange-400 mb-0.5 sm:mb-1"><Inbox size={12} className="inline -mt-0.5" /> 미수금</div>
           <div className="text-[14px] sm:text-[18px] font-extrabold text-orange-600 dark:text-orange-300">₩{stats.receivableAmt.toLocaleString()}</div>
           <div className="text-[9px] sm:text-[10px] text-orange-400 mt-0.5">{stats.receivableCount}건 {cardFilter === 'receivable' && <span className="ml-1 text-primary-500">← 보기 중</span>}</div>
         </div>
         <div onClick={() => setCardFilter(cardFilter === 'payable' ? '' : 'payable')} className={cardStyle('#8b5cf6', 'from-violet-50/80 to-violet-100/40 dark:from-violet-900/20 dark:to-violet-800/10', cardFilter === 'payable') + ' cursor-pointer'}>
-          <div className="text-[9px] sm:text-[10px] font-bold text-violet-500 dark:text-violet-400 mb-0.5 sm:mb-1">📤 미지급금</div>
+          <div className="text-[9px] sm:text-[10px] font-bold text-violet-500 dark:text-violet-400 mb-0.5 sm:mb-1"><Send size={12} className="inline -mt-0.5" /> 미지급금</div>
           <div className="text-[14px] sm:text-[18px] font-extrabold text-violet-600 dark:text-violet-300">₩{stats.payableAmt.toLocaleString()}</div>
           <div className="text-[9px] sm:text-[10px] text-violet-400 mt-0.5">{stats.payableCount}건 {cardFilter === 'payable' && <span className="ml-1 text-primary-500">← 보기 중</span>}</div>
         </div>
         <div onClick={() => setCardFilter(cardFilter === 'incomeScheduled' ? '' : 'incomeScheduled')} className={cardStyle('#10b981', 'from-teal-50/80 to-teal-100/40 dark:from-teal-900/20 dark:to-teal-800/10', cardFilter === 'incomeScheduled') + ' cursor-pointer'}>
-          <div className="text-[9px] sm:text-[10px] font-bold text-teal-500 dark:text-teal-400 mb-0.5 sm:mb-1">🔜 입금 예정</div>
+          <div className="text-[9px] sm:text-[10px] font-bold text-teal-500 dark:text-teal-400 mb-0.5 sm:mb-1"><Clock size={12} className="inline -mt-0.5" /> 입금 예정</div>
           <div className="text-[14px] sm:text-[18px] font-extrabold text-teal-600 dark:text-teal-300">₩{stats.incomeSchedAmt.toLocaleString()}</div>
           <div className="text-[9px] sm:text-[10px] text-teal-400 mt-0.5">{stats.incomeSchedCount}건 {cardFilter === 'incomeScheduled' && <span className="ml-1 text-primary-500">← 보기 중</span>}</div>
         </div>
         <div onClick={() => setCardFilter(cardFilter === 'expenseScheduled' ? '' : 'expenseScheduled')} className={cardStyle('#f43f5e', 'from-rose-50/80 to-rose-100/40 dark:from-rose-900/20 dark:to-rose-800/10', cardFilter === 'expenseScheduled') + ' cursor-pointer'}>
-          <div className="text-[9px] sm:text-[10px] font-bold text-rose-500 dark:text-rose-400 mb-0.5 sm:mb-1">🔜 출금 예정</div>
+          <div className="text-[9px] sm:text-[10px] font-bold text-rose-500 dark:text-rose-400 mb-0.5 sm:mb-1"><Clock size={12} className="inline -mt-0.5" /> 출금 예정</div>
           <div className="text-[14px] sm:text-[18px] font-extrabold text-rose-600 dark:text-rose-300">₩{stats.expenseSchedAmt.toLocaleString()}</div>
           <div className="text-[9px] sm:text-[10px] text-rose-400 mt-0.5">{stats.expenseSchedCount}건 {cardFilter === 'expenseScheduled' && <span className="ml-1 text-primary-500">← 보기 중</span>}</div>
         </div>
@@ -234,12 +238,12 @@ export default function AcctCashflowList({ year, catId }: { year: number; catId?
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--text-muted)]">
             <Calendar size={13} /> 기간
           </div>
-          <DatePicker value={dateFrom} onChange={v => setDateFrom(v)} />
+          <DatePicker value={dateFrom} onChange={v => { setDateFrom(v); setActivePreset('') }} />
           <span className="text-[11px] text-[var(--text-muted)] text-center">~</span>
-          <DatePicker value={dateTo} onChange={v => setDateTo(v)} />
+          <DatePicker value={dateTo} onChange={v => { setDateTo(v); setActivePreset('') }} />
           <div className="flex gap-1 items-center">
             {[{label:'오늘',key:'today'},{label:'이번주',key:'week'},{label:'이번달',key:'month'},{label:'분기',key:'quarter'},{label:'연간',key:'year'}].map(p => (
-              <button key={p.key} onClick={() => setPreset(p.key)} className="px-2.5 py-2 rounded-lg text-[11px] font-bold border border-[var(--border-default)] text-[var(--text-muted)] hover:bg-primary-50 hover:text-primary-600 hover:border-primary-300 transition-all cursor-pointer whitespace-nowrap">{p.label}</button>
+              <button key={p.key} onClick={() => setPreset(p.key)} className={`px-2.5 py-2 rounded-lg text-[11px] font-bold border transition-all cursor-pointer whitespace-nowrap ${activePreset === p.key ? 'bg-primary-500 text-white border-primary-500' : 'border-[var(--border-default)] text-[var(--text-muted)] hover:bg-primary-50 hover:text-primary-600 hover:border-primary-300'}`}>{p.label}</button>
             ))}
           </div>
           {/* 2행: 필터 */}
@@ -274,11 +278,11 @@ export default function AcctCashflowList({ year, catId }: { year: number; catId?
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--text-muted)] shrink-0">
             <Calendar size={13} /> 기간
           </div>
-          <DatePicker value={dateFrom} onChange={v => setDateFrom(v)} className="w-auto shrink-0" />
+          <DatePicker value={dateFrom} onChange={v => { setDateFrom(v); setActivePreset('') }} className="w-auto shrink-0" />
           <span className="text-[11px] text-[var(--text-muted)]">~</span>
-          <DatePicker value={dateTo} onChange={v => setDateTo(v)} className="w-auto shrink-0" />
+          <DatePicker value={dateTo} onChange={v => { setDateTo(v); setActivePreset('') }} className="w-auto shrink-0" />
           {[{label:'오늘',key:'today'},{label:'이번주',key:'week'},{label:'이번달',key:'month'},{label:'분기',key:'quarter'},{label:'연간',key:'year'}].map(p => (
-            <button key={p.key} onClick={() => setPreset(p.key)} className="px-1.5 py-1 rounded-full text-[9px] font-bold border border-[var(--border-default)] text-[var(--text-muted)] hover:bg-primary-50 hover:text-primary-600 cursor-pointer whitespace-nowrap shrink-0">{p.label}</button>
+            <button key={p.key} onClick={() => setPreset(p.key)} className={`px-1.5 py-1 rounded-full text-[9px] font-bold border cursor-pointer whitespace-nowrap shrink-0 ${activePreset === p.key ? 'bg-primary-500 text-white border-primary-500' : 'border-[var(--border-default)] text-[var(--text-muted)] hover:bg-primary-50 hover:text-primary-600'}`}>{p.label}</button>
           ))}
         </div>
         {/* 모바일: 필터 */}
@@ -314,10 +318,10 @@ export default function AcctCashflowList({ year, catId }: { year: number; catId?
       {cardFilter ? (
         <div className="flex items-center justify-between text-[10px] sm:text-[11px]">
           <span className="text-[var(--text-muted)]">
-            <span className="font-bold text-primary-600">{cardFilter === 'receivable' ? '📥 미수금' : cardFilter === 'payable' ? '📤 미지급금' : cardFilter === 'incomeScheduled' ? '🔜 입금예정' : '🔜 출금예정'}</span>
+            <span className="font-bold text-primary-600">{cardFilter === 'receivable' ? '미수금' : cardFilter === 'payable' ? '미지급금' : cardFilter === 'incomeScheduled' ? '입금예정' : '출금예정'}</span>
             {' '}<span className="font-bold text-[var(--text-primary)]">{cardFilteredList.length}</span>건
           </span>
-          <button onClick={() => setCardFilter('')} className="px-2 py-0.5 rounded-full bg-[var(--bg-muted)] text-[9px] sm:text-[10px] font-bold text-[var(--text-muted)] hover:bg-primary-100 hover:text-primary-600 cursor-pointer transition-all">✕ 전체보기</button>
+          <button onClick={() => setCardFilter('')} className="px-2 py-0.5 rounded-full bg-[var(--bg-muted)] text-[9px] sm:text-[10px] font-bold text-[var(--text-muted)] hover:bg-primary-100 hover:text-primary-600 cursor-pointer transition-all"><X size={10} className="inline" /> 전체보기</button>
         </div>
       ) : (
         <div className="flex items-center justify-between text-[10px] sm:text-[11px]">
@@ -487,7 +491,7 @@ export default function AcctCashflowList({ year, catId }: { year: number; catId?
                         cardFilter === 'receivable' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
                       }`}
                     >
-                      {cardFilter === 'receivable' ? '✅ 수금완료' : '✅ 지급완료'}
+                      {cardFilter === 'receivable' ? '수금완료' : '지급완료'}
                     </button>
                   )}
                 </div>

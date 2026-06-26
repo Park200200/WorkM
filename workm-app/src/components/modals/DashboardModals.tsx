@@ -289,7 +289,7 @@ export function InstructionModal({ open, editTaskId, onClose }: { open: boolean;
             )}
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-lg hover:bg-[var(--bg-muted)] flex items-center justify-center cursor-pointer">
-            <X size={15} className="text-[var(--text-muted)]" />
+            <X size={16} className="text-[var(--text-muted)]" />
           </button>
         </div>
 
@@ -301,7 +301,7 @@ export function InstructionModal({ open, editTaskId, onClose }: { open: boolean;
             <div className="relative">
               <label className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1.5">
                 <Briefcase size={12} /> 업무 선택 *
-                {isNewTask && <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">+ 새 업무</span>}
+                {isNewTask && <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">+ 새 업무</span>}
               </label>
               <input
                 value={newTaskTitle}
@@ -327,7 +327,7 @@ export function InstructionModal({ open, editTaskId, onClose }: { open: boolean;
                     ))}
                     {filteredTasks.length === 0 && newTaskTitle.trim() && (
                       <div className="text-center text-xs py-3 space-y-1">
-                        <div className="text-emerald-500 font-bold">✨ "{newTaskTitle.trim()}"</div>
+                        <div className="text-emerald-500 font-bold">"{newTaskTitle.trim()}"</div>
                         <div className="text-[var(--text-muted)]">새 업무로 등록됩니다</div>
                       </div>
                     )}
@@ -385,19 +385,19 @@ export function InstructionModal({ open, editTaskId, onClose }: { open: boolean;
                 <button onClick={() => { setNature('일일업무'); if (startDate) setDueDate(startDate) }}
                   className={cn('flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-bold cursor-pointer transition-all border',
                     nature === '일일업무' ? 'bg-primary-500 text-white border-primary-500' : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-default)]')}>
-                  <Clock size={13} /> 일일업무
+                  <Clock size={14} /> 일일업무
                 </button>
                 <button onClick={() => setNature('기간업무')}
                   className={cn('flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-bold cursor-pointer transition-all border',
                     nature === '기간업무' ? 'bg-primary-500 text-white border-primary-500' : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-default)]')}>
-                  <BarChart2 size={13} /> 기간업무
+                  <BarChart2 size={14} /> 기간업무
                 </button>
               </div>
             </div>
             <div>
               <label className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1.5">
                 <Paperclip size={12} /> 첨부파일
-                {attachments.length > 0 && <span className="text-[9px] font-bold text-primary-500 bg-primary-50 dark:bg-primary-900/20 px-1.5 py-0.5 rounded">{attachments.length}개</span>}
+                {attachments.length > 0 && <span className="text-[10px] font-bold text-primary-500 bg-primary-50 dark:bg-primary-900/20 px-1.5 py-0.5 rounded">{attachments.length}개</span>}
               </label>
               <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => {
                 const files = e.target.files
@@ -435,10 +435,10 @@ export function InstructionModal({ open, editTaskId, onClose }: { open: boolean;
                       <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-default)] group">
                         <IconComp size={14} className="text-[var(--text-muted)] shrink-0" />
                         <span className="text-[11px] font-semibold text-[var(--text-primary)] truncate flex-1">{f.name}</span>
-                        <span className="text-[9px] text-[var(--text-muted)] shrink-0">{sizeStr}</span>
+                        <span className="text-[10px] text-[var(--text-muted)] shrink-0">{sizeStr}</span>
                         <button onClick={(e) => { e.stopPropagation(); setAttachments(prev => prev.filter((_, j) => j !== i)) }}
                           className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all cursor-pointer shrink-0">
-                          <Trash2 size={11} />
+                          <Trash2 size={12} />
                         </button>
                       </div>
                     )
@@ -458,7 +458,7 @@ export function InstructionModal({ open, editTaskId, onClose }: { open: boolean;
             </div>
             <div className={nature === '일일업무' ? 'opacity-50 pointer-events-none' : ''}>
               <label className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1.5">
-                <Calendar size={12} /> 완료 계획일 * {nature === '일일업무' && <span className="text-[9px] text-primary-500">(시작일과 동일)</span>}
+                <Calendar size={12} /> 완료 계획일 * {nature === '일일업무' && <span className="text-[10px] text-primary-500">(시작일과 동일)</span>}
               </label>
               <DatePicker value={nature === '일일업무' ? startDate : dueDate} onChange={setDueDate} placeholder="날짜를 선택하세요" />
             </div>
@@ -526,7 +526,7 @@ export function InstructionModal({ open, editTaskId, onClose }: { open: boolean;
           <div>
             <label className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1.5">
               <Layers size={12} /> 세부업무
-              {selectedDetails.length > 0 && <span className="text-[9px] font-bold text-primary-500 bg-primary-50 dark:bg-primary-900/20 px-1.5 py-0.5 rounded">{selectedDetails.length}개</span>}
+              {selectedDetails.length > 0 && <span className="text-[10px] font-bold text-primary-500 bg-primary-50 dark:bg-primary-900/20 px-1.5 py-0.5 rounded">{selectedDetails.length}개</span>}
             </label>
             <div className="flex flex-wrap gap-1.5 px-3 py-2 min-h-[42px] border border-[var(--border-default)] rounded-[10px] bg-[var(--bg-muted)] items-center">
               {detailTasks.length > 0 ? detailTasks.map(d => (
@@ -603,11 +603,11 @@ export function InstructionModal({ open, editTaskId, onClose }: { open: boolean;
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[var(--border-default)] shrink-0">
           <button onClick={onClose}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[var(--border-default)] text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer transition-colors">
-            <X size={13} /> 닫기
+            <X size={14} /> 닫기
           </button>
           <button onClick={handleSave}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary-500 text-white text-xs font-bold hover:bg-primary-600 cursor-pointer transition-colors shadow-sm">
-            <Send size={13} /> 저장
+            <Send size={14} /> 저장
           </button>
         </div>
       </div>
@@ -767,7 +767,7 @@ export function DailyReportModal({ open, onClose }: { open: boolean; onClose: ()
           <div className="bg-[var(--bg-muted)] rounded-[10px] p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <CalendarCheck size={15} className="text-primary-500" />
+                <CalendarCheck size={16} className="text-primary-500" />
                 <span className="text-[13px] font-extrabold text-[var(--text-secondary)]">금일 스케줄 리스트</span>
                 <span className="text-[11px] bg-primary-100 dark:bg-primary-900/30 text-primary-600 rounded-full px-2 py-0.5 font-bold">{todayTasks.length}건</span>
               </div>
@@ -802,9 +802,9 @@ export function DailyReportModal({ open, onClose }: { open: boolean; onClose: ()
                           {dDiff < 0 ? `D+${Math.abs(dDiff)}` : dDiff === 0 ? 'D-DAY' : `D-${dDiff}`}
                         </span>
                         {hasReport ? (
-                          <span className="text-[9px] font-extrabold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-md">OK</span>
+                          <span className="text-[10px] font-extrabold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-md">OK</span>
                         ) : (
-                          <span className="text-[9px] font-extrabold text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-md">NO</span>
+                          <span className="text-[10px] font-extrabold text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-md">NO</span>
                         )}
                       </div>
                     </div>
@@ -901,7 +901,7 @@ export function DailyReportModal({ open, onClose }: { open: boolean; onClose: ()
           <div className="bg-[var(--bg-muted)] rounded-[10px] p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <FileText size={15} className="text-primary-500" />
+                <FileText size={16} className="text-primary-500" />
                 <span className="text-[13px] font-extrabold text-[var(--text-secondary)]">금일 일반업무 실행 보고 리스트</span>
                 <span className="text-[11px] bg-primary-100 dark:bg-primary-900/30 text-primary-600 rounded-full px-2 py-0.5 font-bold">{execList.length}건</span>
               </div>
@@ -912,7 +912,7 @@ export function DailyReportModal({ open, onClose }: { open: boolean; onClose: ()
             {showExecForm && (
               <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-[10px] p-4 mb-3">
                 <div className="text-[12.5px] font-extrabold text-[var(--text-primary)] mb-3 flex items-center gap-1.5">
-                  <FileText size={13} className="text-primary-500" /> {editIdx !== null ? '업무보고 수정' : '업무보고 등록'}
+                  <FileText size={14} className="text-primary-500" /> {editIdx !== null ? '업무보고 수정' : '업무보고 등록'}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                   {/* 업무명 - 상세업무 콤보박스 */}
@@ -934,7 +934,7 @@ export function DailyReportModal({ open, onClose }: { open: boolean; onClose: ()
                           </button>
                         )) : (
                           <div className="px-3 py-2 text-xs text-[var(--text-muted)]">
-                            {execTaskInput.trim() ? <span>📝 "<strong>{execTaskInput}</strong>" 새 업무로 추가됩니다</span> : '등록된 상세업무가 없습니다'}
+                            {execTaskInput.trim() ? <span><FileText size={12} className="inline -mt-0.5" /> "<strong>{execTaskInput}</strong>" 새 업무로 추가됩니다</span> : '등록된 상세업무가 없습니다'}
                           </div>
                         )}
                       </div>
@@ -978,8 +978,8 @@ export function DailyReportModal({ open, onClose }: { open: boolean; onClose: ()
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1">
-                      <Paperclip size={11} /> 첨부파일
-                      {execAttachments.length > 0 && <span className="text-[9px] font-bold text-primary-500 bg-primary-50 dark:bg-primary-900/20 px-1.5 py-0.5 rounded">{execAttachments.length}개</span>}
+                      <Paperclip size={12} /> 첨부파일
+                      {execAttachments.length > 0 && <span className="text-[10px] font-bold text-primary-500 bg-primary-50 dark:bg-primary-900/20 px-1.5 py-0.5 rounded">{execAttachments.length}개</span>}
                     </label>
                     <input ref={execFileInputRef} type="file" multiple className="hidden" onChange={(e) => {
                       const files = e.target.files
@@ -997,7 +997,7 @@ export function DailyReportModal({ open, onClose }: { open: boolean; onClose: ()
                     }} />
                     <button onClick={() => execFileInputRef.current?.click()}
                       className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-dashed border-[var(--border-default)] text-[10px] font-bold text-[var(--text-secondary)] hover:border-primary-400 hover:text-primary-500 cursor-pointer transition-colors">
-                      <Upload size={11} /> 파일 추가
+                      <Upload size={12} /> 파일 추가
                     </button>
                   </div>
                   {execAttachments.length > 0 && (
@@ -1006,9 +1006,9 @@ export function DailyReportModal({ open, onClose }: { open: boolean; onClose: ()
                         const sizeStr = f.size < 1024 ? `${f.size}B` : f.size < 1048576 ? `${(f.size/1024).toFixed(1)}KB` : `${(f.size/1048576).toFixed(1)}MB`
                         return (
                           <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[var(--bg-muted)] border border-[var(--border-default)] group">
-                            <Paperclip size={11} className="text-[var(--text-muted)] shrink-0" />
+                            <Paperclip size={12} className="text-[var(--text-muted)] shrink-0" />
                             <span className="text-[10px] font-semibold text-[var(--text-primary)] truncate flex-1">{f.name}</span>
-                            <span className="text-[9px] text-[var(--text-muted)] shrink-0">{sizeStr}</span>
+                            <span className="text-[10px] text-[var(--text-muted)] shrink-0">{sizeStr}</span>
                             <button onClick={() => setExecAttachments(prev => prev.filter((_, j) => j !== i))}
                               className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all cursor-pointer shrink-0">
                               <Trash2 size={10} />
@@ -1299,7 +1299,7 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
         {/* 헤더 */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--border-default)] shrink-0">
           <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-amber-400 to-amber-600 shadow-md flex items-center justify-center">
-            <Briefcase size={15} className="text-white" />
+            <Briefcase size={16} className="text-white" />
           </div>
           <span className="text-sm font-extrabold text-[var(--text-primary)]">내가 기획한 업무작성</span>
           <button onClick={onClose} className="ml-auto p-1.5 rounded-lg hover:bg-[var(--bg-muted)] text-[var(--text-muted)] cursor-pointer">
@@ -1314,7 +1314,7 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
           <div className="relative">
             <label className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1.5">
               <Briefcase size={12} /> 업무명 *
-              {isNewTask && <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">+ 새 업무</span>}
+              {isNewTask && <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">+ 새 업무</span>}
             </label>
             <input
               value={title}
@@ -1340,7 +1340,7 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
                   ))}
                   {filteredTasks.length === 0 && title.trim() && (
                     <div className="text-center text-xs py-3 space-y-1">
-                      <div className="text-emerald-500 font-bold">✨ "{title.trim()}"</div>
+                      <div className="text-emerald-500 font-bold">"{title.trim()}"</div>
                       <div className="text-[var(--text-muted)]">새 업무로 등록됩니다</div>
                     </div>
                   )}
@@ -1359,19 +1359,19 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
                 <button onClick={() => { setNature('일일업무'); if (startDate) setDueDate(startDate) }}
                   className={cn('flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-bold cursor-pointer transition-all border',
                     nature === '일일업무' ? 'bg-primary-500 text-white border-primary-500' : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-default)]')}>
-                  <Clock size={13} /> 일일업무
+                  <Clock size={14} /> 일일업무
                 </button>
                 <button onClick={() => setNature('기간업무')}
                   className={cn('flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-bold cursor-pointer transition-all border',
                     nature === '기간업무' ? 'bg-primary-500 text-white border-primary-500' : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-default)]')}>
-                  <BarChart2 size={13} /> 기간업무
+                  <BarChart2 size={14} /> 기간업무
                 </button>
               </div>
             </div>
             <div>
               <label className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1.5">
                 <Paperclip size={12} /> 첨부파일
-                {attachments.length > 0 && <span className="text-[9px] font-bold text-primary-500 bg-primary-50 dark:bg-primary-900/20 px-1.5 py-0.5 rounded">{attachments.length}개</span>}
+                {attachments.length > 0 && <span className="text-[10px] font-bold text-primary-500 bg-primary-50 dark:bg-primary-900/20 px-1.5 py-0.5 rounded">{attachments.length}개</span>}
               </label>
               <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => {
                 const files = e.target.files
@@ -1402,10 +1402,10 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
                       <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-default)] group">
                         <IconComp size={14} className="text-[var(--text-muted)] shrink-0" />
                         <span className="text-[11px] font-semibold text-[var(--text-primary)] truncate flex-1">{f.name}</span>
-                        <span className="text-[9px] text-[var(--text-muted)] shrink-0">{sizeStr}</span>
+                        <span className="text-[10px] text-[var(--text-muted)] shrink-0">{sizeStr}</span>
                         <button onClick={(e) => { e.stopPropagation(); setAttachments(prev => prev.filter((_, j) => j !== i)) }}
                           className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all cursor-pointer shrink-0">
-                          <Trash2 size={11} />
+                          <Trash2 size={12} />
                         </button>
                       </div>
                     )
@@ -1425,7 +1425,7 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
             </div>
             <div className={nature === '일일업무' ? 'opacity-50 pointer-events-none' : ''}>
               <label className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1.5">
-                <Calendar size={12} /> 완료 계획일 * {nature === '일일업무' && <span className="text-[9px] text-primary-500">(시작일과 동일)</span>}
+                <Calendar size={12} /> 완료 계획일 * {nature === '일일업무' && <span className="text-[10px] text-primary-500">(시작일과 동일)</span>}
               </label>
               <DatePicker value={nature === '일일업무' ? startDate : dueDate} onChange={setDueDate} placeholder="날짜를 선택하세요" />
             </div>
@@ -1493,7 +1493,7 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
           <div>
             <label className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1.5">
               <Layers size={12} /> 세부업무
-              {selectedDetails.length > 0 && <span className="text-[9px] font-bold text-primary-500 bg-primary-50 dark:bg-primary-900/20 px-1.5 py-0.5 rounded">{selectedDetails.length}개</span>}
+              {selectedDetails.length > 0 && <span className="text-[10px] font-bold text-primary-500 bg-primary-50 dark:bg-primary-900/20 px-1.5 py-0.5 rounded">{selectedDetails.length}개</span>}
             </label>
             <div className="flex flex-wrap gap-1.5 px-3 py-2 min-h-[42px] border border-[var(--border-default)] rounded-[10px] bg-[var(--bg-muted)] items-center">
               {detailTasks.length > 0 ? detailTasks.map(d => (
@@ -1590,11 +1590,11 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-[var(--border-default)] shrink-0">
           <button onClick={onClose}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[var(--border-default)] text-xs font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] cursor-pointer transition-colors">
-            <X size={13} /> 닫기
+            <X size={14} /> 닫기
           </button>
           <button onClick={handleSave}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary-500 text-white text-xs font-bold hover:bg-primary-600 cursor-pointer transition-colors shadow-sm">
-            <Send size={13} /> 저장
+            <Send size={14} /> 저장
           </button>
         </div>
       </div>
@@ -1708,7 +1708,7 @@ export function ProgressReportModal({ open, task, onClose, mode = 'report' }: Pr
             <span className="text-[13px] font-bold text-emerald-600 dark:text-emerald-400">{mode === 'view' ? '진행현황' : '진행보고서 작성'}</span>
             <span className="text-[11px] font-black text-white px-2 py-0.5 rounded-md" style={{ background: barColor }}>{progress}%</span>
           </div>
-          <button onClick={onClose} className="w-7 h-7 rounded-lg hover:bg-[var(--bg-muted)] flex items-center justify-center cursor-pointer"><X size={15} className="text-[var(--text-muted)]" /></button>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg hover:bg-[var(--bg-muted)] flex items-center justify-center cursor-pointer"><X size={16} className="text-[var(--text-muted)]" /></button>
         </div>
 
         {/* ═══ 바디 ═══ */}
@@ -1717,13 +1717,13 @@ export function ProgressReportModal({ open, task, onClose, mode = 'report' }: Pr
           {/* ── 지시자 및 업무명 ── */}
           <div className="bg-emerald-50 dark:bg-emerald-900/10 rounded-xl p-3.5 border border-emerald-200 dark:border-emerald-800">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1"><Activity size={11} /> 지시자 및 업무명</span>
+              <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1"><Activity size={12} /> 지시자 및 업무명</span>
               <div className="flex items-center gap-1.5">
-                <span className="text-[9px] font-bold px-2 py-0.5 rounded-md" style={{ background: `${statusName.color}20`, color: statusName.color, border: `1px solid ${statusName.color}40` }}>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md" style={{ background: `${statusName.color}20`, color: statusName.color, border: `1px solid ${statusName.color}40` }}>
                   ✦ {statusName.name}
                 </span>
                 {ddayLabel && (
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-md" style={{ background: `${ddayColor}15`, color: ddayColor, border: `1px solid ${ddayColor}30` }}>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md" style={{ background: `${ddayColor}15`, color: ddayColor, border: `1px solid ${ddayColor}30` }}>
                     {ddayLabel}
                   </span>
                 )}
@@ -1756,7 +1756,7 @@ export function ProgressReportModal({ open, task, onClose, mode = 'report' }: Pr
                   <span className="text-[var(--text-muted)] font-bold">예상(산출물 결과 구조)</span>
                   <div className="flex gap-1">
                     {resultNames.map(r => r && (
-                      <span key={r.id} className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-white dark:bg-white/10 border border-[var(--border-default)]" style={{ color: r.color || '#4f6ef7' }}>
+                      <span key={r.id} className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-white dark:bg-white/10 border border-[var(--border-default)]" style={{ color: r.color || '#4f6ef7' }}>
                         {r.icon && renderIcon(r.icon, 10)} {r.name}
                       </span>
                     ))}
@@ -1784,7 +1784,7 @@ export function ProgressReportModal({ open, task, onClose, mode = 'report' }: Pr
           {mode === 'report' && (
           <div className="bg-primary-50 dark:bg-primary-900/10 rounded-xl p-4 border border-primary-200 dark:border-primary-800">
             <div className="text-[12px] font-extrabold text-primary-700 dark:text-primary-400 mb-3 flex items-center gap-1.5">
-              <Pencil size={13} /> 진행보고서 작성
+              <Pencil size={14} /> 진행보고서 작성
             </div>
 
             {/* 진행률 설정 - 레거시 스타일 */}
@@ -1891,7 +1891,7 @@ export function ProgressReportModal({ open, task, onClose, mode = 'report' }: Pr
             <div className="flex items-center justify-between mb-2">
               <label className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1">
                 <Paperclip size={12} /> 첨부파일
-                {attachments.length > 0 && <span className="text-[9px] font-bold text-primary-500 bg-primary-50 dark:bg-primary-900/20 px-1.5 py-0.5 rounded">{attachments.length}개</span>}
+                {attachments.length > 0 && <span className="text-[10px] font-bold text-primary-500 bg-primary-50 dark:bg-primary-900/20 px-1.5 py-0.5 rounded">{attachments.length}개</span>}
               </label>
               <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => {
                 const files = e.target.files
@@ -1949,7 +1949,7 @@ export function ProgressReportModal({ open, task, onClose, mode = 'report' }: Pr
                           }}
                         >
                           <div className="text-[11px] font-semibold text-[var(--text-primary)] truncate hover:text-primary-500 hover:underline transition-colors">{f.name}</div>
-                          <div className="text-[9px] text-[var(--text-muted)]">{sizeStr}</div>
+                          <div className="text-[10px] text-[var(--text-muted)]">{sizeStr}</div>
                         </div>
                         <button
                           onClick={() => {
@@ -1989,7 +1989,7 @@ export function ProgressReportModal({ open, task, onClose, mode = 'report' }: Pr
               className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-[var(--bg-muted)] border border-[var(--border-default)] cursor-pointer hover:bg-[var(--bg-subtle)] transition-colors">
               <span className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1.5">
                 <Clock size={12} /> 업무 히스토리
-                <span className="text-[9px] bg-[var(--bg-subtle)] px-1.5 py-0.5 rounded font-bold">{history.length}건</span>
+                <span className="text-[10px] bg-[var(--bg-subtle)] px-1.5 py-0.5 rounded font-bold">{history.length}건</span>
               </span>
               <span className="text-[var(--text-muted)]">{historyOpen ? '▲' : '▼'}</span>
             </button>
@@ -2005,14 +2005,14 @@ export function ProgressReportModal({ open, task, onClose, mode = 'report' }: Pr
                       {reporter && <Avatar name={reporter.name} color={reporter.color} size="xs" />}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: b.bg, color: b.color }}>{h.status}</span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: b.bg, color: b.color }}>{h.status}</span>
                           {h.progress !== undefined && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-primary-50 dark:bg-primary-900/20 text-primary-600">{h.progress}%</span>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-primary-50 dark:bg-primary-900/20 text-primary-600">{h.progress}%</span>
                           )}
                         </div>
                         <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed mt-0.5">{h.memo}</p>
                       </div>
-                      <span className="text-[9px] text-[var(--text-muted)] shrink-0">{ds}</span>
+                      <span className="text-[10px] text-[var(--text-muted)] shrink-0">{ds}</span>
                     </div>
                   )
                 })}
@@ -2060,7 +2060,7 @@ export function ProgressReportModal({ open, task, onClose, mode = 'report' }: Pr
             }}
             className="px-5 py-2 rounded-lg bg-primary-500 text-white text-xs font-bold hover:bg-primary-600 cursor-pointer transition-colors shadow-sm flex items-center gap-1.5"
           >
-            <Send size={13} /> 보고서 저장
+            <Send size={14} /> 보고서 저장
           </button>
           )}
         </div>

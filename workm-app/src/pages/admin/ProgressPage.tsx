@@ -4,7 +4,7 @@ import { ProgressReportModal } from '../../components/modals/DashboardModals'
 import { cn } from '../../utils/cn'
 import { getItem } from '../../utils/storage'
 import {
-  ChevronRight, Star, Search,
+  ChevronRight, Star, Search, ClipboardList,
 } from 'lucide-react'
 
 interface TaskItem {
@@ -186,7 +186,7 @@ export function ProgressPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
         {/* 검색 */}
         <div className="relative w-full sm:w-[280px]">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -232,7 +232,7 @@ export function ProgressPage() {
       {/* ─── 팀별 그룹 + 테이블 ─── */}
       {grouped.length === 0 ? (
         <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl py-16 text-center">
-          <p className="text-4xl mb-3">📋</p>
+          <p className="text-4xl mb-3"><ClipboardList size={40} className="mx-auto text-[var(--text-muted)]" /></p>
           <p className="text-sm font-bold text-[var(--text-secondary)]">업무가 없습니다</p>
           <p className="text-[11px] text-[var(--text-muted)] mt-1">등록된 업무가 없거나 필터 조건에 맞는 업무가 없습니다.</p>
         </div>
@@ -392,7 +392,7 @@ export function ProgressPage() {
                           >
                             {/* 제목 + 중요 */}
                             <div className="flex items-start gap-1.5 mb-2">
-                              {task.isImportant && <Star size={13} className="text-amber-500 fill-amber-500 shrink-0 mt-0.5" />}
+                              {task.isImportant && <Star size={14} className="text-amber-500 fill-amber-500 shrink-0 mt-0.5" />}
                               <span className="text-[13px] font-extrabold text-[var(--text-primary)] leading-snug">{task.title}</span>
                             </div>
 

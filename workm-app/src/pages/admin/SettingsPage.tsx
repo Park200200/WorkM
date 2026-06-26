@@ -14,6 +14,7 @@ import {
   Building2, Medal, Briefcase, ListChecks, FileText, Layers,
   Plus, Pencil, Trash2, GripVertical, Calculator, Wallet, CreditCard,
   Palette, Sun, Moon, Check, X, RotateCcw, ChevronRight, ContactRound,
+  ClipboardList,
 } from 'lucide-react'
 import { ICON_MAP, renderIcon } from '../../utils/iconMap'
 import { Badge } from '../../components/ui/Badge'
@@ -187,7 +188,7 @@ function DeptPanel() {
       {/* 부서별 상세업무 배정 */}
       {departments.length > 0 && detailTasks.length > 0 && (
         <Card>
-          <div className="text-[12px] font-extrabold text-[var(--text-secondary)] mb-1">📋 부서별 상세업무 배정</div>
+          <div className="text-[12px] font-extrabold text-[var(--text-secondary)] mb-1"><ClipboardList size={12} className="inline -mt-0.5" /> 부서별 상세업무 배정</div>
           <div className="text-[10px] text-[var(--text-muted)] mb-3">부서를 클릭하여 해당 부서에 배정할 상세업무를 선택하세요.</div>
 
           <div className="space-y-2">
@@ -380,7 +381,7 @@ function DetailTaskPanel() {
       {/* 부서별 상세업무 배정 */}
       {departments.length > 0 && detailTasks.length > 0 && (
         <Card>
-          <div className="text-[12px] font-extrabold text-[var(--text-secondary)] mb-3">📋 부서별 상세업무 배정</div>
+          <div className="text-[12px] font-extrabold text-[var(--text-secondary)] mb-3"><ClipboardList size={12} className="inline -mt-0.5" /> 부서별 상세업무 배정</div>
           <div className="text-[10px] text-[var(--text-muted)] mb-3">부서를 선택한 후 체크박스로 해당 부서에 배정할 상세업무를 선택하세요.</div>
 
           {/* 부서 탭 */}
@@ -1993,7 +1994,7 @@ function PaymentMethodPanel() {
 }
 
 /* ══════════════════════════════════════════════
-   🎨 테마 설정 패널
+   테마 설정 패널
    ══════════════════════════════════════════════ */
 export function ThemePanel() {
   const { theme, accent, radius, density, fontScale, fontColor, datePickerStyle, checkboxStyle, checkboxSize, tabStyle, buttonSize, toastPosition, tableStripe, tableDensity, badgeShape, sidebarWidth, progressColor, toggle, setAccent, setRadius, setDensity, setFontScale, setFontColor, setDatePickerStyle, setCheckboxStyle, setCheckboxSize, setTabStyle, setButtonSize, setToastPosition, setTableStripe, setTableDensity, setBadgeShape, setSidebarWidth, setProgressColor, customAccents, addCustomAccent, removeCustomAccent, typography, setTypo, resetTypo } = useThemeStore()

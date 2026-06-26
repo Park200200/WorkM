@@ -36,6 +36,178 @@ interface HpSettings {
   cpOpacity: number; cpAlign: string; cpText: string
 }
 
+/* ── 커스텀 달력 선택기 (워크엠 DatePicker 통일) ── */
+const WEEK_DAYS = ['일', '월', '화', '수', '목', '금', '토']
+
+function HpDatePicker({ value, onChange, accent }: { value: string; onChange: (v: string) => void; accent: string }) {
+  const [open, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLDivElement>(null)
+  const calRef = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState({ top: 0, left: 0 })
+  const today = new Date()
+  const parsed = value ? new Date(value + 'T00:00:00') : null
+  const [vY, setVY] = useState(parsed?.getFullYear() || today.getFullYear())
+  const [vM, setVM] = useState(parsed?.getMonth() ?? today.getMonth())
+
+  useEffect(() => { if (value) { const d = new Date(value + 'T00:00:00'); setVY(d.getFullYear()); setVM(d.getMonth()) } }, [value])
+  useEffect(() => {
+    if (open && triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect()
+      const spB = window.innerHeight - r.bottom
+      setPos({ top: spB < 350 && r.top > 350 ? r.top - 350 - 4 : r.bottom + 4, left: Math.min(r.left, window.innerWidth - 300) })
+    }
+  }, [open])
+  useEffect(() => {
+    if (!open) return
+    const h = (e: MouseEvent) => { if (!triggerRef.current?.contains(e.target as Node) && !calRef.current?.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+  }, [open])
+
+  const firstDay = new Date(vY, vM, 1).getDay()
+  const dim = new Date(vY, vM + 1, 0).getDate()
+  const pdim = new Date(vY, vM, 0).getDate()
+  const weeks: { day: number; cur: boolean }[][] = []; let wk: { day: number; cur: boolean }[] = []
+  for (let i = firstDay - 1; i >= 0; i--) wk.push({ day: pdim - i, cur: false })
+  for (let d = 1; d <= dim; d++) { wk.push({ day: d, cur: true }); if (wk.length === 7) { weeks.push(wk); wk = [] } }
+  if (wk.length > 0) { let n = 1; while (wk.length < 7) wk.push({ day: n++, cur: false }); weeks.push(wk) }
+
+  const prevM = () => { if (vM === 0) { setVY(vY - 1); setVM(11) } else setVM(vM - 1) }
+  const nextM = () => { if (vM === 11) { setVY(vY + 1); setVM(0) } else setVM(vM + 1) }
+  const sel = (d: number) => { onChange(`${vY}-${String(vM + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`); setOpen(false) }
+  const selToday = () => { const t = new Date(); setVY(t.getFullYear()); setVM(t.getMonth()); onChange(`${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`); setOpen(false) }
+  const isToday = (d: number) => vY === today.getFullYear() && vM === today.getMonth() && d === today.getDate()
+  const isSel = (d: number) => parsed ? vY === parsed.getFullYear() && vM === parsed.getMonth() && d === parsed.getDate() : false
+  const display = value || ''
+
+  return (
+    <>
+      <div ref={triggerRef} onClick={() => setOpen(!open)} style={{
+        display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
+        borderRadius: 10, border: `1.5px solid ${open ? accent : "#e2e8f0"}`, background: "#fff",
+        fontSize: 12, cursor: "pointer", boxSizing: "border-box" as any,
+        boxShadow: open ? `0 0 0 3px ${accent}20` : "none", transition: "all 0.15s",
+      }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span style={{ flex: 1, color: display ? "#1e293b" : "#94a3b8" }}>{display || "년-월-일"}</span>
+      </div>
+      {open && createPortal(
+        <div ref={calRef} style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 99999 }}>
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, width: 290, boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <button onClick={prevM} style={{ width: 32, height: 32, border: "none", background: "transparent", cursor: "pointer", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#1e293b" }}>{vY}년 {String(vM + 1).padStart(2, '0')}월</span>
+              <button onClick={nextM} style={{ width: 32, height: 32, border: "none", background: "transparent", cursor: "pointer", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", marginBottom: 4 }}>
+              {WEEK_DAYS.map((w, i) => (
+                <div key={w} style={{ textAlign: "center", fontSize: 11, fontWeight: 700, padding: "4px 0", color: i === 0 ? "#f87171" : i === 6 ? "#60a5fa" : "#94a3b8" }}>{w}</div>
+              ))}
+            </div>
+            {weeks.map((wk, wi) => (
+              <div key={wi} style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)" }}>
+                {wk.map((c, di) => {
+                  if (!c.cur) return <div key={di} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#cbd5e1" }}>{c.day}</div>
+                  const dow = new Date(vY, vM, c.day).getDay()
+                  const selected = isSel(c.day); const todayM = isToday(c.day)
+                  return (
+                    <button key={di} onClick={() => sel(c.day)} style={{
+                      aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 12, fontWeight: selected || todayM ? 700 : 500, border: "none", cursor: "pointer",
+                      borderRadius: 10, transition: "all 0.15s",
+                      background: selected ? accent : todayM ? `${accent}15` : "transparent",
+                      color: selected ? "#fff" : todayM ? accent : dow === 0 ? "#f87171" : dow === 6 ? "#60a5fa" : "#1e293b",
+                      boxShadow: selected ? `0 2px 8px ${accent}40` : "none",
+                    }}>{c.day}</button>
+                  )
+                })}
+              </div>
+            ))}
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
+              <button onClick={() => { onChange(""); setOpen(false) }} style={{ padding: "4px 12px", fontSize: 11, fontWeight: 700, color: "#94a3b8", border: "none", background: "transparent", cursor: "pointer", borderRadius: 8 }}>지우기</button>
+              <button onClick={selToday} style={{ padding: "4px 12px", fontSize: 11, fontWeight: 700, color: accent, border: "none", background: "transparent", cursor: "pointer", borderRadius: 8 }}>오늘</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
+  )
+}
+
+/* ── 시간 선택기 ── */
+function HpTimePicker({ value, onChange, accent }: { value: string; onChange: (v: string) => void; accent: string }) {
+  const [open, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState({ top: 0, left: 0 })
+
+  useEffect(() => {
+    if (open && triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect()
+      setPos({ top: r.bottom + 4, left: Math.min(r.left, window.innerWidth - 220) })
+    }
+  }, [open])
+  useEffect(() => {
+    if (!open) return
+    const h = (e: MouseEvent) => { if (!triggerRef.current?.contains(e.target as Node) && !panelRef.current?.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h)
+  }, [open])
+
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
+  const minutes = ['00', '10', '20', '30', '40', '50']
+  const [selH, selM] = (value || '').split(':')
+
+  return (
+    <>
+      <div ref={triggerRef} onClick={() => setOpen(!open)} style={{
+        display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
+        borderRadius: 10, border: `1.5px solid ${open ? accent : "#e2e8f0"}`, background: "#fff",
+        fontSize: 12, cursor: "pointer", boxSizing: "border-box" as any,
+        boxShadow: open ? `0 0 0 3px ${accent}20` : "none", transition: "all 0.15s",
+      }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span style={{ flex: 1, color: value ? "#1e293b" : "#94a3b8" }}>{value || "시:분"}</span>
+      </div>
+      {open && createPortal(
+        <div ref={panelRef} style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 99999 }}>
+          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: 16, width: 210, boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#1e293b", marginBottom: 12, textAlign: "center" }}>시간 선택</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ flex: 1, maxHeight: 200, overflowY: "auto", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textAlign: "center", padding: "4px 0", borderBottom: "1px solid #e2e8f0", position: "sticky", top: 0, background: "#fff" }}>시</div>
+                {hours.map(h => (
+                  <button key={h} onClick={() => { onChange(`${h}:${selM || '00'}`); }} style={{
+                    width: "100%", padding: "5px 0", border: "none", cursor: "pointer", fontSize: 12, fontWeight: selH === h ? 700 : 400,
+                    background: selH === h ? accent : "transparent", color: selH === h ? "#fff" : "#1e293b", borderRadius: 0,
+                  }}>{h}</button>
+                ))}
+              </div>
+              <div style={{ flex: 1, maxHeight: 200, overflowY: "auto", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", textAlign: "center", padding: "4px 0", borderBottom: "1px solid #e2e8f0", position: "sticky", top: 0, background: "#fff" }}>분</div>
+                {minutes.map(m => (
+                  <button key={m} onClick={() => { onChange(`${selH || '00'}:${m}`); }} style={{
+                    width: "100%", padding: "5px 0", border: "none", cursor: "pointer", fontSize: 12, fontWeight: selM === m ? 700 : 400,
+                    background: selM === m ? accent : "transparent", color: selM === m ? "#fff" : "#1e293b", borderRadius: 0,
+                  }}>{m}</button>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
+              <button onClick={() => { onChange(""); setOpen(false) }} style={{ padding: "4px 12px", fontSize: 11, fontWeight: 700, color: "#94a3b8", border: "none", background: "transparent", cursor: "pointer" }}>지우기</button>
+              <button onClick={() => setOpen(false)} style={{ padding: "4px 12px", fontSize: 11, fontWeight: 700, color: accent, border: "none", background: "transparent", cursor: "pointer" }}>확인</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
+  )
+}
+
 function getLS<T>(key: string, fb: T): T {
   try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fb } catch { return fb }
 }
@@ -281,7 +453,7 @@ export function HomepageView() {
     <div className="hp-view" data-hp-theme={theme}>
 
       {/* ═══ 1. 리벳 바 ═══ */}
-      {s.rivetTags?.length > 0 && (
+      {s.rivetTags?.length > 0 && (s as any).sectionEnabled?.rivet !== false && (
         <div className="hp-rivet hp-fade-in" style={{
           background: s.rivetBg || '#1e40af',
           color: s.rivetFontColor || '#fff',
@@ -468,7 +640,7 @@ export function HomepageView() {
 
       {/* ═══ 4. 푸터 ═══ */}
       {/* 하단 로고박스 */}
-      <div className="hp-footer-logo" style={{
+      {(s as any).sectionEnabled?.footerLogo !== false && <div className="hp-footer-logo" style={{
         background: s.footerBg || '#1a1a2e',
         height: `${s.footerHeight || 120}px`,
         opacity: (s.footerOpacity ?? 100) / 100,
@@ -476,10 +648,10 @@ export function HomepageView() {
         {s.logoBotH && <img src={s.logoBotH} alt="" style={s.logoBotHW ? { width:`${s.logoBotHW}px`, height:'auto' } : undefined} />}
         {s.logoBotV && <img src={s.logoBotV} alt="" style={s.logoBotVW ? { width:`${s.logoBotVW}px`, height:'auto' } : undefined} />}
         {!s.logoBotH && !s.logoBotV && <span style={{ color:'rgba(255,255,255,.3)', fontSize:14 }}>하단 로고 미등록</span>}
-      </div>
+      </div>}
 
       {/* 하단 텍스트 + SNS */}
-      <div className="hp-footer-text" style={{
+      {(s as any).sectionEnabled?.footerText !== false && <div className="hp-footer-text" style={{
         background: s.ftBg || '#0a0a1a',
         minHeight: `${s.ftHeight || 80}px`,
         opacity: (s.ftOpacity ?? 100) / 100,
@@ -511,10 +683,10 @@ export function HomepageView() {
             ))}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* 카피라이트 */}
-      <div className="hp-copyright" style={{
+      {(s as any).sectionEnabled?.copyright !== false && <div className="hp-copyright" style={{
         background: s.cpBg || '#050510',
         minHeight: `${s.cpHeight || 48}px`,
         opacity: (s.cpOpacity ?? 100) / 100,
@@ -530,7 +702,7 @@ export function HomepageView() {
         }}>
           {s.cpText || `© ${new Date().getFullYear()} ${s.siteName || 'WorkM'}. All rights reserved.`}
         </div>
-      </div>
+      </div>}
 
       {/* ═══ 테마 토글 ═══ */}
       <button className="hp-theme-btn" onClick={toggleTheme} title="테마 변경">
@@ -691,15 +863,20 @@ function SolutionPage({ solId: rawSolId, siteName, displayName, onBack }: { solI
           ? <div style={{ lineHeight: 1.8, fontSize: 14 }} dangerouslySetInnerHTML={{ __html: data.post }} />
           : <PostPolicySampleView />
       }
-      default:
+      default: {
+        if (solId.startsWith('tpl_')) {
+          return <CustomFormView tplId={solId.replace('tpl_', '')} accent={accentColor} />
+        }
         return <p style={{ color: '#94a3b8', textAlign: 'center', padding: '60px 0', fontSize: 14 }}>해당 솔루션 페이지를 준비 중입니다.</p>
+      }
     }
   }
 
   return (
     <div style={{ padding: '40px 20px', minHeight: 400 }} className="hp-fade-in">
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
-        {/* ═ 타이틀 박스: 컨러 폰트 + 박스 ═ */}
+        {/* ═ 타이틀 박스: 커스텀 신청서는 숨김 ═ */}
+        {!rawSolId.startsWith('tpl_') && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 14,
           marginBottom: 28, paddingBottom: 18,
@@ -715,6 +892,7 @@ function SolutionPage({ solId: rawSolId, siteName, displayName, onBack }: { solI
             letterSpacing: '-0.02em',
           }}>{title.replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}]\s*/u, '')}</h2>
         </div>
+        )}
         {/* ═ 콘텐츠 ═ */}
         {renderContent()}
       </div>
@@ -1016,6 +1194,565 @@ function BoardSolutionView({ cat, accent, solId }: { cat: string; accent: string
               <button onClick={handleSecretSubmit} style={{ flex:1, padding:'10px', borderRadius:10, border:'none', background:accent, color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer' }}>확인</button>
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  )
+}
+/* ═══════════════════════════════════
+   커스텀 신청서 폼 (FormBuilder로 생성)
+   ═══════════════════════════════════ */
+/* ── 전화번호 자동 하이픈 입력 ── */
+function HpPhoneInput({ value, onChange, style }: { value: string; onChange: (v: string) => void; style?: React.CSSProperties }) {
+  const formatPhone = (raw: string) => {
+    const nums = raw.replace(/\D/g, '').slice(0, 11)
+    if (nums.length <= 3) return nums
+    if (nums.length <= 7) return `${nums.slice(0, 3)}-${nums.slice(3)}`
+    return `${nums.slice(0, 3)}-${nums.slice(3, 7)}-${nums.slice(7)}`
+  }
+  return (
+    <input
+      type="tel"
+      value={formatPhone(value)}
+      onChange={e => onChange(e.target.value.replace(/\D/g, '').slice(0, 11))}
+      placeholder="010-0000-0000"
+      style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12, outline: 'none', boxSizing: 'border-box' as any, ...style }}
+    />
+  )
+}
+
+/* ── 비밀번호 1초 지연 마스킹 입력 ── */
+function HpPasswordInput({ value, onChange, placeholder, style }: { value: string; onChange: (v: string) => void; placeholder?: string; style?: React.CSSProperties }) {
+  const [displayVal, setDisplayVal] = useState('')
+  const [realVal, setRealVal] = useState(value || '')
+  const timerRef = React.useRef<any>(null)
+
+  React.useEffect(() => { setRealVal(value || '') }, [value])
+
+  React.useEffect(() => {
+    if (realVal.length === 0) { setDisplayVal(''); return }
+    // 마지막 글자만 보이고 나머지는 ●
+    const masked = '●'.repeat(Math.max(0, realVal.length - 1)) + realVal.slice(-1)
+    setDisplayVal(masked)
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => {
+      setDisplayVal('●'.repeat(realVal.length))
+    }, 1000)
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+  }, [realVal])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value
+    // 입력된 문자에서 ● 제거하고 실제 값 계산
+    if (input.length > realVal.length) {
+      // 문자 추가
+      const added = input.replace(/●/g, '')
+      const newVal = realVal + added.slice(-1)
+      setRealVal(newVal)
+      onChange(newVal)
+    } else if (input.length < displayVal.length) {
+      // 문자 삭제
+      const newVal = realVal.slice(0, input.length)
+      setRealVal(newVal)
+      onChange(newVal)
+    }
+  }
+
+  return (
+    <input
+      type="text"
+      autoComplete="off"
+      value={displayVal}
+      onChange={handleChange}
+      placeholder={placeholder || '비밀번호 입력'}
+      style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12, outline: 'none', boxSizing: 'border-box' as any, letterSpacing: 2, ...style }}
+    />
+  )
+}
+
+/* ── 홈페이지용 커스텀 드롭다운 ── */
+function HpCustomSelect({ placeholder, options, value, onChange, accent, optionMode }: {
+  placeholder?: string; options?: string[]; value: string; onChange: (v: string) => void; accent: string; optionMode?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [multiVals, setMultiVals] = useState<string[]>(() => value ? value.split(',').map(s => s.trim()).filter(Boolean) : [])
+  const isMulti = optionMode === 'multi'
+  const ref = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const displayText = isMulti ? (multiVals.length > 0 ? multiVals.join(', ') : '') : value
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button type="button" onClick={() => setOpen(!open)}
+        style={{
+          width: '100%', padding: '8px 14px', borderRadius: 10,
+          border: '1.5px solid #e2e8f0', background: '#fff',
+          fontSize: 12, textAlign: 'left' as any, cursor: 'pointer', display: 'flex',
+          alignItems: 'center', justifyContent: 'space-between', color: displayText ? '#1e293b' : '#94a3b8',
+          outline: 'none', fontFamily: 'inherit',
+        }}>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as any }}>{displayText || placeholder || '선택해주세요'}</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>
+          <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+          marginTop: 4, borderRadius: 12, overflow: 'hidden',
+          border: '1.5px solid #e2e8f0', background: '#fff',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.12)', maxHeight: 280, overflowY: 'auto' as any,
+        }}>
+          <div style={{
+            padding: '8px 14px', fontWeight: 800, fontSize: 11, color: '#fff',
+            background: `linear-gradient(135deg, ${accent}, ${accent}cc)`,
+            position: 'sticky' as any, top: 0, zIndex: 1,
+          }}>
+            {placeholder || '선택해주세요'}
+            {isMulti && multiVals.length > 0 && <span style={{ opacity: 0.7, marginLeft: 6 }}>({multiVals.length}개 선택)</span>}
+          </div>
+          {(options || []).map((o, i) => {
+            const isSelected = isMulti ? multiVals.includes(o) : value === o
+            return (
+              <button key={i} type="button"
+                onClick={() => {
+                  if (isMulti) {
+                    const next = multiVals.includes(o) ? multiVals.filter(v => v !== o) : [...multiVals, o]
+                    setMultiVals(next)
+                    onChange(next.join(', '))
+                  } else {
+                    onChange(o); setOpen(false)
+                  }
+                }}
+                style={{
+                  width: '100%', padding: '8px 14px', border: 'none',
+                  background: isSelected ? `${accent}12` : 'transparent',
+                  fontSize: 12, fontWeight: isSelected ? 700 : 500, cursor: 'pointer',
+                  textAlign: 'left' as any, color: isSelected ? accent : '#1e293b',
+                  borderBottom: i < (options || []).length - 1 ? '1px solid #f1f5f9' : 'none',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                }}
+              >
+                {isMulti ? (
+                  <span style={{
+                    width: 16, height: 16, borderRadius: 4, flexShrink: 0,
+                    border: `1.5px solid ${isSelected ? accent : '#cbd5e1'}`,
+                    background: isSelected ? accent : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {isSelected && <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4L3.5 6L6.5 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </span>
+                ) : (
+                  <span style={{
+                    width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
+                    border: `1.5px solid ${isSelected ? accent : '#cbd5e1'}`,
+                    background: isSelected ? accent : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {isSelected && <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4L3.5 6L6.5 2" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </span>
+                )}
+                {o}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CustomFormView({ tplId, accent }: { tplId: string; accent: string }) {
+  const tpls = getLS<any[]>('hp_form_templates', [])
+  const tpl = tpls.find((t: any) => t.id === tplId)
+  const [formData, setFormData] = useState<Record<string, string>>({})
+  const [formErrors, setFormErrors] = useState<string[]>([])
+  const [selectedFields, setSelectedFields] = useState<Record<string, string[]>>({})
+  const [submitted, setSubmitted] = useState(false)
+  const [tab, setTab] = useState<'write' | 'result'>('write')
+  const [resultPwd, setResultPwd] = useState('')
+  const [resultPhone, setResultPhone] = useState('')
+  const [results, setResults] = useState<any[]>([])
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  if (!tpl) return <p style={{ color: '#94a3b8', textAlign: 'center', padding: '60px 0', fontSize: 14 }}>신청서 양식을 찾을 수 없습니다.</p>
+
+  const handleFieldChange = (id: string, val: string) => {
+    setFormData(prev => ({ ...prev, [id]: val }))
+    setFormErrors(prev => prev.filter(e => e !== id))
+  }
+
+  const toggleCategoryField = (secId: string, fieldId: string, mode: 'radio' | 'checkbox') => {
+    setSelectedFields(prev => {
+      const cur = prev[secId] || []
+      if (mode === 'radio') return { ...prev, [secId]: cur.includes(fieldId) ? [] : [fieldId] }
+      return { ...prev, [secId]: cur.includes(fieldId) ? cur.filter(x => x !== fieldId) : [...cur, fieldId] }
+    })
+  }
+
+  const handleSubmit = () => {
+    const errors: string[] = []
+    tpl.sections?.forEach((sec: any) => {
+      sec.fields?.forEach((f: any) => {
+        if (f.required && !(formData[f.id] || '').trim()) errors.push(f.id)
+      })
+    })
+    if (!formData['__pwd']) errors.push('__pwd')
+    if (errors.length > 0) { setFormErrors(errors); return }
+    // 전화번호 필드 찾기
+    let phoneVal = ''
+    tpl.sections?.forEach((sec: any) => {
+      sec.fields?.forEach((f: any) => {
+        if (f.type === 'phone' && formData[f.id]) phoneVal = formData[f.id]
+      })
+    })
+    const sub = { id: 'sub' + Date.now(), tplId, templateId: tplId, tplName: tpl.name || tpl.title || '신청서', date: new Date().toISOString().slice(0, 10), data: formData, selectedFields, pwd: formData['__pwd'], phone: phoneVal, status: '접수완료' }
+    const all = getLS<any[]>('hp_form_submissions', [])
+    localStorage.setItem('hp_form_submissions', JSON.stringify([sub, ...all]))
+    setSubmitted(true)
+    setFormData({}); setSelectedFields({})
+  }
+
+  const searchResults = () => {
+    const all = getLS<any[]>('hp_form_submissions', [])
+    const phoneNums = resultPhone.replace(/\D/g, '')
+    // 템플릿에서 phone 타입 필드 ID 찾기
+    const phoneFieldIds: string[] = []
+    tpl.sections?.forEach((sec: any) => {
+      sec.fields?.forEach((f: any) => { if (f.type === 'phone') phoneFieldIds.push(f.id) })
+    })
+    setResults(all.filter((s: any) => {
+      const matchTpl = s.tplId === tplId || s.templateId === tplId
+      const matchPwd = s.pwd === resultPwd
+      // phone 필드 또는 data 안의 전화번호 필드에서 매칭
+      let storedPhone = (s.phone || '').replace(/\D/g, '')
+      if (!storedPhone && s.data) {
+        for (const fid of phoneFieldIds) {
+          if (s.data[fid]) { storedPhone = (s.data[fid] || '').replace(/\D/g, ''); break }
+        }
+      }
+      const matchPhone = phoneNums && storedPhone === phoneNums
+      return matchTpl && matchPwd && matchPhone
+    }))
+  }
+
+  const bgColor = tpl.bgColor || '#4f6ef7'
+
+  return (
+    <div>
+      {/* 탭 */}
+      <div style={{ display: 'flex', marginBottom: 24, borderRadius: 12, overflow: 'hidden', border: '1.5px solid #e2e8f0' }}>
+        <button onClick={() => { setTab('write'); setSubmitted(false) }} style={{ flex: 1, padding: '12px 0', border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer', background: tab === 'write' ? bgColor : '#fff', color: tab === 'write' ? '#fff' : '#64748b' }}>
+          <ClipboardList size={14} style={{display:'inline',marginRight:4}}/> 신청서 작성
+        </button>
+        <button onClick={() => setTab('result')} style={{ flex: 1, padding: '12px 0', border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer', background: tab === 'result' ? bgColor : '#fff', color: tab === 'result' ? '#fff' : '#64748b' }}>
+          <Search size={14} style={{display:'inline',marginRight:4}}/> 신청결과 확인
+        </button>
+      </div>
+
+      {tab === 'write' ? (
+        submitted ? (
+          <div style={{ textAlign: 'center', padding: '50px 20px' }}>
+            <div style={{ marginBottom: 12 }}><CheckCircle2 size={48} color="#22c55e"/></div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>신청이 접수되었습니다</div>
+            <p style={{ fontSize: 14, color: '#64748b' }}>담당자 확인 후 연락드리겠습니다.</p>
+            <button onClick={() => setSubmitted(false)} style={{ marginTop: 16, padding: '10px 24px', borderRadius: 10, border: 'none', background: bgColor, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>새 신청서 작성</button>
+          </div>
+        ) : (
+          <div>
+            {/* 상단 배너 */}
+            <div style={{ background: bgColor, borderRadius: 16, padding: '28px 24px', marginBottom: 24, textAlign: 'center', color: '#fff' }}>
+              <div style={{ fontSize: 20, fontWeight: 800 }}>{tpl.name || tpl.title || '신청서'}</div>
+              {tpl.description && <p style={{ fontSize: 13, opacity: 0.85, marginTop: 8, lineHeight: 1.6 }}>{tpl.description}</p>}
+            </div>
+
+            {/* 섹션들 */}
+            {(tpl.sections || []).map((sec: any) => (
+              <div key={sec.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, padding: 20, marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: `${bgColor}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {sec.type === 'category' ? <ClipboardList size={14} style={{ color: bgColor }}/> : <FileText size={14} style={{ color: bgColor }}/>}
+                  </div>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: '#1e293b' }}>{sec.titleText || sec.title}</span>
+                  {sec.selectionMode && sec.selectionMode !== 'none' && (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: `${bgColor}15`, color: bgColor }}>
+                      {sec.selectionMode === 'radio' ? '단수선택' : '복수선택'}
+                    </span>
+                  )}
+                </div>
+
+                {sec.type === 'privacy_consent' ? (
+                  /* ── 개인정보 수집 및 동의 ── */
+                  <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 8 }}>개인정보 수집 및 이용에 동의합니다.</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1.8, marginBottom: 12, whiteSpace: 'pre-line' as any }}>
+                      {sec.privacyContent || '수집항목: 성명, 연락처, 이메일\n수집목적: 신청 접수 및 안내\n보유기간: 접수일로부터 1년'}
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                      <input type="checkbox" style={{ width: 16, height: 16, accentColor: bgColor }} />
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#1e293b' }}>동의합니다</span>
+                    </label>
+                  </div>
+                ) : sec.type === 'category' && sec.selectionMode && sec.selectionMode !== 'none' ? (
+                  /* ── 카테고리 필드: inline 그룹핑 ── */
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginLeft: 28 }}>
+                    {(() => {
+                      const fields = sec.fields || []
+                      const groups: any[][] = []
+                      fields.forEach((f: any) => {
+                        if (f.inline && groups.length > 0) groups[groups.length - 1].push(f)
+                        else groups.push([f])
+                      })
+                      return groups.map((group: any[], gi: number) => {
+                        const anyChecked = group.length > 1
+                          ? (selectedFields[sec.id] || []).includes(group[0].id)
+                          : group.some((f: any) => (selectedFields[sec.id] || []).includes(f.id))
+                        return (
+                          <div key={gi}>
+                            {/* 그룹의 첫 번째 필드만 라디오/체크 표시, inline 필드는 숨김 */}
+                            {group.filter((_: any, fi: number) => fi === 0).map((f: any) => {
+                              const checked = (selectedFields[sec.id] || []).includes(f.id)
+                              return (
+                                <label key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer' }}
+                                  onClick={() => toggleCategoryField(sec.id, f.id, sec.selectionMode)}>
+                                  <div style={{
+                                    width: 16, height: 16, borderRadius: sec.selectionMode === 'radio' ? '50%' : 4,
+                                    border: `2px solid ${checked ? bgColor : '#cbd5e1'}`,
+                                    background: checked ? bgColor : 'transparent',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                                  }}>
+                                    {checked && (sec.selectionMode === 'radio'
+                                      ? <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff' }}/>
+                                      : <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5L4 7.5L8.5 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                    )}
+                                  </div>
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: checked ? '#1e293b' : '#64748b' }}>{f.label}</span>
+                                </label>
+                              )
+                            })}
+                            {/* 같은줄 그룹: 하나라도 선택 시 그룹 전체 입력란 한줄 표시 */}
+                            {anyChecked && (
+                              <div style={{ marginLeft: 24, marginTop: 4, marginBottom: 8, display: 'flex', gap: 8 }}>
+                                {group.map((f: any) => (
+                                  <div key={f.id} style={{ flex: 1 }}>
+                                    <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', marginBottom: 4 }}>{f.label}</div>
+                                    {f.type === 'date' ? (
+                                      <HpDatePicker value={formData[f.id] || ''} onChange={v => handleFieldChange(f.id, v)} accent={bgColor} />
+                                    ) : f.type === 'time' ? (
+                                      <HpTimePicker value={formData[f.id] || ''} onChange={v => handleFieldChange(f.id, v)} accent={bgColor} />
+                                    ) : f.type === 'select' ? (
+                                      <HpCustomSelect placeholder={f.placeholder} options={f.options} value={formData[f.id] || ''} onChange={v => handleFieldChange(f.id, v)} accent={bgColor} optionMode={(f as any).optionMode} />
+                                    ) : f.type === 'textarea' ? (
+                                      <textarea placeholder={f.placeholder} value={formData[f.id] || ''} onChange={e => handleFieldChange(f.id, e.target.value)}
+                                        style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12, resize: 'none' as any, height: 60, outline: 'none', boxSizing: 'border-box' as any }} />
+                                    ) : f.type === 'phone' ? (
+                                      <HpPhoneInput value={formData[f.id] || ''} onChange={v => handleFieldChange(f.id, v)} />
+                                    ) : (
+                                      <input type={f.type === 'email' ? 'email' : 'text'}
+                                        placeholder={f.placeholder} value={formData[f.id] || ''} onChange={e => handleFieldChange(f.id, e.target.value)}
+                                        style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12, outline: 'none', boxSizing: 'border-box' as any }} />
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })
+                    })()}
+                  </div>
+                ) : (
+                  /* ── 일반 필드: inline 그룹핑 ── */
+                  <div style={{ display: 'flex', flexDirection: 'column' as any, gap: 12, marginLeft: 28 }}>
+                    {(() => {
+                      const fields = sec.fields || []
+                      const rows: any[][] = []
+                      fields.forEach((f: any) => {
+                        if (f.inline && rows.length > 0) rows[rows.length - 1].push(f)
+                        else rows.push([f])
+                      })
+                      return rows.map((row: any[], ri: number) => (
+                        <div key={ri} style={{ display: 'flex', gap: 12 }}>
+                          {row.map((f: any) => (
+                            <div key={f.id} style={{ flex: 1 }}>
+                              <label style={{ fontSize: 11, fontWeight: 700, color: '#475569', display: 'block', marginBottom: 4 }}>
+                                {f.label}{f.required && <span style={{ color: '#ef4444' }}>*</span>}
+                              </label>
+                              {f.type === 'textarea'
+                                ? <textarea placeholder={f.placeholder} value={formData[f.id] || ''} onChange={e => handleFieldChange(f.id, e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${formErrors.includes(f.id) ? '#ef4444' : '#e2e8f0'}`, fontSize: 12, resize: 'none' as any, height: 60, outline: 'none', boxSizing: 'border-box' as any }} />
+                                : f.type === 'select'
+                                  ? <HpCustomSelect placeholder={f.placeholder} options={f.options} value={formData[f.id] || ''} onChange={v => handleFieldChange(f.id, v)} accent={bgColor} optionMode={(f as any).optionMode} />
+                                  : f.type === 'date'
+                                    ? <HpDatePicker value={formData[f.id] || ''} onChange={v => handleFieldChange(f.id, v)} accent={bgColor} />
+                                    : f.type === 'time'
+                                      ? <HpTimePicker value={formData[f.id] || ''} onChange={v => handleFieldChange(f.id, v)} accent={bgColor} />
+                                      : f.type === 'phone'
+                                        ? <HpPhoneInput value={formData[f.id] || ''} onChange={v => handleFieldChange(f.id, v)} style={{ border: `1px solid ${formErrors.includes(f.id) ? '#ef4444' : '#e2e8f0'}` }} />
+                                        : <input type={f.type === 'email' ? 'email' : 'text'} placeholder={f.placeholder} value={formData[f.id] || ''} onChange={e => handleFieldChange(f.id, e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${formErrors.includes(f.id) ? '#ef4444' : '#e2e8f0'}`, fontSize: 12, outline: 'none', boxSizing: 'border-box' as any }} />
+                              }
+                            </div>
+                          ))}
+                        </div>
+                      ))
+                    })()}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* 비밀번호 */}
+            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, padding: 20 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: '#475569', display: 'block', marginBottom: 4 }}>
+                조회용 비밀번호<span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <input type="password" value={formData['__pwd'] || ''} onChange={e => handleFieldChange('__pwd', e.target.value)} placeholder="결과 조회에 사용할 비밀번호"
+                style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${formErrors.includes('__pwd') ? '#ef4444' : '#e2e8f0'}`, fontSize: 12, outline: 'none', boxSizing: 'border-box' as any }} />
+            </div>
+
+            {/* 제출 */}
+            <button onClick={handleSubmit} style={{
+              width: '100%', padding: '14px 0', marginTop: 16, borderRadius: 12, border: 'none',
+              background: bgColor, color: '#fff', fontSize: 15, fontWeight: 800, cursor: 'pointer',
+            }}>
+              <Send size={16} style={{ display: 'inline', marginRight: 6 }}/> 신청서 제출
+            </button>
+          </div>
+        )
+      ) : (
+        /* 결과 확인 탭 */
+        <div>
+          <div style={{ display: 'flex', flexDirection: 'column' as any, gap: 8, marginBottom: 16 }}>
+            <HpPhoneInput value={resultPhone} onChange={setResultPhone}
+              style={{ padding: '10px 14px', borderRadius: 8, border: '1.5px solid #e2e8f0', fontSize: 14 }} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input type="password" value={resultPwd} onChange={e => setResultPwd(e.target.value)} placeholder="비밀번호 입력"
+                style={{ flex: 1, padding: '10px 14px', borderRadius: 8, border: '1.5px solid #e2e8f0', fontSize: 14, outline: 'none' }} />
+              <button onClick={searchResults} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: bgColor, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', flexShrink: 0 }}>조회</button>
+            </div>
+          </div>
+          {results.length === 0 ? (
+            <p style={{ color: '#94a3b8', textAlign: 'center', padding: '40px 0', fontSize: 13 }}>조회 결과가 없습니다.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column' as any, gap: 12 }}>
+              {results.map((r: any) => {
+                // 필드 ID → 라벨/값 매핑
+                const tpls = getLS<any[]>('hp_form_templates', [])
+                const matchedTpl = tpls.find((t: any) => t.id === (r.tplId || r.templateId))
+                const labelMap: Record<string, string> = {}
+                let applicantName = ''
+                if (matchedTpl) {
+                  (matchedTpl.sections || []).forEach((sec: any) => {
+                    (sec.fields || []).forEach((f: any) => {
+                      labelMap[f.id] = f.label
+                      // 이름/담당자/단체명 필드 찾기
+                      if (!applicantName && r.data?.[f.id] && (f.label.includes('이름') || f.label.includes('담당자') || f.label.includes('단체'))) {
+                        applicantName = r.data[f.id]
+                      }
+                    })
+                  })
+                }
+                if (!applicantName) {
+                  // data에서 첫번째 text 값을 이름으로 사용
+                  const firstVal = Object.values(r.data || {}).find((v: any) => v && typeof v === 'string' && v !== r.data?.['__pwd'])
+                  if (firstVal) applicantName = firstVal as string
+                }
+                // 날짜 포맷
+                const d = r.date ? new Date(r.date) : new Date()
+                const dateStr = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`
+                const status = r.status || '접수완료'
+                const tplName = r.tplName || '신청서'
+
+                return (
+                  <div key={r.id} style={{ border: '1px solid #e2e8f0', borderRadius: 16, overflow: 'hidden' }}>
+                    {/* 상태 메시지 */}
+                    <div style={{ padding: '16px 20px', background: '#fafbfc', cursor: 'pointer' }}
+                      onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', lineHeight: 1.6 }}>
+                        {dateStr} 신청하신 <span style={{ color: bgColor }}>{applicantName}</span>님의 {tplName}는{' '}
+                        <span style={{
+                          display: 'inline-block', padding: '2px 10px', borderRadius: 20,
+                          fontSize: 12, fontWeight: 800,
+                          background: status === '접수완료' ? '#dcfce7' : status === '검토중' ? '#fef3c7' : status === '계약준비' ? '#dbeafe' : status === '계약완료' ? '#ede9fe' : status === '취소' ? '#fee2e2' : '#f1f5f9',
+                          color: status === '접수완료' ? '#16a34a' : status === '검토중' ? '#d97706' : status === '계약준비' ? '#2563eb' : status === '계약완료' ? '#7c3aed' : status === '취소' ? '#dc2626' : '#64748b',
+                        }}>{status}</span> 입니다.
+                      </div>
+                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span>{r.date}</span>
+                        <span>•</span>
+                        <span>상세보기 {expandedId === r.id ? '▲' : '▼'}</span>
+                      </div>
+                    </div>
+                    {expandedId === r.id && (
+                      <div style={{ padding: '12px 20px 16px', fontSize: 13, lineHeight: 1.8, borderTop: '1px solid #e2e8f0' }}>
+                        {(() => {
+                          // category 섹션의 필드 ID 수집 (data 표시에서 제외)
+                          const categoryFieldIds = new Set<string>()
+                          const selectedEntries: { title: string; items: { label: string; value?: string }[] }[] = []
+
+                          if (r.selectedFields && matchedTpl) {
+                            Object.entries(r.selectedFields).forEach(([secId, fieldIds]: [string, any]) => {
+                              const sec = matchedTpl.sections?.find((s: any) => s.id === secId)
+                              const secTitle = sec?.titleText || sec?.title || secId
+                              const items: { label: string; value?: string }[] = []
+                              ;(fieldIds || []).forEach((fid: string) => {
+                                categoryFieldIds.add(fid)
+                                const field = sec?.fields?.find((f: any) => f.id === fid)
+                                const label = field?.label || labelMap[fid] || fid
+                                // 영숫자 ID 패턴이면 건너뛰기
+                                if (/^[a-z0-9]{6,}$/.test(label)) return
+                                items.push({ label, value: r.data?.[fid] || undefined })
+                              })
+                              if (items.length > 0) selectedEntries.push({ title: secTitle, items })
+                            })
+                          }
+
+                          // category 섹션의 모든 필드 ID도 제외 대상에 추가
+                          if (matchedTpl) {
+                            matchedTpl.sections?.forEach((sec: any) => {
+                              if (sec.type === 'category') {
+                                sec.fields?.forEach((f: any) => categoryFieldIds.add(f.id))
+                              }
+                            })
+                          }
+
+                          return (
+                            <>
+                              {/* 접수분야 */}
+                              {selectedEntries.map(entry => (
+                                <div key={entry.title} style={{ marginBottom: 4 }}>
+                                  <strong>{entry.title}:</strong>{' '}
+                                  {entry.items.map((item, i) => (
+                                    <span key={i}>
+                                      {item.label}{item.value ? ` (${item.value})` : ''}
+                                      {i < entry.items.length - 1 ? ', ' : ''}
+                                    </span>
+                                  ))}
+                                </div>
+                              ))}
+                              {/* 일반 필드 (category 필드 ID, __pwd, 영숫자 ID 제외) */}
+                              {Object.entries(r.data || {}).filter(([k]) =>
+                                k !== '__pwd' && !categoryFieldIds.has(k) && !/^[a-z0-9]{6,}$/.test(labelMap[k] || k)
+                              ).map(([k, v]) => {
+                                const label = labelMap[k]
+                                if (!label) return null // 라벨 매핑 없으면 숨기기
+                                return <div key={k}><strong>{label}:</strong> {v as string}</div>
+                              })}
+                            </>
+                          )
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

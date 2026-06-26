@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useMemo, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { formatNumber } from '../../utils/format'
-import { X, Printer, Eye, Edit3 } from 'lucide-react'
+import { X, Printer, Eye, Edit3, Pin, Paperclip } from 'lucide-react'
 import { loadMultipleImages } from '../../utils/attachmentDB'
 
 /* ─── 숫자를 한글 금액으로 변환 ── */
@@ -136,7 +136,7 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
     const dragged = { ...norm[dragIdx] }
     const without = norm.filter((_, i) => i !== dragIdx)
     // without에서 행 재계산
-    const rows: typeof norm[][] = []
+    const rows: PrintAttachment[][] = []
     const seenR = new Set<number>()
     for (const a of without) {
       if (!seenR.has(a.row!)) { seenR.add(a.row!); rows.push(without.filter(x => x.row === a.row)) }
@@ -144,7 +144,7 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
     if (mode === 'same-row' && rows[targetRowIdx]) {
       dragged.row = rows[targetRowIdx][0].row
       const lastItem = rows[targetRowIdx][rows[targetRowIdx].length - 1]
-      const lastIdx = without.indexOf(lastItem)
+      const lastIdx = without.indexOf(lastItem as any)
       without.splice(lastIdx + 1, 0, dragged)
     } else {
       dragged.row = Date.now() + Math.random()
@@ -152,7 +152,7 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
         without.push(dragged)
       } else {
         const firstItem = rows[targetRowIdx][0]
-        const insertIdx = without.indexOf(firstItem)
+        const insertIdx = without.indexOf(firstItem as any)
         without.splice(insertIdx, 0, dragged)
       }
     }
@@ -216,11 +216,11 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="print-btn-action" onClick={handlePrint}>
-              <Printer size={15} />
+              <Printer size={16} />
               인쇄하기
             </button>
             <button className="print-btn-close" onClick={onClose}>
-              <X size={15} />
+              <X size={16} />
               닫기
             </button>
           </div>
@@ -539,7 +539,7 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
                 onDrop={e => { e.preventDefault(); handleEvidenceDrop(0, 'new-row') }}
                 style={{ height: 28, margin: '2px 0', borderRadius: 8, border: dropTarget?.type === 'new-row' && dropTarget.rowIdx === 0 ? '2px dashed #4f6ef7' : '2px dashed transparent', background: dropTarget?.type === 'new-row' && dropTarget.rowIdx === 0 ? '#eef2ff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
               >
-                {dropTarget?.type === 'new-row' && dropTarget.rowIdx === 0 && <span style={{ fontSize: 11, color: '#4f6ef7', fontWeight: 700 }}>📌 새 줄에 놓기</span>}
+                {dropTarget?.type === 'new-row' && dropTarget.rowIdx === 0 && <span style={{ fontSize: 11, color: '#4f6ef7', fontWeight: 700 }}><Pin size={11} style={{ display: 'inline', verticalAlign: '-1px' }} /> 새 줄에 놓기</span>}
               </div>
             )}
 
@@ -579,7 +579,7 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
                     {att.dataUrl && (att.type?.startsWith('image/') || att.dataUrl.startsWith('data:image')) ? (
                       <img src={att.dataUrl} alt={att.title} style={{ width: att.printWidth, maxWidth: '100%', objectFit: 'contain', border: '1px solid #e2e8f0', borderRadius: 4 }} />
                     ) : (
-                      <div style={{ display: 'inline-block', padding: '10px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#64748b' }}>📎 {att.name}</div>
+                      <div style={{ display: 'inline-block', padding: '10px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12, color: '#64748b' }}><Paperclip size={11} style={{ display: 'inline', verticalAlign: '-1px' }} /> {att.name}</div>
                     )}
                   </div>
                 </div>
@@ -594,7 +594,7 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
                 onDrop={e => { e.preventDefault(); handleEvidenceDrop(ri + 1, 'new-row') }}
                 style={{ height: 28, margin: '2px 0', borderRadius: 8, border: dropTarget?.type === 'new-row' && dropTarget.rowIdx === ri + 1 ? '2px dashed #4f6ef7' : '2px dashed transparent', background: dropTarget?.type === 'new-row' && dropTarget.rowIdx === ri + 1 ? '#eef2ff' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
               >
-                {dropTarget?.type === 'new-row' && dropTarget.rowIdx === ri + 1 && <span style={{ fontSize: 11, color: '#4f6ef7', fontWeight: 700 }}>📌 새 줄에 놓기</span>}
+                {dropTarget?.type === 'new-row' && dropTarget.rowIdx === ri + 1 && <span style={{ fontSize: 11, color: '#4f6ef7', fontWeight: 700 }}><Pin size={11} style={{ display: 'inline', verticalAlign: '-1px' }} /> 새 줄에 놓기</span>}
               </div>
             )}
           </div>

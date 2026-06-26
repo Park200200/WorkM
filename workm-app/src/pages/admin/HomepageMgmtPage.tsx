@@ -17,14 +17,14 @@ import {
 
 /* ─── 서브 페이지 정의 (레거시 homepageNav 매칭) ── */
 const SUB_PAGES = [
-  { key: 'basic',     label: '기본설정',          icon: Settings2,        emoji: '⚙️',  desc: '홈페이지 기본 테마, 색상, 로고를 설정합니다' },
-  { key: 'menu',      label: '메뉴등록',          icon: MenuSquare,       emoji: '📋',  desc: '메뉴 구조와 서브메뉴를 관리합니다' },
-  { key: 'content',   label: '컨텐츠관리',        icon: LayoutPanelLeft,  emoji: '📰',  desc: '뉴스, 블로그, 유튜브, 웹사이트 콘텐츠를 관리합니다' },
-  { key: 'board',     label: '게시판관리',        icon: ClipboardList,    emoji: '💬',  desc: '게시판을 생성하고 관리합니다' },
-  { key: 'media',     label: '미디어자료',        icon: Film,             emoji: '🖼️',  desc: '이미지, 동영상 미디어를 관리합니다' },
-  { key: 'terms',     label: '약관관리',          icon: ScrollText,       emoji: '📜',  desc: '이용약관, 개인정보처리방침을 관리합니다' },
-  { key: 'workshop',  label: '신청서', icon: FileText,        emoji: '📝',  desc: '워크샵/대관 신청서를 관리합니다' },
-  { key: 'formBuilder', label: '신청서작성', icon: PenLine, emoji: '✏️', desc: '커스텀 신청서 양식을 만들고 관리합니다' },
+  { key: 'basic',     label: '기본설정',          icon: Settings2,        desc: '홈페이지 기본 테마, 색상, 로고를 설정합니다' },
+  { key: 'menu',      label: '메뉴등록',          icon: MenuSquare,       desc: '메뉴 구조와 서브메뉴를 관리합니다' },
+  { key: 'content',   label: '컨텐츠관리',        icon: LayoutPanelLeft,  desc: '뉴스, 블로그, 유튜브, 웹사이트 콘텐츠를 관리합니다' },
+  { key: 'board',     label: '게시판관리',        icon: ClipboardList,    desc: '게시판을 생성하고 관리합니다' },
+  { key: 'media',     label: '미디어자료',        icon: Film,             desc: '이미지, 동영상 미디어를 관리합니다' },
+  { key: 'terms',     label: '약관관리',          icon: ScrollText,       desc: '이용약관, 개인정보처리방침을 관리합니다' },
+  { key: 'workshop',  label: '신청서', icon: FileText,        desc: '워크샵/대관 신청서를 관리합니다' },
+  { key: 'formBuilder', label: '신청서작성', icon: PenLine, desc: '커스텀 신청서 양식을 만들고 관리합니다' },
 ]
 
 /* ═══════════════════════════════════════════
@@ -48,7 +48,7 @@ export function HomepageMgmtPage() {
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs font-bold text-[var(--text-secondary)] hover:border-primary-400 hover:text-primary-500 transition-all cursor-pointer"
         >
-          <Globe size={13} /> 홈페이지 열기
+          <Globe size={14} /> 홈페이지 열기
         </a>
       </PageHeader>
 
@@ -68,7 +68,7 @@ export function HomepageMgmtPage() {
                   : 'text-[var(--text-secondary)] border-[var(--border-default)] bg-[var(--bg-surface)] hover:bg-[var(--bg-muted)]',
               )}
             >
-              <Icon size={13} />
+              <Icon size={14} />
               {sp.label}
             </button>
           )
@@ -100,7 +100,7 @@ export function HomepageMgmtPage() {
           {activeSub === 'formBuilder' && <HpFormBuilder />}
           {!['basic','menu','content','board','media','terms','workshop','formBuilder'].includes(activeSub) && (
             <div className="py-16 text-center">
-              <p className="text-4xl mb-3">{currentPage.emoji}</p>
+              <p className="text-4xl mb-3"><currentPage.icon size={40} className="mx-auto text-[var(--text-muted)]" /></p>
               <p className="text-base font-bold text-[var(--text-primary)]">{currentPage.label}</p>
               <p className="text-[12px] text-[var(--text-muted)] mt-1 max-w-sm mx-auto">
                 {currentPage.desc}

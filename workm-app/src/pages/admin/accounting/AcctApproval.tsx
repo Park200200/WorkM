@@ -4,7 +4,7 @@ import { formatNumber } from '../../../utils/format'
 import { useToastStore } from '../../../stores/toastStore'
 import { saveAttachmentImage, deleteAttachmentImage } from '../../../utils/attachmentDB'
 import { PrintApprovalForm } from '../../../components/accounting/PrintApprovalForm'
-import type { BudgetCat, BudgetItem, Approval } from './types'
+import type { BudgetCat, BudgetItem, Approval, BudgetItemDef, CashFlow } from './types'
 import { getLocalDate, getLocalISOString, uid } from './utils'
 import { Wallet, FileCheck, Search, Plus, Edit3, Trash2, X, Check, Ban, MoreHorizontal, RefreshCw, Paperclip, Send, Eye, CheckCircle2, Archive, ClipboardList } from 'lucide-react'
 import { cn } from '../../../utils/cn'
@@ -38,7 +38,17 @@ export default function AcctApproval({ year }: { year: number }) {
 
   const currentUser = useAuthStore(s => s.user)
   const currentUserName = currentUser?.name || (() => { try { const u = JSON.parse(localStorage.getItem('ws_user') || '{}'); return u?.name } catch { return '' } })() || 'admin'
-  const [form, setForm] = useState({ title: '', amount: '', date: getLocalDate(), accountCode: '', description: '', applicant: currentUserName, approver: '', budgetItem: '', budgetSubItem: '' })
+  const [form, setForm] = useState<{
+    title: string;
+    amount: string;
+    date: string;
+    accountCode: string;
+    description: string;
+    applicant: string;
+    approver: string;
+    budgetItem?: string;
+    budgetSubItem?: string;
+  }>({ title: '', amount: '', date: getLocalDate(), accountCode: '', description: '', applicant: currentUserName, approver: '', budgetItem: '', budgetSubItem: '' })
   const staffList = useStaffStore(s => s.staff).filter(s => !s.resignedAt)
 
   const budgetCats = useMemo(() => getItem<BudgetCat[]>('acct_budget_cats', []).filter(c => { const pf = c.periodFrom || ''; const pt = c.periodTo || ''; if (pf && pt) return pf <= `${year}-12-31` && pt >= `${year}-01-01`; return (c.year || year) === year }), [year, refresh])

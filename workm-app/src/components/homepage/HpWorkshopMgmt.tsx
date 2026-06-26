@@ -138,7 +138,7 @@ export function HpWorkshopMgmt() {
                 <button key={k} onClick={() => { setType(k); setStatusFilter('') }}
                   className="px-4 py-1.5 rounded-lg text-[12px] cursor-pointer border-none transition-all flex items-center gap-1.5"
                   style={{ fontWeight: active ? 700 : 600, background: active ? `linear-gradient(135deg,${TYPE_MAP[k].color},${TYPE_MAP[k].color}dd)` : 'transparent', color: active ? '#fff' : 'var(--text-muted)', boxShadow: active ? `0 2px 6px ${TYPE_MAP[k].color}50` : 'none' }}>
-                  {(() => { const Icon = TYPE_MAP[k].icon; return <Icon size={13}/> })()} {TYPE_MAP[k].label}
+                  {(() => { const Icon = TYPE_MAP[k].icon; return <Icon size={14}/> })()} {TYPE_MAP[k].label}
                 </button>
               )
             })}
@@ -152,7 +152,7 @@ export function HpWorkshopMgmt() {
           </select>
           <button onClick={() => persist([...items])}
             className="h-[34px] px-3.5 flex items-center gap-1.5 border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] rounded-lg text-[12px] font-semibold cursor-pointer">
-            <RefreshCw size={13}/> 새로고침
+            <RefreshCw size={14}/> 새로고침
           </button>
         </div>
       </div>
@@ -176,7 +176,7 @@ export function HpWorkshopMgmt() {
             const sel = filtered[0]
             if (sel) setPrepModal(sel.id)
           }}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-[#6366f1] bg-[rgba(99,102,241,.06)] text-[#6366f1] text-[12px] font-bold cursor-pointer hover:bg-[rgba(99,102,241,.12)] transition-colors">
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-indigo-500 bg-[rgba(99,102,241,.06)] text-indigo-500 text-[12px] font-bold cursor-pointer hover:bg-[rgba(99,102,241,.12)] transition-colors">
             <ListChecks size={14}/> 준비물관리
           </button>
         )}
@@ -239,7 +239,7 @@ export function HpWorkshopMgmt() {
             <div className="px-6 py-5 border-b border-[var(--border-default)] flex items-center justify-between sticky top-0 bg-[var(--bg-surface)] z-10 rounded-t-2xl">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background:`linear-gradient(135deg,${TYPE_MAP[detailItem.type].color},${TYPE_MAP[detailItem.type].color}dd)` }}>
-                  <Clipboard size={15} className="text-white"/>
+                  <Clipboard size={16} className="text-white"/>
                 </div>
                 <div className="text-base font-extrabold text-[var(--text-primary)]">
                   {detailItem.type === 'franchise' ? '신청서 상세리스트' : detailItem.groupName}
@@ -361,7 +361,7 @@ export function HpWorkshopMgmt() {
                   {/* 추가 준비사항 */}
                   {detailItem.extras && (
                     <div className="border border-[var(--border-default)] rounded-xl p-4 bg-[rgba(99,102,241,0.03)]">
-                      <div className="text-[11px] font-bold text-[#6366f1] uppercase tracking-wider mb-2">추가 준비사항</div>
+                      <div className="text-[11px] font-bold text-indigo-500 uppercase tracking-wider mb-2">추가 준비사항</div>
                       <div className="text-[13.5px] text-[var(--text-primary)] leading-relaxed">{detailItem.extras}</div>
                     </div>
                   )}
@@ -369,7 +369,7 @@ export function HpWorkshopMgmt() {
                   {/* 기타 문의사항 */}
                   {detailItem.inquiry && (
                     <div className="border border-[var(--border-default)] rounded-xl p-4 bg-[rgba(239,68,68,0.03)]">
-                      <div className="text-[11px] font-bold text-[#ef4444] uppercase tracking-wider mb-2">기타 문의사항</div>
+                      <div className="text-[11px] font-bold text-danger-500 uppercase tracking-wider mb-2">기타 문의사항</div>
                       <div className="text-[13.5px] text-[var(--text-primary)] leading-relaxed">{detailItem.inquiry}</div>
                     </div>
                   )}
@@ -410,7 +410,7 @@ export function HpWorkshopMgmt() {
             <div className="px-6 py-5 border-b border-[var(--border-default)] flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background:'linear-gradient(135deg,#6366f1,#4f46e5)' }}>
-                  <ListChecks size={15} className="text-white"/>
+                  <ListChecks size={16} className="text-white"/>
                 </div>
                 <div>
                   <div className="text-[15px] font-extrabold text-[var(--text-primary)]">준비물관리</div>
@@ -428,14 +428,14 @@ export function HpWorkshopMgmt() {
                     onKeyDown={e => { if (e.key === 'Enter') addPrep(prepItem.id, prepInput) }}
                     placeholder="항목 입력 후 Enter" className={`${inputCls} flex-1`} />
                   <button onClick={() => addPrep(prepItem.id, prepInput)}
-                    className="px-3 py-2 rounded-lg bg-[#6366f1] text-white text-[12px] font-bold cursor-pointer border-none">추가</button>
+                    className="px-3 py-2 rounded-lg bg-indigo-500 text-white text-[12px] font-bold cursor-pointer border-none">추가</button>
                 </div>
                 <div className="text-[11px] text-[var(--text-muted)] mt-1.5">Enter 키로 항목을 추가하세요</div>
                 {/* 제안 */}
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {PREP_SUGGESTIONS.filter(s => !(prepItem.prepList||[]).includes(s)).slice(0,8).map(s => (
                     <button key={s} onClick={() => addPrep(prepItem.id, s)}
-                      className="px-2 py-1 rounded-lg text-[10px] font-bold border border-[var(--border-default)] bg-[var(--bg-muted)] text-[var(--text-secondary)] cursor-pointer hover:bg-[#6366f120] hover:text-[#6366f1] hover:border-[#6366f1] transition-colors">
+                      className="px-2 py-1 rounded-lg text-[10px] font-bold border border-[var(--border-default)] bg-[var(--bg-muted)] text-[var(--text-secondary)] cursor-pointer hover:bg-[#6366f120] hover:text-indigo-500 hover:border-indigo-500 transition-colors">
                       + {s}
                     </button>
                   ))}

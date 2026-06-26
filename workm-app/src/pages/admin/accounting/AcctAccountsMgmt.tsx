@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react'
+import { type AcctAccount, ACCT_TYPES, SYSTEM_CODES, getDebitCredit, DEBIT_TYPES } from './constants'
 import { getItem, setItem } from '../../../utils/storage'
 import { useToastStore } from '../../../stores/toastStore'
 import { Settings2, TrendingUp, Search, ChevronDown, Plus, Edit3, Trash2, X, Settings } from 'lucide-react'
@@ -40,7 +41,14 @@ export default function AcctAccountsMgmt() {
     const maxMid = usedMids.length > 0 ? Math.max(...usedMids) : 0
     const newMid = String(maxMid + 1).padStart(2, '0')
     const newCode = `${prefix}-${newMid}-01`
-    all.push({ code: newCode, name: `${groupForm.name.trim()} (기본)`, type: groupForm.type, group: groupForm.name.trim(), source: 'user' })
+    all.push({
+      code: newCode,
+      name: `${groupForm.name.trim()} (기본)`,
+      type: groupForm.type,
+      group: groupForm.name.trim(),
+      source: 'user',
+      side: (groupForm.type === 'asset' || groupForm.type === 'expense' ? 'debit' : 'credit')
+    })
     setItem('acct_accounts', all)
     setGroupModal(false)
     setRefresh(r => r + 1)

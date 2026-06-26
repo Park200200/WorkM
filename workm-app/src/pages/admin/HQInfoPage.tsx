@@ -10,7 +10,8 @@ import { useToastStore } from '../../stores/toastStore'
 import {
   MapPin, User, Phone, Mail, FileText,
   Image as ImageIcon, Save, RotateCcw, Upload, X, Paperclip, CreditCard,
-  Clock, Pencil, Briefcase, Smartphone, Monitor, Trash2, Download, Settings,
+  Clock, Pencil, Briefcase, Smartphone, Monitor, Trash2, Download, Settings, ClipboardList,
+  Calendar, Database,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
@@ -297,12 +298,12 @@ export function HQInfoPage() {
   }
 
   const getFileIcon = (type: string) => {
-    if (type.startsWith('image/')) return '🖼️'
-    if (type.includes('pdf')) return '📄'
-    if (type.includes('word') || type.includes('document')) return '📝'
-    if (type.includes('sheet') || type.includes('excel')) return '📊'
-    if (type.includes('zip') || type.includes('rar')) return '📦'
-    return '📎'
+    if (type.startsWith('image/')) return 'IMG'
+    if (type.includes('pdf')) return 'PDF'
+    if (type.includes('word') || type.includes('document')) return 'DOC'
+    if (type.includes('sheet') || type.includes('excel')) return 'XLS'
+    if (type.includes('zip') || type.includes('rar')) return 'ZIP'
+    return 'FILE'
   }
 
   return (
@@ -342,7 +343,7 @@ export function HQInfoPage() {
               {/* 주소 (우편번호 검색) */}
               <div>
                 <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block flex items-center gap-1">
-                  <MapPin size={11} className="text-[var(--text-muted)]" />
+                  <MapPin size={12} className="text-[var(--text-muted)]" />
                   주소 (우편번호 검색)
                 </label>
                 <div className="flex items-center gap-2 mb-2">
@@ -380,7 +381,7 @@ export function HQInfoPage() {
                 </div>
                 <div>
                   <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block flex items-center gap-1">
-                    <Phone size={11} className="text-[var(--text-muted)]" />
+                    <Phone size={12} className="text-[var(--text-muted)]" />
                     대표자 전화
                   </label>
                   <Input
@@ -395,7 +396,7 @@ export function HQInfoPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block flex items-center gap-1">
-                    <Phone size={11} className="text-[var(--text-muted)]" />
+                    <Phone size={12} className="text-[var(--text-muted)]" />
                     사업자 전화
                   </label>
                   <Input
@@ -437,7 +438,7 @@ export function HQInfoPage() {
               {/* 세금계산서 이메일 */}
               <div>
                 <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block flex items-center gap-1">
-                  <Mail size={11} className="text-[var(--text-muted)]" />
+                  <Mail size={12} className="text-[var(--text-muted)]" />
                   세금계산서 이메일
                 </label>
                 <Input
@@ -486,7 +487,7 @@ export function HQInfoPage() {
                     </div>
                     <div>
                       <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block flex items-center gap-1">
-                        <Briefcase size={11} className="text-[var(--text-muted)]" />
+                        <Briefcase size={12} className="text-[var(--text-muted)]" />
                         직함
                       </label>
                       <Input
@@ -500,7 +501,7 @@ export function HQInfoPage() {
                   {/* 담당자 휴대폰 */}
                   <div>
                     <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block flex items-center gap-1">
-                      <Smartphone size={11} className="text-[var(--text-muted)]" />
+                      <Smartphone size={12} className="text-[var(--text-muted)]" />
                       담당자 휴대폰
                     </label>
                     <Input
@@ -704,15 +705,15 @@ export function HQInfoPage() {
             <div className="flex items-center gap-3 flex-wrap text-[11px] text-[var(--text-muted)]">
               <span>사용솔루션: <b className="text-primary-500">{solutions.filter(s => s.enabled).map(s => s.label).join(', ')}</b></span>
               <span>⏳ 과금일자: <b>{billings[0]?.period || '-'}</b></span>
-              <span>📅 총금액: <b className="text-primary-500">{billings[0]?.total || '0'}원</b></span>
+              <span><Calendar size={10} className="inline -mt-0.5" /> 총금액: <b className="text-primary-500">{billings[0]?.total || '0'}원</b></span>
             </div>
           </div>
 
           {/* 요약 카드 */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 p-3 sm:p-4">
             {[
-              { icon: '💻', label: '월관리비', labelFull: '월관리비(서버)', value: payConfig.mgmtFee, sub: '기본금액' },
-              { icon: '🗄️', label: 'DB사용료', labelFull: 'DB사용료(단가:100M당 1,000원)', value: payConfig.dbFee, sub: '25,000MB' },
+              { icon: <Monitor size={12} />, label: '월관리비', labelFull: '월관리비(서버)', value: payConfig.mgmtFee, sub: '기본금액' },
+              { icon: <Database size={12} />, label: 'DB사용료', labelFull: 'DB사용료(단가:100M당 1,000원)', value: payConfig.dbFee, sub: '25,000MB' },
               { icon: '#', label: '자료단가', labelFull: '자료단가(10건당 ' + payConfig.dataUnitPrice + '원)', value: billings[0]?.dataCnt || '0', sub: (billings[0]?.dataCnt || '0') + '건' },
               { icon: '%', label: '수수료', labelFull: '수수료(' + payConfig.feeRate + '%)', value: billings[0]?.fee || '0', sub: '기간매출:12,350,000원', highlight: true },
             ].map((c, i) => (
@@ -731,7 +732,7 @@ export function HQInfoPage() {
                 )}>
                   {c.value}<span className="text-[11px] sm:text-[13px] font-semibold text-[var(--text-secondary)]">원</span>
                 </div>
-                <div className="text-[9px] sm:text-[10px] text-[var(--text-muted)] mt-0.5 truncate">{c.sub}</div>
+                <div className="text-[10px] sm:text-[10px] text-[var(--text-muted)] mt-0.5 truncate">{c.sub}</div>
               </div>
             ))}
           </div>
@@ -740,7 +741,7 @@ export function HQInfoPage() {
           <div className="px-3 sm:px-4 pb-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[13px] font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-                📋 청구 리스트
+                <ClipboardList size={12} className="inline -mt-0.5" /> 청구 리스트
               </span>
               <span className="text-[11px] text-[var(--text-muted)]">{billings.length}건</span>
             </div>

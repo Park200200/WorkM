@@ -232,7 +232,7 @@ export function AcctHqVendor() {
             className="w-full h-10 pl-9 pr-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] outline-none focus:border-primary-500 transition-colors"
           />
         </div>
-        <button onClick={openAdd} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#4f6ef7] text-white text-[12px] font-bold cursor-pointer shadow-lg hover:shadow-xl transition-all shrink-0">
+        <button onClick={openAdd} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-primary-500 text-white text-[12px] font-bold cursor-pointer shadow-lg hover:shadow-xl transition-all shrink-0">
           <Plus size={14} /> 거래처 추가
         </button>
       </div>
@@ -267,16 +267,16 @@ export function AcctHqVendor() {
                     </td>
                     <td className="py-3 px-3">
                       <div className="text-[12px] font-bold text-[var(--text-primary)]">{v.companyName || '(미입력)'}</div>
-                      <div className="text-[9px] text-[var(--text-muted)]">{v.bizNo || '-'}</div>
+                      <div className="text-[10px] text-[var(--text-muted)]">{v.bizNo || '-'}</div>
                     </td>
                     <td className="py-3 px-3 text-[11px] text-[var(--text-secondary)]">{v.ceoName || '-'}</td>
                     <td className="py-3 px-3">
                       <div className="text-[10px] text-[var(--text-secondary)]">{v.ceoPhone || '-'}</div>
-                      <div className="text-[9px] text-[var(--text-muted)]">{v.managerName ? `담당: ${v.managerName}` : ''}</div>
+                      <div className="text-[10px] text-[var(--text-muted)]">{v.managerName ? `담당: ${v.managerName}` : ''}</div>
                     </td>
                     <td className="py-3 px-3 text-right">
                       <div className="flex flex-wrap gap-1 justify-end">
-                        {activeSols.length === 0 ? <span className="text-[9px] text-[var(--text-muted)]">-</span> : activeSols.map((s, i) => (
+                        {activeSols.length === 0 ? <span className="text-[10px] text-[var(--text-muted)]">-</span> : activeSols.map((s, i) => (
                           <span key={i} className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400">{s}</span>
                         ))}
                       </div>
@@ -322,7 +322,7 @@ export function AcctHqVendor() {
                               <thead>
                                 <tr>
                                   {['과금기간','월관리비','DB사용료','Data사용건수','수수료','총금액','상태'].map((h,i) => (
-                                    <th key={i} className={`py-1.5 px-2 text-[9px] font-bold text-[var(--text-muted)] ${i===6?'text-center':i===0?'text-left':'text-right'}`}>{h}</th>
+                                    <th key={i} className={`py-1.5 px-2 text-[10px] font-bold text-[var(--text-muted)] ${i===6?'text-center':i===0?'text-left':'text-right'}`}>{h}</th>
                                   ))}
                                 </tr>
                               </thead>
@@ -457,18 +457,18 @@ function VendorDetailModal({ vendor, onSave, onClose }: { vendor: HqVendor; onSa
                 </div>
                 <div className="p-4 space-y-2.5">
                   <div className="grid grid-cols-2 gap-2">
-                    <div><label className={labelCls}><Building2 size={9}/> 거래처명</label><input value={data.companyName} onChange={e => upd({ companyName: e.target.value })} placeholder="(주)거래처명" className={inputCls} /></div>
-                    <div><label className={labelCls}><User size={9}/> 대표자</label><input value={data.ceoName} onChange={e => upd({ ceoName: e.target.value })} placeholder="대표자 이름" className={inputCls} /></div>
+                    <div><label className={labelCls}><Building2 size={10}/> 거래처명</label><input value={data.companyName} onChange={e => upd({ companyName: e.target.value })} placeholder="(주)거래처명" className={inputCls} /></div>
+                    <div><label className={labelCls}><User size={10}/> 대표자</label><input value={data.ceoName} onChange={e => upd({ ceoName: e.target.value })} placeholder="대표자 이름" className={inputCls} /></div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div><label className={labelCls}><Phone size={9}/> 대표전화</label><input value={data.ceoPhone} onChange={e => upd({ ceoPhone: e.target.value })} placeholder="02-0000-0000" className={inputCls} /></div>
-                    <div><label className={labelCls}><IdCard size={9}/> 사업자번호</label><input value={data.bizNo} onChange={e => upd({ bizNo: e.target.value })} placeholder="000-00-00000" className={inputCls} /></div>
+                    <div><label className={labelCls}><Phone size={10}/> 대표전화</label><input value={data.ceoPhone} onChange={e => upd({ ceoPhone: e.target.value })} placeholder="02-0000-0000" className={inputCls} /></div>
+                    <div><label className={labelCls}><IdCard size={10}/> 사업자번호</label><input value={data.bizNo} onChange={e => upd({ bizNo: e.target.value })} placeholder="000-00-00000" className={inputCls} /></div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div><label className={labelCls}>업태</label><input value={data.bizType} onChange={e => upd({ bizType: e.target.value })} placeholder="서비스" className={inputCls} /></div>
                     <div><label className={labelCls}>종목</label><input value={data.bizCategory} onChange={e => upd({ bizCategory: e.target.value })} placeholder="소프트웨어" className={inputCls} /></div>
                   </div>
-                  <div><label className={labelCls}><Mail size={9}/> 세금계산서 이메일</label><input value={data.taxEmail} onChange={e => upd({ taxEmail: e.target.value })} placeholder="tax@company.com" className={inputCls} /></div>
+                  <div><label className={labelCls}><Mail size={10}/> 세금계산서 이메일</label><input value={data.taxEmail} onChange={e => upd({ taxEmail: e.target.value })} placeholder="tax@company.com" className={inputCls} /></div>
                 </div>
               </div>
 
@@ -480,16 +480,16 @@ function VendorDetailModal({ vendor, onSave, onClose }: { vendor: HqVendor; onSa
                 </div>
                 <div className="p-4 space-y-2.5">
                   <div className="grid grid-cols-2 gap-2">
-                    <div><label className={labelCls}><User size={9}/> 담당자 이름</label><input value={data.managerName} onChange={e => upd({ managerName: e.target.value })} placeholder="담당자 이름" className={inputCls} /></div>
+                    <div><label className={labelCls}><User size={10}/> 담당자 이름</label><input value={data.managerName} onChange={e => upd({ managerName: e.target.value })} placeholder="담당자 이름" className={inputCls} /></div>
                     <div><label className={labelCls}>직함</label><input value={data.managerTitle} onChange={e => upd({ managerTitle: e.target.value })} placeholder="예) 팀장/사장" className={inputCls} /></div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div><label className={labelCls}><Phone size={9}/> 휴대폰</label><input value={data.managerPhone} onChange={e => upd({ managerPhone: e.target.value })} placeholder="010-0000-0000" className={inputCls} /></div>
-                    <div><label className={labelCls}><Mail size={9}/> 이메일</label><input value={data.managerEmail} onChange={e => upd({ managerEmail: e.target.value })} placeholder="email@example.com" className={inputCls} /></div>
+                    <div><label className={labelCls}><Phone size={10}/> 휴대폰</label><input value={data.managerPhone} onChange={e => upd({ managerPhone: e.target.value })} placeholder="010-0000-0000" className={inputCls} /></div>
+                    <div><label className={labelCls}><Mail size={10}/> 이메일</label><input value={data.managerEmail} onChange={e => upd({ managerEmail: e.target.value })} placeholder="email@example.com" className={inputCls} /></div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div><label className={labelCls}><IdCard size={9}/> 아이디(ID)</label><input value={data.managerId} onChange={e => upd({ managerId: e.target.value })} placeholder="system_id" className={inputCls} /></div>
-                    <div><label className={labelCls}><Lock size={9}/> 비밀번호</label><input value={data.managerPw} onChange={e => upd({ managerPw: e.target.value })} placeholder="•••" type="password" className={inputCls} /></div>
+                    <div><label className={labelCls}><IdCard size={10}/> 아이디(ID)</label><input value={data.managerId} onChange={e => upd({ managerId: e.target.value })} placeholder="system_id" className={inputCls} /></div>
+                    <div><label className={labelCls}><Lock size={10}/> 비밀번호</label><input value={data.managerPw} onChange={e => upd({ managerPw: e.target.value })} placeholder="•••" type="password" className={inputCls} /></div>
                   </div>
                 </div>
               </div>
@@ -499,7 +499,7 @@ function VendorDetailModal({ vendor, onSave, onClose }: { vendor: HqVendor; onSa
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border-default)]">
                   <Puzzle size={14} className="text-violet-500" />
                   <span className="text-[12px] font-extrabold text-[var(--text-primary)]">사용 솔루션</span>
-                  <span className="text-[9px] text-[var(--text-muted)] ml-auto">{(data.solutions || []).filter(s => s.enabled).length}개 사용중</span>
+                  <span className="text-[10px] text-[var(--text-muted)] ml-auto">{(data.solutions || []).filter(s => s.enabled).length}개 사용중</span>
                 </div>
                 <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {(data.solutions || []).map((sol, idx) => (
@@ -513,7 +513,7 @@ function VendorDetailModal({ vendor, onSave, onClose }: { vendor: HqVendor; onSa
                       </div>
                       {sol.name === '홈페이지' && (
                         <div className="flex items-center gap-1 mt-1">
-                          <span className="text-[9px] text-[var(--text-muted)]">수량:</span>
+                          <span className="text-[10px] text-[var(--text-muted)]">수량:</span>
                           <input value={sol.qty ?? 1} onChange={e => { const next = [...data.solutions]; next[idx] = { ...next[idx], qty: parseInt(e.target.value) || 0 }; upd({ solutions: next }) }}
                             className="w-12 h-5 px-1 rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[10px] text-center text-[var(--text-primary)] outline-none" />
                         </div>
@@ -529,8 +529,8 @@ function VendorDetailModal({ vendor, onSave, onClose }: { vendor: HqVendor; onSa
                   <div className="flex items-center gap-2">
                     <CreditCard size={14} className="text-emerald-500" />
                     <span className="text-[12px] font-extrabold text-[var(--text-primary)]">결제 정보</span>
-                    <span className="text-[9px] font-bold text-[var(--text-muted)] ml-1">사용솔루션 :</span>
-                    <span className="text-[9px] font-bold text-primary-600 dark:text-primary-400">{(data.solutions || []).filter(s => s.enabled).map(s => s.name).join(', ') || '없음'}</span>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] ml-1">사용솔루션 :</span>
+                    <span className="text-[10px] font-bold text-primary-600 dark:text-primary-400">{(data.solutions || []).filter(s => s.enabled).map(s => s.name).join(', ') || '없음'}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5 text-[10px]">
@@ -552,24 +552,24 @@ function VendorDetailModal({ vendor, onSave, onClose }: { vendor: HqVendor; onSa
                 <div className="p-4">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div className="bg-[var(--bg-muted)] rounded-xl p-3 border border-[var(--border-default)]">
-                      <div className="flex items-center gap-1 text-[9px] font-bold text-[var(--text-muted)] mb-1"><Server size={9}/> 월관리비(서버)</div>
+                      <div className="flex items-center gap-1 text-[10px] font-bold text-[var(--text-muted)] mb-1"><Server size={10}/> 월관리비(서버)</div>
                       <div className="text-[15px] font-extrabold text-[var(--text-primary)]">{formatNumber(data.monthlyFee)}원</div>
-                      <div className="text-[9px] text-[var(--text-muted)] mt-0.5">기본금액</div>
+                      <div className="text-[10px] text-[var(--text-muted)] mt-0.5">기본금액</div>
                     </div>
                     <div className="bg-[var(--bg-muted)] rounded-xl p-3 border border-[var(--border-default)]">
-                      <div className="flex items-center gap-1 text-[9px] font-bold text-[var(--text-muted)] mb-1"><Database size={9}/> DB사용료(단가:100M당 {formatNumber(data.dbUnitPrice)}원)</div>
+                      <div className="flex items-center gap-1 text-[10px] font-bold text-[var(--text-muted)] mb-1"><Database size={10}/> DB사용료(단가:100M당 {formatNumber(data.dbUnitPrice)}원)</div>
                       <div className="text-[15px] font-extrabold text-[var(--text-primary)]">{formatNumber(calcDbFee)}원</div>
-                      <div className="text-[9px] text-[var(--text-muted)] mt-0.5">{data.dbUsage || '0MB'}</div>
+                      <div className="text-[10px] text-[var(--text-muted)] mt-0.5">{data.dbUsage || '0MB'}</div>
                     </div>
                     <div className="bg-[var(--bg-muted)] rounded-xl p-3 border border-[var(--border-default)]">
-                      <div className="flex items-center gap-1 text-[9px] font-bold text-[var(--text-muted)] mb-1"><Hash size={9}/> 자료단가(10건당 1원)</div>
+                      <div className="flex items-center gap-1 text-[10px] font-bold text-[var(--text-muted)] mb-1"><Hash size={10}/> 자료단가(10건당 1원)</div>
                       <div className="text-[15px] font-extrabold text-[var(--text-primary)]">{formatNumber(calcDataFee)}원</div>
-                      <div className="text-[9px] text-[var(--text-muted)] mt-0.5">{data.usageCountLabel || '0건'}</div>
+                      <div className="text-[10px] text-[var(--text-muted)] mt-0.5">{data.usageCountLabel || '0건'}</div>
                     </div>
                     <div className="bg-[var(--bg-muted)] rounded-xl p-3 border border-[var(--border-default)]">
-                      <div className="flex items-center gap-1 text-[9px] font-bold text-amber-600 dark:text-amber-400 mb-1"><Percent size={9}/> 수수료({data.salesRate}%)</div>
+                      <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 mb-1"><Percent size={10}/> 수수료({data.salesRate}%)</div>
                       <div className="text-[15px] font-extrabold text-amber-600 dark:text-amber-400">{formatNumber(salesAmount)}원</div>
-                      <div className="text-[9px] text-[var(--text-muted)] mt-0.5">기간매출:{formatNumber(data.periodSales)}원</div>
+                      <div className="text-[10px] text-[var(--text-muted)] mt-0.5">기간매출:{formatNumber(data.periodSales)}원</div>
                     </div>
                   </div>
 
@@ -578,7 +578,7 @@ function VendorDetailModal({ vendor, onSave, onClose }: { vendor: HqVendor; onSa
                     <div className="flex items-center gap-2 mb-2">
                       <ScrollText size={14} className="text-primary-500" />
                       <span className="text-[12px] font-extrabold text-[var(--text-primary)]">청구 리스트</span>
-                      <span className="text-[9px] text-[var(--text-muted)] ml-auto">{fullBillingList.length}건</span>
+                      <span className="text-[10px] text-[var(--text-muted)] ml-auto">{fullBillingList.length}건</span>
                     </div>
                     <div className="overflow-x-auto rounded-lg border border-[var(--border-default)]">
                       <table className="w-full min-w-[700px]">
@@ -605,7 +605,7 @@ function VendorDetailModal({ vendor, onSave, onClose }: { vendor: HqVendor; onSa
                                 <td className="py-2.5 px-3 text-[11px] text-[var(--text-secondary)] text-right tabular-nums">{formatNumber(b.commission)}원</td>
                                 <td className="py-2.5 px-3 text-[11px] font-extrabold text-[var(--text-primary)] text-right tabular-nums">{formatNumber(b.total)}원</td>
                                 <td className="py-2.5 px-3 text-center align-middle">
-                                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full inline-block" style={{ background: ss.bg, color: ss.color }}>{b.status}</span>
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block" style={{ background: ss.bg, color: ss.color }}>{b.status}</span>
                                 </td>
                               </tr>
                             )
@@ -629,7 +629,7 @@ function VendorDetailModal({ vendor, onSave, onClose }: { vendor: HqVendor; onSa
                 <div className="p-3 flex flex-col items-center gap-2">
                   <div className="w-full aspect-[3/4] rounded-xl border-2 border-dashed border-[var(--border-default)] bg-[var(--bg-muted)] flex items-center justify-center overflow-hidden">
                     {data.bizCertPhoto ? <img src={data.bizCertPhoto} alt="" className="w-full h-full object-contain" /> : (
-                      <div className="text-center"><FileText size={28} className="text-[var(--text-muted)] mx-auto mb-1" /><div className="text-[9px] text-[var(--text-muted)]">등록된 사업자등록증이 없습니다</div></div>
+                      <div className="text-center"><FileText size={28} className="text-[var(--text-muted)] mx-auto mb-1" /><div className="text-[10px] text-[var(--text-muted)]">등록된 사업자등록증이 없습니다</div></div>
                     )}
                   </div>
                   <label className="w-full flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-muted)] text-[10px] font-bold text-[var(--text-secondary)] cursor-pointer hover:border-primary-400 transition-colors">
@@ -651,7 +651,7 @@ function VendorDetailModal({ vendor, onSave, onClose }: { vendor: HqVendor; onSa
                   ) : (
                     <div className="space-y-1">
                       {[...data.history].reverse().slice(0, 15).map((h, i) => (
-                        <div key={i} className="flex items-center gap-2 text-[9px] py-1 px-2 rounded-lg hover:bg-[var(--bg-muted)] transition-colors">
+                        <div key={i} className="flex items-center gap-2 text-[10px] py-1 px-2 rounded-lg hover:bg-[var(--bg-muted)] transition-colors">
                           <span className="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0" />
                           <span className="text-[var(--text-muted)] tabular-nums shrink-0">{h.date}</span>
                           <span className="text-[var(--text-secondary)] font-semibold truncate">{h.desc}</span>
@@ -668,7 +668,7 @@ function VendorDetailModal({ vendor, onSave, onClose }: { vendor: HqVendor; onSa
         {/* 모달 푸터 */}
         <div className="flex justify-end gap-2 px-6 py-4 border-t border-[var(--border-default)] bg-[var(--bg-surface)] rounded-b-2xl">
           <button onClick={onClose} className="px-6 py-2.5 rounded-xl border border-[var(--border-default)] text-[12px] font-semibold text-[var(--text-secondary)] cursor-pointer hover:bg-[var(--bg-muted)] transition-colors">취소</button>
-          <button onClick={() => onSave(data)} className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#4f6ef7] text-white text-[12px] font-bold cursor-pointer shadow-lg hover:shadow-xl transition-all">
+          <button onClick={() => onSave(data)} className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-primary-500 text-white text-[12px] font-bold cursor-pointer shadow-lg hover:shadow-xl transition-all">
             <Save size={14} /> 저장
           </button>
         </div>
@@ -684,25 +684,25 @@ function VendorDetailModal({ vendor, onSave, onClose }: { vendor: HqVendor; onSa
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className={labelCls}><Server size={9} /> 기본금액 (월관리비)</label>
+                <label className={labelCls}><Server size={10} /> 기본금액 (월관리비)</label>
                 <input value={priceForm.monthlyFee} onChange={e => { const r = e.target.value.replace(/,/g, ''); if (/^\d*$/.test(r)) setPriceForm(p => ({ ...p, monthlyFee: formatNumber(parseInt(r) || 0) })) }} className={inputCls} placeholder="50,000" />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className={labelCls}><Database size={9} /> DB 단가 (100MB당)</label><input value={priceForm.dbUnitPrice} onChange={e => { const r = e.target.value.replace(/,/g, ''); if (/^\d*$/.test(r)) setPriceForm(p => ({ ...p, dbUnitPrice: formatNumber(parseInt(r) || 0) })) }} className={inputCls} placeholder="1,000" /></div>
+                <div><label className={labelCls}><Database size={10} /> DB 단가 (100MB당)</label><input value={priceForm.dbUnitPrice} onChange={e => { const r = e.target.value.replace(/,/g, ''); if (/^\d*$/.test(r)) setPriceForm(p => ({ ...p, dbUnitPrice: formatNumber(parseInt(r) || 0) })) }} className={inputCls} placeholder="1,000" /></div>
                 <div><label className={labelCls}>사용량</label><input value={priceForm.dbUsage} onChange={e => { const n = stripUnit(e.target.value); setPriceForm(p => ({ ...p, dbUsage: n === 0 ? '' : fmtUnit(n, 'MB') })) }} className={inputCls} placeholder="25,000 MB" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className={labelCls}><Hash size={9} /> 자료 단가 (10건당)</label><input value={priceForm.usageUnitPrice} onChange={e => { const r = e.target.value.replace(/,/g, ''); if (/^\d*$/.test(r)) setPriceForm(p => ({ ...p, usageUnitPrice: formatNumber(parseInt(r) || 0) })) }} className={inputCls} placeholder="1" /></div>
+                <div><label className={labelCls}><Hash size={10} /> 자료 단가 (10건당)</label><input value={priceForm.usageUnitPrice} onChange={e => { const r = e.target.value.replace(/,/g, ''); if (/^\d*$/.test(r)) setPriceForm(p => ({ ...p, usageUnitPrice: formatNumber(parseInt(r) || 0) })) }} className={inputCls} placeholder="1" /></div>
                 <div><label className={labelCls}>사용건수</label><input value={priceForm.usageCount} onChange={e => { const n = stripUnit(e.target.value); setPriceForm(p => ({ ...p, usageCount: n === 0 ? '' : fmtUnit(n, '건') })) }} className={inputCls} placeholder="135,321 건" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className={labelCls}><Percent size={9} /> 수수료 (%)</label><input value={priceForm.salesRate} onChange={e => { const v = e.target.value; if (/^\d*\.?\d*$/.test(v)) setPriceForm(p => ({ ...p, salesRate: v })) }} className={inputCls} placeholder="7" /></div>
+                <div><label className={labelCls}><Percent size={10} /> 수수료 (%)</label><input value={priceForm.salesRate} onChange={e => { const v = e.target.value; if (/^\d*\.?\d*$/.test(v)) setPriceForm(p => ({ ...p, salesRate: v })) }} className={inputCls} placeholder="7" /></div>
                 <div><label className={labelCls}>매출</label><input value={priceForm.periodSales} onChange={e => { const n = stripUnit(e.target.value); setPriceForm(p => ({ ...p, periodSales: n === 0 ? '' : fmtUnit(n, '원') })) }} className={inputCls} placeholder="12,350,000 원" /></div>
               </div>
             </div>
             <div className="flex gap-2 px-5 py-3.5 border-t border-[var(--border-default)]">
               <button onClick={() => setPriceModal(false)} className="flex-1 py-2.5 rounded-xl border border-[var(--border-default)] text-sm font-semibold text-[var(--text-secondary)] cursor-pointer hover:bg-[var(--bg-muted)] transition-colors">취소</button>
-              <button onClick={savePriceModal} className="flex-[2] py-2.5 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#4f6ef7] text-white text-sm font-bold cursor-pointer shadow-md hover:shadow-lg transition-all">등록</button>
+              <button onClick={savePriceModal} className="flex-[2] py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-primary-500 text-white text-sm font-bold cursor-pointer shadow-md hover:shadow-lg transition-all">등록</button>
             </div>
           </div>
         </div>,

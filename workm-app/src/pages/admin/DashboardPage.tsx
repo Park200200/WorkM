@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
@@ -16,6 +16,7 @@ import {
   ChevronDown, ChevronUp, Star, Send as SendIcon, Download, Calendar as CalIcon,
   AlertCircle, MessageSquare, FileText, Lightbulb, ArrowRight,
   FileCheck, Stamp, CreditCard, Receipt, CheckCircle, FileEdit, Plus,
+  MailOpen, Sparkles, CalendarDays, PartyPopper, X, Inbox,
 } from 'lucide-react'
 import { setItem as setStorageItem } from '../../utils/storage'
 import { formatDate } from '../../utils/format'
@@ -318,13 +319,13 @@ export function DashboardPage() {
           </div>
           <div className="flex items-center gap-2 ml-auto">
             <button onClick={() => setInstrOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs font-bold text-[var(--text-secondary)] hover:border-primary-400 hover:text-primary-500 transition-all cursor-pointer">
-              <FileText size={13} /> 지시사항
+              <FileText size={14} /> 지시사항
             </button>
             <button onClick={() => setReportOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-xs font-bold text-[var(--text-secondary)] hover:border-primary-400 hover:text-primary-500 transition-all cursor-pointer">
-              <ClipboardList size={13} /> 일보작성
+              <ClipboardList size={14} /> 일보작성
             </button>
             <button onClick={() => setScheduleOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-500 text-white text-xs font-bold hover:bg-primary-600 transition-colors shadow-sm cursor-pointer">
-              <Lightbulb size={13} /> 내가기획
+              <Lightbulb size={14} /> 내가기획
             </button>
           </div>
         </div>
@@ -377,8 +378,8 @@ export function DashboardPage() {
             <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#4f6ef7] to-[#8b5cf6] flex items-center justify-center shadow-sm">
-                    <FileCheck size={17} className="text-white" />
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-violet-500 flex items-center justify-center shadow-sm">
+                    <FileCheck size={16} className="text-white" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -394,14 +395,14 @@ export function DashboardPage() {
                 </div>
                 <button
                   onClick={() => navigate('/accounting?tab=approval')}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-[#4f6ef7] to-[#8b5cf6] text-white text-[11px] font-bold hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer shadow-md"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-primary-500 to-violet-500 text-white text-[11px] font-bold hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer shadow-md"
                 >
                   <Plus size={14} />
                   품의하기
                 </button>
               </div>
               {items.length === 0 ? (
-                <div className="text-center py-4 text-[11px] text-[var(--text-muted)] bg-[var(--bg-muted)] rounded-lg">✅ 처리할 결제업무가 없습니다</div>
+                <div className="text-center py-4 text-[11px] text-[var(--text-muted)] bg-[var(--bg-muted)] rounded-lg">처리할 결제업무가 없습니다</div>
               ) : (
               <div className={`grid gap-2`} style={{ gridTemplateColumns: `repeat(${Math.min(items.length, 6)}, minmax(0, 1fr))` }}>
                 {items.map(item => {
@@ -441,7 +442,7 @@ export function DashboardPage() {
                   className="w-8 h-8 md:w-9 md:h-9 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: s.bg, color: s.color }}
                 >
-                  <Icon size={17} />
+                  <Icon size={16} />
                 </div>
               </div>
               <div className="text-xl md:text-2xl font-extrabold text-[var(--text-primary)] tracking-tight">{s.value}</div>
@@ -469,7 +470,7 @@ export function DashboardPage() {
             <span className="text-[13px] font-bold text-[var(--text-primary)] truncate flex-1 min-w-0">{channelTitle}</span>
             {activeTaskChannel && (
               <button onClick={() => setActiveTaskChannel(null)}
-                className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--bg-muted)] text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer transition-colors"
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--bg-muted)] text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer transition-colors"
               >전체채널</button>
             )}
             {/* 멤버 아바타 */}
@@ -477,7 +478,7 @@ export function DashboardPage() {
               {channelMembers.map((u, i) => (
                 <div
                   key={u.id}
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white border-2 border-[var(--bg-surface)] shrink-0"
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white border-2 border-[var(--bg-surface)] shrink-0"
                   style={{
                     background: `linear-gradient(135deg, ${u.color || '#4f6ef7'}, #9747ff)`,
                     marginLeft: i > 0 ? '-8px' : '0',
@@ -505,7 +506,7 @@ export function DashboardPage() {
                   <div key={m.id} className={cn('flex gap-2', isMe && 'flex-row-reverse')}>
                     {!isMe && (
                       <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white shrink-0"
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white shrink-0"
                         style={{ background: `linear-gradient(135deg, ${sender?.color || '#9747ff'}, #4f6ef7)` }}
                       >
                         {sender?.avatar || sender?.name?.charAt(0) || '?'}
@@ -526,7 +527,7 @@ export function DashboardPage() {
                         >
                           {m.text}
                         </div>
-                        <span className="text-[9px] text-[var(--text-muted)] shrink-0">{m.time}</span>
+                        <span className="text-[10px] text-[var(--text-muted)] shrink-0">{m.time}</span>
                       </div>
                     </div>
                   </div>
@@ -621,7 +622,7 @@ export function DashboardPage() {
         onClick={() => setMobileChatOpen(true)}
         className="lg:hidden fixed bottom-20 right-4 z-50 w-14 h-14 rounded-full bg-primary-500 hover:bg-primary-600 text-white shadow-xl flex items-center justify-center transition-transform active:scale-90 cursor-pointer"
       >
-        <MessageSquare size={22} />
+        <MessageSquare size={20} />
         {messages.length > 0 && (
           <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-danger text-white text-[10px] font-bold flex items-center justify-center">
             {messages.length > 9 ? '9+' : messages.length}
@@ -676,13 +677,13 @@ export function DashboardPage() {
             </div>
             {activeTaskChannel && (
               <button onClick={() => setActiveTaskChannel(null)}
-                className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[var(--bg-muted)] text-[var(--text-muted)] cursor-pointer shrink-0">전체채널</button>
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--bg-muted)] text-[var(--text-muted)] cursor-pointer shrink-0">전체채널</button>
             )}
             <button
               onClick={() => setMobileChatOpen(false)}
               className="w-8 h-8 rounded-lg bg-[var(--bg-muted)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer shrink-0"
             >
-              ✕
+              <X size={16} />
             </button>
           </div>
 
@@ -700,7 +701,7 @@ export function DashboardPage() {
                   <div key={m.id} className={cn('flex gap-2', isMe && 'flex-row-reverse')}>
                     {!isMe && (
                       <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-extrabold text-white shrink-0"
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white shrink-0"
                         style={{ background: `linear-gradient(135deg, ${sender?.color || '#9747ff'}, #4f6ef7)` }}
                       >
                         {sender?.avatar || sender?.name?.charAt(0) || '?'}
@@ -721,7 +722,7 @@ export function DashboardPage() {
                         >
                           {m.text}
                         </div>
-                        <span className="text-[9px] text-[var(--text-muted)] shrink-0">{m.time}</span>
+                        <span className="text-[10px] text-[var(--text-muted)] shrink-0">{m.time}</span>
                       </div>
                     </div>
                   </div>
@@ -797,7 +798,7 @@ function GanttChart({ tasks, users, onProgress }: { tasks: TaskItem[]; users: Us
           <span className="text-[10px] font-bold bg-[var(--bg-muted)] text-[var(--text-muted)] rounded-md px-1.5 py-0.5">0건</span>
         </div>
         <div className="py-8 text-center">
-          <div className="text-2xl mb-2">📭</div>
+          <div className="text-2xl mb-2"><Inbox size={28} /></div>
           <div className="text-sm text-[var(--text-muted)]">진행 중인 업무가 없습니다</div>
         </div>
       </div>
@@ -856,7 +857,7 @@ function GanttChart({ tasks, users, onProgress }: { tasks: TaskItem[]; users: Us
                     className="h-full rounded-full transition-all duration-500 flex items-center justify-center"
                     style={{ width: `${Math.max(t.progress || 0, 8)}%`, background: `linear-gradient(135deg, ${barColor}, ${barColor}cc)`, minWidth: '36px' }}
                   >
-                    <span className="text-[9px] font-bold text-white">
+                    <span className="text-[10px] font-bold text-white">
                       {t.progress}% ({ddayText})
                     </span>
                   </div>
@@ -917,12 +918,12 @@ function GanttChart({ tasks, users, onProgress }: { tasks: TaskItem[]; users: Us
               {/* 업무 정보 */}
               <div className="w-[200px] shrink-0 px-3 py-2 border-b border-[var(--border-default)]">
                 <div className="flex items-center gap-1.5">
-                  {t.isImportant && <Star size={11} className="text-amber-500 fill-amber-500 shrink-0" />}
+                  {t.isImportant && <Star size={12} className="text-amber-500 fill-amber-500 shrink-0" />}
                   <span className="text-[12px] font-bold text-[var(--text-primary)] truncate">{t.title}</span>
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="text-[10px] text-[var(--text-muted)]">{assignee?.name || '-'}</span>
-                  <span className={cn('text-[9px] font-bold px-1 py-0.5 rounded', dd.cls)}>{dd.label}</span>
+                  <span className={cn('text-[10px] font-bold px-1 py-0.5 rounded', dd.cls)}>{dd.label}</span>
                 </div>
               </div>
 
@@ -935,7 +936,7 @@ function GanttChart({ tasks, users, onProgress }: { tasks: TaskItem[]; users: Us
                 />
                 {/* 바 */}
                 <div
-                  className="absolute top-1/2 -translate-y-1/2 h-5 rounded-full text-[9px] font-bold text-white flex items-center justify-center"
+                  className="absolute top-1/2 -translate-y-1/2 h-5 rounded-full text-[10px] font-bold text-white flex items-center justify-center"
                   style={{
                     left: `${barStart}%`,
                     width: `${barWidth}%`,
@@ -984,9 +985,9 @@ function TaskTable({
   const instrList = getItem<Array<Record<string, unknown>>>('ws_instructions', [])
 
   if (tasks.length === 0) {
-    const emojis = { byMe: '📭', received: '✨', schedule: '📅', dueToday: '🎉' }
+    const icons: Record<string, ReactNode> = { byMe: <MailOpen size={28} />, received: <Sparkles size={28} />, schedule: <CalendarDays size={28} />, dueToday: <PartyPopper size={28} /> }
     const texts = { byMe: '지시한 업무가 없습니다', received: '지시받은 업무가 없습니다', schedule: '계획된 내업무가 없습니다', dueToday: '오늘 마감인 업무가 없습니다!' }
-    return <div className="p-6"><EmptyState emoji={emojis[type]} title={texts[type]} /></div>
+    return <div className="p-6"><EmptyState icon={icons[type]} title={texts[type]} /></div>
   }
 
   // 테이블 열 설정
@@ -1031,8 +1032,8 @@ function TaskTable({
                       </span>
                     ) : null
                   })}
-                  {t.isImportant && <Star size={13} className="text-amber-500 fill-amber-500 shrink-0" />}
-                  {type === 'dueToday' && <AlertCircle size={13} className="text-danger shrink-0" />}
+                  {t.isImportant && <Star size={14} className="text-amber-500 fill-amber-500 shrink-0" />}
+                  {type === 'dueToday' && <AlertCircle size={14} className="text-danger shrink-0" />}
                   <span className={cn(
                     'text-[13px] font-bold truncate',
                     type === 'dueToday' ? 'text-danger' : 'text-[var(--text-primary)]',
@@ -1173,7 +1174,7 @@ function TaskTable({
                         })}
                       </div>
                       {ids.length > 4 && (
-                        <span className="text-[9px] text-[var(--text-muted)] ml-1">+{ids.length - 4}</span>
+                        <span className="text-[10px] text-[var(--text-muted)] ml-1">+{ids.length - 4}</span>
                       )}
                     </div>
                   ) : personUser ? (

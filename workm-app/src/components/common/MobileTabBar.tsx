@@ -162,7 +162,7 @@ export function MobileTabBar() {
               className="w-14 h-14 rounded-2xl flex items-center justify-center"
               style={{ background: item.bg }}
             >
-              <Icon size={22} style={{ color: item.color }} />
+              <Icon size={20} style={{ color: item.color }} />
             </div>
             <span className="text-[12px] font-bold" style={{ color: item.color }}>
               {item.label}
@@ -195,7 +195,7 @@ export function MobileTabBar() {
               className="w-14 h-14 rounded-2xl flex items-center justify-center"
               style={{ background: item.bg }}
             >
-              <Icon size={22} style={{ color: item.color }} />
+              <Icon size={20} style={{ color: item.color }} />
             </div>
             <span className="text-[12px] font-bold" style={{ color: item.color }}>
               {item.label}
@@ -223,7 +223,7 @@ export function MobileTabBar() {
             className={cn('w-14 h-14 rounded-2xl flex items-center justify-center transition-all', isActive && 'shadow-lg')}
             style={{ background: item.bg, border: `2px solid ${isActive ? item.color : 'transparent'}` }}
           >
-            <Icon size={22} style={{ color: item.color }} />
+            <Icon size={20} style={{ color: item.color }} />
           </div>
           <span className="text-[12px] font-bold" style={{ color: isActive ? item.color : 'var(--text-secondary)' }}>
             {item.label}

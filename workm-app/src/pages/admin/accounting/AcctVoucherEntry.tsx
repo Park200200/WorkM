@@ -311,9 +311,23 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
         // 매칭 안되면 표시 안함 (비관련자)
         if (myCatIds.length === 0) return false
       }
+      // 상단 필터에서 선택된 예산구분이 있을 경우 필터링
+      if (selectedBudgetCat && selectedBudgetCat !== 'all') {
+        const cfCatId = String((c as any).budgetCatId || '')
+        if (cfCatId) {
+          if (cfCatId !== String(selectedBudgetCat)) return false
+        } else if ((c as any).budgetCatName) {
+          const matchCat = cats.find(ct => ct.name === (c as any).budgetCatName)
+          if (matchCat && String(matchCat.id) !== String(selectedBudgetCat)) return false
+          if (!matchCat) return false
+        } else {
+          return false
+        }
+      }
+
       return true
     }).sort((a, b) => (b.date || '').localeCompare(a.date || '') || Number(b.id) - Number(a.id))
-  }, [year, type, refresh, user])
+  }, [year, type, refresh, user, selectedBudgetCat])
 
   const totalAmount = cashflows.reduce((a, c) => a + (c.amount || 0), 0)
 
@@ -1744,6 +1758,9 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
           if (a.status !== 'approved') return false
           // 예산구분이 없는 항목은 지출대기에 표시하지 않음
           const aCatId = String((a as any).budgetCatId || '')
+          if (selectedBudgetCat && selectedBudgetCat !== 'all') {
+            if (aCatId !== String(selectedBudgetCat)) return false
+          }
           const aCatName = (a as any).budgetCatName || ''
           if (!aCatId && !aCatName) return false
           // ID로 매칭
@@ -1874,7 +1891,7 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
 
       {/* ── 내역 리스트 ── */}
       {(type !== 'expense' || expenseTab === 'history') && (
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden min-h-[420px] flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-default)]">
           <div className="flex items-center gap-2">
             <ScrollText size={14} className="text-primary-500" />

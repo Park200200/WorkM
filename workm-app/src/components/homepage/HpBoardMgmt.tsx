@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { getItem, setItem } from '../../utils/storage'
 import {
   Plus, X, Save, Trash2, Edit3, ClipboardList, Eye, User, Calendar,
-  MessageSquare,
+  MessageSquare, Lightbulb, Megaphone, Newspaper, HelpCircle, Paperclip, CheckCircle2,
 } from 'lucide-react'
 
 /* ── 타입 ── */
@@ -22,8 +22,8 @@ interface BoardItem {
 const STORAGE_KEY = 'board_items'
 
 const ALL_CAT_MAP: Record<string,string> = {
-  free:'📋 게시판', qna:'❓ Q&A', notice:'📢 공지사항',
-  news:'📰 News', faq:'💡 FAQ'
+  free:'게시판', qna:'Q&A', notice:'공지사항',
+  news:'News', faq:'FAQ'
 }
 const CAT_COLOR: Record<string,string> = {
   free:'#f59e0b', qna:'#8b5cf6', notice:'#ef4444', news:'#4f6ef7', faq:'#06b6d4'
@@ -242,7 +242,7 @@ export function HpBoardMgmt() {
       {/* ═══ 게시글 목록 테이블 ═══ */}
       {filtered.length === 0 ? (
         <div className="py-20 text-center text-[var(--text-muted)]">
-          <div className="text-4xl mb-3">📋</div>
+          <div className="text-4xl mb-3"><ClipboardList size={36} /></div>
           <div className="text-sm font-bold">등록된 게시글이 없습니다</div>
         </div>
       ) : (
@@ -269,7 +269,7 @@ export function HpBoardMgmt() {
                   <td className="px-3 py-2.5 text-[13px] font-bold text-[var(--text-primary)] truncate">
                     {it.title}
                     {it.cat === 'qna' && (it.replies?.length || 0) > 0 && (
-                      <span className="ml-1.5 text-[10px] font-bold text-[#8b5cf6]">[답변 {it.replies!.length}]</span>
+                      <span className="ml-1.5 text-[10px] font-bold text-violet-500">[답변 {it.replies!.length}]</span>
                     )}
                   </td>
                   <td className="px-3 py-2.5 text-center text-[12px] text-[var(--text-muted)]">{it.author}</td>
@@ -291,7 +291,7 @@ export function HpBoardMgmt() {
               <div className="text-base font-extrabold text-[var(--text-primary)]">
                 {editId
                   ? `편집: ${(CAT_MAP[form.cat]||'').replace(/^[^\s]+ /,'')}`
-                  : ({free:'📋 게시판 작성', qna:'❓ Q&A 작성', notice:'📢 공지사항 작성', news:'📰 News 작성', faq:'💡 FAQ 등록'} as any)[form.cat] || '게시글 작성'
+                  : ({free:'게시판 작성', qna:'Q&A 작성', notice:'공지사항 작성', news:'News 작성', faq:'FAQ 등록'} as any)[form.cat] || '게시글 작성'
                 }
               </div>
               <button onClick={() => setShowModal(false)} className="text-xl text-[var(--text-muted)] cursor-pointer bg-transparent border-none">×</button>
@@ -328,8 +328,8 @@ export function HpBoardMgmt() {
                         <input value={form.img} onChange={e => setForm(f => ({...f, img: e.target.value}))} placeholder="이미지 URL 입력" className={inputCls} />
                         {(form.cat === 'notice' || form.cat === 'news') && (
                           <div className="mt-1.5 flex items-center gap-2">
-                            <label className="px-3 py-1.5 rounded-lg bg-[#4f6ef710] border border-[#4f6ef730] text-[#4f6ef7] text-[11.5px] font-bold cursor-pointer hover:bg-[#4f6ef720] transition-colors flex items-center gap-1.5">
-                              📎 이미지 파일 선택
+                            <label className="px-3 py-1.5 rounded-lg bg-[#4f6ef710] border border-[#4f6ef730] text-primary-500 text-[11.5px] font-bold cursor-pointer hover:bg-[#4f6ef720] transition-colors flex items-center gap-1.5">
+                              <Paperclip size={12} className="inline -mt-0.5" /> 이미지 파일 선택
                               <input type="file" accept="image/*" className="hidden" onChange={e => {
                                 const file = e.target.files?.[0]
                                 if (!file) return
@@ -338,7 +338,7 @@ export function HpBoardMgmt() {
                                 reader.readAsDataURL(file)
                               }} />
                             </label>
-                            {form.img && <span className="text-[10px] text-[var(--text-muted)]">✅ 이미지 설정됨</span>}
+                            {form.img && <span className="text-[10px] text-[var(--text-muted)]"><CheckCircle2 size={10} className="inline -mt-0.5" /> 이미지 설정됨</span>}
                           </div>
                         )}
                         {form.img && (
@@ -365,7 +365,7 @@ export function HpBoardMgmt() {
               {/* ── FAQ ── */}
               {form.cat === 'faq' && (
                 <>
-                  <div className="text-[12px] font-bold text-[#4f6ef7] pb-2 border-b-2 border-[#4f6ef720] mb-1">Q (질문)</div>
+                  <div className="text-[12px] font-bold text-primary-500 pb-2 border-b-2 border-[#4f6ef720] mb-1">Q (질문)</div>
                   <div>
                     <label className="text-[11.5px] font-bold text-[var(--text-muted)] block mb-1">질문 제목</label>
                     <input value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))} placeholder="자주 묻는 질문 제목" className={inputCls} />
@@ -379,7 +379,7 @@ export function HpBoardMgmt() {
                     <input value={form.img} onChange={e => setForm(f => ({...f, img: e.target.value}))} placeholder="이미지 URL 또는 파일 선택" className={inputCls} />
                     <input value={form.imgCap} onChange={e => setForm(f => ({...f, imgCap: e.target.value}))} placeholder="사진 아래 설명 텍스트" className={`${inputCls} mt-1.5`} />
                   </div>
-                  <div className="text-[12px] font-bold text-[#22c55e] pt-2 pb-2 border-b-2 border-[#22c55e20] mb-1">A (답변)</div>
+                  <div className="text-[12px] font-bold text-success-500 pt-2 pb-2 border-b-2 border-[#22c55e20] mb-1">A (답변)</div>
                   <div>
                     <label className="text-[11.5px] font-bold text-[var(--text-muted)] block mb-1">답변 내용</label>
                     <textarea value={form.ans} onChange={e => setForm(f => ({...f, ans: e.target.value}))} rows={3} placeholder="답변 내용을 입력하세요..." className={`${inputCls} resize-vertical`} />
@@ -433,9 +433,9 @@ export function HpBoardMgmt() {
             </div>
             {/* 메타 */}
             <div className="px-6 py-3 border-b border-[var(--border-default)] flex gap-5 flex-wrap">
-              <div className="flex items-center gap-1.5 text-[12px] text-[var(--text-muted)]"><User size={13}/> {detailItem.author}</div>
-              <div className="flex items-center gap-1.5 text-[12px] text-[var(--text-muted)]"><Calendar size={13}/> {detailItem.regDate}</div>
-              <div className="flex items-center gap-1.5 text-[12px] text-[var(--text-muted)]"><Eye size={13}/> 조회 {detailItem.views}</div>
+              <div className="flex items-center gap-1.5 text-[12px] text-[var(--text-muted)]"><User size={14}/> {detailItem.author}</div>
+              <div className="flex items-center gap-1.5 text-[12px] text-[var(--text-muted)]"><Calendar size={14}/> {detailItem.regDate}</div>
+              <div className="flex items-center gap-1.5 text-[12px] text-[var(--text-muted)]"><Eye size={14}/> 조회 {detailItem.views}</div>
               <div className="flex items-center gap-1.5 ml-auto">
                 <button onClick={() => openEdit(detailItem.id)}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-[var(--text-secondary)] text-[12px] font-bold cursor-pointer"><Edit3 size={12}/> 수정</button>
@@ -455,9 +455,9 @@ export function HpBoardMgmt() {
               {detailItem.cat === 'qna' && (
                 <div className="border-t-2 border-[var(--border-default)] bg-[var(--bg-muted)] p-5">
                   <div className="flex items-center gap-2 mb-4">
-                    <MessageSquare size={15} className="text-[#8b5cf6]" />
+                    <MessageSquare size={16} className="text-violet-500" />
                     <span className="text-[13px] font-extrabold text-[var(--text-primary)]">관리자 답변</span>
-                    <span className="text-[11px] font-bold bg-[#8b5cf620] text-[#8b5cf6] px-2 py-0.5 rounded-full">{detailItem.replies?.length||0}</span>
+                    <span className="text-[11px] font-bold bg-[#8b5cf620] text-violet-500 px-2 py-0.5 rounded-full">{detailItem.replies?.length||0}</span>
                   </div>
                   {/* 기존 답변 목록 */}
                   <div className="space-y-2.5 mb-4">
@@ -465,11 +465,11 @@ export function HpBoardMgmt() {
                       <div key={ri} className="bg-[var(--bg-surface)] rounded-xl p-3.5 border border-[var(--border-default)]">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <span className="text-[11px] font-bold text-[#8b5cf6]">{r.author}</span>
+                            <span className="text-[11px] font-bold text-violet-500">{r.author}</span>
                             <span className="text-[10px] text-[var(--text-muted)]">{r.date}</span>
                           </div>
                           <button onClick={() => deleteReply(detailItem.id, ri)}
-                            className="text-[var(--text-muted)] cursor-pointer bg-transparent border-none hover:text-red-500"><X size={13}/></button>
+                            className="text-[var(--text-muted)] cursor-pointer bg-transparent border-none hover:text-red-500"><X size={14}/></button>
                         </div>
                         <div className="text-[13px] text-[var(--text-primary)] whitespace-pre-wrap">{r.content}</div>
                       </div>
@@ -477,7 +477,7 @@ export function HpBoardMgmt() {
                   </div>
                   {/* 새 답변 입력 */}
                   <div className="border-t-2 border-[#8b5cf630] pt-3.5">
-                    <div className="text-[11px] font-extrabold text-[#8b5cf6] mb-2">✏️ 답변 등록</div>
+                    <div className="text-[11px] font-extrabold text-violet-500 mb-2"><Edit3 size={12} className="inline -mt-0.5" /> 답변 등록</div>
                     <div className="bg-[var(--bg-surface)] rounded-xl border border-[#8b5cf640] overflow-hidden">
                       <textarea value={replyInput} onChange={e => setReplyInput(e.target.value)} rows={3} placeholder="답변을 입력하세요..."
                         className="w-full p-3 text-sm bg-transparent text-[var(--text-primary)] resize-none outline-none border-none" />

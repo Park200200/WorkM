@@ -4,7 +4,9 @@ import { getItem, setItem } from '../../utils/storage'
 import {
   Plus, X, Save, Trash2, Edit3, Rss, Heart, Eye, ExternalLink,
   Search, LayoutGrid, List, ChevronDown,
+  Newspaper, PenLine, Video, Globe, Inbox,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 /* ── 타입 ── */
 interface ContentItem {
@@ -14,11 +16,11 @@ interface ContentItem {
 }
 
 const STORAGE_KEY = 'chub_items'
-const TYPE_INFO: Record<string, { emoji: string; label: string; color: string }> = {
-  news:    { emoji: '📰', label: '뉴스',     color: '#3b82f6' },
-  blog:    { emoji: '✍️', label: '블로그',   color: '#10b981' },
-  youtube: { emoji: '🎬', label: '유튜브',   color: '#ef4444' },
-  website: { emoji: '🌐', label: '웹사이트', color: '#8b5cf6' },
+const TYPE_INFO: Record<string, { icon: LucideIcon; label: string; color: string }> = {
+  news:    { icon: Newspaper, label: '뉴스',     color: '#3b82f6' },
+  blog:    { icon: PenLine,   label: '블로그',   color: '#10b981' },
+  youtube: { icon: Video,     label: '유튜브',   color: '#ef4444' },
+  website: { icon: Globe,     label: '웹사이트', color: '#8b5cf6' },
 }
 
 /* ── 샘플 데이터 ── */
@@ -135,14 +137,14 @@ export function HpContentMgmt() {
           </div>
         </div>
         <button onClick={openAdd}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#3b82f6] text-white text-[13px] font-bold cursor-pointer border-none hover:bg-[#2563eb] transition-colors">
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-info-500 text-white text-[13px] font-bold cursor-pointer border-none hover:bg-info-600 transition-colors">
           <Plus size={14} /> 콘텐츠 추가
         </button>
       </div>
 
       {/* ═══ 필터 탭 ═══ */}
       <div className="flex items-center gap-1.5 flex-wrap mb-4">
-        {[{ key:'all', label:'전체' }, ...Object.entries(TYPE_INFO).map(([k,v]) => ({ key:k, label:`${v.emoji} ${v.label}` }))].map(f => (
+        {[{ key:'all', label:'전체', icon: null as LucideIcon | null }, ...Object.entries(TYPE_INFO).map(([k,v]) => ({ key:k, label:v.label, icon: v.icon as LucideIcon | null }))].map(f => (
           <button key={f.key} onClick={() => setFilter(f.key)}
             className="px-4 py-1.5 rounded-full text-[12px] font-bold cursor-pointer transition-all border-none"
             style={{
@@ -150,7 +152,7 @@ export function HpContentMgmt() {
               border: `1.5px solid ${filter === f.key ? '#3b82f6' : 'var(--border-default)'}`,
               color: filter === f.key ? '#fff' : 'var(--text-secondary)',
             }}>
-            {f.label}
+            {f.icon && <f.icon size={12} className="inline -mt-0.5" />} {f.label}
           </button>
         ))}
         <span className="ml-auto text-[12px] text-[var(--text-muted)]">총 {filtered.length}개의 콘텐츠</span>
@@ -177,7 +179,7 @@ export function HpContentMgmt() {
       {/* ═══ 콘텐츠 그리드/리스트 ═══ */}
       {filtered.length === 0 ? (
         <div className="py-20 text-center text-[var(--text-muted)]">
-          <div className="text-5xl mb-3">📭</div>
+          <div className="text-5xl mb-3"><Inbox size={48} className="mx-auto text-[var(--text-muted)]" /></div>
           <div className="text-sm font-bold">콘텐츠가 없습니다</div>
           <div className="text-[12px] mt-1">새 콘텐츠를 추가하거나 필터를 변경해보세요</div>
         </div>
@@ -196,7 +198,7 @@ export function HpContentMgmt() {
                 )}
                 <div className="p-3.5 flex flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm">{ti.emoji}</span>
+                    <span className="text-sm"><ti.icon size={14} /></span>
                     <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md text-white" style={{ background: ti.color }}>{it.type}</span>
                   </div>
                   <div className="text-[13.5px] font-bold text-[var(--text-primary)] line-clamp-2">{it.title}</div>
@@ -208,7 +210,7 @@ export function HpContentMgmt() {
                   </div>
                   <div className="flex items-center justify-between mt-1">
                     <div className="flex gap-2.5 text-[11px] text-[var(--text-muted)]">
-                      <span>♥ {it.likes}</span><span>👁 {it.views}</span>
+                      <span><Heart size={10} className="inline -mt-0.5" /> {it.likes}</span><span><Eye size={10} className="inline -mt-0.5" /> {it.views}</span>
                     </div>
                     <span className="text-[10.5px] text-[var(--text-muted)]">{it.regDate}</span>
                   </div>
@@ -230,13 +232,13 @@ export function HpContentMgmt() {
                     <img src={it.img} className="w-full h-full object-cover" loading="lazy" />
                   </div>
                 )}
-                <div className="text-center text-lg">{ti.emoji}</div>
+                <div className="text-center text-lg"><ti.icon size={18} /></div>
                 <div className="min-w-0">
                   <div className="text-[13px] font-bold text-[var(--text-primary)] truncate">{it.title}</div>
                   <div className="text-[11px] text-[var(--text-muted)] truncate">{it.summary}</div>
                 </div>
                 <div className="text-right whitespace-nowrap">
-                  <div className="text-[10.5px] text-[var(--text-muted)]">♥ {it.likes}  👁 {it.views}</div>
+                  <div className="text-[10.5px] text-[var(--text-muted)]"><Heart size={10} className="inline -mt-0.5" /> {it.likes}  <Eye size={10} className="inline -mt-0.5" /> {it.views}</div>
                   <div className="text-[10px] text-[var(--text-muted)]">{it.regDate}</div>
                 </div>
               </div>
@@ -259,7 +261,7 @@ export function HpContentMgmt() {
               <label className="text-[12px] font-bold text-[var(--text-muted)] block mb-1.5">종류</label>
               <select value={form.type} onChange={e => setForm(f => ({...f, type: e.target.value}))}
                 className={inputCls}>
-                {Object.entries(TYPE_INFO).map(([k,v]) => <option key={k} value={k}>{v.emoji} {v.label}</option>)}
+                {Object.entries(TYPE_INFO).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
             </div>
 
@@ -283,7 +285,7 @@ export function HpContentMgmt() {
                 <div className="mt-2 relative w-full aspect-video rounded-xl overflow-hidden bg-[var(--bg-muted)]">
                   <img src={form.img} className="w-full h-full object-cover" />
                   <button onClick={() => setForm(f => ({...f, img:''}))}
-                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white text-sm cursor-pointer flex items-center justify-center border-none">✕</button>
+                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white text-sm cursor-pointer flex items-center justify-center border-none"><X size={14} /></button>
                 </div>
               )}
             </div>
@@ -316,11 +318,11 @@ export function HpContentMgmt() {
             {/* 좋아요 / 조회수 */}
             <div className="grid grid-cols-2 gap-3 mb-5">
               <div>
-                <label className="text-[12px] font-bold text-[var(--text-muted)] block mb-1.5">♥ 좋아요</label>
+                <label className="text-[12px] font-bold text-[var(--text-muted)] block mb-1.5"><Heart size={12} className="inline -mt-0.5" /> 좋아요</label>
                 <input type="number" min={0} value={form.likes} onChange={e => setForm(f => ({...f, likes: parseInt(e.target.value)||0}))} className={inputCls} />
               </div>
               <div>
-                <label className="text-[12px] font-bold text-[var(--text-muted)] block mb-1.5">👁 조회수</label>
+                <label className="text-[12px] font-bold text-[var(--text-muted)] block mb-1.5"><Eye size={12} className="inline -mt-0.5" /> 조회수</label>
                 <input type="number" min={0} value={form.views} onChange={e => setForm(f => ({...f, views: parseInt(e.target.value)||0}))} className={inputCls} />
               </div>
             </div>
@@ -330,7 +332,7 @@ export function HpContentMgmt() {
               <button onClick={() => setShowModal(false)}
                 className="px-5 py-2.5 rounded-lg border border-[var(--border-default)] bg-transparent text-[var(--text-secondary)] text-[13px] font-bold cursor-pointer">취소</button>
               <button onClick={save}
-                className="px-6 py-2.5 rounded-lg bg-[#3b82f6] text-white text-[13px] font-bold cursor-pointer border-none hover:bg-[#2563eb] transition-colors">
+                className="px-6 py-2.5 rounded-lg bg-info-500 text-white text-[13px] font-bold cursor-pointer border-none hover:bg-info-600 transition-colors">
                 {editId ? '수정' : '등록'}
               </button>
             </div>
@@ -346,7 +348,7 @@ export function HpContentMgmt() {
               {/* 상단 액션 */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">{TYPE_INFO[detailItem.type]?.emoji}</span>
+                  <span className="text-xl">{(() => { const Icon = TYPE_INFO[detailItem.type]?.icon; return Icon ? <Icon size={20} /> : null })()}</span>
                   <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-lg text-white" style={{ background: TYPE_INFO[detailItem.type]?.color }}>
                     {detailItem.type.toUpperCase()}
                   </span>
@@ -354,14 +356,14 @@ export function HpContentMgmt() {
                 <div className="flex items-center gap-1.5">
                   <button onClick={() => openEdit(detailItem.id)}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-[var(--text-secondary)] text-[12px] font-bold cursor-pointer">
-                    <Edit3 size={13} /> 수정
+                    <Edit3 size={14} /> 수정
                   </button>
                   <button onClick={() => deleteItem(detailItem.id)}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-300/30 bg-red-500/5 text-red-500 text-[12px] font-bold cursor-pointer">
-                    <Trash2 size={13} /> 삭제
+                    <Trash2 size={14} /> 삭제
                   </button>
                   <button onClick={() => setDetailId(null)}
-                    className="px-2.5 py-1.5 rounded-lg border border-[var(--border-default)] bg-transparent text-[var(--text-muted)] text-base cursor-pointer">✕</button>
+                    className="px-2.5 py-1.5 rounded-lg border border-[var(--border-default)] bg-transparent text-[var(--text-muted)] text-base cursor-pointer"><X size={16} /></button>
                 </div>
               </div>
 
@@ -390,11 +392,11 @@ export function HpContentMgmt() {
                 <table className="w-full text-[13px] border-collapse">
                   <tbody>
                     {[
-                      ['종류', `${TYPE_INFO[detailItem.type]?.emoji} ${detailItem.type.toUpperCase()}`],
+                      ['종류', detailItem.type.toUpperCase()],
                       ['등록일', detailItem.regDate],
                       ['URL', detailItem.url],
-                      ['조회수', `👁 ${detailItem.views}`],
-                      ['좋아요', `♥ ${detailItem.likes}`],
+                      ['조회수', `${detailItem.views}`],
+                      ['좋아요', `${detailItem.likes}`],
                     ].map(([label, val], i) => (
                       <tr key={i} className="border-b border-[var(--border-default)] last:border-b-0">
                         <td className="px-3.5 py-2.5 font-bold text-[var(--text-muted)] bg-[var(--bg-muted)] w-24">{label}</td>
@@ -410,8 +412,8 @@ export function HpContentMgmt() {
               {/* 하단 액션 */}
               <div className="flex gap-2.5">
                 <a href={detailItem.url} target="_blank" rel="noopener"
-                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#3b82f6] text-white text-[13px] font-bold no-underline">
-                  <ExternalLink size={13} /> 원문 보기
+                  className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-info-500 text-white text-[13px] font-bold no-underline">
+                  <ExternalLink size={14} /> 원문 보기
                 </a>
                 <button onClick={() => {
                   const updated = items.map(it => it.id === detailItem.id ? { ...it, likes: it.likes + 1 } : it)
@@ -419,7 +421,7 @@ export function HpContentMgmt() {
                   setDetailId(detailItem.id) // refresh
                 }}
                   className="px-5 py-2.5 rounded-xl border border-[var(--border-default)] bg-transparent text-[var(--text-secondary)] text-[13px] font-bold cursor-pointer">
-                  ♥ 좋아요
+                  <Heart size={14} className="inline -mt-0.5" /> 좋아요
                 </button>
               </div>
             </div>

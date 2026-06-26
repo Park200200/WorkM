@@ -4,7 +4,7 @@ import {
   Navigation, Plus, X, Save, Trash2, Edit3,
   ScrollText, ShieldCheck, LayoutPanelLeft, Image as ImageIcon,
   MessageSquare, Bell, Newspaper, HelpCircle, ClipboardList,
-  Store, TentTree, Building2, Monitor, FileCheck, Code,
+  Store, TentTree, Building2, Monitor, FileCheck, Code, Link, PenLine,
 } from 'lucide-react'
 
 /* ── 타입 ── */
@@ -24,19 +24,20 @@ interface MenuData {
 
 /* ── 솔루션 항목 목록 (레거시 동일) ── */
 const SOLUTION_ITEMS: { id: string; label: string; icon: any }[] = [
-  { id: 'terms',     label: '이용약관',          icon: ScrollText },
-  { id: 'privacy',   label: '개인정보 취급방침',   icon: ShieldCheck },
-  { id: 'content',   label: '컨텐츠관리',         icon: LayoutPanelLeft },
-  { id: 'gallery',   label: '미디어 자료',         icon: ImageIcon },
-  { id: 'board',     label: '게시판',             icon: MessageSquare },
-  { id: 'notice',    label: '공지사항',            icon: Bell },
-  { id: 'news',      label: '뉴스',               icon: Newspaper },
-  { id: 'qna',       label: 'Q&A',                icon: HelpCircle },
-  { id: 'faq',       label: 'FAQ',                icon: ClipboardList },
-  { id: 'postpolicy',label: '게시물 게재 원칙',     icon: FileCheck },
-  { id: 'franchise', label: '가맹점 신청',         icon: Store },
-  { id: 'workshop',  label: '워크샵',              icon: TentTree },
-  { id: 'venue',     label: '대관(교육관)',         icon: Building2 },
+  { id: 'terms',       label: '이용약관',          icon: ScrollText },
+  { id: 'privacy',     label: '개인정보 취급방침',   icon: ShieldCheck },
+  { id: 'content',     label: '컨텐츠관리',         icon: LayoutPanelLeft },
+  { id: 'gallery',     label: '미디어 자료',         icon: ImageIcon },
+  { id: 'board',       label: '게시판',             icon: MessageSquare },
+  { id: 'notice',      label: '공지사항',            icon: Bell },
+  { id: 'news',        label: '뉴스',               icon: Newspaper },
+  { id: 'qna',         label: 'Q&A',                icon: HelpCircle },
+  { id: 'faq',         label: 'FAQ',                icon: ClipboardList },
+  { id: 'postpolicy',  label: '게시물 게재 원칙',     icon: FileCheck },
+  { id: 'franchise',   label: '가맹점 신청',         icon: Store },
+  { id: 'workshop',    label: '워크샵',              icon: TentTree },
+  { id: 'venue',       label: '대관(교육관)',         icon: Building2 },
+  { id: 'form_builder',label: '신청서작성',           icon: PenLine },
 ]
 
 const STORAGE_KEY = 'hp_menu_reg'
@@ -44,7 +45,7 @@ const STORAGE_KEY = 'hp_menu_reg'
 /* ── 공통 스타일 ── */
 const cardCls = 'bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-5 space-y-4'
 const inputCls = 'w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors'
-const btnSave = 'flex items-center gap-1.5 px-5 py-2 rounded-lg bg-[#6366f1] text-white text-[12px] font-bold cursor-pointer hover:bg-[#4f47e5] transition-colors'
+const btnSave = 'flex items-center gap-1.5 px-5 py-2 rounded-lg bg-indigo-500 text-white text-[12px] font-bold cursor-pointer hover:bg-indigo-600 transition-colors'
 
 /* ══════════════════════════════════════
    메뉴등록 메인 컴포넌트
@@ -137,10 +138,17 @@ export function HpMenuReg() {
   /* ── 솔루션형 토글 ── */
   const toggleSolution = (menuIdx: number, setIdx: number, solId: string) => {
     updateDetail(menuIdx, d => {
-      const arr = d.sets[setIdx].solutions || []
-      const idx = arr.indexOf(solId)
-      if (idx === -1) arr.push(solId)
-      else arr.splice(idx, 1)
+      let arr = d.sets[setIdx].solutions || []
+      if (solId.startsWith('tpl_')) {
+        // 신청서 양식은 하나만 선택 가능
+        const alreadySelected = arr.indexOf(solId) !== -1
+        arr = arr.filter((s: string) => !s.startsWith('tpl_'))
+        if (!alreadySelected) arr.push(solId)
+      } else {
+        const idx = arr.indexOf(solId)
+        if (idx === -1) arr.push(solId)
+        else arr.splice(idx, 1)
+      }
       d.sets[setIdx].solutions = arr
       return d
     })
@@ -192,7 +200,7 @@ export function HpMenuReg() {
                 <span style={{ opacity: 0.6 }}>{i + 1}</span>
                 <span style={{ opacity: 0.3, fontWeight: 400 }}>|</span>
                 <span>{name}</span>
-                {hasDetail && <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] shrink-0" />}
+                {hasDetail && <span className="w-1.5 h-1.5 rounded-full bg-success-500 shrink-0" />}
               </button>
             )
           })}
@@ -211,19 +219,19 @@ export function HpMenuReg() {
               "{menuChips[activeIdx]}" 메뉴 상세 등록
             </span>
             <button onClick={() => addSet(activeIdx)}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-[#6366f1] bg-[rgba(99,102,241,.08)] text-[#6366f1] text-[11px] font-bold cursor-pointer hover:bg-[rgba(99,102,241,.18)] transition-colors ml-1">
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-indigo-500 bg-[rgba(99,102,241,.08)] text-indigo-500 text-[11px] font-bold cursor-pointer hover:bg-[rgba(99,102,241,.18)] transition-colors ml-1">
               <Plus size={12} /> 서브메뉴 추가
             </button>
             <button onClick={() => setActiveIdx(null)}
               className="ml-auto w-6 h-6 rounded-md bg-[var(--bg-muted)] text-[var(--text-muted)] flex items-center justify-center cursor-pointer border-none hover:bg-[var(--bg-subtle)]">
-              <X size={13} />
+              <X size={14} />
             </button>
           </div>
 
           {/* 세트 목록 */}
           {activeSets.length === 0 ? (
             <div className="text-center py-6 border-[1.5px] border-dashed border-[var(--border-default)] rounded-xl">
-              <span className="text-3xl">📋</span>
+              <ClipboardList size={28} className="mx-auto text-[var(--text-muted)]" />
               <p className="text-[12px] text-[var(--text-muted)] mt-2">서브메뉴 추가 버튼으로 서브메뉴를 등록하세요</p>
             </div>
           ) : (
@@ -251,7 +259,7 @@ export function HpMenuReg() {
             <button onClick={() => setActiveIdx(null)}
               className="px-4 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-[var(--text-secondary)] text-[12px] cursor-pointer">취소</button>
             <button onClick={() => saveDetail(activeIdx)} className={btnSave}>
-              <Save size={13} /> 저장
+              <Save size={14} /> 저장
             </button>
           </div>
         </div>
@@ -282,7 +290,7 @@ function SetCard({
       {/* 세트 헤더 */}
       <div className="flex items-center gap-2 px-3.5 py-2.5 bg-[var(--bg-muted)] border-b border-[var(--border-default)]">
         <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0" style={{ background: 'rgba(99,102,241,.15)' }}>
-          <span className="text-[10px] font-extrabold text-[#6366f1]">{setIdx + 1}</span>
+          <span className="text-[10px] font-extrabold text-indigo-500">{setIdx + 1}</span>
         </div>
         <span className="text-[12px] font-bold text-[var(--text-primary)]">서브메뉴 {setIdx + 1}</span>
 
@@ -327,11 +335,11 @@ function SetCard({
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-bold text-[var(--text-secondary)]">
-                🖼 이미지 & 링크 목록
+                <ImageIcon size={12} className="inline -mt-0.5" /> 이미지 & 링크 목록
               </span>
               <button onClick={onAddRow}
                 className="flex items-center gap-1 px-2.5 py-1 rounded-md border border-primary-400 bg-primary-50 dark:bg-primary-900/10 text-primary-500 text-[11px] font-bold cursor-pointer">
-                <Plus size={11} /> 항목 추가
+                <Plus size={12} /> 항목 추가
               </button>
             </div>
             <div className="border border-[var(--border-default)] rounded-lg min-h-[44px] overflow-hidden">
@@ -343,19 +351,19 @@ function SetCard({
                   <div>
                     <div className="text-[10px] font-bold text-[var(--text-muted)] mb-1">가로 이미지</div>
                     <input value={row.hImg||''} onChange={e => onUpdateRow(ri, { hImg: e.target.value })}
-                      placeholder="URL 또는 파일" className="w-full px-2 py-1.5 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] outline-none focus:border-[#6366f1]" />
+                      placeholder="URL 또는 파일" className="w-full px-2 py-1.5 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] outline-none focus:border-indigo-500" />
                   </div>
                   {/* 세로 이미지 */}
                   <div>
                     <div className="text-[10px] font-bold text-[var(--text-muted)] mb-1">세로 이미지</div>
                     <input value={row.vImg||''} onChange={e => onUpdateRow(ri, { vImg: e.target.value })}
-                      placeholder="URL 또는 파일" className="w-full px-2 py-1.5 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] outline-none focus:border-[#6366f1]" />
+                      placeholder="URL 또는 파일" className="w-full px-2 py-1.5 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] outline-none focus:border-indigo-500" />
                   </div>
                   {/* 링크 URL */}
                   <div>
                     <div className="text-[10px] font-bold text-[var(--text-muted)] mb-1">링크 URL</div>
                     <input value={row.url} onChange={e => onUpdateRow(ri, { url: e.target.value })}
-                      placeholder="/page 또는 https://..." className="w-full px-2 py-1.5 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] outline-none focus:border-[#6366f1]" />
+                      placeholder="/page 또는 https://..." className="w-full px-2 py-1.5 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] outline-none focus:border-indigo-500" />
                   </div>
                   {/* 하단: 새탭 + 삭제 */}
                   <div className="flex items-center justify-between">
@@ -379,7 +387,7 @@ function SetCard({
         {set.type === 'solution' && (
           <div>
             <div className="flex items-center gap-1.5 mb-3">
-              <Monitor size={11} className="text-[var(--text-secondary)]" />
+              <Monitor size={12} className="text-[var(--text-secondary)]" />
               <span className="text-[11px] font-bold text-[var(--text-secondary)]">솔루션 선택 (복수 선택 가능)</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
@@ -395,16 +403,53 @@ function SetCard({
                     }}>
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                       style={{ background: selected ? 'rgba(99,102,241,.15)' : 'var(--bg-subtle)' }}>
-                      <Icon size={13} style={{ color: selected ? '#6366f1' : 'var(--text-muted)' }} />
+                      <Icon size={14} style={{ color: selected ? '#6366f1' : 'var(--text-muted)' }} />
                     </div>
                     <span className="text-[11.5px] font-bold" style={{ color: selected ? '#6366f1' : 'var(--text-secondary)' }}>
                       {item.label}
                     </span>
-                    {selected && <span className="ml-auto w-4 h-4 rounded-full bg-[#6366f1] text-white flex items-center justify-center text-[10px]">✓</span>}
+                    {selected && <span className="ml-auto w-4 h-4 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[10px]">✓</span>}
                   </button>
                 )
               })}
             </div>
+            {/* ── 신청서 접수 양식 선택 ── */}
+            {(() => {
+              const formTemplates = getItem<any[]>('hp_form_templates', [])
+              if (formTemplates.length === 0) return null
+              return (
+                <div className="mt-4 pt-4 border-t border-[var(--border-default)]">
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <PenLine size={12} className="text-primary-500" />
+                    <span className="text-[11px] font-bold text-[var(--text-secondary)]">신청서 접수 양식 선택</span>
+                    <span className="text-[9px] text-[var(--text-muted)] bg-[var(--bg-muted)] px-1.5 py-0.5 rounded-full">{formTemplates.length}개</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {formTemplates.map((tpl: any) => {
+                      const solId = 'tpl_' + tpl.id
+                      const isSelected = set.solutions?.includes(solId)
+                      return (
+                        <button key={solId} onClick={() => onToggleSolution(solId)}
+                          className="flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-all select-none border-none"
+                          style={{
+                            border: `1.5px solid ${isSelected ? '#6366f1' : 'var(--border-default)'}`,
+                            background: isSelected ? 'rgba(99,102,241,.08)' : 'var(--bg-muted)',
+                          }}>
+                          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                            style={{ background: isSelected ? (tpl.bgColor || '#6366f1') + '25' : 'var(--bg-subtle)' }}>
+                            <PenLine size={14} style={{ color: isSelected ? (tpl.bgColor || '#6366f1') : 'var(--text-muted)' }} />
+                          </div>
+                          <span className="text-[11.5px] font-bold" style={{ color: isSelected ? '#6366f1' : 'var(--text-secondary)' }}>
+                            {tpl.name || tpl.title || '신청서'}
+                          </span>
+                          {isSelected && <span className="ml-auto w-4 h-4 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[10px]">✓</span>}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         )}
 
@@ -412,7 +457,7 @@ function SetCard({
         {set.type === 'editor' && (
           <div>
             <div className="flex items-center gap-1.5 mb-2">
-              <Code size={11} className="text-[var(--text-secondary)]" />
+              <Code size={12} className="text-[var(--text-secondary)]" />
               <span className="text-[11px] font-bold text-[var(--text-secondary)]">웹에디터 (HTML)</span>
             </div>
             {/* 툴바 */}
@@ -459,10 +504,10 @@ function SetCard({
                 className="w-7 h-7 rounded border border-[var(--border-default)] cursor-pointer p-0" title="글자색" />
               <button onClick={() => { const url = prompt('이미지 URL을 입력하세요:'); if (url) document.execCommand('insertImage', false, url) }}
                 className="px-2 h-7 rounded flex items-center justify-center text-[10px] cursor-pointer border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
-                title="이미지 삽입">🖼</button>
+                title="이미지 삽입"><ImageIcon size={12} /></button>
               <button onClick={() => { const url = prompt('링크 URL을 입력하세요:'); if (url) document.execCommand('createLink', false, url) }}
                 className="px-2 h-7 rounded flex items-center justify-center text-[10px] cursor-pointer border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
-                title="링크">🔗</button>
+                title="링크"><Link size={12} /></button>
             </div>
             {/* 에디터 영역 */}
             <div
@@ -470,10 +515,10 @@ function SetCard({
               suppressContentEditableWarning
               dangerouslySetInnerHTML={{ __html: set.editorHtml || '' }}
               onBlur={e => onUpdateSet({ editorHtml: (e.target as HTMLDivElement).innerHTML })}
-              className="min-h-[200px] p-4 rounded-lg border border-[var(--border-default)] bg-white text-sm text-[#1e293b] leading-relaxed outline-none focus:border-[#6366f1] transition-colors"
+              className="min-h-[200px] p-4 rounded-lg border border-[var(--border-default)] bg-white text-sm text-gray-800 leading-relaxed outline-none focus:border-indigo-500 transition-colors"
               style={{ overflowY: 'auto', maxHeight: 500 }}
             />
-            <div className="text-[9px] text-[var(--text-muted)] mt-1.5">텍스트를 선택한 후 상단 툴바로 서식을 적용하세요</div>
+            <div className="text-[10px] text-[var(--text-muted)] mt-1.5">텍스트를 선택한 후 상단 툴바로 서식을 적용하세요</div>
           </div>
         )}
       </div>

@@ -6,6 +6,16 @@ import type { BudgetCat, PayMethodItem } from './types'
 import { Landmark, Coins, FileText, Ticket, Plus, Trash2, Search, ChevronDown } from 'lucide-react'
 
 
+const DETAIL_FIELD_LABEL = 'text-[11px] font-bold text-[var(--text-muted)] mb-1 block'
+const DETAIL_INPUT = 'w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-white dark:bg-gray-900 text-[12px] text-[var(--text-primary)] outline-none focus:border-primary-400 transition-colors placeholder:text-[var(--text-muted)]'
+
+const INCOME_CATEGORIES = [
+  { key: '계좌' as const, label: '계좌', Icon: Landmark, color: '#3b82f6', bg: 'bg-blue-50 dark:bg-blue-900/10', border: 'border-blue-200 dark:border-blue-800', desc: '계좌입금, 자동이체 수신 등' },
+  { key: '현금' as const, label: '현금', Icon: Coins, color: '#22c55e', bg: 'bg-emerald-50 dark:bg-emerald-900/10', border: 'border-emerald-200 dark:border-emerald-800', desc: '현금 수입, 현장 수납 등' },
+  { key: '어음' as const, label: '어음', Icon: FileText, color: '#f59e0b', bg: 'bg-amber-50 dark:bg-amber-900/10', border: 'border-amber-200 dark:border-amber-800', desc: '수신어음, 수표 등' },
+  { key: '상품권' as const, label: '상품권', Icon: Ticket, color: '#8b5cf6', bg: 'bg-violet-50 dark:bg-violet-900/10', border: 'border-violet-200 dark:border-violet-800', desc: '상품권 수입 등' },
+]
+
 export default function AcctIncomeMethods({ catId }: { catId?: string | null }) {
   const [refresh, setRefresh] = useState(0)
   const [newName, setNewName] = useState('')
@@ -100,7 +110,7 @@ export default function AcctIncomeMethods({ catId }: { catId?: string | null }) 
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-extrabold text-[var(--text-primary)] flex items-center gap-2">
-            🏦 입금계정 관리
+            <Landmark size={18} className="inline -mt-0.5" /> 입금계정 관리
           </h2>
           <p className="text-[11px] text-[var(--text-muted)] mt-0.5">상단에서 예산구분을 선택하여 입금계정을 관리합니다</p>
         </div>
@@ -189,10 +199,10 @@ export default function AcctIncomeMethods({ catId }: { catId?: string | null }) 
                     </span>
                     <input value={item.name} onChange={e => { e.stopPropagation(); updateField(item.id, 'name', e.target.value) }} onClick={e => e.stopPropagation()} placeholder="이름 입력" className="text-sm font-semibold text-[var(--text-primary)] flex-1 bg-transparent border-none outline-none focus:bg-[var(--bg-muted)] focus:px-2 focus:rounded-md transition-all" />
                     {activeCategory === '현금' && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap">1-01-01 현금</span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap">1-01-01 현금</span>
                     )}
                     {activeCategory === '상품권' && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-pink-50 dark:bg-pink-900/20 text-pink-600 whitespace-nowrap">1-01-08 상품권</span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-pink-50 dark:bg-pink-900/20 text-pink-600 whitespace-nowrap">1-01-08 상품권</span>
                     )}
                     {activeCategory === '계좌' && item.bankName && !isOpen && (
                       <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[200px]">
@@ -204,7 +214,7 @@ export default function AcctIncomeMethods({ catId }: { catId?: string | null }) 
                       onClick={e => { e.stopPropagation(); handleDelete(item.id) }}
                       className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
 

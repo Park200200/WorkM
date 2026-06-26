@@ -98,7 +98,7 @@ export function ProfilePage() {
             </div>
           </div>
 
-          <Button className="w-full" icon={<LogOut size={15} />}>로그아웃</Button>
+          <Button className="w-full" icon={<LogOut size={16} />}>로그아웃</Button>
         </Card>
 
         {/* ── 우측: 탭 콘텐츠 ── */}

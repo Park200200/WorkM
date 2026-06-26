@@ -7,7 +7,7 @@ import {
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Palette, Type, PaintBucket, Bold, Blend, Ruler, Tag, PencilLine,
   ChevronUp, ChevronDown, Link2, GripVertical,
-  Timer, Monitor, Link, Image as ImageIcon,
+  Timer, Monitor, Link, Image as ImageIcon, Smartphone, Lightbulb, Eraser,
 } from 'lucide-react'
 
 /* ── 타입 ── */
@@ -43,6 +43,8 @@ interface HpBasicData {
   snsLinks: SnsLink[]
   /* 팝업 */
   popups: PopupItem[]
+  /* 섹션 활성화 상태 */
+  sectionEnabled?: Record<string, boolean>
 }
 
 interface SnsLink { name: string; icon: string; logo: string; url: string }
@@ -88,14 +90,46 @@ const labelCls = 'text-[11px] font-bold text-[var(--text-muted)] mb-1.5 flex ite
 const inputCls = 'w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors'
 const saveBtn = 'flex items-center gap-1.5 px-5 py-2 rounded-lg bg-primary-500 text-white text-[12px] font-bold cursor-pointer hover:bg-primary-600 transition-colors'
 
-function SectionHeader({ icon: Icon, title, desc, color }: { icon: any; title: string; desc: string; color: string }) {
+function SectionHeader({ icon: Icon, title, desc, color, enabled, onToggle }: { icon: any; title: string; desc: string; color: string; enabled?: boolean; onToggle?: (v: boolean) => void }) {
+  const hasToggle = onToggle !== undefined
+  const isOn = enabled !== false
   return (
     <div className="flex items-center gap-2.5">
-      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${color}18` }}>
-        <Icon size={16} style={{ color }} />
-      </div>
-      <div>
-        <div className="text-sm font-extrabold text-[var(--text-primary)]">{title}</div>
+      {hasToggle ? (
+        <button
+          onClick={() => onToggle(!isOn)}
+          className="relative w-10 h-5.5 rounded-full cursor-pointer transition-colors duration-200 shrink-0"
+          style={{
+            width: 38, height: 22,
+            background: isOn ? color : '#d1d5db',
+            border: 'none', padding: 0,
+          }}
+          title={isOn ? '클릭하면 홈페이지에서 숨김' : '클릭하면 홈페이지에 표시'}
+        >
+          <div style={{
+            position: 'absolute', top: 2, left: isOn ? 18 : 2,
+            width: 18, height: 18, borderRadius: '50%', background: '#fff',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.18)',
+            transition: 'left 0.2s ease',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Icon size={10} style={{ color: isOn ? color : '#9ca3af' }} />
+          </div>
+        </button>
+      ) : (
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${color}18` }}>
+          <Icon size={16} style={{ color }} />
+        </div>
+      )}
+      <div style={{ opacity: hasToggle && !isOn ? 0.5 : 1, transition: 'opacity 0.2s' }}>
+        <div className="text-sm font-extrabold text-[var(--text-primary)] flex items-center gap-1.5">
+          {title}
+          {hasToggle && (
+            <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 6, background: isOn ? `${color}18` : '#f1f5f9', color: isOn ? color : '#94a3b8' }}>
+              {isOn ? 'ON' : 'OFF'}
+            </span>
+          )}
+        </div>
         <div className="text-[10.5px] text-[var(--text-muted)]">{desc}</div>
       </div>
     </div>
@@ -251,6 +285,13 @@ export function HpBasicSettings() {
 
   const up = useCallback((patch: Partial<HpBasicData>) => setD(prev => ({ ...prev, ...patch })), [])
 
+  /* ── 섹션 토글 ── */
+  const secEnabled = d.sectionEnabled || {}
+  const isSectionOn = (key: string) => secEnabled[key] !== false
+  const toggleSection = useCallback((key: string, val: boolean) => {
+    setD(prev => ({ ...prev, sectionEnabled: { ...(prev.sectionEnabled || {}), [key]: val } }))
+  }, [])
+
   /* ── 자동 저장: d가 변경될 때마다 500ms 디바운스로 localStorage에 저장 ── */
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return }
@@ -266,7 +307,7 @@ export function HpBasicSettings() {
     if (ok) {
       setToast(`${section} 설정이 저장되었습니다`)
     } else {
-      setToast(`⚠️ 저장 실패 — 이미지 용량이 너무 큽니다. 이미지를 줄여주세요.`)
+      setToast(`저장 실패 — 이미지 용량이 너무 큽니다. 이미지를 줄여주세요.`)
     }
     toastTimer.current = setTimeout(() => setToast(null), 3500)
   }, [d])
@@ -389,7 +430,7 @@ export function HpBasicSettings() {
           <div><label className={labelCls}>대표 이메일</label><input value={d.email} onChange={e => up({ email: e.target.value })} placeholder="예: info@workm.kr" className={inputCls} /></div>
           <div><label className={labelCls}>대표 전화</label><input value={d.phone} onChange={e => up({ phone: e.target.value })} placeholder="예: 02-1234-5678" className={inputCls} /></div>
         </div>
-        <div className="flex justify-end"><button onClick={() => save('사이트 정보')} className={saveBtn}><Save size={13} /> 저장</button></div>
+        <div className="flex justify-end"><button onClick={() => save('사이트 정보')} className={saveBtn}><Save size={14} /> 저장</button></div>
       </div>
 
       {/* ═══ 2. 로고 등록 ═══ */}
@@ -445,18 +486,18 @@ export function HpBasicSettings() {
             )
           })}
         </div>
-        <div className="flex justify-end"><button onClick={() => save('로고')} className={saveBtn}><Save size={13} /> 저장</button></div>
+        <div className="flex justify-end"><button onClick={() => save('로고')} className={saveBtn}><Save size={14} /> 저장</button></div>
       </div>
 
       {/* ═══ 3. 상단 리벳 설정 ═══ */}
       <div className={cardCls}>
-        <SectionHeader icon={Megaphone} title="상단 리벳 설정" desc="홈페이지 상단 공지 띠 배너" color="#10b981" />
+        <SectionHeader icon={Megaphone} title="상단 리벳 설정" desc="홈페이지 상단 공지 띠 배너" color="#10b981" enabled={isSectionOn('rivet')} onToggle={v => toggleSection('rivet', v)} />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <div><label className={labelCls}><Palette size={11} /> 바탕 칼라</label><ColorInput value={d.rivetBg} onChange={v => up({ rivetBg: v })} /></div>
-          <div><label className={labelCls}><Type size={11} /> 폰트 사이즈</label><RangeInput value={d.rivetFontSize} onChange={v => up({ rivetFontSize: v })} min={10} max={24} unit="px" accent="#10b981" /></div>
-          <div><label className={labelCls}><PaintBucket size={11} /> 폰트 칼라</label><ColorInput value={d.rivetFontColor} onChange={v => up({ rivetFontColor: v })} /></div>
-          <div><label className={labelCls}><Bold size={11} /> 폰트 굵기</label><FontWeightButtons value={d.rivetFontWeight} onChange={v => up({ rivetFontWeight: v })} accent="#10b981" /></div>
-          <div><label className={labelCls}><AlignCenter size={11} /> 정렬</label>
+          <div><label className={labelCls}><Palette size={12} /> 바탕 칼라</label><ColorInput value={d.rivetBg} onChange={v => up({ rivetBg: v })} /></div>
+          <div><label className={labelCls}><Type size={12} /> 폰트 사이즈</label><RangeInput value={d.rivetFontSize} onChange={v => up({ rivetFontSize: v })} min={10} max={24} unit="px" accent="#10b981" /></div>
+          <div><label className={labelCls}><PaintBucket size={12} /> 폰트 칼라</label><ColorInput value={d.rivetFontColor} onChange={v => up({ rivetFontColor: v })} /></div>
+          <div><label className={labelCls}><Bold size={12} /> 폰트 굵기</label><FontWeightButtons value={d.rivetFontWeight} onChange={v => up({ rivetFontWeight: v })} accent="#10b981" /></div>
+          <div><label className={labelCls}><AlignCenter size={12} /> 정렬</label>
             <AlignButtons value={d.rivetAlign} onChange={v => up({ rivetAlign: v })} accent="#10b981"
               options={[
                 { value: 'left', icon: AlignLeft, title: '좌측' },
@@ -467,11 +508,11 @@ export function HpBasicSettings() {
         </div>
         {/* 태그 입력 */}
         <div>
-          <label className={labelCls}><Tag size={11} /> 리벳 텍스트 <span className="text-[10px] text-[var(--text-muted)] font-normal ml-1">Enter 또는 + 버튼으로 추가</span></label>
+          <label className={labelCls}><Tag size={12} /> 리벳 텍스트 <span className="text-[10px] text-[var(--text-muted)] font-normal ml-1">Enter 또는 + 버튼으로 추가</span></label>
           <div className="flex flex-wrap gap-2 items-center min-h-[46px] px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] cursor-text"
             onClick={() => document.getElementById('rivet_tag_inp')?.focus()}>
             {d.rivetTags.map((t, i) => (
-              <span key={i} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-bold bg-[#10b98122] text-[#10b981] border border-[#10b981]">
+              <span key={i} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-bold bg-[#10b98122] text-emerald-500 border border-emerald-500">
                 {t}
                 <button onClick={e => { e.stopPropagation(); removeRivetTag(i) }} className="w-4 h-4 rounded-full bg-[#10b98133] flex items-center justify-center cursor-pointer hover:bg-[#10b98155]"><X size={10} /></button>
               </span>
@@ -479,12 +520,12 @@ export function HpBasicSettings() {
             <input id="rivet_tag_inp" value={rivetInput} onChange={e => setRivetInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addRivetTag() } }}
               placeholder="공지 텍스트 입력..." className="flex-1 min-w-[140px] border-none outline-none bg-transparent text-[13px] text-[var(--text-primary)] py-0.5" />
-            <button onClick={addRivetTag} className="w-6 h-6 rounded-md bg-[#10b981] text-white flex items-center justify-center cursor-pointer shrink-0"><Plus size={13} /></button>
+            <button onClick={addRivetTag} className="w-6 h-6 rounded-md bg-emerald-500 text-white flex items-center justify-center cursor-pointer shrink-0"><Plus size={14} /></button>
           </div>
         </div>
         {/* 미리보기 */}
         <div>
-          <label className={labelCls}><Eye size={11} /> 미리보기</label>
+          <label className={labelCls}><Eye size={12} /> 미리보기</label>
           <div className="w-full py-2 px-4 rounded-lg overflow-hidden whitespace-pre text-ellipsis transition-all"
             style={{
               background: d.rivetBg, color: d.rivetFontColor,
@@ -494,12 +535,12 @@ export function HpBasicSettings() {
             {d.rivetTags.length > 0 ? d.rivetTags.join('  ·  ') : '공지 텍스트를 입력하세요'}
           </div>
         </div>
-        <div className="flex justify-end"><button onClick={() => save('상단 리벳')} className={`${saveBtn} !bg-[#10b981] hover:!bg-[#059669]`}><Save size={13} /> 저장</button></div>
+        <div className="flex justify-end"><button onClick={() => save('상단 리벳')} className={`${saveBtn} !bg-emerald-500 hover:!bg-emerald-600`}><Save size={14} /> 저장</button></div>
       </div>
 
       {/* ═══ 4. 메인메뉴 등록 ═══ */}
       <div className={cardCls}>
-        <SectionHeader icon={Navigation} title="메인메뉴 등록" desc="홈페이지 상단 메인메뉴 구성" color="#6366f1" />
+        <SectionHeader icon={Navigation} title="메인메뉴 등록" desc="홈페이지 상단 메인메뉴 구성" color="#6366f1" enabled={isSectionOn('menu')} onToggle={v => toggleSection('menu', v)} />
         {/* Row1 */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div><label className={labelCls}>배경 컬러</label><ColorInput value={d.menuBg} onChange={v => up({ menuBg: v })} /></div>
@@ -509,8 +550,8 @@ export function HpBasicSettings() {
         </div>
         {/* Row2 */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          <div><label className={labelCls}><Blend size={11} /> 배경 투명도</label><RangeInput value={d.menuOpacity} onChange={v => up({ menuOpacity: v })} min={0} max={100} unit="%" accent="#6366f1" /></div>
-          <div><label className={labelCls}><AlignCenter size={11} /> 정렬</label>
+          <div><label className={labelCls}><Blend size={12} /> 배경 투명도</label><RangeInput value={d.menuOpacity} onChange={v => up({ menuOpacity: v })} min={0} max={100} unit="%" accent="#6366f1" /></div>
+          <div><label className={labelCls}><AlignCenter size={12} /> 정렬</label>
             <AlignButtons value={d.menuAlign} onChange={v => up({ menuAlign: v })} accent="#6366f1"
               options={[
                 { value: 'flex-start', icon: AlignLeft, title: '왼쪽' },
@@ -520,7 +561,7 @@ export function HpBasicSettings() {
               ]} />
           </div>
           <div><label className={labelCls}>메뉴 간격</label><RangeInput value={d.menuGap} onChange={v => up({ menuGap: v })} min={10} max={100} unit="px" accent="#6366f1" /></div>
-          <div><label className={labelCls}><Bold size={11} /> 폰트 굵기</label><FontWeightButtons value={d.menuFw} onChange={v => up({ menuFw: v })} accent="#6366f1" /></div>
+          <div><label className={labelCls}><Bold size={12} /> 폰트 굵기</label><FontWeightButtons value={d.menuFw} onChange={v => up({ menuFw: v })} accent="#6366f1" /></div>
           <div><label className={labelCls}>좌우 여백</label><RangeInput value={d.menuPadX} onChange={v => up({ menuPadX: v })} min={0} max={300} unit="px" accent="#6366f1" /></div>
         </div>
         {/* 메뉴명 칩 */}
@@ -528,7 +569,7 @@ export function HpBasicSettings() {
           <label className={labelCls}>메뉴명 등록</label>
           <div className="flex flex-wrap gap-2 items-center min-h-[36px] p-1.5 rounded-lg border-[1.5px] border-dashed border-[var(--border-default)] bg-[var(--bg-muted)]" style={{ gap: `${Math.min(d.menuGap / 5, 12)}px` }}>
             {d.menuItems.map((m, i) => (
-              <span key={i} className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[12px] font-bold bg-[#6366f122] text-[#6366f1] border border-[#6366f1]">
+              <span key={i} className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[12px] font-bold bg-[#6366f122] text-indigo-500 border border-indigo-500">
                 {m}
                 <button onClick={() => removeMenu(i)} className="w-4 h-4 rounded-full bg-[#6366f133] flex items-center justify-center cursor-pointer hover:bg-[#6366f155]"><X size={10} /></button>
               </span>
@@ -538,8 +579,8 @@ export function HpBasicSettings() {
             <input value={menuInput} onChange={e => setMenuInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addMenu() } }}
               placeholder="메뉴명 입력 후 Enter 또는 + 버튼" className={`flex-1 ${inputCls}`} />
-            <button onClick={addMenu} className="px-3.5 rounded-lg bg-[#6366f1] text-white text-[13px] font-bold cursor-pointer flex items-center gap-1.5 shrink-0">
-              <Plus size={13} /> 추가
+            <button onClick={addMenu} className="px-3.5 rounded-lg bg-indigo-500 text-white text-[13px] font-bold cursor-pointer flex items-center gap-1.5 shrink-0">
+              <Plus size={14} /> 추가
             </button>
           </div>
         </div>
@@ -561,14 +602,14 @@ export function HpBasicSettings() {
             ))}
           </div>
         </div>
-        <div className="flex justify-end"><button onClick={() => save('메인메뉴')} className={`${saveBtn} !bg-[#6366f1] hover:!bg-[#4f47e5]`}><Save size={13} /> 저장</button></div>
+        <div className="flex justify-end"><button onClick={() => save('메인메뉴')} className={`${saveBtn} !bg-indigo-500 hover:!bg-indigo-600`}><Save size={14} /> 저장</button></div>
       </div>
 
       {/* ═══ 5. 메인컨텐츠 등록 ═══ */}
       <div className={cardCls}>
         <div className="flex items-center justify-between">
-          <SectionHeader icon={LayoutGrid} title="메인컨텐츠 등록" desc="홈페이지 메인 섹션 구성" color="#4f6ef7" />
-          <button onClick={addMcLine} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#4f6ef7] bg-[#4f6ef708] text-[#4f6ef7] text-[11.5px] font-bold cursor-pointer hover:bg-[#4f6ef718] transition-colors">
+          <SectionHeader icon={LayoutGrid} title="메인컨텐츠 등록" desc="홈페이지 메인 섹션 구성" color="#4f6ef7" enabled={isSectionOn('mainContent')} onToggle={v => toggleSection('mainContent', v)} />
+          <button onClick={addMcLine} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary-500 bg-[#4f6ef708] text-primary-500 text-[11.5px] font-bold cursor-pointer hover:bg-[#4f6ef718] transition-colors">
             <Plus size={12} /> 하위컨텐츠 추가
           </button>
         </div>
@@ -583,19 +624,19 @@ export function HpBasicSettings() {
               <div key={i} className="border border-[var(--border-default)] rounded-xl overflow-hidden">
                 {/* ── 라인 헤더 ── */}
                 <div className="flex items-center gap-2 px-3.5 py-2.5 bg-[var(--bg-muted)] border-b border-[var(--border-default)]">
-                  <span className="w-5 h-5 rounded-full bg-[#4f6ef7] text-white text-[10px] font-extrabold flex items-center justify-center shrink-0">{i+1}</span>
+                  <span className="w-5 h-5 rounded-full bg-primary-500 text-white text-[10px] font-extrabold flex items-center justify-center shrink-0">{i+1}</span>
                   <span className="text-[12px] font-bold text-[var(--text-primary)]">컨텐츠라인 {i+1}</span>
                   {/* 노출타임: 항목 2개 이상일 때만 */}
                   {line.items.length >= 2 && (
                     <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-default)] text-[11px]">
-                      <Timer size={11} className="text-[var(--text-muted)]"/>
+                      <Timer size={12} className="text-[var(--text-muted)]"/>
                       <input type="number" min={1} max={30} value={line.duration||5} onChange={e => updateMcLine(i, { duration: parseInt(e.target.value)||5 })}
                         className="w-[35px] border-none bg-transparent text-[11px] font-bold text-center text-[var(--text-primary)] outline-none" />
                       <span className="text-[var(--text-muted)]">초</span>
                     </div>
                   )}
-                  <button onClick={() => addMcItem(i)} className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#4f6ef7] bg-[#4f6ef708] text-[#4f6ef7] text-[11px] font-bold cursor-pointer hover:bg-[#4f6ef718]">
-                    <Plus size={11}/> 항목추가
+                  <button onClick={() => addMcItem(i)} className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-lg border border-primary-500 bg-[#4f6ef708] text-primary-500 text-[11px] font-bold cursor-pointer hover:bg-[#4f6ef718]">
+                    <Plus size={12}/> 항목추가
                   </button>
                   <button onClick={() => removeMcLine(i)} className="w-[22px] h-[22px] rounded-md bg-red-500/10 text-red-500 flex items-center justify-center cursor-pointer border-none hover:bg-red-500/20"><X size={12}/></button>
                 </div>
@@ -635,7 +676,7 @@ export function HpBasicSettings() {
                       {(item.type || 'image') === 'image' && (
                         <div className="p-3 space-y-2">
                           {/* 미리보기 */}
-                          <div className="relative w-full min-h-[140px] bg-[#0a0a12] flex items-center justify-center overflow-hidden rounded-lg">
+                          <div className="relative w-full min-h-[140px] bg-gray-950 flex items-center justify-center overflow-hidden rounded-lg">
                             {(item.imgH || item.imgV) && (
                               <img src={item.imgH || item.imgV} className="absolute inset-0 w-full h-full object-cover opacity-55" />
                             )}
@@ -648,7 +689,7 @@ export function HpBasicSettings() {
                           {/* 이미지 업로드 */}
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Monitor size={9}/> 가로 이미지 (PC)</label>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Monitor size={10}/> 가로 이미지 (PC)</label>
                               <div className="flex items-center gap-2">
                                 <div className="w-20 h-12 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
                                   {item.imgH ? <img src={item.imgH} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
@@ -658,11 +699,11 @@ export function HpBasicSettings() {
                                   <input type="file" accept="image/*" className="hidden" onChange={e => handleMcFileUpload(i, j, 'imgH', e.target.files)} />
                                 </label>
                                 {item.imgH && <button onClick={() => updateMcItem(i, j, { imgH: '' })}
-                                  className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
+                                  className="text-[10px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
                               </div>
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1">📱 세로 이미지 (모바일)</label>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Smartphone size={10} className="inline -mt-0.5" /> 세로 이미지 (모바일)</label>
                               <div className="flex items-center gap-2">
                                 <div className="w-12 h-16 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
                                   {item.imgV ? <img src={item.imgV} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
@@ -672,22 +713,22 @@ export function HpBasicSettings() {
                                   <input type="file" accept="image/*" className="hidden" onChange={e => handleMcFileUpload(i, j, 'imgV', e.target.files)} />
                                 </label>
                                 {item.imgV && <button onClick={() => updateMcItem(i, j, { imgV: '' })}
-                                  className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
+                                  className="text-[10px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
                               </div>
                             </div>
                           </div>
                           {/* 텍스트 */}
                           <div className="grid grid-cols-3 gap-2">
                             <div>
-                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={9}/> 텍스트 1 (태그)</label>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={10}/> 텍스트 1 (태그)</label>
                               <input value={item.text1} onChange={e => updateMcItem(i, j, { text1: e.target.value })} placeholder="태그" className={`${inputCls} !text-[10.5px]`} />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={9}/> 텍스트 2 (제목)</label>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={10}/> 텍스트 2 (제목)</label>
                               <input value={item.text2} onChange={e => updateMcItem(i, j, { text2: e.target.value })} placeholder="제목" className={`${inputCls} !text-[10.5px]`} />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={9}/> 텍스트 3 (설명)</label>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={10}/> 텍스트 3 (설명)</label>
                               <input value={item.text3} onChange={e => updateMcItem(i, j, { text3: e.target.value })} placeholder="설명" className={`${inputCls} !text-[10.5px]`} />
                             </div>
                           </div>
@@ -716,7 +757,7 @@ export function HpBasicSettings() {
                             ))}
                           </div>
                           {/* 미리보기 */}
-                          <div className="relative w-full min-h-[140px] bg-[#0a0a12] flex items-center justify-center overflow-hidden rounded-lg">
+                          <div className="relative w-full min-h-[140px] bg-gray-950 flex items-center justify-center overflow-hidden rounded-lg">
                             {(item.imgH || item.imgV) && (
                               <img src={item.imgH || item.imgV} className="absolute inset-0 w-full h-full object-cover opacity-55" />
                             )}
@@ -729,7 +770,7 @@ export function HpBasicSettings() {
                           {/* 이미지 업로드 */}
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Monitor size={9}/> 가로 이미지 (PC)</label>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Monitor size={10}/> 가로 이미지 (PC)</label>
                               <div className="flex items-center gap-2">
                                 <div className="w-20 h-12 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
                                   {item.imgH ? <img src={item.imgH} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
@@ -739,11 +780,11 @@ export function HpBasicSettings() {
                                   <input type="file" accept="image/*" className="hidden" onChange={e => handleMcFileUpload(i, j, 'imgH', e.target.files)} />
                                 </label>
                                 {item.imgH && <button onClick={() => updateMcItem(i, j, { imgH: '' })}
-                                  className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
+                                  className="text-[10px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
                               </div>
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1">📱 세로 이미지 (모바일)</label>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Smartphone size={10} className="inline -mt-0.5" /> 세로 이미지 (모바일)</label>
                               <div className="flex items-center gap-2">
                                 <div className="w-12 h-16 rounded-lg border border-dashed border-[var(--border-default)] flex items-center justify-center bg-white overflow-hidden flex-shrink-0">
                                   {item.imgV ? <img src={item.imgV} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
@@ -753,27 +794,27 @@ export function HpBasicSettings() {
                                   <input type="file" accept="image/*" className="hidden" onChange={e => handleMcFileUpload(i, j, 'imgV', e.target.files)} />
                                 </label>
                                 {item.imgV && <button onClick={() => updateMcItem(i, j, { imgV: '' })}
-                                  className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
+                                  className="text-[10px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
                               </div>
                             </div>
                           </div>
                           {/* 텍스트 */}
                           <div className="grid grid-cols-3 gap-2">
                             <div>
-                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={9}/> 텍스트 1 (태그)</label>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={10}/> 텍스트 1 (태그)</label>
                               <input value={item.text1} onChange={e => updateMcItem(i, j, { text1: e.target.value })} placeholder="태그" className={`${inputCls} !text-[10.5px]`} />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={9}/> 텍스트 2 (제목)</label>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={10}/> 텍스트 2 (제목)</label>
                               <input value={item.text2} onChange={e => updateMcItem(i, j, { text2: e.target.value })} placeholder="제목" className={`${inputCls} !text-[10.5px]`} />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={9}/> 텍스트 3 (설명)</label>
+                              <label className="text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1 mb-1"><Type size={10}/> 텍스트 3 (설명)</label>
                               <input value={item.text3} onChange={e => updateMcItem(i, j, { text3: e.target.value })} placeholder="설명" className={`${inputCls} !text-[10.5px]`} />
                             </div>
                           </div>
-                          <div className="text-[9px] text-[var(--text-muted)] pt-1 border-t border-dashed border-[var(--border-default)]">
-                            💡 사이트에서 이미지를 클릭하면 선택한 솔루션 페이지로 이동합니다
+                          <div className="text-[10px] text-[var(--text-muted)] pt-1 border-t border-dashed border-[var(--border-default)]">
+                            <Lightbulb size={12} className="inline -mt-0.5" /> 사이트에서 이미지를 클릭하면 선택한 솔루션 페이지로 이동합니다
                           </div>
                         </div>
                       )}
@@ -835,13 +876,13 @@ export function HpBasicSettings() {
                               className="w-7 h-7 rounded border border-[var(--border-default)] cursor-pointer p-0" title="배경색" />
                             <button onMouseDown={e => { e.preventDefault(); const url = prompt('이미지 URL:'); if (url) document.execCommand('insertImage', false, url) }}
                               className="px-2 h-7 rounded flex items-center justify-center text-[10px] cursor-pointer border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
-                              title="이미지">🖼</button>
+                              title="이미지"><ImageIcon size={12} /></button>
                             <button onMouseDown={e => { e.preventDefault(); const url = prompt('링크 URL:'); if (url) document.execCommand('createLink', false, url) }}
                               className="px-2 h-7 rounded flex items-center justify-center text-[10px] cursor-pointer border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
-                              title="링크">🔗</button>
+                              title="링크"><Link size={12} /></button>
                             <button onMouseDown={e => { e.preventDefault(); document.execCommand('removeFormat') }}
                               className="px-2 h-7 rounded flex items-center justify-center text-[10px] cursor-pointer border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
-                              title="서식제거">🧹</button>
+                              title="서식제거"><Eraser size={12} /></button>
                           </div>
                           {/* 에디터 영역 */}
                           <div
@@ -849,10 +890,10 @@ export function HpBasicSettings() {
                             suppressContentEditableWarning
                             dangerouslySetInnerHTML={{ __html: item.editorHtml || '' }}
                             onBlur={e => updateMcItem(i, j, { editorHtml: (e.target as HTMLDivElement).innerHTML })}
-                            className="min-h-[200px] p-4 rounded-lg border border-[var(--border-default)] bg-white text-sm text-[#1e293b] leading-relaxed outline-none focus:border-[#4f6ef7] transition-colors"
+                            className="min-h-[200px] p-4 rounded-lg border border-[var(--border-default)] bg-white text-sm text-gray-800 leading-relaxed outline-none focus:border-primary-500 transition-colors"
                             style={{ overflowY: 'auto', maxHeight: 500 }}
                           />
-                          <div className="text-[9px] text-[var(--text-muted)] mt-1.5">텍스트를 선택한 후 상단 툴바로 서식을 적용하세요</div>
+                          <div className="text-[10px] text-[var(--text-muted)] mt-1.5">텍스트를 선택한 후 상단 툴바로 서식을 적용하세요</div>
                         </div>
                       )}
                     </div>
@@ -863,21 +904,21 @@ export function HpBasicSettings() {
           </div>
         )}
         <div className="flex justify-end gap-2">
-          <button onClick={() => save('메인컨텐츠')} className={saveBtn}><Save size={13} /> 저장</button>
+          <button onClick={() => save('메인컨텐츠')} className={saveBtn}><Save size={14} /> 저장</button>
         </div>
       </div>
 
       {/* ═══ 6. 하단 로고박스 설정 ═══ */}
       <div className={cardCls}>
-        <SectionHeader icon={LayoutTemplate} title="하단 로고박스 설정" desc="푸터 상단 로고 표시 영역 스타일" color="#ec4899" />
+        <SectionHeader icon={LayoutTemplate} title="하단 로고박스 설정" desc="푸터 상단 로고 표시 영역 스타일" color="#ec4899" enabled={isSectionOn('footerLogo')} onToggle={v => toggleSection('footerLogo', v)} />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div><label className={labelCls}><Palette size={11} /> 바탕색</label><ColorInput value={d.footerBg} onChange={v => up({ footerBg: v })} /></div>
-          <div><label className={labelCls}><Ruler size={11} /> 높이</label><RangeInput value={d.footerHeight} onChange={v => up({ footerHeight: v })} min={60} max={240} unit="px" accent="#ec4899" /></div>
-          <div><label className={labelCls}><Blend size={11} /> 투명도</label><RangeInput value={d.footerOpacity} onChange={v => up({ footerOpacity: v })} min={10} max={100} unit="%" accent="#ec4899" /></div>
+          <div><label className={labelCls}><Palette size={12} /> 바탕색</label><ColorInput value={d.footerBg} onChange={v => up({ footerBg: v })} /></div>
+          <div><label className={labelCls}><Ruler size={12} /> 높이</label><RangeInput value={d.footerHeight} onChange={v => up({ footerHeight: v })} min={60} max={240} unit="px" accent="#ec4899" /></div>
+          <div><label className={labelCls}><Blend size={12} /> 투명도</label><RangeInput value={d.footerOpacity} onChange={v => up({ footerOpacity: v })} min={10} max={100} unit="%" accent="#ec4899" /></div>
         </div>
         {/* 미리보기 */}
         <div>
-          <label className={labelCls}><Eye size={11} /> 미리보기</label>
+          <label className={labelCls}><Eye size={12} /> 미리보기</label>
           <div className="w-full rounded-lg border border-[var(--border-default)] flex items-center justify-center gap-10 overflow-hidden transition-all"
             style={{ background: d.footerBg, height: `${d.footerHeight}px`, opacity: d.footerOpacity / 100 }}>
             <div className="flex flex-col items-center gap-1.5">
@@ -896,21 +937,21 @@ export function HpBasicSettings() {
             </div>
           </div>
         </div>
-        <div className="flex justify-end"><button onClick={() => save('하단 로고박스')} className={`${saveBtn} !bg-[#ec4899] hover:!bg-[#db2777]`}><Save size={13} /> 저장</button></div>
+        <div className="flex justify-end"><button onClick={() => save('하단 로고박스')} className={`${saveBtn} !bg-pink-500 hover:!bg-pink-600`}><Save size={14} /> 저장</button></div>
       </div>
 
       {/* ═══ 7. 하단 텍스트 설정 ═══ */}
       <div className={cardCls}>
-        <SectionHeader icon={FileText} title="하단 텍스트 설정" desc="푸터 하단 저작권·안내 텍스트 영역" color="#fb923c" />
+        <SectionHeader icon={FileText} title="하단 텍스트 설정" desc="푸터 하단 저작권 안내 텍스트 영역" color="#fb923c" enabled={isSectionOn('footerText')} onToggle={v => toggleSection('footerText', v)} />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div><label className={labelCls}><Palette size={11} /> 바탕색</label><ColorInput value={d.ftBg} onChange={v => up({ ftBg: v })} /></div>
-          <div><label className={labelCls}><PaintBucket size={11} /> 폰트 칼라</label><ColorInput value={d.ftFc} onChange={v => up({ ftFc: v })} /></div>
-          <div><label className={labelCls}><Ruler size={11} /> 높이</label><RangeInput value={d.ftHeight} onChange={v => up({ ftHeight: v })} min={40} max={200} unit="px" accent="#fb923c" /></div>
-          <div><label className={labelCls}><Blend size={11} /> 투명도</label><RangeInput value={d.ftOpacity} onChange={v => up({ ftOpacity: v })} min={10} max={100} unit="%" accent="#fb923c" /></div>
+          <div><label className={labelCls}><Palette size={12} /> 바탕색</label><ColorInput value={d.ftBg} onChange={v => up({ ftBg: v })} /></div>
+          <div><label className={labelCls}><PaintBucket size={12} /> 폰트 칼라</label><ColorInput value={d.ftFc} onChange={v => up({ ftFc: v })} /></div>
+          <div><label className={labelCls}><Ruler size={12} /> 높이</label><RangeInput value={d.ftHeight} onChange={v => up({ ftHeight: v })} min={40} max={200} unit="px" accent="#fb923c" /></div>
+          <div><label className={labelCls}><Blend size={12} /> 투명도</label><RangeInput value={d.ftOpacity} onChange={v => up({ ftOpacity: v })} min={10} max={100} unit="%" accent="#fb923c" /></div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div><label className={labelCls}><Type size={11} /> 폰트 사이즈</label><RangeInput value={d.ftFs} onChange={v => up({ ftFs: v })} min={9} max={20} unit="px" accent="#fb923c" /></div>
-          <div><label className={labelCls}><AlignCenter size={11} /> 정렬</label>
+          <div><label className={labelCls}><Type size={12} /> 폰트 사이즈</label><RangeInput value={d.ftFs} onChange={v => up({ ftFs: v })} min={9} max={20} unit="px" accent="#fb923c" /></div>
+          <div><label className={labelCls}><AlignCenter size={12} /> 정렬</label>
             <AlignButtons value={d.ftAlign} onChange={v => up({ ftAlign: v })} accent="#fb923c"
               options={[
                 { value: 'left', icon: AlignLeft, title: '좌측' },
@@ -920,13 +961,13 @@ export function HpBasicSettings() {
           </div>
         </div>
         <div>
-          <label className={labelCls}><PencilLine size={11} /> 하단 텍스트 <span className="font-normal text-[10px] text-[var(--text-muted)] ml-1">Enter로 줄바꿈</span></label>
+          <label className={labelCls}><PencilLine size={12} /> 하단 텍스트 <span className="font-normal text-[10px] text-[var(--text-muted)] ml-1">Enter로 줄바꿈</span></label>
           <textarea value={d.ftText} onChange={e => up({ ftText: e.target.value })} rows={4}
             placeholder={"© 2025 워크엠. All rights reserved.\n서울특별시 강남구 테헤란로 123\nTel: 02-1234-5678"}
             className={`${inputCls} resize-y leading-relaxed font-inherit`} />
         </div>
         <div>
-          <label className={labelCls}><Eye size={11} /> 미리보기</label>
+          <label className={labelCls}><Eye size={12} /> 미리보기</label>
           <div className="w-full rounded-lg border border-[var(--border-default)] flex items-center px-6 overflow-hidden transition-all"
             style={{ background: d.ftBg, minHeight: `${d.ftHeight}px`, opacity: d.ftOpacity / 100, justifyContent: d.ftAlign === 'left' ? 'flex-start' : d.ftAlign === 'right' ? 'flex-end' : 'center' }}>
             <div style={{ fontSize: `${d.ftFs}px`, color: d.ftFc, textAlign: d.ftAlign as any, lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
@@ -934,21 +975,21 @@ export function HpBasicSettings() {
             </div>
           </div>
         </div>
-        <div className="flex justify-end"><button onClick={() => save('하단 텍스트')} className={`${saveBtn} !bg-[#fb923c] hover:!bg-[#ea580c]`}><Save size={13} /> 저장</button></div>
+        <div className="flex justify-end"><button onClick={() => save('하단 텍스트')} className={`${saveBtn} !bg-orange-400 hover:!bg-orange-600`}><Save size={14} /> 저장</button></div>
       </div>
 
       {/* ═══ 8. 하단 카피라이트 설정 ═══ */}
       <div className={cardCls}>
-        <SectionHeader icon={Copyright} title="하단 카피라이트 설정" desc="저작권 표시 최하단 영역" color="#eab308" />
+        <SectionHeader icon={Copyright} title="하단 카피라이트 설정" desc="저작권 표시 최하단 영역" color="#eab308" enabled={isSectionOn('copyright')} onToggle={v => toggleSection('copyright', v)} />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div><label className={labelCls}><Palette size={11} /> 바탕색</label><ColorInput value={d.cpBg} onChange={v => up({ cpBg: v })} /></div>
-          <div><label className={labelCls}><PaintBucket size={11} /> 폰트 칼라</label><ColorInput value={d.cpFc} onChange={v => up({ cpFc: v })} /></div>
-          <div><label className={labelCls}><Ruler size={11} /> 높이</label><RangeInput value={d.cpHeight} onChange={v => up({ cpHeight: v })} min={30} max={120} unit="px" accent="#eab308" /></div>
-          <div><label className={labelCls}><Blend size={11} /> 투명도</label><RangeInput value={d.cpOpacity} onChange={v => up({ cpOpacity: v })} min={10} max={100} unit="%" accent="#eab308" /></div>
+          <div><label className={labelCls}><Palette size={12} /> 바탕색</label><ColorInput value={d.cpBg} onChange={v => up({ cpBg: v })} /></div>
+          <div><label className={labelCls}><PaintBucket size={12} /> 폰트 칼라</label><ColorInput value={d.cpFc} onChange={v => up({ cpFc: v })} /></div>
+          <div><label className={labelCls}><Ruler size={12} /> 높이</label><RangeInput value={d.cpHeight} onChange={v => up({ cpHeight: v })} min={30} max={120} unit="px" accent="#eab308" /></div>
+          <div><label className={labelCls}><Blend size={12} /> 투명도</label><RangeInput value={d.cpOpacity} onChange={v => up({ cpOpacity: v })} min={10} max={100} unit="%" accent="#eab308" /></div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div><label className={labelCls}><Type size={11} /> 폰트 사이즈</label><RangeInput value={d.cpFs} onChange={v => up({ cpFs: v })} min={9} max={16} unit="px" accent="#eab308" /></div>
-          <div><label className={labelCls}><AlignCenter size={11} /> 정렬</label>
+          <div><label className={labelCls}><Type size={12} /> 폰트 사이즈</label><RangeInput value={d.cpFs} onChange={v => up({ cpFs: v })} min={9} max={16} unit="px" accent="#eab308" /></div>
+          <div><label className={labelCls}><AlignCenter size={12} /> 정렬</label>
             <AlignButtons value={d.cpAlign} onChange={v => up({ cpAlign: v })} accent="#eab308"
               options={[
                 { value: 'left', icon: AlignLeft, title: '좌측' },
@@ -958,13 +999,13 @@ export function HpBasicSettings() {
           </div>
         </div>
         <div>
-          <label className={labelCls}><PencilLine size={11} /> 카피라이트 텍스트 <span className="font-normal text-[10px] text-[var(--text-muted)] ml-1">Enter로 줄바꿈</span></label>
+          <label className={labelCls}><PencilLine size={12} /> 카피라이트 텍스트 <span className="font-normal text-[10px] text-[var(--text-muted)] ml-1">Enter로 줄바꿈</span></label>
           <textarea value={d.cpText} onChange={e => up({ cpText: e.target.value })} rows={3}
             placeholder={"© 2025 워크엠(WorkM). All rights reserved.\n이 사이트의 모든 콘텐츠 및 데이터는 저작권법의 보호를 받습니다."}
             className={`${inputCls} resize-y leading-relaxed font-inherit`} />
         </div>
         <div>
-          <label className={labelCls}><Eye size={11} /> 미리보기</label>
+          <label className={labelCls}><Eye size={12} /> 미리보기</label>
           <div className="w-full rounded-lg border border-[var(--border-default)] flex items-center px-6 overflow-hidden transition-all"
             style={{ background: d.cpBg, minHeight: `${d.cpHeight}px`, opacity: d.cpOpacity / 100, justifyContent: d.cpAlign === 'left' ? 'flex-start' : d.cpAlign === 'right' ? 'flex-end' : 'center' }}>
             <div style={{ fontSize: `${d.cpFs}px`, color: d.cpFc, textAlign: d.cpAlign as any, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
@@ -972,13 +1013,13 @@ export function HpBasicSettings() {
             </div>
           </div>
         </div>
-        <div className="flex justify-end"><button onClick={() => save('카피라이트')} className={`${saveBtn} !bg-[#eab308] !text-black hover:!bg-[#ca8a04]`}><Save size={13} /> 저장</button></div>
+        <div className="flex justify-end"><button onClick={() => save('카피라이트')} className={`${saveBtn} !bg-yellow-500 !text-black hover:!bg-yellow-600`}><Save size={14} /> 저장</button></div>
       </div>
 
       {/* ═══ 10. SNS 링크 설정 ═══ */}
       <div className={cardCls}>
         <div className="flex items-center gap-2 mb-1">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center text-white"><Link2 size={15} /></div>
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center text-white"><Link2 size={16} /></div>
           <div>
             <div className="text-sm font-bold text-[var(--text-primary)]">SNS 링크 설정</div>
             <div className="text-[10px] text-[var(--text-muted)]">홈페이지 푸터에 표시될 SNS 아이콘 및 링크</div>
@@ -1028,7 +1069,7 @@ export function HpBasicSettings() {
                         {sns.icon ? <img src={sns.icon} alt="" className="w-7 h-7 object-contain" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
                       </div>
                       <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
-                        <Upload size={11} /> 선택
+                        <Upload size={12} /> 선택
                         <input type="file" accept="image/*" className="hidden" onChange={e => {
                           const f = e.target.files?.[0]; if (!f) return
                           const reader = new FileReader()
@@ -1037,7 +1078,7 @@ export function HpBasicSettings() {
                         }} />
                       </label>
                       {sns.icon && <button onClick={() => { const arr = [...d.snsLinks]; arr[i] = { ...arr[i], icon: '' }; up({ snsLinks: arr }) }}
-                        className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
+                        className="text-[10px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
                     </div>
                   </div>
                   {/* 로고 */}
@@ -1048,7 +1089,7 @@ export function HpBasicSettings() {
                         {sns.logo ? <img src={sns.logo} alt="" className="w-7 h-7 object-contain" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
                       </div>
                       <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
-                        <Upload size={11} /> 선택
+                        <Upload size={12} /> 선택
                         <input type="file" accept="image/*" className="hidden" onChange={e => {
                           const f = e.target.files?.[0]; if (!f) return
                           const reader = new FileReader()
@@ -1057,7 +1098,7 @@ export function HpBasicSettings() {
                         }} />
                       </label>
                       {sns.logo && <button onClick={() => { const arr = [...d.snsLinks]; arr[i] = { ...arr[i], logo: '' }; up({ snsLinks: arr }) }}
-                        className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
+                        className="text-[10px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
                     </div>
                   </div>
                 </div>
@@ -1069,27 +1110,27 @@ export function HpBasicSettings() {
         {/* 미리보기 */}
         {d.snsLinks?.length > 0 && (
           <div>
-            <label className={labelCls}><Eye size={11} /> 푸터 미리보기</label>
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-[#1a1a2e] justify-center">
+            <label className={labelCls}><Eye size={12} /> 푸터 미리보기</label>
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-gray-900 justify-center">
               {d.snsLinks.map((sns, i) => (
                 <a key={i} href={sns.url || '#'} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-1 no-underline group">
                   <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center overflow-hidden transition-transform group-hover:scale-110">
                     {sns.icon ? <img src={sns.icon} alt="" className="w-6 h-6 object-contain" /> : <span className="text-white/40 text-xs">{sns.name?.charAt(0) || '?'}</span>}
                   </div>
-                  <span className="text-[9px] text-white/50 font-medium">{sns.name || `SNS ${i + 1}`}</span>
+                  <span className="text-[10px] text-white/50 font-medium">{sns.name || `SNS ${i + 1}`}</span>
                 </a>
               ))}
             </div>
           </div>
         )}
 
-        <div className="flex justify-end"><button onClick={() => save('SNS 링크')} className={`${saveBtn} !bg-gradient-to-r !from-pink-500 !to-orange-400 hover:!from-pink-600 hover:!to-orange-500`}><Save size={13} /> 저장</button></div>
+        <div className="flex justify-end"><button onClick={() => save('SNS 링크')} className={`${saveBtn} !bg-gradient-to-r !from-pink-500 !to-orange-400 hover:!from-pink-600 hover:!to-orange-500`}><Save size={14} /> 저장</button></div>
       </div>
 
       {/* ═══ 11. 팝업관리 ═══ */}
       <div className={cardCls}>
         <div className="flex items-center gap-2 mb-1">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white"><Monitor size={15} /></div>
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white"><Monitor size={16} /></div>
           <div>
             <div className="text-sm font-bold text-[var(--text-primary)]">팝업 관리</div>
             <div className="text-[10px] text-[var(--text-muted)]">홈페이지 접속 시 표시될 팝업 이미지 관리</div>
@@ -1132,7 +1173,7 @@ export function HpBasicSettings() {
                       {pop.imgH ? <img src={pop.imgH} alt="" className="w-full h-full object-cover" /> : <span className="text-[8px] text-[var(--text-muted)]">미등록</span>}
                     </div>
                     <label className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-primary-400 cursor-pointer transition-colors text-[10px] font-semibold text-[var(--text-secondary)]">
-                      <Upload size={11} /> 선택
+                      <Upload size={12} /> 선택
                       <input type="file" accept="image/*" className="hidden" onChange={e => {
                         const f = e.target.files?.[0]; if (!f) return
                         const reader = new FileReader()
@@ -1141,7 +1182,7 @@ export function HpBasicSettings() {
                       }} />
                     </label>
                     {pop.imgH && <button onClick={() => { const arr = [...d.popups]; arr[i] = { ...arr[i], imgH: '' }; up({ popups: arr }) }}
-                      className="text-[9px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
+                      className="text-[10px] text-danger hover:underline cursor-pointer bg-transparent border-none">삭제</button>}
                   </div>
                 </div>
 
@@ -1187,7 +1228,7 @@ export function HpBasicSettings() {
                 {/* 실시간 미리보기 */}
                 {pop.imgH && (
                   <div>
-                    <label className={labelCls}><Eye size={11} /> 실제 팝업 미리보기 ({pop.width || 480}×{pop.height || 400}px) - {(pop.mode || 'overlay') === 'overlay' ? '현재페이지 오버레이' : '새창'}</label>
+                    <label className={labelCls}><Eye size={12} /> 실제 팝업 미리보기 ({pop.width || 480}×{pop.height || 400}px) - {(pop.mode || 'overlay') === 'overlay' ? '현재페이지 오버레이' : '새창'}</label>
                     <div className="flex justify-center p-4 rounded-xl bg-black/60">
                       <div style={{ width: pop.width || 480, maxWidth: '100%', borderRadius: 16, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,.4)', background: '#fff' }}>
                         <div style={{ width: '100%', height: pop.height || 400, overflow: 'hidden' }}>
@@ -1195,7 +1236,7 @@ export function HpBasicSettings() {
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#fff', borderTop: '1px solid #e2e8f0' }}>
                           <span style={{ color: '#94a3b8', fontSize: 12 }}>오늘 하루 안보기</span>
-                          <span style={{ color: '#1e293b', fontSize: 13, fontWeight: 700 }}>닫기 ✕</span>
+                          <span style={{ color: '#1e293b', fontSize: 13, fontWeight: 700 }}>닫기 ×</span>
                         </div>
                       </div>
                     </div>
@@ -1206,7 +1247,7 @@ export function HpBasicSettings() {
           </div>
         )}
 
-        <div className="flex justify-end"><button onClick={() => save('팝업')} className={`${saveBtn} !bg-gradient-to-r !from-cyan-500 !to-blue-600 hover:!from-cyan-600 hover:!to-blue-700`}><Save size={13} /> 저장</button></div>
+        <div className="flex justify-end"><button onClick={() => save('팝업')} className={`${saveBtn} !bg-gradient-to-r !from-cyan-500 !to-blue-600 hover:!from-cyan-600 hover:!to-blue-700`}><Save size={14} /> 저장</button></div>
       </div>
 
       {/* ── 토스트 메시지 ── */}

@@ -187,7 +187,7 @@ export default function AcctPaymentLedger({ year, catId }: { year: number; catId
   return (
     <div className="space-y-4">
       {/* 요약 */}
-      <div className="bg-gradient-to-r from-[#6366f1] to-[#4f6ef7] rounded-2xl p-4 text-white">
+      <div className="bg-gradient-to-r from-indigo-500 to-primary-500 rounded-2xl p-4 text-white">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
@@ -210,7 +210,7 @@ export default function AcctPaymentLedger({ year, catId }: { year: number; catId
             { label: '대체', value: budgetBaseVouchers.filter(v => v.type !== 'income' && v.type !== 'expense').length, bg: 'rgba(245,158,11,.2)', filter: 'transfer' },
           ].map(s => (
             <div key={s.label} onClick={() => setVoucherTypeFilter(voucherTypeFilter === s.filter ? '' : s.filter)} className={`rounded-xl p-2 text-center cursor-pointer transition-all ${voucherTypeFilter === s.filter ? 'ring-2 ring-white shadow-lg scale-[1.02]' : 'hover:bg-white/10'}`} style={{ background: s.bg }}>
-              <div className="text-[9px] opacity-80">{s.label}</div>
+              <div className="text-[10px] opacity-80">{s.label}</div>
               <div className="text-[16px] font-extrabold">{s.value}</div>
             </div>
           ))}
@@ -226,14 +226,14 @@ export default function AcctPaymentLedger({ year, catId }: { year: number; catId
           ))}
         </select>
         {(voucherTypeFilter || voucherBudgetFilter) && (
-          <button onClick={() => { setVoucherTypeFilter(''); setVoucherBudgetFilter('') }} className="px-2.5 py-2 rounded-lg bg-[var(--bg-muted)] text-[11px] font-bold text-[var(--text-muted)] hover:bg-primary-100 hover:text-primary-600 cursor-pointer transition-all whitespace-nowrap">✕ 초기화</button>
+          <button onClick={() => { setVoucherTypeFilter(''); setVoucherBudgetFilter('') }} className="px-2.5 py-2 rounded-lg bg-[var(--bg-muted)] text-[11px] font-bold text-[var(--text-muted)] hover:bg-primary-100 hover:text-primary-600 cursor-pointer transition-all whitespace-nowrap flex items-center gap-1"><X size={10} /> 초기화</button>
         )}
       </div>
 
       {/* 전표 목록 */}
       {filteredVouchers.length === 0 ? (
         <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-8">
-          <EmptyState emoji="📒" title={voucherTypeFilter || voucherBudgetFilter ? '해당 조건의 전표가 없습니다' : '등록된 전표가 없습니다'} />
+          <EmptyState icon={<BookOpen size={28} />} title={voucherTypeFilter || voucherBudgetFilter ? '해당 조건의 전표가 없습니다' : '등록된 전표가 없습니다'} />
         </div>
       ) : (
         <div className="space-y-2.5">
@@ -251,8 +251,8 @@ export default function AcctPaymentLedger({ year, catId }: { year: number; catId
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: tb, color: tc }}>{tl}</span>
                   </div>
                   <div className="flex gap-1">
-                    <button onClick={() => openModal(v.id)} className="p-1 rounded-md bg-[rgba(79,110,247,.1)] text-[#4f6ef7] hover:bg-[rgba(79,110,247,.2)] cursor-pointer"><Edit3 size={12} /></button>
-                    <button onClick={() => deleteVoucher(v.id)} className="p-1 rounded-md bg-[rgba(239,68,68,.08)] text-[#ef4444] hover:bg-[rgba(239,68,68,.15)] cursor-pointer"><Trash2 size={12} /></button>
+                    <button onClick={() => openModal(v.id)} className="p-1 rounded-md bg-[rgba(79,110,247,.1)] text-primary-500 hover:bg-[rgba(79,110,247,.2)] cursor-pointer"><Edit3 size={12} /></button>
+                    <button onClick={() => deleteVoucher(v.id)} className="p-1 rounded-md bg-[rgba(239,68,68,.08)] text-danger-500 hover:bg-[rgba(239,68,68,.15)] cursor-pointer"><Trash2 size={12} /></button>
                   </div>
                 </div>
                 <div className="px-4 pb-3">
@@ -318,7 +318,7 @@ export default function AcctPaymentLedger({ year, catId }: { year: number; catId
                   {vmEntries.map((entry, idx) => (
                     <div key={idx} className="bg-[var(--bg-muted)] rounded-xl p-3 space-y-2 relative">
                       {idx >= 2 && (
-                        <button onClick={() => removeEntry(idx)} className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center rounded bg-[rgba(239,68,68,.1)] text-[#ef4444] cursor-pointer text-[10px]"><X size={10} /></button>
+                        <button onClick={() => removeEntry(idx)} className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center rounded bg-[rgba(239,68,68,.1)] text-danger-500 cursor-pointer text-[10px]"><X size={10} /></button>
                       )}
                       <div className="flex gap-2">
                         <select value={entry.side} onChange={e => { const v = e.target.value; setVmEntries(prev => prev.map((en, i) => i === idx ? { ...en, side: v } : en)) }} className="w-[80px] px-2 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] font-bold outline-none" style={{ color: entry.side === 'debit' ? '#4f6ef7' : '#ef4444' }}>
@@ -341,7 +341,7 @@ export default function AcctPaymentLedger({ year, catId }: { year: number; catId
             </div>
             <div className="flex gap-2 px-5 py-3 border-t border-[var(--border-default)]">
               <button onClick={() => setModalOpen(false)} className="flex-1 py-2.5 rounded-xl border border-[var(--border-default)] text-sm font-semibold text-[var(--text-secondary)] cursor-pointer hover:bg-[var(--bg-muted)]">취소</button>
-              <button onClick={saveVoucher} className="flex-[2] py-2.5 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#4f6ef7] text-white text-sm font-bold cursor-pointer shadow-md">저장</button>
+              <button onClick={saveVoucher} className="flex-[2] py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-primary-500 text-white text-sm font-bold cursor-pointer shadow-md">저장</button>
             </div>
           </div>
         </div>

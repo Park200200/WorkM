@@ -7,7 +7,7 @@ import { useThemeStore, SIDEBAR_WIDTH_VALUES } from '../../stores/themeStore'
 import {
   Home, Building2, Info, Contact, SlidersHorizontal, Users,
   Settings, Calendar, BarChart3, Briefcase, Globe, Calculator,
-  ChevronDown, ArrowLeft,
+  ChevronDown, ArrowLeft, Lock,
   /* 회계 전용 아이콘 (레거시 매칭) */
   LayoutDashboard, Wallet, Landmark, FileCheck, CreditCard,
   ArrowDownCircle, ArrowUpCircle, ScrollText, ContactRound, ArrowLeftRight,
@@ -200,7 +200,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 >
                   <Icon size={18} className="shrink-0" style={isActive && !isRestricted ? { color: 'var(--sidebar-active)' } : undefined} />
                   {!collapsed && <span className="text-[13px] truncate" style={isActive && !isRestricted ? { color: 'var(--sidebar-active)' } : undefined}>{entry.label}</span>}
-                  {!collapsed && isRestricted && <span className="ml-auto text-[8px]">🔒</span>}
+                  {!collapsed && isRestricted && <span className="ml-auto text-[8px]"><Lock size={10} /></span>}
                 </button>
               )
             })
@@ -453,7 +453,7 @@ function NavSingleItem({ entry, collapsed }: { entry: NavEntry; collapsed: boole
           <Icon size={18} />
         </span>
         {!collapsed && <span className="text-[13px] truncate text-[var(--sidebar-text)]">{entry.label}</span>}
-        {!collapsed && <span className="ml-auto text-[8px] text-[var(--text-muted)]">🔒</span>}
+        {!collapsed && <span className="ml-auto text-[8px] text-[var(--text-muted)]"><Lock size={10} /></span>}
       </div>
     )
   }

@@ -3,11 +3,36 @@ import { getItem, setItem } from '../../../utils/storage'
 import { formatNumber } from '../../../utils/format'
 import { useToastStore } from '../../../stores/toastStore'
 import { saveAttachmentImage, deleteAttachmentImage } from '../../../utils/attachmentDB'
-import type { BudgetCat, PayMethodItem, PayMethodCard, PayMethodNote } from './types'
+import type { BudgetCat, PayMethodItem, PayMethodCard, PayMethodNote, CashFlow, Vendor } from './types'
 import { getLocalDate } from './utils'
-import { Landmark, Coins, FileText, Ticket, CreditCard, Plus, Trash2, ChevronDown, ChevronUp, Eye, Search, Wallet, ArrowDownCircle, ArrowUpCircle, ScrollText, Check, Paperclip } from 'lucide-react'
+import { Landmark, Coins, FileText, Ticket, CreditCard, Plus, Trash2, ChevronDown, ChevronUp, Eye, Search, Wallet, ArrowDownCircle, ArrowUpCircle, ScrollText, Check, Paperclip, AlertTriangle, TrendingUp, Lightbulb, ClipboardList, Building2 } from 'lucide-react'
 import { cn } from '../../../utils/cn'
 import { DatePicker } from '../../../components/ui/DatePicker'
+import type { AcctAccount } from './constants'
+
+const DETAIL_FIELD_LABEL = 'text-[11px] font-bold text-[var(--text-muted)] mb-1 block'
+const DETAIL_INPUT = 'w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-white dark:bg-gray-900 text-[12px] text-[var(--text-primary)] outline-none focus:border-primary-400 transition-colors placeholder:text-[var(--text-muted)]'
+
+const PAY_CATEGORIES = [
+  { key: '계좌' as const, label: '계좌', Icon: Landmark, color: '#3b82f6', bg: 'bg-blue-50 dark:bg-blue-900/10', border: 'border-blue-200 dark:border-blue-800', desc: '계좌이체, automatic transfer 등' },
+  { key: '현금' as const, label: '현금', Icon: Coins, color: '#22c55e', bg: 'bg-emerald-50 dark:bg-emerald-900/10', border: 'border-emerald-200 dark:border-emerald-800', desc: '현금, 소액현금 등' },
+  { key: '어음' as const, label: '어음', Icon: FileText, color: '#f59e0b', bg: 'bg-amber-50 dark:bg-amber-900/10', border: 'border-amber-200 dark:border-amber-800', desc: '수신어음, 발행어음, 수표' },
+  { key: '상품권' as const, label: '상품권', Icon: Ticket, color: '#8b5cf6', bg: 'bg-violet-50 dark:bg-violet-900/10', border: 'border-violet-200 dark:border-violet-800', desc: '문화상품권, 백화점상품권 등' },
+]
+
+const DEFAULT_PAY_ITEMS: PayMethodItem[] = [
+  { id: 1, name: '계좌이체', category: '계좌' },
+  { id: 2, name: '자동이체', category: '계좌' },
+  { id: 3, name: '온라인뱅킹', category: '계좌' },
+  { id: 4, name: '현금', category: '현금' },
+  { id: 5, name: '소액현금', category: '현금' },
+  { id: 6, name: '수신어음', category: '어음', noteType: '수신' },
+  { id: 7, name: '발행어음', category: '어음', noteType: '발행' },
+  { id: 11, name: '수표', category: '어음' },
+  { id: 8, name: '문화상품권', category: '상품권' },
+  { id: 9, name: '백화점상품권', category: '상품권' },
+  { id: 10, name: '온누리상품권', category: '상품권' },
+]
 
 
 /* ═══ 수단등록 (지출수단 + 입금계정 통합) ═══ */
@@ -163,14 +188,14 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-extrabold text-[var(--text-primary)] flex items-center gap-2">
-              💳 수단등록
+              <CreditCard size={20} /> 수단등록
             </h2>
             <p className="text-[11px] text-[var(--text-muted)] mt-0.5">예산구분별 지출수단과 입금계정을 통합 관리합니다</p>
           </div>
         </div>
         <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
-            <span className="text-3xl">⚠️</span>
+          <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center text-red-500">
+            <AlertTriangle size={32} />
           </div>
           <h3 className="text-lg font-extrabold text-red-500">예산을 먼저 선택해주세요</h3>
           <p className="text-sm text-[var(--text-muted)] text-center">
@@ -184,14 +209,14 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
   return (
     <div className="space-y-5">
       {/* 헤더 */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--bg-surface)] p-4 rounded-xl border border-[var(--border-default)]">
         <div>
           <h2 className="text-lg font-extrabold text-[var(--text-primary)] flex items-center gap-2">
-            💳 수단등록
+            <CreditCard size={20} /> 수단등록
           </h2>
           <p className="text-[11px] text-[var(--text-muted)] mt-0.5">예산구분별 지출수단과 수익계정을 관리합니다</p>
         </div>
-        <span className="text-xs font-bold text-white px-3 py-1.5 rounded-full" style={{ background: direction === 'expense' ? '#f97316' : '#22c55e' }}>
+        <span className="text-xs font-bold text-white px-3 py-1.5 rounded-full w-fit shrink-0" style={{ background: direction === 'expense' ? '#f97316' : '#22c55e' }}>
           {selectedCatName || '전체'} • {direction === 'expense' ? `지출수단 ${filteredItems.length}건` : `수익계정`}
         </span>
       </div>
@@ -221,7 +246,7 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
         <div className="rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 bg-emerald-50/30 dark:bg-emerald-900/10 p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <span className="text-xl">📈</span>
+              <span className="text-xl text-emerald-500"><TrendingUp size={20} /></span>
               <div>
                 <h3 className="text-sm font-extrabold text-emerald-600">공통 수익계정</h3>
                 <p className="text-[10px] text-[var(--text-muted)]">입금전표 작성 시 선택할 수익계정을 관리합니다</p>
@@ -303,7 +328,7 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
           </div>
 
           <div className="mt-4 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800">
-            <p className="text-[10px] text-blue-600 font-bold">💡 입금전표 작성 시</p>
+            <p className="text-[10px] text-blue-600 font-bold flex items-center gap-1"><Lightbulb size={11} /> 입금전표 작성 시</p>
             <p className="text-[10px] text-[var(--text-muted)] mt-0.5">입금수단은 <b>지출수단</b>(계좌, 현금 등)에서 선택하고, 여기서 활성화한 수익계정 중 하나를 선택합니다.</p>
           </div>
         </div>
@@ -311,7 +336,7 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
       <>
 
       {/* 카테고리 탭 */}
-      <div className="flex gap-2">
+      <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
         {PAY_CATEGORIES.map(cat => {
           const count = filteredItems.filter(i => i.category === cat.key).length
           const isActive = activeCategory === cat.key
@@ -319,14 +344,14 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
             <button
               key={cat.key}
               onClick={() => { setActiveCategory(cat.key); setExpandedId(null) }}
-              className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all cursor-pointer ${
+              className={`py-2 px-1 sm:py-3 sm:px-4 rounded-xl border-2 transition-all cursor-pointer ${
                 isActive ? `${cat.bg} ${cat.border} shadow-sm` : 'bg-[var(--bg-surface)] border-transparent hover:border-[var(--border-default)]'
               }`}
             >
               <div className="flex flex-col items-center">
-                <cat.Icon size={18} style={{ color: isActive ? cat.color : undefined }} />
-                <div className={`text-[12px] font-extrabold mt-1 ${isActive ? '' : 'text-[var(--text-secondary)]'}`} style={isActive ? { color: cat.color } : undefined}>{cat.label}</div>
-                <div className="text-[10px] font-bold text-[var(--text-muted)] mt-0.5">{count}건</div>
+                <cat.Icon size={16} style={{ color: isActive ? cat.color : undefined }} className="sm:w-[18px] sm:h-[18px]" />
+                <div className={`text-[11px] sm:text-[12px] font-extrabold mt-1 ${isActive ? '' : 'text-[var(--text-secondary)]'}`} style={isActive ? { color: cat.color } : undefined}>{cat.label}</div>
+                <div className="text-[9px] sm:text-[10px] font-bold text-[var(--text-muted)] mt-0.5">{count}건</div>
               </div>
             </button>
           )
@@ -349,7 +374,7 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
         {/* 어음: 수신/발행 서브탭 */}
         {activeCategory === '어음' ? (
           <div className="mb-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               {(['수신', '발행'] as const).map(sub => {
                 const subCount = filteredItems.filter(i => i.category === '어음' && (i.noteType || '') === sub).length
                 const isActive = noteSubTab === sub
@@ -358,15 +383,27 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
                   <button
                     key={sub}
                     onClick={() => { setNoteSubTab(sub); setExpandedId(null) }}
-                    className={`flex-1 py-2.5 px-4 rounded-xl border-2 transition-all cursor-pointer ${
+                    className={`flex-1 py-2 px-1.5 sm:py-2.5 sm:px-4 rounded-xl border-2 transition-all cursor-pointer ${
                       isActive ? 'shadow-sm' : 'bg-white/50 dark:bg-gray-900/30 border-transparent hover:border-[var(--border-default)]'
                     }`}
                     style={isActive ? { borderColor: subColor, background: `${subColor}08` } : undefined}
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      {sub === '수신' ? <ArrowDownCircle size={14} style={{ color: subColor }} /> : <ArrowUpCircle size={14} style={{ color: subColor }} />}
-                      <span className="text-[12px] font-extrabold" style={isActive ? { color: subColor } : { color: 'var(--text-secondary)' }}>{sub === '수신' ? '수신어음 (받을어음)' : '발행어음 (지급어음)'}</span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ color: subColor, background: `${subColor}15` }}>{subCount}</span>
+                    <div className="flex items-center justify-center gap-1 sm:gap-2">
+                      {sub === '수신' ? <ArrowDownCircle size={13} style={{ color: subColor }} className="shrink-0" /> : <ArrowUpCircle size={13} style={{ color: subColor }} className="shrink-0" />}
+                      <span className="text-[11px] sm:text-[12px] font-extrabold whitespace-nowrap" style={isActive ? { color: subColor } : { color: 'var(--text-secondary)' }}>
+                        {sub === '수신' ? (
+                          <>
+                            <span className="hidden xs:inline">수신어음 (받을어음)</span>
+                            <span className="inline xs:hidden">받을어음</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="hidden xs:inline">발행어음 (지급어음)</span>
+                            <span className="inline xs:hidden">지급어음</span>
+                          </>
+                        )}
+                      </span>
+                      <span className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0" style={{ color: subColor, background: `${subColor}15` }}>{subCount}</span>
                     </div>
                   </button>
                 )
@@ -385,10 +422,10 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
                   addToast('success', `${noteSubTab}어음 "${nm}" 추가`)
                   setRefresh(r => r + 1)
                 }}
-                className="px-3 py-2.5 rounded-xl text-white text-sm font-bold transition-all cursor-pointer hover:shadow-md flex items-center gap-1.5 shrink-0"
+                className="px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl text-white text-xs sm:text-sm font-bold transition-all cursor-pointer hover:shadow-md flex items-center gap-1 shrink-0"
                 style={{ background: noteSubTab === '수신' ? '#3b82f6' : '#ef4444' }}
               >
-                <Plus size={14} /> 추가
+                <Plus size={13} /> 추가
               </button>
             </div>
           </div>
@@ -502,7 +539,7 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
             <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-gray-900 rounded-xl border border-[var(--border-default)] shadow-lg max-h-[320px] flex flex-col">
               {/* 헤더 */}
               <div className="p-2.5 border-b border-[var(--border-default)] flex items-center justify-between shrink-0">
-                <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase">📋 지출수단에서 선택 ({filteredExpenseItems.length}건)</span>
+                <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase flex items-center gap-1"><ClipboardList size={11} /> 지출수단에서 선택 ({filteredExpenseItems.length}건)</span>
                 <div className="flex items-center gap-2">
                   {selectableItems.length > 0 && (
                     <button
@@ -608,64 +645,70 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
               return (
                 <div key={item.id} className={`rounded-xl transition-all border ${isOpen ? 'border-[var(--border-default)] bg-white dark:bg-gray-900/60 shadow-sm' : 'border-transparent bg-white/70 dark:bg-gray-900/30 hover:bg-white dark:hover:bg-gray-800/50 hover:border-[var(--border-default)]'}`}>
                   {/* 메인 행 */}
-                  <div className="flex items-center gap-3 px-3.5 py-2.5 cursor-pointer group" onClick={() => setExpandedId(isOpen ? null : item.id)}>
-                    <span className="text-[10px] font-bold w-5 text-center shrink-0 rounded-full py-0.5" style={{ color: activeCatInfo.color, background: `${activeCatInfo.color}15` }}>{idx + 1}</span>
-                    <input value={item.name} onChange={e => { e.stopPropagation(); updateField(item.id, 'name', e.target.value) }} onClick={e => e.stopPropagation()} placeholder="이름 입력" className="text-sm font-semibold text-[var(--text-primary)] flex-1 bg-transparent border-none outline-none focus:bg-[var(--bg-muted)] focus:px-2 focus:rounded-md transition-all" />
-                    {activeCategory === '현금' && (() => {
-                      const cfs: CashFlow[] = getItem('acct_cashflows', [])
-                      const cashIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                      const cashOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '현금' && (cf as any).creditDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                      const cashOutE = cfs.filter(cf => (cf.type === 'withdrawal' || cf.type === 'expense') && ((cf as any).payMethod || (cf as any).method) === '현금' && ((cf as any).payDetail || '') === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                      const bal = (item.initialBalance || 0) + cashIn - cashOutT - cashOutE
-                      return (
-                        <>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap">1-01-01 현금</span>
-                          <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap ${bal < 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-600' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600'}`}>
-                            💰 {bal.toLocaleString('ko-KR')}원
-                          </span>
-                        </>
-                      )
-                    })()}
-                    {activeCategory === '상품권' && (() => {
-                      const qty = item.voucherQty || 0
-                      const cfs: CashFlow[] = getItem('acct_cashflows', [])
-                      const usedQty = cfs.filter(cf => (cf.type === 'withdrawal' || cf.type === 'expense') && ((cf as any).payMethod || (cf as any).method) === '상품권' && ((cf as any).payDetail || '') === item.name).length
-                      const remain = qty - usedQty
-                      return (
-                        <>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-pink-50 dark:bg-pink-900/20 text-pink-600 whitespace-nowrap">1-01-08 상품권</span>
-                          {qty > 0 && (
-                            <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap ${remain <= 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-600' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600'}`}>
-                              🎫 {remain}매 / {qty}매
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3.5 py-2.5 cursor-pointer group" onClick={() => setExpandedId(isOpen ? null : item.id)}>
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <span className="text-[10px] font-bold w-5 h-5 flex items-center justify-center shrink-0 rounded-full py-0.5" style={{ color: activeCatInfo.color, background: `${activeCatInfo.color}15` }}>{idx + 1}</span>
+                      <input value={item.name} onChange={e => { e.stopPropagation(); updateField(item.id, 'name', e.target.value) }} onClick={e => e.stopPropagation()} placeholder="이름 입력" className="text-sm font-semibold text-[var(--text-primary)] flex-1 min-w-0 bg-transparent border-none outline-none focus:bg-[var(--bg-muted)] focus:px-2 focus:rounded-md transition-all" />
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto flex-wrap justify-end">
+                      {activeCategory === '현금' && (() => {
+                        const cfs: CashFlow[] = getItem('acct_cashflows', [])
+                        const cashIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                        const cashOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '현금' && (cf as any).creditDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                        const cashOutE = cfs.filter(cf => (cf.type === 'withdrawal' || cf.type === 'expense') && ((cf as any).payMethod || (cf as any).method) === '현금' && ((cf as any).payDetail || '') === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                        const bal = (item.initialBalance || 0) + cashIn - cashOutT - cashOutE
+                        return (
+                          <>
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 whitespace-nowrap shrink-0">1-01-01 현금</span>
+                            <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0 ${bal < 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-600' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600'} flex items-center gap-1`}>
+                              <Coins size={10} /> {bal.toLocaleString('ko-KR')}원
                             </span>
-                          )}
-                        </>
-                      )
-                    })()}
-                    {activeCategory === '계좌' && (() => {
-                      const cfs: CashFlow[] = getItem('acct_cashflows', [])
-                      const acctIn = cfs.filter(cf => cf.type === 'income' && ((cf as any).payMethod || (cf as any).method) === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                      const acctInT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '계좌' && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                      const acctOut = cfs.filter(cf => (cf.type === 'withdrawal' || cf.type === 'expense') && ((cf as any).payMethod || (cf as any).method?.split(':')[0]) === '계좌' && ((cf as any).payDetail || (cf as any).method?.split(':')[1] || '') === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                      const acctOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '계좌' && (cf as any).creditDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
-                      const bal = (item.initialBalance || 0) + acctIn + acctInT - acctOut - acctOutT
-                      return (
-                        <>
-                          {item.bankName && !isOpen && <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[200px]">{item.bankName} {item.accountNumber ? `• ${item.accountNumber}` : ''}</span>}
-                          <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap ${bal < 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-600' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600'}`}>
-                            {bal.toLocaleString('ko-KR')}원
-                          </span>
-                        </>
-                      )
-                    })()}
-                    {/* 연결된 계정과목 표시 */}
-                    {activeCategory !== '현금' && activeCategory !== '상품권' && (item as any).accountCode && !isOpen && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-900/20 text-violet-600">{(item as any).accountCode}</span>
-                    )}
-                    <ChevronDown size={14} className={`text-[var(--text-muted)] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                    <button onClick={e => { e.stopPropagation(); handleDelete(item.id) }} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Trash2 size={13} />
-                    </button>
+                          </>
+                        )
+                      })()}
+                      {activeCategory === '상품권' && (() => {
+                        const qty = item.voucherQty || 0
+                        const cfs: CashFlow[] = getItem('acct_cashflows', [])
+                        const usedQty = cfs.filter(cf => (cf.type === 'withdrawal' || cf.type === 'expense') && ((cf as any).payMethod || (cf as any).method) === '상품권' && ((cf as any).payDetail || '') === item.name).length
+                        const remain = qty - usedQty
+                        return (
+                          <>
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-pink-50 dark:bg-pink-900/20 text-pink-600 whitespace-nowrap shrink-0">1-01-08 상품권</span>
+                            {qty > 0 && (
+                              <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0 ${remain <= 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-600' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600'} flex items-center gap-1`}>
+                                <Ticket size={10} /> {remain}매 / {qty}매
+                              </span>
+                            )}
+                          </>
+                        )
+                      })()}
+                      {activeCategory === '계좌' && (() => {
+                        const cfs: CashFlow[] = getItem('acct_cashflows', [])
+                        const acctIn = cfs.filter(cf => cf.type === 'income' && ((cf as any).payMethod || (cf as any).method) === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                        const acctInT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '계좌' && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                        const acctOut = cfs.filter(cf => (cf.type === 'withdrawal' || cf.type === 'expense') && ((cf as any).payMethod || (cf as any).method?.split(':')[0]) === '계좌' && ((cf as any).payDetail || (cf as any).method?.split(':')[1] || '') === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                        const acctOutT = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '계좌' && (cf as any).creditDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                        const bal = (item.initialBalance || 0) + acctIn + acctInT - acctOut - acctOutT
+                        return (
+                          <>
+                            {item.bankName && !isOpen && <span className="text-[10px] text-[var(--text-muted)] truncate max-w-[120px] sm:max-w-[200px] whitespace-nowrap shrink-0">{item.bankName} {item.accountNumber ? `• ${item.accountNumber}` : ''}</span>}
+                            <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0 ${bal < 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-600' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600'}`}>
+                              {bal.toLocaleString('ko-KR')}원
+                            </span>
+                          </>
+                        )
+                      })()}
+                      {/* 연결된 계정과목 표시 */}
+                      {activeCategory !== '현금' && activeCategory !== '상품권' && (item as any).accountCode && !isOpen && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-900/20 text-violet-600 whitespace-nowrap shrink-0">{(item as any).accountCode}</span>
+                      )}
+                      <div className="flex items-center gap-1 shrink-0 ml-1">
+                        <ChevronDown size={14} className={`text-[var(--text-muted)] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                        <button onClick={e => { e.stopPropagation(); handleDelete(item.id) }} className="p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-danger cursor-pointer opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   {/* 상세 필드 */}
@@ -676,9 +719,9 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
                       <div className="mb-3 mt-3 p-3 rounded-lg bg-violet-50/50 dark:bg-violet-900/10 border border-violet-200 dark:border-violet-800">
                         {direction === 'income' ? (
                           <>
-                            <label className="text-[11px] font-bold text-violet-600 mb-2 block">📋 계정과목 연결 (입금전표 자동 설정)</label>
+                            <label className="text-[11px] font-bold text-violet-600 mb-2 block flex items-center gap-1"><ClipboardList size={12} /> 계정과목 연결 (입금전표 자동 설정)</label>
                             <div className="mb-3">
-                              <label className="text-[10px] font-bold text-blue-500 mb-1 block">💰 차변 (입금처 - 자산계정) — 고정</label>
+                              <label className="text-[10px] font-bold text-blue-500 mb-1 block flex items-center gap-1"><Coins size={11} /> 차변 (입금처 - 자산계정) — 고정</label>
                               {activeCategory === '현금' ? (
                                 <div className={`${DETAIL_INPUT} !bg-[var(--bg-muted)] flex items-center gap-1.5`}>
                                   <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded">자산</span>
@@ -704,7 +747,7 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
                             </div>
                             <div>
                               <div className="flex items-center justify-between mb-1">
-                                <label className="text-[10px] font-bold text-emerald-500">📈 대변 (수익계정) — 복수 등록 가능</label>
+                                <label className="text-[10px] font-bold text-emerald-500 flex items-center gap-1"><TrendingUp size={11} /> 대변 (수익계정) — 복수 등록 가능</label>
                                 <button
                                   onClick={() => {
                                     const codes: string[] = (item as any).revenueAccountCodes || ((item as any).revenueAccountCode ? [(item as any).revenueAccountCode] : [])
@@ -753,7 +796,7 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
                           </>
                         ) : (
                           <>
-                            <label className="text-[11px] font-bold text-violet-600 mb-1 block">📋 계정과목 연결</label>
+                            <label className="text-[11px] font-bold text-violet-600 mb-1 block flex items-center gap-1"><ClipboardList size={12} /> 계정과목 연결</label>
                             <select
                               value={(item as any).accountCode || ''}
                               onChange={e => updateField(item.id, 'accountCode', e.target.value)}
@@ -862,7 +905,7 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
                             />
                           </div>
                           <div>
-                            <label className={DETAIL_FIELD_LABEL}>💰 현금잔액</label>
+                            <label className={cn(DETAIL_FIELD_LABEL, "flex items-center gap-1")}><Coins size={11} /> 현금잔액</label>
                             {(() => {
                               const cfs: CashFlow[] = getItem('acct_cashflows', [])
                               const cashIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
@@ -984,7 +1027,7 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
                                                       }}
                                                       className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--bg-muted)] cursor-pointer flex items-center gap-2 transition-colors"
                                                     >
-                                                      <span className="text-[10px]">🏢</span>
+                                                      <span className="text-[10px] text-[var(--text-muted)]"><Building2 size={11} /></span>
                                                       <span className="font-semibold text-[var(--text-primary)]">{v.name}</span>
                                                       {v.ceoName && <span className="text-[10px] text-[var(--text-muted)]">대표: {v.ceoName}</span>}
                                                     </button>
@@ -1082,7 +1125,7 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
                                                                   updateNote(item.id, note.id, 'endorsements', updated)
                                                                   setEndDropKey(null)
                                                                 }} className="w-full text-left px-2.5 py-1.5 text-[11px] hover:bg-[var(--bg-muted)] cursor-pointer flex items-center gap-1.5">
-                                                                  <span className="text-[10px]">🏢</span>
+                                                                  <span className="text-[10px] text-[var(--text-muted)]"><Building2 size={11} /></span>
                                                                   <span className="font-semibold">{v.name}</span>
                                                                   {v.ceoName && <span className="text-[9px] text-[var(--text-muted)]">대표: {v.ceoName}</span>}
                                                                 </button>
@@ -1187,7 +1230,7 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
                                                           link.click()
                                                         }}
                                                       >
-                                                        <span className="text-lg">📄</span>
+                                                        <span className="text-lg text-[var(--text-secondary)]"><FileText size={18} /></span>
                                                         <span className="text-[9px] text-[var(--text-muted)] mt-0.5">PDF</span>
                                                       </div>
                                                     )}
@@ -1239,7 +1282,7 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
                             </select>
                           </div>
                           <div>
-                            <label className={DETAIL_FIELD_LABEL}>🎫 잔여수량</label>
+                            <label className={cn(DETAIL_FIELD_LABEL, "flex items-center gap-1")}><Ticket size={11} /> 잔여수량</label>
                             {(() => {
                               const qty = item.voucherQty || 0
                               const cfs: CashFlow[] = getItem('acct_cashflows', [])
@@ -1276,7 +1319,7 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
                               {item.cards.map((card, ci) => (
                                 <div key={card.id} className="rounded-lg border border-blue-100 dark:border-blue-900/30 bg-blue-50/30 dark:bg-blue-900/5 p-3">
                                   <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[10px] font-bold text-blue-500">💳 카드 {ci + 1}</span>
+                                    <span className="text-[10px] font-bold text-blue-500 flex items-center gap-1"><CreditCard size={11} /> 카드 {ci + 1}</span>
                                     <button onClick={() => deleteCard(item.id, card.id)} className="text-[10px] text-red-400 hover:text-red-600 cursor-pointer flex items-center gap-0.5"><Trash2 size={10} /> 삭제</button>
                                   </div>
                                   <div className="grid grid-cols-2 gap-2">
