@@ -98,7 +98,7 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
   const [formTitle, setFormTitle] = useState(() => {
     if (data.isTransfer) return '대체결의서'
     if (data.isGeneral) return localStorage.getItem('pf_title_general') || '품 의 서'
-    if (data.approvalType === '선지출') return '지출결의서'
+    if (data.approvalType === '선지출') return '선지출 품의서'
     return localStorage.getItem('pf_title') || '지출품의서'
   })
   const [printWidth, setPrintWidth] = useState(() => Number(localStorage.getItem('pf_width')) || 210)
@@ -481,7 +481,11 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
                 금 {numberToKorean(data.amount || 0)}
               </div>
               <div className="pf-declaration-text">
-                상기 금액을 용도에 따라 지출하였음을 결의합니다.
+                {data.isTransfer
+                  ? '상기 금액을 내용과 같이 지출하였음을 결의합니다.'
+                  : data.approvalType === '선지출'
+                    ? '상기 금액을 내용과 같이 선지출 품의를 올리오니 승인하여 주시기 바랍니다.'
+                    : '상기 금액을 내용과 같이 지출하고자 하오니 승인하여 주시기 바랍니다.'}
               </div>
             </div>
 

@@ -7,11 +7,12 @@ import { saveAttachmentImage, deleteAttachmentImage } from '../../../utils/attac
 import { PrintApprovalForm } from '../../../components/accounting/PrintApprovalForm'
 import type { BudgetCat, BudgetItem, BudgetItemDef, CashFlow, Approval, Voucher, PayMethodItem } from './types'
 import { getLocalDate, getLocalISOString, uid } from './utils'
-import { Wallet, ArrowDownCircle, ArrowUpCircle, ScrollText, Clock, ChevronDown, Trash2, Save, X, Check, ShieldCheck, RefreshCw, Paperclip, Eye, ArrowLeftRight } from 'lucide-react'
+import { Wallet, ArrowDownCircle, ArrowUpCircle, ScrollText, Clock, ChevronDown, Trash2, Save, X, Check, ShieldCheck, RefreshCw, Paperclip, Eye, ArrowLeftRight, ClipboardList, Banknote, CreditCard, TrendingDown, TrendingUp, Building2 } from 'lucide-react'
 import { cn } from '../../../utils/cn'
 import { EmptyState } from '../../../components/common/EmptyState'
 import { DatePicker } from '../../../components/ui/DatePicker'
 import { CustomSelect } from '../../../components/ui/CustomSelect'
+import { PayMethodSelector, type PayMethodGroup, type PayMethodOption } from '../../../components/ui/PayMethodSelector'
 import { useAuthStore } from '../../../stores/authStore'
 import { useStaffStore } from '../../../stores/staffStore'
 
@@ -564,6 +565,8 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
           if (approverStaff) autoApprover = approverStaff.name
         }
       }
+      // 선지출 품의 담당자: 출금전표에서 선택한 담당자 (없으면 현재 사용자)
+      const preExpApplicant = form.manager || currentUserName
       // 이름으로 budgetItemId, budgetSubId 매핑
       const matchedItem = budgets.find(b => String(b.catId) === String(selectedBudgetCat) && b.itemName === wdBudgetItem)
       const matchedSub = form.subItem ? budgets.find(b => String(b.catId) === String(selectedBudgetCat) && b.itemName === wdBudgetItem && b.subItemName === form.subItem) : null
@@ -584,7 +587,7 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
               amount: amt,
               date: form.tradeDate,
               description: (form as any).memo || `출금전표 선지출 - ${wdBudgetItem}${form.subItem ? ' > ' + form.subItem : ''}`,
-              applicant: currentUserName,
+              applicant: preExpApplicant,
               approver: autoApprover || (a as any).approver || '',
               budgetItem: wdBudgetItem,
               budgetSubItem: form.subItem || '',
@@ -617,7 +620,7 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
           createdAt: getLocalISOString(),
           accountCode: '',
           description: (form as any).memo || `출금전표 선지출 - ${wdBudgetItem}${form.subItem ? ' > ' + form.subItem : ''}`,
-          applicant: currentUserName,
+          applicant: preExpApplicant,
           approver: autoApprover,
           budgetItem: wdBudgetItem,
           budgetSubItem: form.subItem || '',
@@ -1477,57 +1480,73 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
                   </select>
                 )
               }
+              // PayMethodSelector용 groups 구성
+              const wdPmGroups: PayMethodGroup[] = []
+              const wdTransferItems: PayMethodOption[] = []
+              const wdCardItems: PayMethodOption[] = []
+              bankGroups.forEach(bg => {
+                // 이체 항목
+                wdTransferItems.push({
+                  value: `계좌:${bg.bank.name}`,
+                  label: `${bg.bank.name}${bg.bank.bankName ? ' (' + bg.bank.bankName + ')' : ''}`,
+                  sub: `${bg.bank.accountNumber || ''} | 잔액 ${bg.balance.toLocaleString()}원`,
+                  section: '이체',
+                })
+                // 카드 항목 (연결 은행 + 계좌 정보 표시)
+                ;(bg.cards || []).forEach((card: any) => {
+                  wdCardItems.push({
+                    value: `카드:${card.cardName || card.cardNumber}`,
+                    label: `${card.cardName || '카드'}`,
+                    sub: `${card.cardNumber || ''} | ${bg.bank.name}${bg.bank.bankName ? ' ' + bg.bank.bankName : ''}${bg.bank.accountNumber ? ' ' + bg.bank.accountNumber : ''}`,
+                    isCard: true,
+                    section: '카드',
+                  })
+                })
+              })
+              const wdAcctItems = [...wdTransferItems, ...wdCardItems]
+              if (wdAcctItems.length > 0) wdPmGroups.push({ id: 'account', label: '계좌', items: wdAcctItems })
+              // 현금: 이름과 잔액 분리
+              const wdCashItems: PayMethodOption[] = payItems.filter(p => p.category === '현금').map(p => {
+                const bal = calcCashBal(p)
+                return { value: p.name, label: p.name, sub: `잔액 ${bal.toLocaleString()}원` }
+              })
+              if (wdCashItems.length > 0) wdPmGroups.push({ id: 'cash', label: '현금', items: wdCashItems })
+              const wdNoteItems = payOpts.filter(o => o.group === '어음').map(o => ({ value: o.value, label: o.label }))
+              if (wdNoteItems.length > 0) wdPmGroups.push({ id: 'note', label: '어음', items: wdNoteItems })
+              // 상품권: 이름과 잔여수 분리
+              const wdVoucherItems: PayMethodOption[] = payItems.filter(p => p.category === '상품권').map(p => {
+                const remain = calcVoucherRemain(p)
+                const qty = p.voucherQty || 0
+                return { value: p.name, label: p.name, sub: `잔여 ${remain}매 / ${qty}매` }
+              })
+              if (wdVoucherItems.length > 0) wdPmGroups.push({ id: 'voucher', label: '상품권', items: wdVoucherItems })
               return (
-                <select value={form.method} onChange={e => {
-                  const val = e.target.value
-                  setForm(f => ({ ...f, method: val }))
-                  // 어음 선택 시 해당 노트의 수취인/발행인을 거래처로 자동 설정
-                  if (val.startsWith('어음:')) {
-                    const parts = val.split(':')
-                    const itemName = parts[1]
-                    const noteId = Number(parts[2])
-                    const matchItem = payItems.find(p => p.name === itemName)
-                    if (matchItem) {
-                      const matchNote = (matchItem.notes || []).find((n: any) => n.id === noteId)
-                      if (matchNote) {
-                        const vendor = matchItem.noteType === '발행' ? (matchNote.receiver || '') : (matchNote.issuer || '')
-                        const amt = matchNote.amount ? Number(matchNote.amount).toLocaleString() : ''
-                        setForm(f => ({ ...f, ...(vendor ? { counter: vendor } : {}), ...(amt ? { amount: amt } : {}) }))
-                        if (vendor) setCounterSearch('')
-                        // 만기일 → 지급예정일 연동
-                        if (matchNote.maturityDate) {
-                          setIsPayable(true)
-                          setExpectedDate(matchNote.maturityDate)
+                <PayMethodSelector
+                  value={form.method}
+                  onChange={(val) => {
+                    setForm(f => ({ ...f, method: val }))
+                    if (val.startsWith('어음:')) {
+                      const parts = val.split(':')
+                      const itemName = parts[1]
+                      const noteId = Number(parts[2])
+                      const matchItem = payItems.find(p => p.name === itemName)
+                      if (matchItem) {
+                        const matchNote = (matchItem.notes || []).find((n: any) => n.id === noteId)
+                        if (matchNote) {
+                          const vendor = matchItem.noteType === '발행' ? (matchNote.receiver || '') : (matchNote.issuer || '')
+                          const amt = matchNote.amount ? Number(matchNote.amount).toLocaleString() : ''
+                          setForm(f => ({ ...f, ...(vendor ? { counter: vendor } : {}), ...(amt ? { amount: amt } : {}) }))
+                          if (vendor) setCounterSearch('')
+                          if (matchNote.maturityDate) {
+                            setIsPayable(true)
+                            setExpectedDate(matchNote.maturityDate)
+                          }
                         }
                       }
                     }
-                  }
-                }} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
-                  <option value="">— 선택 —</option>
-                  {bankGroups.map(bg => (
-                    <optgroup key={bg.bank.name} label={`${bg.bank.name}${bg.bank.bankName ? ' (' + bg.bank.bankName + ')' : ''} [잔액 ${bg.balance.toLocaleString()}원]`}>
-                      <option value={`계좌:${bg.bank.name}`}>계좌이체{bg.bank.accountNumber ? ' • ' + bg.bank.accountNumber : ''}</option>
-                      {bg.cards.map((card: any) => (
-                        <option key={card.id || card.cardNumber} value={`카드:${card.cardName || card.cardNumber}`}>💳 {card.cardName || '카드'}{card.cardNumber ? ' ' + card.cardNumber : ''}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                  {payOpts.filter(o => o.group === '현금').length > 0 && (
-                    <optgroup label="💵 현금">
-                      {payOpts.filter(o => o.group === '현금').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </optgroup>
-                  )}
-                  {payOpts.filter(o => o.group === '어음').length > 0 && (
-                    <optgroup label="📄 어음">
-                      {payOpts.filter(o => o.group === '어음').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </optgroup>
-                  )}
-                  {payOpts.filter(o => o.group === '상품권').length > 0 && (
-                    <optgroup label="🎟️ 상품권">
-                      {payOpts.filter(o => o.group === '상품권').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </optgroup>
-                  )}
-                </select>
+                  }}
+                  groups={wdPmGroups}
+                />
               )
             })()}
           </div>
@@ -2070,7 +2089,7 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
             {/* ── 상단: 품의 정보 (읽기전용) ── */}
             <div className="p-4 space-y-3 border-b border-[var(--border-default)] bg-amber-50/60 dark:bg-amber-900/5">
               <div className="flex items-center gap-1.5 mb-2">
-                <span className="text-[11px] font-bold text-amber-600">📋 품의 정보</span>
+                <span className="text-[11px] font-bold text-amber-600 flex items-center gap-1"><ClipboardList size={12} /> 품의 정보</span>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5">
                 <div>
@@ -2187,7 +2206,7 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
                     filteredPM.filter(p => p.category === '계좌').forEach(p => {
                       bankGroups2.push({ bank: p, cards: p.cards || [] })
                     })
-                    filteredPM.filter(p => p.category === '현금').forEach(p => payOptions.push({ value: p.name, label: `💵 ${p.name}`, group: '현금' }))
+                    filteredPM.filter(p => p.category === '현금').forEach(p => payOptions.push({ value: p.name, label: `${p.name}`, group: '현금' }))
                     // 어음: notes(실제 어음 리스트)가 있는 항목만 표시
                     filteredPM.filter(p => p.category === '어음' && p.notes && p.notes.length > 0).forEach(p => {
                       const validNotes = p.notes.filter((note: any) => (note.noteNumber && String(note.noteNumber).trim()) || (note.amount && Number(note.amount) > 0))
@@ -2195,60 +2214,93 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
                       validNotes.forEach((note: any) => {
                         const typeLabel = p.noteType === '발행' ? '발행' : '수신'
                         const amt = note.amount ? Number(note.amount).toLocaleString() + '원' : ''
-                        const label = `📄 ${p.name} - ${typeLabel} ${note.noteNumber || ''} ${amt}`.trim()
+                        const label = `${p.name} - ${typeLabel} ${note.noteNumber || ''} ${amt}`.trim()
                         payOptions.push({ value: `어음:${p.name}:${note.id}`, label, group: '어음' })
                       })
                     })
-                    filteredPM.filter(p => p.category === '상품권').forEach(p => payOptions.push({ value: p.name, label: `🎟️ ${p.name}`, group: '상품권' }))
+                    filteredPM.filter(p => p.category === '상품권').forEach(p => payOptions.push({ value: p.name, label: `${p.name}`, group: '상품권' }))
+                    // PayMethodSelector용 groups 구성
+                    const pmGroups: PayMethodGroup[] = []
+                    const expTransferItems: PayMethodOption[] = []
+                    const expCardItems: PayMethodOption[] = []
+                    // 잔액 계산용 cashflow 데이터
+                    const expCfs: CashFlow[] = getItem('acct_cashflows', [])
+                    const expCfPM = (cf: any) => cf.payMethod || (cf.method?.includes(':') ? cf.method.split(':')[0] : cf.method) || ''
+                    const expCfPD = (cf: any) => cf.payDetail || (cf.method?.includes(':') ? cf.method.split(':')[1] : '') || ''
+                    const expIsWd = (cf: any) => cf.type === 'withdrawal' || cf.type === 'expense'
+                    bankGroups2.forEach(bg => {
+                      // 잔액 계산
+                      const acctIn = expCfs.filter(cf => cf.type === 'income' && expCfPM(cf) === bg.bank.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const acctInT = expCfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '계좌' && (cf as any).debitDetail === bg.bank.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const acctOut = expCfs.filter(cf => expIsWd(cf) && expCfPM(cf) === '계좌' && expCfPD(cf) === bg.bank.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const acctOutT = expCfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '계좌' && (cf as any).creditDetail === bg.bank.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const balance = (bg.bank.initialBalance || 0) + acctIn + acctInT - acctOut - acctOutT
+                      // 이체 항목
+                      expTransferItems.push({
+                        value: `계좌:${bg.bank.name}`,
+                        label: `${bg.bank.name}${bg.bank.bankName ? ' (' + bg.bank.bankName + ')' : ''}`,
+                        sub: `${bg.bank.accountNumber || ''} | 잔액 ${balance.toLocaleString()}원`,
+                        section: '이체',
+                      })
+                      // 카드 항목 (연결 은행 + 계좌 정보 표시)
+                      ;(bg.cards || []).forEach((card: any) => {
+                        expCardItems.push({
+                          value: `카드:${card.cardName || card.cardNumber}`,
+                          label: `${card.cardName || '카드'}`,
+                          sub: `${card.cardNumber || ''} | ${bg.bank.name}${bg.bank.bankName ? ' ' + bg.bank.bankName : ''}${bg.bank.accountNumber ? ' ' + bg.bank.accountNumber : ''}`,
+                          isCard: true,
+                          section: '카드',
+                        })
+                      })
+                    })
+                    const acctItems = [...expTransferItems, ...expCardItems]
+                    if (acctItems.length > 0) pmGroups.push({ id: 'account', label: '계좌', items: acctItems })
+                    // 현금 잔액 계산
+                    const cashItems: PayMethodOption[] = filteredPM.filter(p => p.category === '현금').map(p => {
+                      const cashIn = expCfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === '현금' && (cf as any).debitDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const cashOutT = expCfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === '현금' && (cf as any).creditDetail === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const cashOutE = expCfs.filter(cf => expIsWd(cf) && expCfPM(cf) === '현금' && expCfPD(cf) === p.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+                      const cashBal = (p.initialBalance || 0) + cashIn - cashOutT - cashOutE
+                      return { value: p.name, label: p.name, sub: `잔액 ${cashBal.toLocaleString()}원` }
+                    })
+                    if (cashItems.length > 0) pmGroups.push({ id: 'cash', label: '현금', items: cashItems })
+                    const noteItems = payOptions.filter(o => o.group === '어음').map(o => ({ value: o.value, label: o.label }))
+                    if (noteItems.length > 0) pmGroups.push({ id: 'note', label: '어음', items: noteItems })
+                    // 상품권 잔여수 계산
+                    const voucherItems: PayMethodOption[] = filteredPM.filter(p => p.category === '상품권').map(p => {
+                      const qty = p.voucherQty || 0
+                      const usedQty = expCfs.filter(cf => expIsWd(cf) && expCfPM(cf) === '상품권' && expCfPD(cf) === p.name).length
+                      const remain = qty - usedQty
+                      return { value: p.name, label: p.name, sub: `잔여 ${remain}매 / ${qty}매` }
+                    })
+                    if (voucherItems.length > 0) pmGroups.push({ id: 'voucher', label: '상품권', items: voucherItems })
                     return (
-                      <select value={form.method} onChange={e => {
-                        const val = e.target.value
-                        setForm(f => ({ ...f, method: val }))
-                        if (val.startsWith('어음:')) {
-                          const parts = val.split(':')
-                          const itemName = parts[1]
-                          const noteId = Number(parts[2])
-                          const matchItem = filteredPM.find(p => p.name === itemName)
-                          if (matchItem) {
-                            const matchNote = (matchItem.notes || []).find((n: any) => n.id === noteId)
-                            if (matchNote) {
-                              const vendor = matchItem.noteType === '발행' ? (matchNote.receiver || '') : (matchNote.issuer || '')
-                              const amt = matchNote.amount ? Number(matchNote.amount).toLocaleString() : ''
-                              setForm(f => ({ ...f, ...(vendor ? { counter: vendor } : {}), ...(amt ? { amount: amt } : {}) }))
-                              if (vendor) setCounterSearch('')
-                              if (matchNote.maturityDate) {
-                                setIsPayable(true)
-                                setExpectedDate(matchNote.maturityDate)
+                      <PayMethodSelector
+                        value={form.method}
+                        onChange={(val) => {
+                          setForm(f => ({ ...f, method: val }))
+                          if (val.startsWith('어음:')) {
+                            const parts = val.split(':')
+                            const itemName = parts[1]
+                            const noteId = Number(parts[2])
+                            const matchItem = filteredPM.find(p => p.name === itemName)
+                            if (matchItem) {
+                              const matchNote = (matchItem.notes || []).find((n: any) => n.id === noteId)
+                              if (matchNote) {
+                                const vendor = matchItem.noteType === '발행' ? (matchNote.receiver || '') : (matchNote.issuer || '')
+                                const amt = matchNote.amount ? Number(matchNote.amount).toLocaleString() : ''
+                                setForm(f => ({ ...f, ...(vendor ? { counter: vendor } : {}), ...(amt ? { amount: amt } : {}) }))
+                                if (vendor) setCounterSearch('')
+                                if (matchNote.maturityDate) {
+                                  setIsPayable(true)
+                                  setExpectedDate(matchNote.maturityDate)
+                                }
                               }
                             }
                           }
-                        }
-                      }} className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:outline-none focus:border-primary-500">
-                        <option value="">— 선택 —</option>
-                        {bankGroups2.map(bg => (
-                          <optgroup key={bg.bank.name} label={`🏦 ${bg.bank.name}${bg.bank.bankName ? ' (' + bg.bank.bankName + ')' : ''}`}>
-                            <option value={`계좌:${bg.bank.name}`}>계좌이체{bg.bank.accountNumber ? ' • ' + bg.bank.accountNumber : ''}</option>
-                            {bg.cards.map((card: any) => (
-                              <option key={card.id || card.cardNumber} value={`카드:${card.cardName || card.cardNumber}`}>💳 {card.cardName || '카드'}{card.cardNumber ? ' ' + card.cardNumber : ''}</option>
-                            ))}
-                          </optgroup>
-                        ))}
-                        {payOptions.filter(o => o.group === '현금').length > 0 && (
-                          <optgroup label="💵 현금">
-                            {payOptions.filter(o => o.group === '현금').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                          </optgroup>
-                        )}
-                        {payOptions.filter(o => o.group === '어음').length > 0 && (
-                          <optgroup label="📄 어음">
-                            {payOptions.filter(o => o.group === '어음').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                          </optgroup>
-                        )}
-                        {payOptions.filter(o => o.group === '상품권').length > 0 && (
-                          <optgroup label="🎟️ 상품권">
-                            {payOptions.filter(o => o.group === '상품권').map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                          </optgroup>
-                        )}
-                      </select>
+                        }}
+                        groups={pmGroups}
+                      />
                     )
                   })()}
                 </div>

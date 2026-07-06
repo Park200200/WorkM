@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { Search, Bell, Moon, Sun, LogOut, User, Clock, ArrowRight, Timer, Calculator, Globe, ChevronRight, ChevronDown, FileCheck, Calendar } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
@@ -100,6 +100,29 @@ export function Header() {
     }, 2000)
   }
 
+  /* ── 상단 탭 드래그 스크롤 ── */
+  const budgetTabRef = useRef<HTMLDivElement>(null)
+  const tabDrag = useRef({ isDown: false, startX: 0, scrollLeft: 0 })
+  const onTabMouseDown = useCallback((e: React.MouseEvent) => {
+    const el = budgetTabRef.current
+    if (!el) return
+    tabDrag.current = { isDown: true, startX: e.pageX, scrollLeft: el.scrollLeft }
+  }, [])
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!tabDrag.current.isDown) return
+      e.preventDefault()
+      const el = budgetTabRef.current
+      if (!el) return
+      const dx = e.pageX - tabDrag.current.startX
+      el.scrollLeft = tabDrag.current.scrollLeft - dx
+    }
+    const onUp = () => { tabDrag.current.isDown = false }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
+  }, [])
+
   const renderBudgetSelectBar = (isMobile = false) => {
     const budgetCats = JSON.parse(localStorage.getItem('acct_budget_cats') || '[]') as any[]
     const activeTab = searchParams.get('tab') || 'overview'
@@ -139,9 +162,10 @@ export function Header() {
 
     return (
       <div className={cn(
-        "items-center gap-1 bg-[var(--bg-muted)] rounded-lg px-1 py-0.5 border border-[var(--border-default)]",
-        isMobile ? "flex w-full overflow-x-auto whitespace-nowrap scrollbar-none" : "hidden md:flex"
+        "items-center gap-1 bg-[var(--bg-muted)] rounded-lg px-1 py-0.5 border border-[var(--border-default)] overflow-hidden min-w-0",
+        isMobile ? "flex w-full" : "hidden md:flex"
       )}>
+        {/* 고정 영역 */}
         <span className="px-2 py-1 text-[11px] font-bold text-[var(--text-muted)] shrink-0">예산구분</span>
         {(() => {
           const appliedYear = parseInt(localStorage.getItem('acct_active_year') || '') || acctYear
@@ -159,15 +183,23 @@ export function Header() {
           title={isApprovalTab ? '품의하기에서는 예산선택 불가' : undefined}>
           전체
         </button>
-        {budgetCatsForYear.map((c: any) => (
-          <button key={c.id} onClick={() => setCat(String(c.id))}
-            className={cn('px-2.5 py-1 rounded-md text-[11px] font-bold transition-all shrink-0',
-              isApprovalTab ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
-              currentCat === String(c.id) ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)]' + (!isApprovalTab ? ' hover:text-[var(--text-primary)]' : ''))}
-            title={isApprovalTab ? '품의하기에서는 예산선택 불가' : undefined}>
-            {c.name}
-          </button>
-        ))}
+        {/* 스크롤 영역: 카테고리 목록만 */}
+        <div
+          ref={isMobile ? undefined : budgetTabRef}
+          onMouseDown={isMobile ? undefined : onTabMouseDown}
+          className="flex items-center gap-1 overflow-x-auto scrollbar-hide whitespace-nowrap select-none min-w-0"
+          style={!isMobile ? { cursor: 'grab' } : undefined}
+        >
+          {budgetCatsForYear.map((c: any) => (
+            <button key={c.id} onClick={() => setCat(String(c.id))}
+              className={cn('px-2.5 py-1 rounded-md text-[11px] font-bold transition-all shrink-0',
+                isApprovalTab ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer',
+                currentCat === String(c.id) ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)]' + (!isApprovalTab ? ' hover:text-[var(--text-primary)]' : ''))}
+              title={isApprovalTab ? '품의하기에서는 예산선택 불가' : undefined}>
+              {c.name}
+            </button>
+          ))}
+        </div>
       </div>
     )
   }

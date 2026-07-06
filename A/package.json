@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:fast": "vite build",
+    "deploy": "vite build && cd .. && git add -A && git commit -m \"deploy: build & push\" && git push",
     "lint": "eslint .",
     "preview": "vite preview"
   },

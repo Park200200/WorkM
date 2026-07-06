@@ -82,6 +82,12 @@ export default function AcctBudget({ year }: { year: number }) {
   /* ── 동의어 변경 ── */
   const [aliasDropId, setAliasDropId] = useState<string | null>(null) // "item:인건비" / "sub:인건비>기본급" / "det:인건비>기본급>정규직기본급"
 
+  /* ── 피커 모달 내 동의어 팝오버 ── */
+  const [pickerAliasPovId, setPickerAliasPovId] = useState<string | null>(null)
+  const [pickerAliasInput, setPickerAliasInput] = useState('')
+  const [pickerDisplayNames, setPickerDisplayNames] = useState<Record<string, string>>({})
+  const [pickerSearch, setPickerSearch] = useState('')
+
   /* ── 데이터 ── */
   const budgetCats = useMemo(() => {
     const cats = getItem<BudgetCat[]>('acct_budget_cats', [])
@@ -358,12 +364,21 @@ export default function AcctBudget({ year }: { year: number }) {
     if (!selCat) return
     // 이미 등록된 항목들을 체크 상태로 초기화 (정규화된 키 사용)
     const checked = new Set<string>()
+    const displayNames: Record<string, string> = {}
     filtered.forEach(b => {
-      checked.add(buildNormalizedKey(b))
+      const nk = buildNormalizedKey(b)
+      checked.add(nk)
+      // 현재 표시 이름 저장 (원래 def.name과 다를 수 있음)
+      const parts = nk.split('>')
+      if (parts.length === 1) displayNames[`item:${nk}`] = b.itemName
+      if (parts.length >= 2) displayNames[`sub:${nk}`] = b.subItemName || ''
+      if (parts.length === 3) displayNames[`det:${nk}`] = (b as any).detailItemName || ''
     })
     setPickerChecked(checked)
+    setPickerDisplayNames(displayNames)
     // 필터 이름도 정규화
     setPickerFilterItem(filterItemName ? normalizeItemName(filterItemName) : null)
+    setPickerSearch('')
     setBudgetPickerOpen(true)
   }
 
@@ -389,17 +404,21 @@ export default function AcctBudget({ year }: { year: number }) {
       } else {
         // 새로 추가: 예산과목에서 계정과목 자동 연결
         const parts = key.split('>')
-        const itemName = parts[0]
-        const subItemName = parts[1] || ''
-        const detailItemName = parts[2] || ''
-        const def = budgetItemDefs.find(d => d.name === itemName)
+        const defItemName = parts[0]
+        const defSubName = parts[1] || ''
+        const defDetName = parts[2] || ''
+        // 사용자가 선택한 표시이름 사용 (없으면 원본)
+        const displayItem = pickerDisplayNames[`item:${defItemName}`] || defItemName
+        const displaySub = defSubName ? (pickerDisplayNames[`sub:${defItemName}>${defSubName}`] || defSubName) : ''
+        const displayDet = defDetName ? (pickerDisplayNames[`det:${defItemName}>${defSubName}>${defDetName}`] || defDetName) : ''
+        const def = budgetItemDefs.find(d => d.name === defItemName)
         let acctCode = def?.defaultAccountCode || ''
         let contraAcctCode = def?.accountPool?.[0]?.contraAccountCode || ''
-        if (subItemName && def) {
-          const subDef = def.subItems.find(s => s.name === subItemName)
+        if (defSubName && def) {
+          const subDef = def.subItems.find(s => s.name === defSubName)
           if (subDef?.accountCode) acctCode = subDef.accountCode
-          if (detailItemName && subDef?.detailItems) {
-            const detDef = subDef.detailItems.find(d => d.name === detailItemName)
+          if (defDetName && subDef?.detailItems) {
+            const detDef = subDef.detailItems.find(d => d.name === defDetName)
             if (detDef?.accountCode) acctCode = detDef.accountCode
           }
         }
@@ -407,9 +426,9 @@ export default function AcctBudget({ year }: { year: number }) {
           id: Date.now() + Math.floor(Math.random() * 10000) + newBudgets.length,
           catId: selCat.id,
           year,
-          itemName,
-          subItemName,
-          detailItemName,
+          itemName: displayItem,
+          subItemName: displaySub,
+          detailItemName: displayDet,
           accountCode: acctCode,
           contraAccountCode: contraAcctCode,
           amount: 0,
@@ -443,22 +462,69 @@ export default function AcctBudget({ year }: { year: number }) {
 
   /* ── 동의어로 이름 변경 ── */
   const renameByAlias = (level: 'item' | 'sub' | 'det', origName: string, newName: string, parentItem?: string, parentSub?: string) => {
+    if (origName === newName) return
     const all = getItem<BudgetItem[]>('acct_budgets', [])
     const updated = all.map(b => {
       if (String(b.catId) !== String(selCat?.id)) return b
-      if (level === 'item' && b.itemName === origName) {
-        return { ...b, itemName: newName }
+      if (level === 'item') {
+        const normOrig = normalizeItemName(origName)
+        const normCur = normalizeItemName(b.itemName)
+        if (normCur === normOrig) {
+          return { ...b, itemName: newName }
+        }
       }
-      if (level === 'sub' && b.itemName === parentItem && b.subItemName === origName) {
-        return { ...b, subItemName: newName }
+      if (level === 'sub') {
+        const normPI = normalizeItemName(parentItem || '')
+        const normBI = normalizeItemName(b.itemName)
+        if (normBI === normPI) {
+          const normOrig = normalizeSubName(parentItem || '', origName)
+          const normCur = normalizeSubName(b.itemName, b.subItemName || '')
+          if (normCur === normOrig) {
+            return { ...b, subItemName: newName }
+          }
+        }
       }
-      if (level === 'det' && b.itemName === parentItem && b.subItemName === parentSub && (b as any).detailItemName === origName) {
-        return { ...b, detailItemName: newName }
+      if (level === 'det') {
+        const normPI = normalizeItemName(parentItem || '')
+        const normBI = normalizeItemName(b.itemName)
+        if (normBI === normPI) {
+          const normPS = normalizeSubName(parentItem || '', parentSub || '')
+          const normBS = normalizeSubName(b.itemName, b.subItemName || '')
+          if (normBS === normPS) {
+            const normOrig = normalizeDetName(parentItem || '', parentSub || '', origName)
+            const normCur = normalizeDetName(b.itemName, b.subItemName || '', (b as any).detailItemName || '')
+            if (normCur === normOrig) {
+              return { ...b, detailItemName: newName }
+            }
+          }
+        }
       }
       return b
     })
     setItem('acct_budgets', updated)
     setAliasDropId(null)
+
+    // 피커가 열려있으면 pickerDisplayNames도 동기화
+    if (budgetPickerOpen) {
+      setPickerDisplayNames(prev => {
+        const next = { ...prev }
+        if (level === 'item') {
+          const nk = normalizeItemName(origName)
+          next[`item:${nk}`] = newName
+        } else if (level === 'sub') {
+          const ni = normalizeItemName(parentItem || '')
+          const ns = normalizeSubName(parentItem || '', origName)
+          next[`sub:${ni}>${ns}`] = newName
+        } else if (level === 'det') {
+          const ni = normalizeItemName(parentItem || '')
+          const ns = normalizeSubName(parentItem || '', parentSub || '')
+          const nd = normalizeDetName(parentItem || '', parentSub || '', origName)
+          next[`det:${ni}>${ns}>${nd}`] = newName
+        }
+        return next
+      })
+    }
+
     setRefresh(r => r + 1)
   }
 
@@ -486,6 +552,50 @@ export default function AcctBudget({ year }: { year: number }) {
       return [detDef.name, ...(detDef.aliases || [])].filter(a => a !== name)
     }
     return []
+  }
+
+  /* ── 피커 모달 내 동의어 추가/삭제 ── */
+  const addPickerAlias = (level: 'item' | 'sub' | 'det', defName: string, subName?: string, detName?: string, newAlias?: string) => {
+    if (!newAlias?.trim()) return
+    const defs = getItem<BudgetItemDef[]>('acct_budget_item_defs', [])
+    const def = defs.find(d => d.name === defName)
+    if (!def) return
+    if (level === 'item') {
+      if (!def.aliases.includes(newAlias.trim())) def.aliases.push(newAlias.trim())
+    } else if (level === 'sub') {
+      const sub = def.subItems.find(s => s.name === subName)
+      if (sub && !(sub.aliases || []).includes(newAlias.trim())) {
+        if (!sub.aliases) sub.aliases = []
+        sub.aliases.push(newAlias.trim())
+      }
+    } else if (level === 'det') {
+      const sub = def.subItems.find(s => s.name === subName)
+      const det = sub?.detailItems?.find(d => d.name === detName)
+      if (det && !(det.aliases || []).includes(newAlias.trim())) {
+        if (!det.aliases) det.aliases = []
+        det.aliases.push(newAlias.trim())
+      }
+    }
+    setItem('acct_budget_item_defs', defs)
+    setPickerAliasInput('')
+    setRefresh(r => r + 1)
+  }
+  const removePickerAlias = (level: 'item' | 'sub' | 'det', defName: string, alias: string, subName?: string, detName?: string) => {
+    const defs = getItem<BudgetItemDef[]>('acct_budget_item_defs', [])
+    const def = defs.find(d => d.name === defName)
+    if (!def) return
+    if (level === 'item') {
+      def.aliases = def.aliases.filter(a => a !== alias)
+    } else if (level === 'sub') {
+      const sub = def.subItems.find(s => s.name === subName)
+      if (sub) sub.aliases = (sub.aliases || []).filter(a => a !== alias)
+    } else if (level === 'det') {
+      const sub = def.subItems.find(s => s.name === subName)
+      const det = sub?.detailItems?.find(d => d.name === detName)
+      if (det) det.aliases = (det.aliases || []).filter(a => a !== alias)
+    }
+    setItem('acct_budget_item_defs', defs)
+    setRefresh(r => r + 1)
   }
   /* 지출담당자 여부: 현재 선택 카테고리에 users로 등록된 사용자 */
   const isExpenseManager = useMemo(() => {
@@ -672,7 +782,7 @@ export default function AcctBudget({ year }: { year: number }) {
                             {(() => {
                               const aliases = getAliases('item', itemName)
                               const dropKey = `item:${itemName}`
-                              return aliases.length > 0 && isBudgetApprover ? (
+                              return aliases.length > 0 && canEditValues ? (
                                 <>
                                   <span
                                     className="text-[13px] font-extrabold text-[var(--text-primary)] cursor-pointer hover:text-primary-500 transition-colors border-b border-dashed border-transparent hover:border-primary-400"
@@ -759,7 +869,7 @@ export default function AcctBudget({ year }: { year: number }) {
                                 {(() => {
                                   const aliases = getAliases('sub', subName, itemName)
                                   const dropKey = `sub:${itemName}>${subName}`
-                                  return aliases.length > 0 && isBudgetApprover ? (
+                                  return aliases.length > 0 && canEditValues ? (
                                     <>
                                       <span
                                         className="text-[12px] font-bold text-[var(--text-secondary)] cursor-pointer hover:text-primary-500 transition-colors border-b border-dashed border-transparent hover:border-primary-400"
@@ -847,7 +957,7 @@ export default function AcctBudget({ year }: { year: number }) {
                                     {(() => {
                                       const aliases = getAliases('det', detailName, itemName, subName)
                                       const dropKey = `det:${itemName}>${subName}>${detailName}`
-                                      return aliases.length > 0 && isBudgetApprover ? (
+                                      return aliases.length > 0 && canEditValues ? (
                                         <>
                                           <span
                                             className="text-[11px] font-semibold text-[var(--text-muted)] cursor-pointer hover:text-primary-500 transition-colors border-b border-dashed border-transparent hover:border-primary-400"
@@ -1687,117 +1797,296 @@ export default function AcctBudget({ year }: { year: number }) {
       , document.body)}
 
       {/* ═══════════════════════════════════════════
-         모달: 예산과목 선택 (체크리스트)
+         모달: 예산과목 선택 — 예산서 스타일
          ═══════════════════════════════════════════ */}
       {budgetPickerOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={() => setBudgetPickerOpen(false)}>
-          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-[500px] mx-4 border border-[var(--border-default)] max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={() => { setBudgetPickerOpen(false); setPickerAliasPovId(null) }}>
+          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-[700px] mx-4 border border-[var(--border-default)] max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            {/* 헤더 */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-default)]">
               <div>
-                <h3 className="text-base font-extrabold text-[var(--text-primary)]">📋 {pickerFilterItem ? `${pickerFilterItem} — 세목 선택` : '예산과목 선택'}</h3>
-                <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{pickerFilterItem ? '이 예산목의 세목을 선택하세요' : '체크한 항목이 예산으로 등록됩니다'}</p>
+                <h3 className="text-base font-extrabold text-[var(--text-primary)] flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary-500"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>{pickerFilterItem ? `${pickerFilterItem} — 세목 선택` : '예산과목 선택'}</h3>
+                <p className="text-[11px] text-[var(--text-muted)] mt-0.5">항목을 선택하세요. 숫자 배지를 클릭하면 동의어를 관리합니다.</p>
               </div>
-              <button onClick={() => setBudgetPickerOpen(false)} className="text-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer">✕</button>
+              <button onClick={() => { setBudgetPickerOpen(false); setPickerAliasPovId(null) }} className="text-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer">✕</button>
             </div>
-            <div className="flex-1 overflow-y-auto px-5 py-3 space-y-1">
-              {budgetItemDefs.filter(def => !pickerFilterItem || def.name === pickerFilterItem || def.aliases.includes(pickerFilterItem)).map(def => {
-                const itemKey = def.name
-                const hasSub = def.subItems && def.subItems.length > 0
-                // 모든 하위 키 수집
-                const allChildKeys: string[] = []
-                if (hasSub) {
-                  def.subItems.forEach(sub => {
-                    if (sub.detailItems && sub.detailItems.length > 0) {
-                      sub.detailItems.forEach(det => allChildKeys.push(`${def.name}>${sub.name}>${det.name}`))
-                    } else {
-                      allChildKeys.push(`${def.name}>${sub.name}`)
-                    }
-                  })
-                }
-                const allChecked = hasSub ? allChildKeys.every(k => pickerChecked.has(k)) : pickerChecked.has(itemKey)
-                const someChecked = hasSub ? allChildKeys.some(k => pickerChecked.has(k)) : false
+            {/* 검색 */}
+            <div className="px-4 py-2 border-b border-[var(--border-default)]">
+              <div className="relative">
+                <input value={pickerSearch} onChange={e => setPickerSearch(e.target.value)}
+                  placeholder="예산과목 검색... (구분, 항목, 세목, 동의어)"
+                  className="w-full pl-8 pr-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400/30 transition-all" />
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                {pickerSearch && <button onClick={() => setPickerSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] text-[11px] cursor-pointer">✕</button>}
+              </div>
+            </div>
+            {/* 테이블 */}
+            <div className="flex-1 overflow-y-auto">
+              <table className="w-full border-collapse" style={{ borderSpacing: 0 }}>
+                <thead className="sticky top-0 z-10">
+                  <tr style={{ background: 'var(--bg-muted)' }}>
+                    <th className="text-[11px] font-extrabold text-[var(--text-muted)] text-center px-3 py-2.5 border border-[var(--border-default)]" style={{ width: '140px' }}>예산구분</th>
+                    <th className="text-[11px] font-extrabold text-[var(--text-muted)] text-center px-3 py-2.5 border border-[var(--border-default)]" style={{ width: '140px' }}>예산항목</th>
+                    <th className="text-[11px] font-extrabold text-[var(--text-muted)] text-center px-3 py-2.5 border border-[var(--border-default)]">예산세목</th>
+                    <th className="text-[11px] font-extrabold text-[var(--text-muted)] text-center px-3 py-2.5 border border-[var(--border-default)]" style={{ width: '45px' }}>선택</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    const CC = { item: '#8b5cf6', sub: '#4f6ef7', det: '#22c55e' }
+                    const sq = pickerSearch.trim().toLowerCase()
+                    const defs = budgetItemDefs.filter(d => {
+                      if (pickerFilterItem && d.name !== pickerFilterItem && !d.aliases.includes(pickerFilterItem)) return false
+                      if (!sq) return true
+                      // 구분명/동의어 매칭
+                      if (d.name.toLowerCase().includes(sq) || d.aliases.some(a => a.toLowerCase().includes(sq))) return true
+                      // 하위 과목/세목/동의어 매칭
+                      if (d.subItems?.some(s => {
+                        if (s.name.toLowerCase().includes(sq) || (s.aliases||[]).some(a => a.toLowerCase().includes(sq))) return true
+                        return s.detailItems?.some(dt => dt.name.toLowerCase().includes(sq) || (dt.aliases||[]).some(a => a.toLowerCase().includes(sq)))
+                      })) return true
+                      return false
+                    })
+                    const R: React.ReactNode[] = []
 
-                return (
-                  <div key={def.id}>
-                    {/* 예산목 */}
-                    <label className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-[var(--bg-muted)] transition-colors cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={allChecked}
-                        ref={el => { if (el) el.indeterminate = !allChecked && someChecked }}
-                        onChange={() => {
-                          const next = new Set(pickerChecked)
-                          if (allChecked) {
-                            if (hasSub) allChildKeys.forEach(k => next.delete(k))
-                            else next.delete(itemKey)
-                          } else {
-                            if (hasSub) allChildKeys.forEach(k => next.add(k))
-                            else next.add(itemKey)
-                          }
-                          setPickerChecked(next)
-                        }}
-                        className="w-4 h-4 rounded border-2 border-[var(--border-default)] accent-primary-500 cursor-pointer"
-                      />
-                      <span className="text-[13px] font-bold text-[var(--text-primary)]">{def.name}</span>
-                      {hasSub && <span className="text-[9px] text-[var(--text-muted)] bg-[var(--bg-muted)] px-1.5 py-0.5 rounded">{def.subItems.length}개 세목</span>}
-                    </label>
-                    {/* 세목 */}
-                    {hasSub && def.subItems.map(sub => {
-                      const subHasDetail = sub.detailItems && sub.detailItems.length > 0
-                      const subChildKeys = subHasDetail
-                        ? sub.detailItems!.map(d => `${def.name}>${sub.name}>${d.name}`)
-                        : [`${def.name}>${sub.name}`]
-                      const subAllChecked = subChildKeys.every(k => pickerChecked.has(k))
-                      const subSomeChecked = subChildKeys.some(k => pickerChecked.has(k))
+                    /* 검색어 하이라이트 함수 */
+                    const hlText = (text: string) => {
+                      if (!sq || !text) return <>{text}</>
+                      const idx = text.toLowerCase().indexOf(sq)
+                      if (idx === -1) return <>{text}</>
+                      return <>{text.slice(0, idx)}<span style={{ color: '#ea580c', fontWeight: 800 }}>{text.slice(idx, idx + sq.length)}</span>{text.slice(idx + sq.length)}</>
+                    }
+                    const hl = (text: string, aliases?: string[]) => {
+                      if (!sq || !text) return text
+                      // 표시이름에 검색어 포함
+                      if (text.toLowerCase().includes(sq)) return hlText(text)
+                      // 동의어에 검색어 포함 시 매칭 동의어 표시
+                      if (aliases && aliases.length > 0) {
+                        const matched = aliases.find(a => a.toLowerCase().includes(sq))
+                        if (matched) return <>{text} <span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ background: '#ea580c15', color: '#ea580c', fontWeight: 700 }}>={hlText(matched)}</span></>
+                      }
+                      return text
+                    }
+
+                    /* 배지 + 인라인 팝업 통합 컴포넌트 */
+                    const badgeWithPov = (cnt: number, c: string, pid: string, lv: 'item'|'sub'|'det', lb: string, nm: string, al: string[], dn: string, sn?: string, dtn?: string) => {
+                      const isOpen = pickerAliasPovId === pid
+                      // 원래 이름 찾기
+                      const origDef = budgetItemDefs.find(d => d.name === dn || d.aliases.includes(dn))
+                      let origName = dn
+                      if (lv === 'sub' && origDef) {
+                        const origSub = origDef.subItems.find(s => s.name === sn || (s.aliases||[]).includes(sn||''))
+                        if (origSub) origName = origSub.name
+                      } else if (lv === 'det' && origDef) {
+                        const origSub = origDef.subItems.find(s => s.name === sn || (s.aliases||[]).includes(sn||''))
+                        const origDet = origSub?.detailItems?.find(d => d.name === dtn || (d.aliases||[]).includes(dtn||''))
+                        if (origDet) origName = origDet.name
+                      } else if (origDef) {
+                        origName = origDef.name
+                      }
+                      // 현재 표시이름
+                      let displayKey = ''
+                      if (lv === 'item') displayKey = `item:${dn}`
+                      else if (lv === 'sub') displayKey = `sub:${dn}>${sn}`
+                      else displayKey = `det:${dn}>${sn}>${dtn}`
+                      const curDisplay = pickerDisplayNames[displayKey] || nm
+
+                      const handleSelect = (newName: string) => {
+                        setPickerDisplayNames(prev => ({ ...prev, [displayKey]: newName }))
+                        renameByAlias(lv, nm, newName, lv === 'sub' || lv === 'det' ? dn : undefined, lv === 'det' ? sn : undefined)
+                        setPickerAliasPovId(null)
+                      }
 
                       return (
-                        <div key={sub.id}>
-                          <label className="flex items-center gap-2.5 pl-9 pr-3 py-1.5 rounded-lg hover:bg-[var(--bg-muted)] transition-colors cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={subAllChecked}
-                              ref={el => { if (el) el.indeterminate = !subAllChecked && subSomeChecked }}
-                              onChange={() => {
-                                const next = new Set(pickerChecked)
-                                if (subAllChecked) subChildKeys.forEach(k => next.delete(k))
-                                else subChildKeys.forEach(k => next.add(k))
-                                setPickerChecked(next)
-                              }}
-                              className="w-3.5 h-3.5 rounded border-2 border-[var(--border-default)] accent-primary-500 cursor-pointer"
-                            />
-                            <span className="text-[12px] font-semibold text-[var(--text-secondary)]">{sub.name}</span>
-                          </label>
-                          {/* 세세항목 */}
-                          {subHasDetail && sub.detailItems!.map(det => {
-                            const detKey = `${def.name}>${sub.name}>${det.name}`
-                            return (
-                              <label key={det.id} className="flex items-center gap-2.5 pl-16 pr-3 py-1 rounded-lg hover:bg-[var(--bg-muted)] transition-colors cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={pickerChecked.has(detKey)}
-                                  onChange={() => {
-                                    const next = new Set(pickerChecked)
-                                    if (next.has(detKey)) next.delete(detKey)
-                                    else next.add(detKey)
-                                    setPickerChecked(next)
-                                  }}
-                                  className="w-3 h-3 rounded border-2 border-[var(--border-default)] accent-primary-500 cursor-pointer"
-                                />
-                                <span className="text-[11px] text-[var(--text-muted)]">{det.name}</span>
-                              </label>
-                            )
-                          })}
-                        </div>
+                        <span className="relative inline-block">
+                          <button onClick={(e) => { e.stopPropagation(); setPickerAliasPovId(isOpen ? null : pid); setPickerAliasInput('') }}
+                            className="inline-flex items-center justify-center min-w-[16px] h-[16px] rounded-full text-[8px] font-extrabold ml-1 cursor-pointer hover:scale-110 transition-transform"
+                            style={cnt > 0 ? { background: c, color: 'white' } : { border: `1.5px dashed ${c}`, color: c, background: 'transparent' }}
+                            title="동의어 관리">{cnt > 0 ? cnt : '+'}</button>
+                          {isOpen && (
+                            <div className="absolute left-0 top-full mt-1 z-50 w-[320px] rounded-xl shadow-xl border border-[var(--border-default)] bg-[var(--bg-surface)]" onClick={e => e.stopPropagation()}>
+                              <div className="px-3 py-2.5" style={{ background: `${c}06`, borderRadius: 'inherit' }}>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full text-white" style={{ background: c }}>{lb}</span>
+                                  <span className="text-[11px] font-bold text-[var(--text-primary)]">{nm} 동의어</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1.5 mb-2">
+                                  <button onClick={() => handleSelect(origName)}
+                                    className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border-2 cursor-pointer hover:scale-105 transition-transform"
+                                    style={{ borderColor: c, color: c, background: curDisplay === origName ? `${c}20` : 'transparent' }}>
+                                    📌 {origName} {curDisplay === origName && <span className="text-[7px]">(현재)</span>}
+                                  </button>
+                                  {al.map(a => (
+                                    <button key={a} onClick={() => handleSelect(a)}
+                                      className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer hover:scale-105 transition-transform"
+                                      style={{ background: curDisplay === a ? `${c}30` : `${c}15`, color: c, border: curDisplay === a ? `2px solid ${c}` : 'none' }}>
+                                      {a} {curDisplay === a && <span className="text-[7px]">(현재)</span>}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="flex gap-1.5">
+                                  <input value={pickerAliasInput} onChange={e => setPickerAliasInput(e.target.value)}
+                                    onKeyDown={e => { if (e.key === 'Enter') addPickerAlias(lv, dn, sn, dtn, pickerAliasInput) }}
+                                    placeholder="새 동의어..." className="flex-1 px-2 py-1 rounded-lg border border-[var(--border-default)] text-[10px] bg-[var(--bg-surface)] focus:outline-none focus:ring-1" />
+                                  <button onClick={() => addPickerAlias(lv, dn, sn, dtn, pickerAliasInput)}
+                                    className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-white cursor-pointer hover:opacity-90" style={{ background: c }}>추가</button>
+                                </div>
+                                {al.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-2 pt-1.5 border-t border-dashed" style={{ borderColor: `${c}30` }}>
+                                    <span className="text-[8px] text-[var(--text-muted)] mr-1 self-center">삭제:</span>
+                                    {al.map(a => (
+                                      <button key={`del-${a}`} onClick={() => removePickerAlias(lv, dn, a, sn, dtn)}
+                                        className="text-[8px] px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-900/10 text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 cursor-pointer transition-colors">
+                                        {a} ✕
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </span>
                       )
-                    })}
-                  </div>
-                )
-              })}
+                    }
+                    defs.forEach(def => {
+                      const hasSub = def.subItems && def.subItems.length > 0
+                      const ip = `item:${def.name}`
+                      const itemDisplay = pickerDisplayNames[`item:${def.name}`] || def.name
+                      // 행 단위 매칭 함수
+                      const matchRow = (names: string[]) => {
+                        if (!sq) return true
+                        return names.some(n => n.toLowerCase().includes(sq))
+                      }
+                      if (!hasSub) {
+                        if (!matchRow([def.name, ...def.aliases, itemDisplay])) return
+                        const chk = pickerChecked.has(def.name)
+                        R.push(
+                          <tr key={`i-${def.id}`} className="hover:bg-[var(--bg-muted)]/40 transition-colors">
+                            <td className="px-3 py-2 border border-[var(--border-default)] text-[13px] font-extrabold text-[var(--text-primary)] align-middle">{hl(itemDisplay, def.aliases)}{badgeWithPov(def.aliases.length, CC.item, ip, 'item', '구분', def.name, def.aliases, def.name)}</td>
+                            <td className="px-3 py-2 border border-[var(--border-default)] text-center text-[var(--text-muted)] align-middle">—</td>
+                            <td className="px-3 py-2 border border-[var(--border-default)] text-center text-[var(--text-muted)] align-middle">—</td>
+                            <td className="border border-[var(--border-default)] text-center align-middle">
+                              <input type="checkbox" checked={chk} onChange={() => { const n = new Set(pickerChecked); if (chk) n.delete(def.name); else n.add(def.name); setPickerChecked(n) }} className="w-4 h-4 accent-primary-500 cursor-pointer" />
+                            </td>
+                          </tr>
+                        )
+                        return
+                      }
+
+                      if (sq) {
+                        /* ── 검색 모드: 구분은 rowSpan, 행별 필터 ── */
+                        // 1) 매칭 행 수 먼저 계산
+                        let matchCount = 0
+                        def.subItems.forEach(sub => {
+                          const subDisplay = pickerDisplayNames[`sub:${def.name}>${sub.name}`] || sub.name
+                          const hd = sub.detailItems && sub.detailItems.length > 0
+                          if (!hd) {
+                            if (matchRow([def.name, ...def.aliases, itemDisplay, sub.name, ...(sub.aliases||[]), subDisplay])) matchCount++
+                          } else {
+                            sub.detailItems!.forEach(det => {
+                              if (matchRow([def.name, ...def.aliases, itemDisplay, sub.name, ...(sub.aliases||[]), subDisplay, det.name, ...(det.aliases||[]), pickerDisplayNames[`det:${def.name}>${sub.name}>${det.name}`] || ''])) matchCount++
+                            })
+                          }
+                        })
+                        if (matchCount === 0) return
+                        // 2) 렌더링
+                        let isFirst = true
+                        def.subItems.forEach(sub => {
+                          const sp = `sub:${def.name}>${sub.name}`
+                          const subDisplay = pickerDisplayNames[`sub:${def.name}>${sub.name}`] || sub.name
+                          const hd = sub.detailItems && sub.detailItems.length > 0
+                          if (!hd) {
+                            if (!matchRow([def.name, ...def.aliases, itemDisplay, sub.name, ...(sub.aliases||[]), subDisplay])) return
+                            const ck = `${def.name}>${sub.name}`
+                            const chk = pickerChecked.has(ck)
+                            R.push(
+                              <tr key={`s-${def.id}-${sub.id}`} className="hover:bg-[var(--bg-muted)]/40 transition-colors">
+                                {isFirst && <td className="px-3 py-2 border border-[var(--border-default)] text-[13px] font-extrabold text-[var(--text-primary)]" rowSpan={matchCount} style={{ verticalAlign: 'top', paddingTop: 10 }}>{hl(itemDisplay, def.aliases)}{badgeWithPov(def.aliases.length, CC.item, ip, 'item', '구분', def.name, def.aliases, def.name)}</td>}
+                                <td className="px-3 py-2 border border-[var(--border-default)] text-[12px] font-semibold text-[var(--text-secondary)] align-middle">{hl(subDisplay, sub.aliases||[])}{badgeWithPov((sub.aliases||[]).length, CC.sub, sp, 'sub', '항목', sub.name, sub.aliases||[], def.name, sub.name)}</td>
+                                <td className="px-3 py-2 border border-[var(--border-default)] text-center text-[var(--text-muted)] align-middle">—</td>
+                                <td className="border border-[var(--border-default)] text-center align-middle">
+                                  <input type="checkbox" checked={chk} onChange={() => { const n = new Set(pickerChecked); if (chk) n.delete(ck); else n.add(ck); setPickerChecked(n) }} className="w-4 h-4 accent-primary-500 cursor-pointer" />
+                                </td>
+                              </tr>
+                            )
+                            isFirst = false
+                          } else {
+                            sub.detailItems!.forEach(det => {
+                              if (!matchRow([def.name, ...def.aliases, itemDisplay, sub.name, ...(sub.aliases||[]), subDisplay, det.name, ...(det.aliases||[]), pickerDisplayNames[`det:${def.name}>${sub.name}>${det.name}`] || ''])) return
+                              const dp = `det:${def.name}>${sub.name}>${det.name}`
+                              const detDisplay = pickerDisplayNames[`det:${def.name}>${sub.name}>${det.name}`] || det.name
+                              const dk = `${def.name}>${sub.name}>${det.name}`
+                              const chk = pickerChecked.has(dk)
+                              R.push(
+                                <tr key={`d-${def.id}-${sub.id}-${det.id}`} className="hover:bg-[var(--bg-muted)]/40 transition-colors">
+                                  {isFirst && <td className="px-3 py-2 border border-[var(--border-default)] text-[13px] font-extrabold text-[var(--text-primary)]" rowSpan={matchCount} style={{ verticalAlign: 'top', paddingTop: 10 }}>{hl(itemDisplay, def.aliases)}{badgeWithPov(def.aliases.length, CC.item, ip, 'item', '구분', def.name, def.aliases, def.name)}</td>}
+                                  <td className="px-3 py-2 border border-[var(--border-default)] text-[12px] font-semibold text-[var(--text-secondary)] align-middle">{hl(subDisplay, sub.aliases||[])}{badgeWithPov((sub.aliases||[]).length, CC.sub, sp, 'sub', '항목', sub.name, sub.aliases||[], def.name, sub.name)}</td>
+                                  <td className="px-3 py-1.5 border border-[var(--border-default)] text-[11px] text-[var(--text-secondary)] align-middle">{hl(detDisplay, det.aliases||[])}{badgeWithPov((det.aliases||[]).length, CC.det, dp, 'det', '세목', det.name, det.aliases||[], def.name, sub.name, det.name)}</td>
+                                  <td className="border border-[var(--border-default)] text-center align-middle">
+                                    <input type="checkbox" checked={chk} onChange={() => { const n = new Set(pickerChecked); if (chk) n.delete(dk); else n.add(dk); setPickerChecked(n) }} className="w-3.5 h-3.5 accent-primary-500 cursor-pointer" />
+                                  </td>
+                                </tr>
+                              )
+                              isFirst = false
+                            })
+                          }
+                        })
+                      } else {
+                        /* ── 기본 모드: rowSpan 사용 ── */
+                        let dt = 0
+                        def.subItems.forEach(s => { dt += (s.detailItems && s.detailItems.length > 0) ? s.detailItems.length : 1 })
+                        let fd = true
+                        def.subItems.forEach(sub => {
+                          const sp = `sub:${def.name}>${sub.name}`
+                          const subDisplay = pickerDisplayNames[`sub:${def.name}>${sub.name}`] || sub.name
+                          const hd = sub.detailItems && sub.detailItems.length > 0
+                          const ss = hd ? sub.detailItems!.length : 1
+                          if (!hd) {
+                            const ck = `${def.name}>${sub.name}`
+                            const chk = pickerChecked.has(ck)
+                            R.push(
+                              <tr key={`s-${def.id}-${sub.id}`} className="hover:bg-[var(--bg-muted)]/40 transition-colors">
+                                {fd && <td className="px-3 py-2 border border-[var(--border-default)] text-[13px] font-extrabold text-[var(--text-primary)]" rowSpan={dt} style={{ verticalAlign: 'top', paddingTop: 10 }}>{hl(itemDisplay, def.aliases)}{badgeWithPov(def.aliases.length, CC.item, ip, 'item', '구분', def.name, def.aliases, def.name)}</td>}
+                                <td className="px-3 py-2 border border-[var(--border-default)] text-[12px] font-semibold text-[var(--text-secondary)] align-middle">{hl(subDisplay, sub.aliases||[])}{badgeWithPov((sub.aliases||[]).length, CC.sub, sp, 'sub', '항목', sub.name, sub.aliases||[], def.name, sub.name)}</td>
+                                <td className="px-3 py-2 border border-[var(--border-default)] text-center text-[var(--text-muted)] align-middle">—</td>
+                                <td className="border border-[var(--border-default)] text-center align-middle">
+                                  <input type="checkbox" checked={chk} onChange={() => { const n = new Set(pickerChecked); if (chk) n.delete(ck); else n.add(ck); setPickerChecked(n) }} className="w-4 h-4 accent-primary-500 cursor-pointer" />
+                                </td>
+                              </tr>
+                            )
+                            fd = false
+                          } else {
+                            sub.detailItems!.forEach((det, di) => {
+                              const dp = `det:${def.name}>${sub.name}>${det.name}`
+                              const detDisplay = pickerDisplayNames[`det:${def.name}>${sub.name}>${det.name}`] || det.name
+                              const dk = `${def.name}>${sub.name}>${det.name}`
+                              const chk = pickerChecked.has(dk)
+                              R.push(
+                                <tr key={`d-${def.id}-${sub.id}-${det.id}`} className="hover:bg-[var(--bg-muted)]/40 transition-colors">
+                                  {fd && di === 0 && <td className="px-3 py-2 border border-[var(--border-default)] text-[13px] font-extrabold text-[var(--text-primary)]" rowSpan={dt} style={{ verticalAlign: 'top', paddingTop: 10 }}>{hl(itemDisplay, def.aliases)}{badgeWithPov(def.aliases.length, CC.item, ip, 'item', '구분', def.name, def.aliases, def.name)}</td>}
+                                  {di === 0 && <td className="px-3 py-2 border border-[var(--border-default)] text-[12px] font-semibold text-[var(--text-secondary)]" rowSpan={ss} style={{ verticalAlign: 'top', paddingTop: 10 }}>{hl(subDisplay, sub.aliases||[])}{badgeWithPov((sub.aliases||[]).length, CC.sub, sp, 'sub', '항목', sub.name, sub.aliases||[], def.name, sub.name)}</td>}
+                                  <td className="px-3 py-1.5 border border-[var(--border-default)] text-[11px] text-[var(--text-secondary)] align-middle">{hl(detDisplay, det.aliases||[])}{badgeWithPov((det.aliases||[]).length, CC.det, dp, 'det', '세목', det.name, det.aliases||[], def.name, sub.name, det.name)}</td>
+                                  <td className="border border-[var(--border-default)] text-center align-middle">
+                                    <input type="checkbox" checked={chk} onChange={() => { const n = new Set(pickerChecked); if (chk) n.delete(dk); else n.add(dk); setPickerChecked(n) }} className="w-3.5 h-3.5 accent-primary-500 cursor-pointer" />
+                                  </td>
+                                </tr>
+                              )
+                              if (di === 0) fd = false
+                            })
+                          }
+                        })
+                      }
+                    })
+                    return R
+                  })()}
+                </tbody>
+              </table>
             </div>
+            {/* 푸터 */}
             <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--border-default)]">
               <span className="text-[11px] text-[var(--text-muted)]">{pickerChecked.size}개 선택됨</span>
               <div className="flex gap-2">
-                <button onClick={() => setBudgetPickerOpen(false)} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer">취소</button>
+                <button onClick={() => { setBudgetPickerOpen(false); setPickerAliasPovId(null) }} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer">취소</button>
                 <button onClick={applyBudgetPicker} className="px-4 py-2 rounded-lg bg-primary-500 text-white text-sm font-bold hover:bg-primary-600 transition-colors cursor-pointer">적용</button>
               </div>
             </div>

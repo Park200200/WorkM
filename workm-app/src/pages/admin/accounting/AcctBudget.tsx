@@ -1,9 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { getItem, setItem } from '../../../utils/storage'
 import { formatNumber } from '../../../utils/format'
 import { useToastStore } from '../../../stores/toastStore'
 import type { BudgetCat, BudgetItem, BudgetItemDef, BudgetSubDef, BudgetDetailDef, AccountPoolEntry, BudgetCatAccount } from './types'
-import { Settings, Plus, Trash2, ChevronDown, ChevronUp, Search, Edit3, PieChart, ScrollText, X, Check, Ban, CreditCard, User, Landmark, Calendar, Filter, CheckCircle2 } from 'lucide-react'
+import { Settings, Plus, Trash2, ChevronDown, ChevronUp, Search, Edit3, PieChart, ScrollText, X, Check, Ban, CreditCard, User, Landmark, Calendar, Filter, CheckCircle2, Building2, ArrowLeftRight, Banknote, FileText, Ticket } from 'lucide-react'
 import { cn } from '../../../utils/cn'
 import { createPortal } from 'react-dom'
 import { EmptyState } from '../../../components/common/EmptyState'
@@ -87,6 +87,37 @@ export default function AcctBudget({ year }: { year: number }) {
   const [pickerAliasInput, setPickerAliasInput] = useState('')
   const [pickerDisplayNames, setPickerDisplayNames] = useState<Record<string, string>>({})
   const [pickerSearch, setPickerSearch] = useState('')
+
+  /* ── 예산카드 수평 드래그 스크롤 ── */
+  const catScrollRef = useRef<HTMLDivElement>(null)
+  const [isDraggingCat, setIsDraggingCat] = useState(false)
+  const catDragState = useRef({ isDown: false, startX: 0, scrollLeft: 0, moved: false })
+  const onCatMouseDown = useCallback((e: React.MouseEvent) => {
+    const el = catScrollRef.current
+    if (!el) return
+    catDragState.current = { isDown: true, startX: e.pageX, scrollLeft: el.scrollLeft, moved: false }
+    setIsDraggingCat(true)
+  }, [])
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!catDragState.current.isDown) return
+      e.preventDefault()
+      const el = catScrollRef.current
+      if (!el) return
+      const dx = e.pageX - catDragState.current.startX
+      if (Math.abs(dx) > 3) catDragState.current.moved = true
+      el.scrollLeft = catDragState.current.scrollLeft - dx
+    }
+    const onUp = () => {
+      if (catDragState.current.isDown) {
+        catDragState.current.isDown = false
+        setIsDraggingCat(false)
+      }
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
+  }, [])
 
   /* ── 데이터 ── */
   const budgetCats = useMemo(() => {
@@ -623,7 +654,7 @@ export default function AcctBudget({ year }: { year: number }) {
   return (
     <div className="space-y-4">
       {/* ── 예산구분 관리 ── */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-4 overflow-hidden">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 text-sm font-extrabold text-[var(--text-primary)]">
             <PieChart size={16} className="text-primary-500" /> 예산구분 관리
@@ -647,7 +678,12 @@ export default function AcctBudget({ year }: { year: number }) {
         {budgetCats.length === 0 ? (
           <EmptyState emoji="📁" title={`${year}년 등록된 예산구분이 없습니다. "구분 추가" 버튼으로 먼저 등록하세요.`} />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div
+            ref={catScrollRef}
+            onMouseDown={onCatMouseDown}
+            className="flex gap-3 overflow-x-auto pb-2 select-none scrollbar-hide"
+            style={{ cursor: isDraggingCat ? 'grabbing' : 'grab' }}
+          >
             {budgetCats.map((cat, idx) => {
               const isActive = String(cat.id) === String(selCat?.id)
               const catBudgets = budgets.filter(b => String(b.catId) === String(cat.id))
@@ -659,9 +695,10 @@ export default function AcctBudget({ year }: { year: number }) {
               return (
                 <div
                   key={cat.id}
-                  onClick={() => setSelectedCatId(cat.id)}
+                  onClick={() => { if (catDragState.current.moved) return; setSelectedCatId(cat.id) }}
                   className={cn(
-                    'text-left rounded-xl border cursor-pointer transition-all overflow-hidden',
+                    'text-left rounded-xl border cursor-pointer transition-all overflow-hidden flex-shrink-0',
+                    'w-[260px] sm:w-[280px]',
                     isActive
                       ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                       : 'border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-[var(--border-strong)]',
@@ -1127,12 +1164,12 @@ export default function AcctBudget({ year }: { year: number }) {
          ═══════════════════════════════════════════ */}
       {catModalOpen && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={() => setCatModalOpen(false)}>
-          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-[460px] mx-4 border border-[var(--border-default)]" onClick={e => e.stopPropagation()}>
+          <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-[460px] mx-4 border border-[var(--border-default)] flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-default)]">
               <h3 className="text-base font-extrabold text-[var(--text-primary)]">{catEditId ? '예산구분 수정' : '예산구분 추가'}</h3>
               <button onClick={() => setCatModalOpen(false)} className="text-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer">✕</button>
             </div>
-            <div className="px-5 py-4 space-y-3">
+            <div className="px-5 py-4 space-y-3 overflow-y-auto flex-1">
               <div>
                 <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">예산구분명 *</label>
                 <input
@@ -1153,119 +1190,133 @@ export default function AcctBudget({ year }: { year: number }) {
                   className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors resize-none"
                 />
               </div>
-              {/* 통장/계좌 관리 */}
+              {/* 등록된 지출수단 (수단등록 데이터에서 읽기 전용 표시) */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-[11px] font-bold text-[var(--text-muted)]">
-                    통장/계좌
-                    {catForm.accounts.length > 0 && <span className="ml-1 text-[9px] bg-blue-100 dark:bg-blue-900/20 text-blue-600 px-1.5 py-0.5 rounded">{catForm.accounts.length}개</span>}
+                    등록된 지출수단
                   </label>
-                  {registeredAccounts.length > 0 ? (
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const availAccts = registeredAccounts.filter((ra: any) => !catForm.accounts.some(a => a.bankName === `${ra.bankName || ''} ${ra.accountNumber || ''}`.trim()))
-                          if (availAccts.length === 0) return
-                          const ra = availAccts[0]
-                          const label = `${ra.bankName || ''} ${ra.accountNumber || ''}`.trim()
-                          setCatForm(f => ({ ...f, accounts: [...f.accounts, { id: Date.now(), bankName: label, cards: [] }] }))
-                        }}
-                        className="text-[10px] font-bold text-primary-500 hover:text-primary-600 cursor-pointer flex items-center gap-0.5"
-                      >
-                        + 계좌 선택
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-[9px] text-[var(--text-muted)]">계좌관리에서 계좌를 먼저 등록하세요</span>
-                  )}
+                  <span className="text-[9px] text-[var(--text-muted)]">수단등록에서 편집</span>
                 </div>
-                {catForm.accounts.length === 0 ? (
-                  <div className="text-center text-[11px] text-[var(--text-muted)] py-3 border border-dashed border-[var(--border-default)] rounded-lg">등록된 계좌가 없습니다</div>
-                ) : (
-                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                    {catForm.accounts.map((acct, ai) => {
-                      // 현재 계좌에 매칭되는 등록 계좌 찾기
-                      const matchedRA = registeredAccounts.find((ra: any) => `${ra.bankName || ''} ${ra.accountNumber || ''}`.trim() === acct.bankName)
-                      const availableCards: any[] = matchedRA?.cards || []
-                      return (
-                        <div key={acct.id} className="border border-[var(--border-default)] rounded-lg p-2.5 bg-[var(--bg-muted)]/30">
-                          <div className="flex items-center gap-1.5 mb-1.5">
-                            <span className="text-[9px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-1.5 py-0.5 rounded">계좌 {ai + 1}</span>
-                            <select
-                              value={acct.bankName}
-                              onChange={e => {
-                                const v = e.target.value
-                                setCatForm(f => ({ ...f, accounts: f.accounts.map((a, i) => i === ai ? { ...a, bankName: v, cards: [] } : a) }))
-                              }}
-                              className="flex-1 px-2 py-1.5 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[12px] text-[var(--text-primary)] outline-none focus:border-primary-400"
-                            >
-                              <option value="">계좌 선택</option>
-                              {registeredAccounts.map((ra: any) => {
-                                const label = `${ra.bankName || ''} ${ra.accountNumber || ''}`.trim()
-                                return <option key={ra.id} value={label}>{label}{ra.accountHolder ? ` (${ra.accountHolder})` : ''}</option>
-                              })}
-                            </select>
-                            <button
-                              type="button"
-                              onClick={() => setCatForm(f => ({ ...f, accounts: f.accounts.filter((_, i) => i !== ai) }))}
-                              className="p-1 rounded text-[#ef4444] hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
-                            ><Trash2 size={12} /></button>
+                {(() => {
+                  // acct_pay_methods_v2에서 현재 예산구분에 연결된 수단 조회
+                  let allPMs: any[] = []
+                  try {
+                    const raw = localStorage.getItem('acct_pay_methods_v2')
+                    if (raw) allPMs = JSON.parse(raw)
+                  } catch {}
+                  const catIdStr = catEditId ? String(catEditId) : ''
+                  const linkedPMs = catIdStr ? allPMs.filter((pm: any) => String(pm.budgetCatId) === catIdStr) : []
+                  if (linkedPMs.length === 0) {
+                    return <div className="text-center text-[11px] text-[var(--text-muted)] py-3 border border-dashed border-[var(--border-default)] rounded-lg">등록된 지출수단이 없습니다</div>
+                  }
+                  // 구분별 그룹핑
+                  const acctPMs = linkedPMs.filter((pm: any) => pm.category === '계좌')
+                  const cashPMs = linkedPMs.filter((pm: any) => pm.category === '현금')
+                  const notePMs = linkedPMs.filter((pm: any) => pm.category === '어음')
+                  const voucherPMs = linkedPMs.filter((pm: any) => pm.category === '상품권')
+                  return (
+                    <div className="space-y-2 max-h-[240px] overflow-y-auto">
+                      {/* 계좌 */}
+                      {acctPMs.length > 0 && (
+                        <div className="border border-blue-200 dark:border-blue-800/40 rounded-lg overflow-hidden">
+                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 dark:bg-blue-900/15 border-b border-blue-200 dark:border-blue-800/40">
+                            <Building2 size={11} className="text-blue-500" />
+                            <span className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400">계좌</span>
+                            <span className="text-[9px] text-blue-400 dark:text-blue-500">({acctPMs.length})</span>
                           </div>
-                          {/* 연결 카드 */}
-                          <div className="pl-4">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-[9px] font-bold text-[var(--text-muted)]">연결 카드{acct.cards.length > 0 && <span className="ml-1 text-[9px] bg-amber-100 dark:bg-amber-900/20 text-amber-600 px-1 py-0.5 rounded">{acct.cards.length}</span>}</span>
-                              {(() => {
-                                const unlinked = availableCards.filter((c: any) => !acct.cards.includes(`${c.cardName || ''} ${c.cardNumber || ''}`.trim()))
-                                if (unlinked.length === 0) return null
-                                return (
-                                  <select
-                                    value=""
-                                    onChange={e => {
-                                      if (!e.target.value) return
-                                      setCatForm(f => ({
-                                        ...f,
-                                        accounts: f.accounts.map((a, i) => i === ai ? { ...a, cards: [...a.cards, e.target.value] } : a)
-                                      }))
-                                    }}
-                                    className="text-[9px] font-bold text-amber-500 bg-transparent border border-amber-200 dark:border-amber-800 rounded px-1.5 py-0.5 cursor-pointer outline-none"
-                                  >
-                                    <option value="">+ 카드 연결</option>
-                                    {unlinked.map((card: any) => {
-                                      const cardLabel = `${card.cardName || ''} ${card.cardNumber || ''}`.trim()
-                                      return <option key={card.id} value={cardLabel}>{card.cardName || '카드'} {card.cardNumber || ''} {card.cardUser ? `(${card.cardUser})` : ''}</option>
-                                    })}
-                                  </select>
-                                )
-                              })()}
-                            </div>
-                            {acct.cards.length === 0 ? (
-                              <div className="text-[10px] text-[var(--text-muted)]/60 py-1">{acct.bankName ? (availableCards.length > 0 ? '연결된 카드 없음' : '등록된 카드 없음') : '계좌를 먼저 선택하세요'}</div>
-                            ) : (
-                              <div className="space-y-1">
-                                {acct.cards.map((cardLabel, ci) => (
-                                  <div key={ci} className="flex items-center gap-1.5 text-[11px] text-[var(--text-primary)] bg-amber-50/50 dark:bg-amber-900/10 rounded px-2 py-1">
-                                    <span className="text-[9px] text-amber-500">💳</span>
-                                    <span className="flex-1">{cardLabel}</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => setCatForm(f => ({
-                                        ...f,
-                                        accounts: f.accounts.map((a, i) => i === ai ? { ...a, cards: a.cards.filter((_, j) => j !== ci) } : a)
-                                      }))}
-                                      className="p-0.5 rounded text-[#ef4444] hover:bg-red-50 cursor-pointer"
-                                    ><X size={10} /></button>
+                          <div className="divide-y divide-[var(--border-default)]/40">
+                            {acctPMs.map((pm: any) => (
+                              <div key={pm.id}>
+                                {/* 이체 */}
+                                <div className="flex items-center gap-2 px-3 py-2">
+                                  <ArrowLeftRight size={12} className="text-blue-400 shrink-0" />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-[11px] font-bold text-[var(--text-primary)] truncate">{pm.name}{pm.bankName ? ` (${pm.bankName})` : ''}</div>
+                                    <div className="text-[9.5px] text-[var(--text-muted)] truncate">{pm.accountNumber || ''}{pm.accountHolder ? ` • ${pm.accountHolder}` : ''}</div>
+                                  </div>
+                                </div>
+                                {/* 카드 */}
+                                {(pm.cards || []).length > 0 && (pm.cards || []).map((card: any) => (
+                                  <div key={card.id || card.cardNumber} className="flex items-center gap-2 px-3 py-1.5 pl-6 bg-indigo-50/50 dark:bg-indigo-900/5">
+                                    <CreditCard size={11} className="text-indigo-400 shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <span className="text-[10.5px] font-bold text-[var(--text-primary)]">{card.cardName || '카드'}</span>
+                                      <span className="text-[9.5px] text-[var(--text-muted)] ml-1.5">{card.cardNumber || ''}{card.cardUser ? ` (${card.cardUser})` : ''}</span>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
-                            )}
+                            ))}
                           </div>
                         </div>
-                      )
-                    })}
-                  </div>
-                )}
+                      )}
+                      {/* 현금 */}
+                      {cashPMs.length > 0 && (
+                        <div className="border border-emerald-200 dark:border-emerald-800/40 rounded-lg overflow-hidden">
+                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-900/15 border-b border-emerald-200 dark:border-emerald-800/40">
+                            <Banknote size={11} className="text-emerald-500" />
+                            <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400">현금</span>
+                            <span className="text-[9px] text-emerald-400 dark:text-emerald-500">({cashPMs.length})</span>
+                          </div>
+                          <div className="divide-y divide-[var(--border-default)]/40">
+                            {cashPMs.map((pm: any) => (
+                              <div key={pm.id} className="flex items-center gap-2 px-3 py-2">
+                                <Banknote size={12} className="text-emerald-400 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[11px] font-bold text-[var(--text-primary)] truncate">{pm.name}</div>
+                                  {pm.storageLocation && <div className="text-[9.5px] text-[var(--text-muted)]">보관: {pm.storageLocation}</div>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {/* 어음 */}
+                      {notePMs.length > 0 && (
+                        <div className="border border-amber-200 dark:border-amber-800/40 rounded-lg overflow-hidden">
+                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 dark:bg-amber-900/15 border-b border-amber-200 dark:border-amber-800/40">
+                            <FileText size={11} className="text-amber-500" />
+                            <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400">어음</span>
+                            <span className="text-[9px] text-amber-400 dark:text-amber-500">({notePMs.length})</span>
+                          </div>
+                          <div className="divide-y divide-[var(--border-default)]/40">
+                            {notePMs.map((pm: any) => (
+                              <div key={pm.id} className="flex items-center gap-2 px-3 py-2">
+                                <FileText size={12} className="text-amber-400 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[11px] font-bold text-[var(--text-primary)] truncate">{pm.name}</div>
+                                  <div className="text-[9.5px] text-[var(--text-muted)]">{pm.noteType || ''}{pm.noteBank ? ` • ${pm.noteBank}` : ''}{pm.notes?.length ? ` • ${pm.notes.length}건` : ''}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {/* 상품권 */}
+                      {voucherPMs.length > 0 && (
+                        <div className="border border-rose-200 dark:border-rose-800/40 rounded-lg overflow-hidden">
+                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 dark:bg-rose-900/15 border-b border-rose-200 dark:border-rose-800/40">
+                            <Ticket size={11} className="text-rose-500" />
+                            <span className="text-[10px] font-extrabold text-rose-600 dark:text-rose-400">상품권</span>
+                            <span className="text-[9px] text-rose-400 dark:text-rose-500">({voucherPMs.length})</span>
+                          </div>
+                          <div className="divide-y divide-[var(--border-default)]/40">
+                            {voucherPMs.map((pm: any) => (
+                              <div key={pm.id} className="flex items-center gap-2 px-3 py-2">
+                                <Ticket size={12} className="text-rose-400 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[11px] font-bold text-[var(--text-primary)] truncate">{pm.name}</div>
+                                  <div className="text-[9.5px] text-[var(--text-muted)]">{pm.voucherQty ? `${pm.voucherQty}매` : ''}{pm.voucherAmount ? ` • 액면 ${Number(pm.voucherAmount).toLocaleString()}원` : ''}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

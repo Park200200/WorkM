@@ -923,11 +923,38 @@ export default function AcctApproval({ year }: { year: number }) {
             })(),
             amount: detailApproval.amount || 0,
             memo: (detailApproval as any).description || '',
-            applicant: (detailApproval as any).applicant || '',
+            applicant: (() => {
+              // 선지출: 출금전표에서 선택한 담당자(manager) 사용
+              const isPreExp = !!(detailApproval as any).isPreExpense || ['preExpense','toResolve','confirming','completed'].includes(detailApproval.status) || (detailApproval.title || '').startsWith('[선지출]')
+              if (isPreExp) {
+                const cfAll: any[] = getItem('acct_cashflows', [])
+                const linkedCf = cfAll.find(cf => String(cf.approvalId) === String(detailApproval.id))
+                if (linkedCf?.manager) return linkedCf.manager
+              }
+              return (detailApproval as any).applicant || ''
+            })(),
             approver: detailApproval.approver || '',
-            applicantSealImg: staffList.find(s => s.name === (detailApproval as any).applicant)?.sealImg || '',
+            applicantSealImg: (() => {
+              const isPreExp = !!(detailApproval as any).isPreExpense || ['preExpense','toResolve','confirming','completed'].includes(detailApproval.status) || (detailApproval.title || '').startsWith('[선지출]')
+              let applicantName = (detailApproval as any).applicant || ''
+              if (isPreExp) {
+                const cfAll: any[] = getItem('acct_cashflows', [])
+                const linkedCf = cfAll.find(cf => String(cf.approvalId) === String(detailApproval.id))
+                if (linkedCf?.manager) applicantName = linkedCf.manager
+              }
+              return staffList.find(s => s.name === applicantName)?.sealImg || ''
+            })(),
             approverSealImg: staffList.find(s => s.name === detailApproval.approver)?.sealImg || '',
-            applicantPosition: staffList.find(s => s.name === (detailApproval as any).applicant)?.position || '',
+            applicantPosition: (() => {
+              const isPreExp = !!(detailApproval as any).isPreExpense || ['preExpense','toResolve','confirming','completed'].includes(detailApproval.status) || (detailApproval.title || '').startsWith('[선지출]')
+              let applicantName = (detailApproval as any).applicant || ''
+              if (isPreExp) {
+                const cfAll: any[] = getItem('acct_cashflows', [])
+                const linkedCf = cfAll.find(cf => String(cf.approvalId) === String(detailApproval.id))
+                if (linkedCf?.manager) applicantName = linkedCf.manager
+              }
+              return staffList.find(s => s.name === applicantName)?.position || ''
+            })(),
             approverPosition: staffList.find(s => s.name === detailApproval.approver)?.position || '',
             approvalStatus: detailApproval.status || '',
             approvedMemo: (detailApproval as any).approvedMemo || '',
