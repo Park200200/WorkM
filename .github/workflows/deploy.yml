@@ -1,0 +1,31 @@
+name: Build and Deploy Docs
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'workm-app/**'   # workm-app 폴더 변경 시에만 자동 빌드 실행
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install & Build
+        working-directory: ./workm-app
+        run: |
+          npm install
+          npm run build
+
+      - name: Commit docs changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: auto build docs"
+          file_pattern: docs/**
