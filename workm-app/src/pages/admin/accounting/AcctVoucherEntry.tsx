@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { useSearchParams } from 'react-router-dom'
 import { getItem, setItem } from '../../../utils/storage'
 import { formatNumber } from '../../../utils/format'
 import { useToastStore } from '../../../stores/toastStore'
@@ -17,6 +18,7 @@ import { useAuthStore } from '../../../stores/authStore'
 import { useStaffStore } from '../../../stores/staffStore'
 
 export default function AcctVoucherEntry({ year, type, catId }: { year: number; type: 'expense' | 'income' | 'withdrawal'; catId?: string | null }) {
+  const [, setSearchParams] = useSearchParams()
   const [refresh, setRefresh] = useState(0)
   const [expenseTab, setExpenseTab] = useState<'waiting' | 'history'>('waiting')
   const [showExpenseModal, setShowExpenseModal] = useState(false)
@@ -108,6 +110,8 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
     if (catId && catId !== 'all') {
       setSelectedBudgetCat(catId)
       setWdBudgetItem('')
+      setWdSearchSelected('')
+      setWdSearchText('')
       setForm(f => ({ ...f, subItem: '', amount: '' }))
       const cats: BudgetCat[] = getItem('acct_budget_cats', [])
       const cat = cats.find(c => String(c.id) === String(catId))
@@ -116,6 +120,8 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
       setSelectedBudgetCat('')
       setWdBudgetItem('')
       setWdCatName('')
+      setWdSearchSelected('')
+      setWdSearchText('')
       setForm(f => ({ ...f, subItem: '', amount: '' }))
     }
   }, [catId])
@@ -223,8 +229,13 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
   const wdSearchResults = useMemo(() => {
     const q = wdSearchText.trim().toLowerCase()
     if (!q) return []
-    return wdBudgetFlatList.filter(r => r.path.toLowerCase().includes(q) || (r.accountCode && r.accountCode.includes(q)) || (r.accountName && r.accountName.toLowerCase().includes(q)) || (r.aliases && r.aliases.toLowerCase().includes(q))).slice(0, 10)
-  }, [wdSearchText, wdBudgetFlatList])
+    // 상단 탭에서 선택된 예산구분(catId)으로 필터 — 전체(all)이면 모든 예산에서 검색
+    const filterCatId = (catId && catId !== 'all') ? catId : ''
+    const filtered = filterCatId
+      ? wdBudgetFlatList.filter(r => String(r.catId) === String(filterCatId))
+      : wdBudgetFlatList
+    return filtered.filter(r => r.path.toLowerCase().includes(q) || (r.accountCode && r.accountCode.includes(q)) || (r.accountName && r.accountName.toLowerCase().includes(q)) || (r.aliases && r.aliases.toLowerCase().includes(q))).slice(0, 30)
+  }, [wdSearchText, wdBudgetFlatList, catId])
 
   /* 예산세목 (지출하기용: 선택된 예산목에 해당하는 세목 목록) */
   const subItemNames = useMemo(() => {
@@ -1039,9 +1050,8 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
                   )
                 })()}
               </div>
-              <input value={wdCatName || '예산구분 선택'} readOnly className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] cursor-not-allowed outline-none font-bold" />
+              <input value={wdCatName || '예산을 먼저 선택해주세요'} readOnly className={`w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm cursor-not-allowed outline-none font-bold ${wdCatName ? 'text-[var(--text-primary)]' : 'text-red-500'}`} />
             </div>
-            {/* 입금전표: 2) 입금내용 */}
             <div>
               <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">입금내용</label>
               <input value={(form as any).incomeNote || ''} onChange={e => setForm(f => ({ ...f, incomeNote: e.target.value } as any))} placeholder="예) 4월 보조금 입금" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none" />
@@ -1050,42 +1060,71 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
             <div>
               <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">입금계정 *</label>
               <CustomSelect
+                disabled={!selectedBudgetCat}
                 value={form.desc}
                 onChange={v => {
+                  // 수익계정 직접 선택인지 확인 (rev: 접두사)
+                  if (v.startsWith('rev:')) {
+                    const revCode = v.replace('rev:', '')
+                    setForm(f => ({ ...f, desc: revCode, accountCode: revCode } as any))
+                    return
+                  }
                   const allIM: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_income_methods') || '[]') } catch { return [] } })()
                   const selectedIM = allIM.find(a => a.name === v)
-                  const revenueAcct = (selectedIM as any)?.revenueAccountCode || ''
+                  // revenueAccountCodes(복수) 우선, 없으면 revenueAccountCode(단수) 호환
+                  const revCodes: string[] = (selectedIM as any)?.revenueAccountCodes || ((selectedIM as any)?.revenueAccountCode ? [(selectedIM as any).revenueAccountCode] : [])
+                  const revenueAcct = revCodes[0] || ''
                   const assetAcct = (selectedIM as any)?.accountCode || ''
                   // 입금수단 자동 세팅: 카테고리 + 계좌정보
                   let autoMethod = ''
                   if (selectedIM) {
                     if (selectedIM.category === '계좌' && selectedIM.bankName) {
-                      autoMethod = `🏦 ${selectedIM.name} • ${selectedIM.accountNumber || ''}`
+                      autoMethod = `계좌 ${selectedIM.name} • ${selectedIM.accountNumber || ''}`
                     } else if (selectedIM.category === '현금') {
-                      autoMethod = `💵 ${selectedIM.name}`
+                      autoMethod = `현금 ${selectedIM.name}`
                     } else if (selectedIM.category === '어음') {
-                      autoMethod = `📄 ${selectedIM.name}`
+                      autoMethod = `어음 ${selectedIM.name}`
                     } else if (selectedIM.category === '상품권') {
-                      autoMethod = `🎟️ ${selectedIM.name}`
+                      autoMethod = `상품권 ${selectedIM.name}`
                     } else {
                       autoMethod = selectedIM.name
                     }
                   }
                   setForm(f => ({ ...f, desc: v, accountCode: revenueAcct, incomeAssetAccount: assetAcct, method: autoMethod } as any))
                 }}
-                placeholder="— 입금계정 선택 —"
+                placeholder={selectedBudgetCat ? "— 입금계정 선택 —" : "예산구분을 먼저 선택하세요"}
                 options={[
                   { value: '', label: '— 입금계정 선택 —' },
                   ...(() => {
-                    const allIM: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_income_methods') || '[]') } catch { return [] } })()
-                    const filtered = selectedBudgetCat
-                      ? allIM.filter(p => String(p.budgetCatId) === String(selectedBudgetCat))
-                      : allIM
-                    return filtered.map(a => {
-                      const detail = a.category === '계좌' && a.bankName ? ` (${a.bankName} ${a.accountNumber || ''})` : a.category === '현금' ? ` (현금)` : ''
-                      const revAcct = (a as any).revenueAccountCode ? ` → ${(a as any).revenueAccountCode}` : ''
-                      return { value: a.name, label: `${a.category} • ${a.name}${detail}${revAcct}` }
+                    const opts: { value: string; label: string }[] = []
+                    // 수단등록의 수익계정 리스트 (토글 활성화된 계정만)
+                    const allAccts: any[] = (() => { try { return JSON.parse(localStorage.getItem('acct_accounts') || '[]') } catch { return [] } })()
+                    let enabledRevCodes: string[] = []
+                    if (selectedBudgetCat) {
+                      enabledRevCodes = getItem(`acct_revenue_accounts_${selectedBudgetCat}`, [])
+                    } else {
+                      const budgetCats: any[] = getItem('acct_budget_cats', [])
+                      budgetCats.forEach((cat: any) => {
+                        const codes: string[] = getItem(`acct_revenue_accounts_${cat.id}`, [])
+                        codes.forEach(c => { if (!enabledRevCodes.includes(c)) enabledRevCodes.push(c) })
+                      })
+                    }
+                    enabledRevCodes.forEach(codeStr => {
+                      const matchAcct = allAccts.find(a => `${a.code} ${a.name}` === codeStr)
+                      const name = matchAcct?.name || codeStr
+                      const code = matchAcct?.code || ''
+                      const group = matchAcct?.group || ''
+                      opts.push({
+                        value: `rev:${codeStr}`,
+                        label: (
+                          <span className="flex items-center justify-between w-full">
+                            <span className="font-semibold text-[var(--text-primary)]">{name}{group ? <span className="ml-1 text-[10px] text-[var(--text-muted)]">({group})</span> : ''}</span>
+                            <span className="text-[10px] text-[var(--text-muted)]/60 font-mono">{code}</span>
+                          </span>
+                        )
+                      })
                     })
+                    return opts
                   })(),
                 ]}
               />
@@ -1184,7 +1223,7 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
               {wdSearchSelected ? (
                 <div className="w-full px-3 py-2.5 rounded-lg border border-primary-400 bg-primary-50/30 text-[12px] flex items-center justify-between gap-1">
                   <span className="text-[var(--text-primary)] font-bold truncate">{wdSearchSelected}</span>
-                  <button type="button" onClick={() => { setWdSearchSelected(''); setWdSearchText(''); setSelectedBudgetCat(''); setWdBudgetItem(''); setWdCatName(''); setForm(f => ({...f, subItem:'', detailItem:'', amount:''})) }} className="text-[var(--text-muted)] hover:text-[#ef4444] text-[14px] shrink-0 cursor-pointer">✕</button>
+                  <button type="button" onClick={() => { setWdSearchSelected(''); setWdSearchText(''); setWdBudgetItem(''); const restoreCat = (catId && catId !== 'all') ? catId : ''; setSelectedBudgetCat(restoreCat); if (restoreCat) { const cats: BudgetCat[] = getItem('acct_budget_cats', []); const cat = cats.find(c => String(c.id) === String(restoreCat)); setWdCatName(cat?.name || '') } else { setWdCatName('') } setForm(f => ({...f, subItem:'', detailItem:'', amount:''})) }} className="text-[var(--text-muted)] hover:text-[#ef4444] text-[14px] shrink-0 cursor-pointer">✕</button>
                 </div>
               ) : (
                 <input
@@ -1201,7 +1240,7 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
                 <div className="absolute left-0 right-0 top-full mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg shadow-lg z-50 max-h-[240px] overflow-y-auto">
                   {wdSearchResults.map((r, i) => (
                     <button key={i} type="button"
-                      onMouseDown={e => { e.preventDefault(); setWdSearchSelected(r.path); setWdSearchText(''); setSelectedBudgetCat(r.catId); setWdCatName(r.catName); setWdBudgetItem(r.itemName); setForm(f => ({...f, subItem: r.subName||'', detailItem: r.detailName||''})); setWdSearchFocused(false) }}
+                      onMouseDown={e => { e.preventDefault(); setWdSearchSelected(r.path); setWdSearchText(''); setSelectedBudgetCat(r.catId); setWdCatName(r.catName); setWdBudgetItem(r.itemName); setForm(f => ({...f, subItem: r.subName||'', detailItem: r.detailName||''})); setWdSearchFocused(false); setSearchParams(prev => { prev.set('cat', r.catId); return prev }, { replace: true }) }}
                       className="w-full text-left px-3 py-2.5 hover:bg-primary-50/50 border-b border-[var(--border-default)] last:border-b-0 cursor-pointer transition-colors"
                     >
                       <div className="text-[12px] font-bold text-[var(--text-primary)] leading-tight">{r.path}</div>
@@ -1395,13 +1434,88 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
           </div>
           <div>
             <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{type === 'income' ? '입금' : '지출'}수단</label>
-            {type === 'income' ? (
-              <input
-                value={form.method || '입금계정을 선택하면 자동 설정됩니다'}
-                readOnly
-                className={`w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] text-sm outline-none cursor-not-allowed ${form.method ? 'bg-emerald-50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-300 font-bold' : 'bg-[var(--bg-muted)] text-[var(--text-muted)]'}`}
-              />
-            ) : (() => {
+            {type === 'income' ? (() => {
+              // 수단등록에서 등록된 입금수단 리스트 (지출수단과 동일한 데이터 소스)
+              const catIdVal = selectedBudgetCat
+              if (!catIdVal) {
+                return (
+                  <div className="px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-muted)]">
+                    예산구분을 먼저 선택하세요
+                  </div>
+                )
+              }
+              const allPayItems: PayMethodItem[] = (() => { try { return JSON.parse(localStorage.getItem('acct_pay_methods_v2') || '[]') } catch { return [] } })()
+              const filteredPM = allPayItems.filter(p => String(p.budgetCatId) === String(catIdVal))
+              const bankGroups2: { bank: any; cards: any[] }[] = []
+              const seenBanks = new Set<string>()
+              filteredPM.filter(p => p.category === '계좌').forEach(p => {
+                if (!seenBanks.has(p.name)) {
+                  seenBanks.add(p.name)
+                  bankGroups2.push({ bank: p, cards: p.cards || [] })
+                }
+              })
+              // cashflow 데이터로 잔액 계산
+              const incCfs: any[] = getItem('acct_cashflows', [])
+              const incCfPM = (cf: any) => cf.payMethod || (cf.method?.includes(':') ? cf.method.split(':')[0] : cf.method) || ''
+              const incCfPD = (cf: any) => cf.payDetail || (cf.method?.includes(':') ? cf.method.split(':')[1] : '') || ''
+              const incIsWd = (cf: any) => cf.type === 'withdrawal' || cf.type === 'expense'
+              // 계좌 그룹
+              const incPmGroups: PayMethodGroup[] = []
+              const incTransferItems: PayMethodOption[] = []
+              const incCardItems: PayMethodOption[] = []
+              bankGroups2.forEach(bg => {
+                const acctIn = incCfs.filter(cf => cf.type === 'income' && incCfPM(cf) === bg.bank.name).reduce((s: number, cf: any) => s + (cf.amount || 0), 0)
+                const acctInT = incCfs.filter(cf => cf.type === 'transfer' && cf.debitAccount === '계좌' && cf.debitDetail === bg.bank.name).reduce((s: number, cf: any) => s + (cf.amount || 0), 0)
+                const acctOut = incCfs.filter(cf => incIsWd(cf) && incCfPM(cf) === '계좌' && incCfPD(cf) === bg.bank.name).reduce((s: number, cf: any) => s + (cf.amount || 0), 0)
+                const acctOutT = incCfs.filter(cf => cf.type === 'transfer' && cf.creditAccount === '계좌' && cf.creditDetail === bg.bank.name).reduce((s: number, cf: any) => s + (cf.amount || 0), 0)
+                const balance = (bg.bank.initialBalance || 0) + acctIn + acctInT - acctOut - acctOutT
+                incTransferItems.push({
+                  value: `계좌:${bg.bank.name}`,
+                  label: `${bg.bank.name}${bg.bank.bankName ? ' (' + bg.bank.bankName + ')' : ''}`,
+                  sub: `${bg.bank.accountNumber || ''} | 잔액 ${balance.toLocaleString()}원`,
+                  section: '이체',
+                })
+                ;(bg.cards || []).forEach((card: any) => {
+                  incCardItems.push({
+                    value: `카드:${card.cardName || card.cardNumber}`,
+                    label: `${card.cardName || '카드'}`,
+                    sub: `${card.cardNumber || ''} | ${bg.bank.name}${bg.bank.bankName ? ' ' + bg.bank.bankName : ''}`,
+                    isCard: true,
+                    section: '카드',
+                  })
+                })
+              })
+              const incAcctItems = [...incTransferItems, ...incCardItems]
+              if (incAcctItems.length > 0) incPmGroups.push({ id: 'account', label: '계좌', items: incAcctItems })
+              // 현금
+              const incCashItems: PayMethodOption[] = filteredPM.filter(p => p.category === '현금').map(p => {
+                const cashIn = incCfs.filter(cf => cf.type === 'transfer' && cf.debitAccount === '현금' && cf.debitDetail === p.name).reduce((s: number, cf: any) => s + (cf.amount || 0), 0)
+                const cashOutT = incCfs.filter(cf => cf.type === 'transfer' && cf.creditAccount === '현금' && cf.creditDetail === p.name).reduce((s: number, cf: any) => s + (cf.amount || 0), 0)
+                const cashOutE = incCfs.filter(cf => incIsWd(cf) && incCfPM(cf) === '현금' && incCfPD(cf) === p.name).reduce((s: number, cf: any) => s + (cf.amount || 0), 0)
+                const cashBal = (p.initialBalance || 0) + cashIn - cashOutT - cashOutE
+                return { value: p.name, label: p.name, sub: `잔액 ${cashBal.toLocaleString()}원` }
+              })
+              if (incCashItems.length > 0) incPmGroups.push({ id: 'cash', label: '현금', items: incCashItems })
+              // 상품권
+              const incVoucherItems: PayMethodOption[] = filteredPM.filter(p => p.category === '상품권').map(p => {
+                const qty = p.voucherQty || 0
+                const usedQty = incCfs.filter(cf => incIsWd(cf) && incCfPM(cf) === '상품권' && incCfPD(cf) === p.name).length
+                const remain = qty - usedQty
+                return { value: p.name, label: p.name, sub: `잔여 ${remain}매 / ${qty}매` }
+              })
+              if (incVoucherItems.length > 0) incPmGroups.push({ id: 'voucher', label: '상품권', items: incVoucherItems })
+
+              if (incPmGroups.length === 0) {
+                return <div className="px-3 py-2.5 rounded-lg border border-dashed border-[var(--border-default)] text-sm text-[var(--text-muted)] text-center">등록된 입금수단이 없습니다</div>
+              }
+              return (
+                <PayMethodSelector
+                  value={form.method}
+                  onChange={(val) => setForm(f => ({ ...f, method: val }))}
+                  groups={incPmGroups}
+                />
+              )
+            })() : (() => {
               // 지출수단 관리에서 등록된 수단만 사용 (예산구분별 필터)
               const catIdVal = selectedBudgetCat
               if (!catIdVal) {
