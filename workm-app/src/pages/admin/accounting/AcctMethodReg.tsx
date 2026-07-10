@@ -60,8 +60,8 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
     })
   }, [refresh, activeYear])
 
-  const selectedCatId = catId || (budgetCats.length > 0 ? String(budgetCats[0].id) : '')
-  const selectedCatName = budgetCats.find(c => String(c.id) === selectedCatId)?.name || ''
+  const selectedCatId = (catId && catId !== 'all') ? catId : (catId === 'all' ? '' : (budgetCats.length > 0 ? String(budgetCats[0].id) : ''))
+  const selectedCatName = selectedCatId ? (budgetCats.find(c => String(c.id) === selectedCatId)?.name || '') : (catId === 'all' ? '전체' : '')
 
   // 데이터 키: 지출은 acct_pay_methods_v2, 입금은 acct_income_methods
   const storageKey = direction === 'expense' ? 'acct_pay_methods_v2' : 'acct_income_methods'
@@ -99,6 +99,37 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
   const catItems = filteredItems.filter(i => i.category === activeCategory && (activeCategory !== '어음' || (i.noteType || '') === noteSubTab))
   const activeCatInfo = PAY_CATEGORIES.find(c => c.key === activeCategory)!
 
+  /* 카테고리별 총잔액 계산 */
+  const categoryBalances = useMemo(() => {
+    const cfs: CashFlow[] = getItem('acct_cashflows', [])
+    const result: Record<string, number> = {}
+    const calcItemBal = (item: any, catKey: string) => {
+      const initial = item.initialBalance || 0
+      const incomeIn = cfs.filter(cf => cf.type === 'income' && ((cf as any).payMethod || (cf as any).method) === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+      const transferIn = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).debitAccount === catKey && (cf as any).debitDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+      const expOut = cfs.filter(cf => (cf.type === 'withdrawal' || cf.type === 'expense') && ((cf as any).payMethod || (cf as any).method?.split(':')[0]) === catKey && ((cf as any).payDetail || (cf as any).method?.split(':')[1] || '') === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+      const transferOut = cfs.filter(cf => (cf as any).type === 'transfer' && (cf as any).creditAccount === catKey && (cf as any).creditDetail === item.name).reduce((s, cf) => s + (cf.amount || 0), 0)
+      return initial + incomeIn + transferIn - expOut - transferOut
+    }
+    // 어음 잔액: 어음대장(notes)의 미결제/추심중 금액 합산
+    const calcNoteBal = (item: any) => {
+      const notes: any[] = item.notes || []
+      return notes.filter((n: any) => !n.status || n.status === '미결제' || n.status === '추심중').reduce((s: number, n: any) => s + (n.amount || 0), 0)
+    }
+    PAY_CATEGORIES.forEach(cat => {
+      const items = filteredItems.filter(i => i.category === cat.key)
+      if (cat.key === '어음') {
+        result[cat.key] = items.reduce((t, item) => t + calcNoteBal(item), 0)
+      } else {
+        result[cat.key] = items.reduce((t, item) => t + calcItemBal(item, cat.key), 0)
+      }
+    })
+    // 어음 수신/발행 별도
+    const noteItems = filteredItems.filter(i => i.category === '어음')
+    result['어음_수신'] = noteItems.filter(i => (i.noteType || '') === '수신').reduce((t, item) => t + calcNoteBal(item), 0)
+    result['어음_발행'] = noteItems.filter(i => (i.noteType || '') === '발행').reduce((t, item) => t + calcNoteBal(item), 0)
+    return result
+  }, [filteredItems, refresh])
   const defaultManager = useMemo(() => {
     const cat = budgetCats.find(c => String(c.id) === selectedCatId)
     if (cat?.users && cat.users.length > 0) return cat.users[0]
@@ -340,6 +371,7 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
         {PAY_CATEGORIES.map(cat => {
           const count = filteredItems.filter(i => i.category === cat.key).length
           const isActive = activeCategory === cat.key
+          const bal = categoryBalances[cat.key] || 0
           return (
             <button
               key={cat.key}
@@ -352,6 +384,12 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
                 <cat.Icon size={16} style={{ color: isActive ? cat.color : undefined }} className="sm:w-[18px] sm:h-[18px]" />
                 <div className={`text-[11px] sm:text-[12px] font-extrabold mt-1 ${isActive ? '' : 'text-[var(--text-secondary)]'}`} style={isActive ? { color: cat.color } : undefined}>{cat.label}</div>
                 <div className="text-[9px] sm:text-[10px] font-bold text-[var(--text-muted)] mt-0.5">{count}건</div>
+                {count > 0 && cat.key === '어음' ? (
+                  <div className="flex flex-col items-center mt-0.5 gap-px">
+                    <div className={`text-[8px] sm:text-[9px] font-extrabold ${(categoryBalances['어음_수신'] || 0) < 0 ? 'text-red-500' : 'text-blue-600'}`}>받을 {formatNumber(categoryBalances['어음_수신'] || 0)}원</div>
+                    <div className={`text-[8px] sm:text-[9px] font-extrabold ${(categoryBalances['어음_발행'] || 0) < 0 ? 'text-red-500' : 'text-amber-600'}`}>지급 {formatNumber(categoryBalances['어음_발행'] || 0)}원</div>
+                  </div>
+                ) : count > 0 && <div className={`text-[9px] sm:text-[10px] font-extrabold mt-0.5 ${bal < 0 ? 'text-red-500' : 'text-blue-600'}`}>{formatNumber(bal)}원</div>}
               </div>
             </button>
           )
@@ -379,6 +417,7 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
                 const subCount = filteredItems.filter(i => i.category === '어음' && (i.noteType || '') === sub).length
                 const isActive = noteSubTab === sub
                 const subColor = sub === '수신' ? '#3b82f6' : '#ef4444'
+                const subBal = categoryBalances[`어음_${sub}`] || 0
                 return (
                   <button
                     key={sub}
@@ -405,6 +444,11 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
                       </span>
                       <span className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0" style={{ color: subColor, background: `${subColor}15` }}>{subCount}</span>
                     </div>
+                    {subCount > 0 && (
+                      <div className="text-[10px] sm:text-[11px] font-extrabold mt-1" style={{ color: subColor }}>
+                        {formatNumber(subBal)}원
+                      </div>
+                    )}
                   </button>
                 )
               })}
@@ -695,6 +739,24 @@ export default function AcctMethodReg({ catId }: { catId?: string | null }) {
                             <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0 ${bal < 0 ? 'bg-red-50 dark:bg-red-900/20 text-red-600' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600'}`}>
                               {bal.toLocaleString('ko-KR')}원
                             </span>
+                          </>
+                        )
+                      })()}
+                      {activeCategory === '어음' && (() => {
+                        const notes: any[] = item.notes || []
+                        const activeNotes = notes.filter((n: any) => !n.status || n.status === '미결제' || n.status === '추심중')
+                        const noteBal = activeNotes.reduce((s: number, n: any) => s + (n.amount || 0), 0)
+                        const noteColor = item.noteType === '수신' ? '#3b82f6' : '#ef4444'
+                        return (
+                          <>
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0" style={{ color: noteColor, background: `${noteColor}15` }}>
+                              {notes.length}건
+                            </span>
+                            {noteBal > 0 && (
+                              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0" style={{ color: noteColor, background: `${noteColor}10` }}>
+                                {formatNumber(noteBal)}원
+                              </span>
+                            )}
                           </>
                         )
                       })()}

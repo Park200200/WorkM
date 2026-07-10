@@ -209,9 +209,9 @@ export default function AcctApproval({ year }: { year: number }) {
     const approvedAmt = isPreExp ? (detailApproval.amount || 0) : (parseInt(approveAmount.replace(/[^0-9]/g, '')) || detailApproval.amount || 0)
     const updated = all.map(a => String(a.id) === String(detailApproval.id) ? {
       ...a,
-      // 선지출: 이미 지출+증빙 완료이므로 바로 completed(보관함) / 일반: approved
-      status: isPreExp ? 'completed' : 'approved',
-      ...((isPreExp) ? { completedAt: getLocalISOString() } : {}),
+      // 선지출: 이미 지출된 건이므로 지출·결의 단계 건너뛰고 바로 정산중(confirming)으로 이동 → 경리 최종 확인
+      status: isPreExp ? 'confirming' : 'approved',
+      ...((isPreExp) ? { approvedAt: getLocalISOString(), confirmedAt: getLocalISOString() } : {}),
       approver: currentUserName,
       ...(isPreExp ? {} : {
         budgetCatId: approveBudgetCat,
@@ -964,7 +964,7 @@ export default function AcctApproval({ year }: { year: number }) {
               dataUrl: a.dataUrl || a.data,
             })),
             isGeneral: !!(detailApproval as any).isGeneral,
-            approvalType: (detailApproval as any).isGeneral ? '일반품의' : ['preExpense','toResolve','confirming','completed'].includes(detailApproval.status) || !!(detailApproval as any).isPreExpense ? '선지출' : '지출품의',
+            approvalType: (detailApproval as any).isGeneral ? '일반품의' : (detailApproval.status === 'preExpense' || !!(detailApproval as any).isPreExpense) ? '선지출' : '지출품의',
             approvedDate: (detailApproval as any).approvedAt ? (detailApproval as any).approvedAt.slice(0, 10) : '',
             department: (() => {
               const staff = staffList.find(s => s.name === (detailApproval as any).applicant)

@@ -95,11 +95,15 @@ interface PrintApprovalFormProps {
 export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments, readOnly }: PrintApprovalFormProps) {
   const canEdit = !readOnly
   const printRef = useRef<HTMLDivElement>(null)
+  const isPreExpenseProposal = data.approvalType === '선지출' && data.approvalStatus === 'preExpense'
+  const isPreExpenseResolution = data.approvalType === '선지출' && data.approvalStatus !== 'preExpense'
   const [formTitle, setFormTitle] = useState(() => {
     if (data.isTransfer) return '대체결의서'
     if (data.isGeneral) return localStorage.getItem('pf_title_general') || '품 의 서'
-    if (data.approvalType === '선지출') return '선지출 품의서'
-    return localStorage.getItem('pf_title') || '지출품의서'
+    if (isPreExpenseProposal) return '선지출 품의서'
+    if (isPreExpenseResolution) return '선지출 결의서'
+    const cached = localStorage.getItem('pf_title') || ''
+    return (cached && !cached.includes('선지출')) ? cached : '지출 결의서'
   })
   const [printWidth, setPrintWidth] = useState(() => Number(localStorage.getItem('pf_width')) || 210)
   const [localAttachments, setLocalAttachments] = useState<PrintAttachment[]>(data.attachments || [])
@@ -198,7 +202,7 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
               onChange={e => {
                 setFormTitle(e.target.value)
                 if (data.isGeneral) localStorage.setItem('pf_title_general', e.target.value)
-                else localStorage.setItem('pf_title', e.target.value)
+                else if (data.approvalType !== '선지출') localStorage.setItem('pf_title', e.target.value)
               }}
               className="pf-header-input"
               style={{ width: 160 }}
@@ -483,9 +487,11 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
               <div className="pf-declaration-text">
                 {data.isTransfer
                   ? '상기 금액을 내용과 같이 지출하였음을 결의합니다.'
-                  : data.approvalType === '선지출'
-                    ? '상기 금액을 내용과 같이 선지출 품의를 올리오니 승인하여 주시기 바랍니다.'
-                    : '상기 금액을 내용과 같이 지출하고자 하오니 승인하여 주시기 바랍니다.'}
+                  : isPreExpenseProposal
+                    ? '상기 금액을 내용과 같이 선지출을 품의하오니 승인하여 주시기 바랍니다.'
+                    : isPreExpenseResolution
+                      ? '상기와 같이 선지출한 비용에 대하여 증빙서류를 첨부하여 결의합니다.'
+                      : '상기와 같이 지출한 비용에 대하여 증빙서류를 첨부하여 결의합니다.'}
               </div>
             </div>
 
