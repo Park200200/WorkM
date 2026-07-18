@@ -3,10 +3,10 @@ import { getItem, setItem } from '../../../utils/storage'
 import { formatNumber } from '../../../utils/format'
 import { useToastStore } from '../../../stores/toastStore'
 import { saveAttachmentImage, deleteAttachmentImage } from '../../../utils/attachmentDB'
-import { PrintApprovalForm } from '../../../components/accounting/PrintApprovalForm'
+import { PrintApprovalForm, type TimelineStep } from '../../../components/accounting/PrintApprovalForm'
 import type { BudgetCat, BudgetItem, Approval, BudgetItemDef, CashFlow } from './types'
 import { getLocalDate, getLocalISOString, uid } from './utils'
-import { Wallet, FileCheck, Search, Plus, Edit3, Trash2, X, Check, Ban, MoreHorizontal, RefreshCw, Paperclip, Send, Eye, CheckCircle2, Archive, ClipboardList } from 'lucide-react'
+import { Wallet, FileCheck, Search, Plus, Edit3, Trash2, X, Check, Ban, MoreHorizontal, RefreshCw, Paperclip, Send, Eye, CheckCircle2, Archive, ClipboardList, FileText, FolderArchive, ChevronDown, AlertTriangle, CircleCheckBig } from 'lucide-react'
 import { cn } from '../../../utils/cn'
 import { createPortal } from 'react-dom'
 import { EmptyState } from '../../../components/common/EmptyState'
@@ -30,10 +30,45 @@ export default function AcctApproval({ year }: { year: number }) {
       if (found) setDetailApproval(found)
     }
   }, [searchParams])
+
+  // 다른 탭에서 품의 데이터 변경 시 실시간 자동 갱신
+  const addToast = useToastStore(s => s.add)
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'acct_approvals' || e.key === 'acct_cashflows' || e.key === 'acct_budgets') {
+        setRefresh(r => r + 1)
+        // 상세 뷰가 열려있으면 최신 데이터로 갱신
+        if (detailApproval) {
+          const all: any[] = getItem('acct_approvals', [])
+          const updated = all.find((a: any) => String(a.id) === String(detailApproval.id))
+          if (updated) {
+            setDetailApproval({ ...updated })
+            addToast('info', '품의 내용이 수정되었습니다. 최신 데이터로 갱신됩니다.')
+          }
+        } else {
+          addToast('info', '품의 데이터가 변경되었습니다.')
+        }
+      }
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [detailApproval])
   const [approvalBtnLabel, setApprovalBtnLabel] = useState(() => getItem('acct_approval_btn_label', '품의 등록'))
   const [editingBtnLabel, setEditingBtnLabel] = useState(false)
   const [editingDescText, setEditingDescText] = useState('')
   const [editingTitleText, setEditingTitleText] = useState('')
+  // 그룹탭/서브탭 라벨 커스텀
+  const [customLabels, setCustomLabels] = useState<Record<string, string>>(() => getItem('acct_custom_labels', {}))
+  const [editingLabelKey, setEditingLabelKey] = useState<string | null>(null)
+  const [editingLabelValue, setEditingLabelValue] = useState('')
+  const saveCustomLabel = (key: string, val: string, defaultVal: string) => {
+    const trimmed = val.trim()
+    const next = { ...customLabels }
+    if (!trimmed || trimmed === defaultVal) { delete next[key] } else { next[key] = trimmed }
+    setCustomLabels(next)
+    setItem('acct_custom_labels', next)
+    setEditingLabelKey(null)
+  }
   const [modalApprovalType, setModalApprovalType] = useState<'expense' | 'general'>('expense')
 
   const currentUser = useAuthStore(s => s.user)
@@ -73,9 +108,11 @@ export default function AcctApproval({ year }: { year: number }) {
     confirming: { label: '정산중', color: '#8b5cf6', bg: 'rgba(139,92,246,.1)' },
     completed: { label: '완료됨', color: '#4f6ef7', bg: 'rgba(79,110,247,.1)' },
     vouchered: { label: '완료됨', color: '#4f6ef7', bg: 'rgba(79,110,247,.1)' },
+    preExpenseResolved: { label: '결의완료', color: '#06b6d4', bg: 'rgba(6,182,212,.1)' },
+    cancelled: { label: '폐기됨', color: '#9ca3af', bg: 'rgba(156,163,175,.1)' },
   }
 
-  type GroupKey = 'inbox' | 'process' | 'archive'
+  type GroupKey = 'inbox' | 'process' | 'docs' | 'cancelled'
   const groupDefs: { key: GroupKey; label: string; icon: React.ElementType; color: string; subTabs: { key: string; label: string; color: string }[] }[] = [
     {
       key: 'inbox', label: '품의함', icon: FileCheck, color: '#4f6ef7',
@@ -89,7 +126,7 @@ export default function AcctApproval({ year }: { year: number }) {
       ],
     },
     {
-      key: 'process', label: '결제함', icon: CheckCircle2, color: '#22c55e',
+      key: 'process', label: '결재함', icon: CheckCircle2, color: '#22c55e',
       subTabs: [
         { key: 'ap_pending', label: '승인할', color: '#f59e0b' },
         { key: 'ap_approved', label: '승인한', color: '#22c55e' },
@@ -103,17 +140,23 @@ export default function AcctApproval({ year }: { year: number }) {
       ],
     },
     {
-      key: 'archive', label: '보관함', icon: Archive, color: '#6b7280',
+      key: 'docs', label: '문서함', icon: FolderArchive, color: '#4f6ef7',
       subTabs: [
         { key: 'generalDone', label: '일반품의완료', color: '#4f6ef7' },
         { key: 'expenseDone', label: '지출품의완료', color: '#f97316' },
+      ],
+    },
+    {
+      key: 'cancelled', label: '폐기함', icon: Trash2, color: '#9ca3af',
+      subTabs: [
+        { key: 'cancelledAll', label: '폐기된 건', color: '#9ca3af' },
       ],
     },
   ]
 
   const [activeGroup, setActiveGroup] = useState<GroupKey>(() => {
     const g = searchParams.get('group')
-    if (g && ['inbox', 'process', 'archive'].includes(g)) return g as GroupKey
+    if (g && ['inbox', 'process', 'docs', 'cancelled'].includes(g)) return g as GroupKey
     return 'inbox'
   })
   const [subTab, setSubTab] = useState<string>(() => {
@@ -125,6 +168,11 @@ export default function AcctApproval({ year }: { year: number }) {
     const bCats: BudgetCat[] = getItem('acct_budget_cats', []).filter((c: any) => { const pf = c.periodFrom || ''; const pt = c.periodTo || ''; if (pf && pt) return pf <= `${year}-12-31` && pt >= `${year}-01-01`; return (c.year || year) === year })
     return bCats.some(c => (c as any).approvers?.includes(currentUserName)) || bCats.some(c => c.approver === currentUserName) || approvals.some(a => (a as any).approver === currentUserName)
   }, [currentUserName, approvals, refresh, year])
+
+  // 사장(메인 승인권자) 여부: staffList에서 approverType === 'approver'인 경우
+  const isMainApprover = useMemo(() => {
+    return staffList.some(s => s.name === currentUserName && (s as any).approverType === 'approver')
+  }, [staffList, currentUserName])
 
   const userIsExpenseManager = useMemo(() => {
     const bCats: BudgetCat[] = getItem('acct_budget_cats', []).filter((c: any) => { const pf = c.periodFrom || ''; const pt = c.periodTo || ''; if (pf && pt) return pf <= `${year}-12-31` && pt >= `${year}-01-01`; return (c.year || year) === year })
@@ -209,9 +257,9 @@ export default function AcctApproval({ year }: { year: number }) {
     const approvedAmt = isPreExp ? (detailApproval.amount || 0) : (parseInt(approveAmount.replace(/[^0-9]/g, '')) || detailApproval.amount || 0)
     const updated = all.map(a => String(a.id) === String(detailApproval.id) ? {
       ...a,
-      // 선지출: 이미 지출된 건이므로 지출·결의 단계 건너뛰고 바로 정산중(confirming)으로 이동 → 경리 최종 확인
-      status: isPreExp ? 'confirming' : 'approved',
-      ...((isPreExp) ? { approvedAt: getLocalISOString(), confirmedAt: getLocalISOString() } : {}),
+      // 선지출: preExpenseResolved → 바로 완료, 일반 선지출 → 결의(toResolve)로 이동
+      status: isPreExp ? ((a as any).preExpenseResolved ? 'completed' : 'toResolve') : 'approved',
+      ...((isPreExp) ? { approvedAt: getLocalISOString() } : {}),
       approver: currentUserName,
       ...(isPreExp ? {} : {
         budgetCatId: approveBudgetCat,
@@ -223,6 +271,7 @@ export default function AcctApproval({ year }: { year: number }) {
         budgetDetailId: approveBudgetDetail || undefined,
         budgetDetailItem: selectedBudgetDetail?.detailItemName || '',
       }),
+      ...(isPreExp && (a as any).preExpenseResolved ? { completedAt: getLocalISOString(), completedBy: currentUserName } : {}),
       amount: approvedAmt,
       approvedAmount: approvedAmt,
       approvedMemo: approveMemo || '',
@@ -248,8 +297,9 @@ export default function AcctApproval({ year }: { year: number }) {
     const isCompleted = ['completed', 'vouchered'].includes(a.status)
     const isGeneral = !!(a as any).isGeneral
 
-    // ── 품의함: 내가 신청한 품의 (완료 전) ──
+    // ── 품의함: 내가 신청한 품의 (완료/폐기 전) ──
     if (group === 'inbox') {
+      if (a.status === 'cancelled') return false
       const isMyApplicant = (a as any).applicant === currentUserName
       const isPreExp = !!(a as any).isPreExpense || a.status === 'preExpense' || (a.title || '').startsWith('[선지출]')
       // 선지출: applicant 또는 해당 출금전표의 담당자도 볼 수 있음
@@ -262,6 +312,9 @@ export default function AcctApproval({ year }: { year: number }) {
           if (cfManager !== currentUserName && !isExpenseUser(a)) return false
         } else if (tab === 'rejected' && a.status === 'rejected' && (a as any).approver === currentUserName) {
           return true
+        } else if ((a as any).selfApproved && a.status === 'toResolve' && tab === 'toResolve' && (isExpenseUser(a) || (a as any).approver === currentUserName)) {
+          // selfApproved 건: 지출담당자 또는 승인권자(추가승인권자 포함) 모두 결의할 목록에서 볼 수 있음
+          return true
         } else {
           return false
         }
@@ -273,11 +326,12 @@ export default function AcctApproval({ year }: { year: number }) {
     // ── 결제함: 승인권자/지출담당자 역할별 ──
     if (group === 'process') {
       if (isCompleted) return false
+      if (a.status === 'cancelled') return false
       // 승인권자 서브탭
       if (tab.startsWith('ap_')) {
         if ((a as any).approver !== currentUserName) return false
         const realStatus = tab.replace('ap_', '')
-        if (realStatus === 'pending') return a.status === 'pending' || a.status === 'preExpense'
+        if (realStatus === 'pending') return a.status === 'pending' || a.status === 'preExpense' || a.status === 'preExpenseResolved'
         return a.status === realStatus
       }
       // 지출담당자 서브탭
@@ -291,13 +345,32 @@ export default function AcctApproval({ year }: { year: number }) {
       }
     }
 
-    // ── 보관함: 완료된 건 중 본인 관련만 ──
-    if (group === 'archive') {
+    // ── 문서함: 완료된 건 중 본인 관련만 ──
+    if (group === 'docs') {
       if (!isCompleted) return false
-      const isMine = userIsApprover || (a as any).applicant === currentUserName || (a as any).approver === currentUserName || isExpenseUser(a)
+      if (a.status === 'cancelled') return false
+      const isMine = isMainApprover // 사장: 모든 문서
+        || (a as any).applicant === currentUserName // 품의자: 자기 품의 문서
+        || (a as any).approver === currentUserName // 추가승인권자: 본인이 승인한 문서
+        || (a as any).expenseUser === currentUserName // 지출담당자: 본인이 지출한 문서
+        || (a as any).resolveUser === currentUserName // 결의자: 본인이 결의한 문서
+        || (a as any).confirmUser === currentUserName // 정산자: 본인이 정산한 문서
+        || (a as any).completedBy === currentUserName // 완료처리자
       if (!isMine) return false
       if (tab === 'generalDone') return isGeneral
       if (tab === 'expenseDone') return !isGeneral
+      return true
+    }
+
+    // ── 폐기함: 폐기된 건 ──
+    if (group === 'cancelled') {
+      if (a.status !== 'cancelled') return false
+      const isMine = isMainApprover // 사장: 모든 폐기 문서
+        || (a as any).applicant === currentUserName // 품의자: 자기 폐기 문서
+        || (a as any).approver === currentUserName // 추가승인권자: 본인 승인 폐기 문서
+        || (a as any).expenseUser === currentUserName // 지출담당자: 본인 지출 폐기 문서
+      if (!isMine) return false
+      if (tab === 'cancelledAll') return true
       return true
     }
     return false
@@ -350,22 +423,37 @@ export default function AcctApproval({ year }: { year: number }) {
       setItem('acct_approvals', updated)
     } else {
       const selectedCat = budgetCats.find(c => String(c.id) === String((form as any).budgetCatId))
+      // 승인자 직접 품의: 품의자 === 승인자 이면 자동 승인
+      const isSelfApprove = !isGeneral && userIsApprover && (form.applicant === autoApprover)
+      // 예산 항목 정보: 검색으로 선택한 값 또는 폼에서 직접 입력한 값
+      const selBudgetItemId = approveBudgetItem || (form as any).modalBudgetItemId || ''
+      const selBudgetSubId = approveBudgetSub || (form as any).modalBudgetSubId || ''
+      const selBudgetDetailId = approveBudgetDetail || (form as any).modalBudgetDetailId || ''
+      const selBudgetItem = selBudgetItemId ? budgetItems.find(b => String(b.id) === String(selBudgetItemId)) : null
       all.push({
         id: Date.now() + Math.floor(Math.random() * 1000),
         title: form.title.trim(),
         amount: amt,
         date: form.date,
-        status: 'pending',
+        status: isSelfApprove ? 'approved' : 'pending',
         accountCode: form.accountCode,
         description: form.description,
         applicant: form.applicant,
         approver: autoApprover,
         isGeneral: isGeneral,
-        budgetItem: form.budgetItem,
-        budgetSubItem: form.budgetSubItem,
+        budgetItem: selBudgetItem?.itemName || form.budgetItem,
+        budgetSubItem: selBudgetItem?.subItemName || form.budgetSubItem,
         budgetCatId: (form as any).budgetCatId || '',
         budgetCatName: selectedCat?.name || '',
         createdAt: getLocalISOString(),
+        ...(isSelfApprove ? {
+          selfApproved: true,
+          approvedAt: getLocalISOString(),
+          budgetItemId: selBudgetItemId,
+          budgetSubId: selBudgetSubId,
+          budgetDetailId: selBudgetDetailId,
+          approvedAmount: amt,
+        } : {}),
       } as any)
       setItem('acct_approvals', all)
     }
@@ -373,6 +461,9 @@ export default function AcctApproval({ year }: { year: number }) {
     setEditingId(null)
     setModalApprovalType('expense')
     setForm({ title: '', amount: '', date: getLocalDate(), accountCode: '', description: '', applicant: currentUserName, approver: '' })
+    // 예산 검색 상태 초기화
+    setBudgetSearchText(''); setBudgetSearchSelected(''); setBudgetSearchFocused(false)
+    setApproveBudgetCat(''); setApproveBudgetItem(''); setApproveBudgetSub(''); setApproveBudgetDetail('')
     setRefresh(r => r + 1)
   }
 
@@ -454,9 +545,10 @@ export default function AcctApproval({ year }: { year: number }) {
     const acctList: { code: string; name: string }[] = getItem('acct_accounts', [])
     const result: { catId: string; catName: string; itemId: string; itemName: string; subId?: string; subName?: string; detailId?: string; detailName?: string; accountCode?: string; accountName?: string; aliases: string; path: string; amount: number; spent: number; remaining: number }[] = []
     budgetCats.forEach(cat => {
-      // 승인권자의 해당 예산건만 필터링
+      // 담당자는 자기가 속한 예산이 없어도 전체 예산 볼 수 있도록 필터링 완화
       const catAny = cat as any
-      const isMyBudget = (catAny.approvers && catAny.approvers.includes(currentUserName)) ||
+      const isMyBudget = userIsApprover || 
+        (catAny.approvers && catAny.approvers.includes(currentUserName)) ||
         catAny.approver === currentUserName ||
         (catAny.users && catAny.users.includes(currentUserName))
       if (!isMyBudget) return
@@ -546,7 +638,7 @@ export default function AcctApproval({ year }: { year: number }) {
   // 통합 검색 필터 결과
   const budgetSearchResults = useMemo(() => {
     const q = budgetSearchText.trim().toLowerCase()
-    if (!q) return []
+    if (!q) return budgetFlatList.slice(0, 10)
     return budgetFlatList.filter(r =>
       r.path.toLowerCase().includes(q) ||
       (r.accountCode && r.accountCode.includes(q)) ||
@@ -739,24 +831,41 @@ export default function AcctApproval({ year }: { year: number }) {
         {groupDefs.filter(g => g.key !== 'process' || userIsApprover || userIsExpenseManager).map((g) => {
           const isActive = activeGroup === g.key
           const cnt = groupCounts[groupDefs.indexOf(g)]
+          const displayLabel = customLabels[`group_${g.key}`] || g.label
+          const isEditing = editingLabelKey === `group_${g.key}`
           return (
             <button key={g.key}
-              onClick={() => changeGroup(g.key)}
+              onClick={() => !isEditing && changeGroup(g.key)}
+              onDoubleClick={(e) => { e.stopPropagation(); setEditingLabelKey(`group_${g.key}`); setEditingLabelValue(displayLabel) }}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-lg text-[12px] font-bold transition-all cursor-pointer select-none',
+                'flex items-center gap-2 px-4 py-2 rounded-lg text-[12px] font-bold transition-all cursor-pointer select-none border',
                 isActive
-                  ? 'bg-[var(--bg-surface)] shadow-md text-[var(--text-primary)]'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-surface)]/50'
+                  ? 'shadow-md text-white border-transparent'
+                  : 'bg-transparent border-transparent hover:bg-[var(--bg-surface)]/50'
               )}
+              style={isActive ? { background: g.color, color: '#fff' } : { color: g.color }}
             >
               <g.icon size={14} />
-              <span>{g.label}</span>
+              {isEditing ? (
+                <input
+                  autoFocus
+                  value={editingLabelValue}
+                  onChange={e => setEditingLabelValue(e.target.value)}
+                  onBlur={() => saveCustomLabel(`group_${g.key}`, editingLabelValue, g.label)}
+                  onKeyDown={e => { if (e.key === 'Enter') saveCustomLabel(`group_${g.key}`, editingLabelValue, g.label); if (e.key === 'Escape') setEditingLabelKey(null) }}
+                  onClick={e => e.stopPropagation()}
+                  className="bg-transparent border-b border-white/50 outline-none text-[12px] font-bold w-[60px] text-center"
+                  style={{ color: 'inherit' }}
+                />
+              ) : (
+                <span>{displayLabel}</span>
+              )}
               {cnt > 0 && (
                 <span className={cn(
                   'min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-black',
-                  isActive ? 'text-white' : 'bg-[var(--bg-surface)] text-[var(--text-muted)]'
+                  isActive ? 'bg-white/25 text-white' : 'text-white'
                 )}
-                  style={isActive ? { background: g.color } : {}}
+                  style={isActive ? {} : { background: `${g.color}80` }}
                 >{cnt}</span>
               )}
             </button>
@@ -770,22 +879,43 @@ export default function AcctApproval({ year }: { year: number }) {
           {currentGroup.subTabs.map((t) => {
             const cnt = getSubTabCount(t.key)
             const isActive = subTab === t.key
+            const displayLabel = customLabels[`sub_${t.key}`] || t.label
+            const isEditing = editingLabelKey === `sub_${t.key}`
             return (
               <button key={t.key}
-                onClick={() => setSubTab(t.key)}
+                onClick={() => !isEditing && setSubTab(t.key)}
+                onDoubleClick={(e) => { e.stopPropagation(); setEditingLabelKey(`sub_${t.key}`); setEditingLabelValue(displayLabel) }}
                 className={cn(
                   'inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all cursor-pointer border whitespace-nowrap',
                   isActive
                     ? 'text-white border-transparent shadow-sm'
-                    : 'text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--text-muted)]'
+                    : 'hover:opacity-80'
                 )}
-                style={isActive ? { background: t.color, borderColor: t.color } : {}}
+                style={isActive
+                  ? { background: t.color, borderColor: t.color }
+                  : { color: t.color, borderColor: `${t.color}40`, background: `${t.color}08` }
+                }
               >
-                {t.label}
+                {isEditing ? (
+                  <input
+                    autoFocus
+                    value={editingLabelValue}
+                    onChange={e => setEditingLabelValue(e.target.value)}
+                    onBlur={() => saveCustomLabel(`sub_${t.key}`, editingLabelValue, t.label)}
+                    onKeyDown={e => { if (e.key === 'Enter') saveCustomLabel(`sub_${t.key}`, editingLabelValue, t.label); if (e.key === 'Escape') setEditingLabelKey(null) }}
+                    onClick={e => e.stopPropagation()}
+                    className="bg-transparent border-b outline-none text-[11px] font-bold w-[50px] text-center"
+                    style={{ color: 'inherit', borderColor: isActive ? 'rgba(255,255,255,.5)' : `${t.color}60` }}
+                  />
+                ) : (
+                  displayLabel
+                )}
                 <span className={cn(
                   'min-w-[16px] h-[16px] flex items-center justify-center rounded-full text-[9px] font-black',
-                  isActive ? 'bg-white/25' : 'bg-[var(--bg-muted)]'
-                )}>{cnt}</span>
+                  isActive ? 'bg-white/25' : ''
+                )}
+                style={isActive ? {} : { background: `${t.color}18`, color: t.color }}
+                >{cnt}</span>
               </button>
             )
           })}
@@ -804,7 +934,7 @@ export default function AcctApproval({ year }: { year: number }) {
       <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden">
 
         {filteredApprovals.length === 0 ? (
-          <div className="p-6"><EmptyState emoji="📋" title="해당 상태의 품의가 없습니다" /></div>
+          <div className="p-6"><EmptyState icon={<ClipboardList size={36} />} title="해당 상태의 품의가 없습니다" /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px]">
@@ -859,12 +989,50 @@ export default function AcctApproval({ year }: { year: number }) {
                         </div>
                       </td>
                       <td className="py-2.5 px-3.5 text-center">
-                        <button
-                          onClick={() => setDetailApproval(a)}
-                          className="p-1.5 rounded-md hover:bg-[var(--bg-muted)] cursor-pointer transition-colors text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                        >
-                          <MoreHorizontal size={16} />
-                        </button>
+                        <div className="flex items-center justify-center gap-0.5">
+                          <button
+                            onClick={() => {
+                              // localStorage에서 최신 데이터 읽기 (formTitle 등 변경 반영)
+                              const latest = getItem<Approval[]>('acct_approvals', []).find(x => String(x.id) === String(a.id))
+                              setDetailApproval(latest || a)
+                            }}
+                            className="p-1.5 rounded-md hover:bg-[var(--bg-muted)] cursor-pointer transition-colors text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                            title="상세 보기"
+                          >
+                            <Eye size={14} />
+                          </button>
+                          {activeGroup === 'cancelled' ? (
+                            <button
+                              onClick={() => {
+                                if (!confirm('이 품의를 복원하시겠습니까?')) return
+                                const all = getItem<Approval[]>('acct_approvals', [])
+                                const updated = all.map(x => String(x.id) === String(a.id) ? { ...x, status: (x as any)._prevStatus || 'pending', _prevStatus: undefined, cancelledAt: undefined, cancelReason: undefined } : x)
+                                setItem('acct_approvals', updated)
+                                setRefresh(r => r + 1)
+                              }}
+                              className="p-1.5 rounded-md hover:bg-emerald-50 dark:hover:bg-emerald-900/20 cursor-pointer transition-colors text-emerald-500 hover:text-emerald-600"
+                              title="복원"
+                            >
+                              <RefreshCw size={14} />
+                            </button>
+                          ) : (
+                            !['completed', 'vouchered', 'cancelled'].includes(a.status) && (a as any).applicant === currentUserName && (
+                              <button
+                                onClick={() => {
+                                  if (!confirm('이 품의를 폐기하시겠습니까?\n폐기된 건은 폐기함에서 확인 및 복원할 수 있습니다.')) return
+                                  const all = getItem<Approval[]>('acct_approvals', [])
+                                  const updated = all.map(x => String(x.id) === String(a.id) ? { ...x, _prevStatus: x.status, status: 'cancelled', cancelledAt: getLocalISOString() } : x)
+                                  setItem('acct_approvals', updated)
+                                  setRefresh(r => r + 1)
+                                }}
+                                className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer transition-colors text-[var(--text-muted)] hover:text-red-500"
+                                title="폐기"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )
@@ -887,6 +1055,8 @@ export default function AcctApproval({ year }: { year: number }) {
             const da = detailApproval as any
             const isPreExp = da.isPreExpense || detailApproval.status === 'preExpense'
             return {
+            id: detailApproval.id,
+            formTitle: da.formTitle || '',
             date: (detailApproval.date || detailApproval.createdAt || '').slice(0, 10),
             expenseDate: linkedCf?.tradeDate || linkedCf?.date || (isPreExp ? (detailApproval.date || detailApproval.createdAt || '').slice(0, 10) : ''),
             settleDate: linkedCf?.inputDate || linkedCf?.writeDate || linkedCf?.date || (isPreExp ? (detailApproval.date || detailApproval.createdAt || '').slice(0, 10) : ''),
@@ -972,6 +1142,86 @@ export default function AcctApproval({ year }: { year: number }) {
             })(),
           }})()}
           onClose={() => { resetApproveState(); setDetailApproval(null) }}
+          timeline={(() => {
+            const da = detailApproval as any
+            const isGeneral = !!da.isGeneral
+            const isPreExp = !!da.isPreExpense || detailApproval.status === 'preExpense'
+            const status = detailApproval.status
+            const isSelfApproved = !!(da as any).selfApproved
+            const isPreExpResolved = !!(da as any).preExpenseResolved
+            // 품의자가 지출담당자인지 확인
+            const catId = da.budgetCatId ? String(da.budgetCatId) : ''
+            const cat = catId ? budgetCats.find(c => String(c.id) === catId) : null
+            const expenseManager = (cat?.users && cat.users.length > 0) ? cat.users[0] : ''
+            const applicantIsExpenseUser = !!(cat?.users?.includes(da.applicant)) && !isSelfApproved
+            const statusOrder = isGeneral
+              ? ['created', 'approved', 'completed']
+              : isPreExp
+                ? ['preExp1Voucher', 'preExp1Apply', 'preExp1Approved', 'preExp1Resolved', 'preExp1Confirmed']
+                : isSelfApproved
+                  ? ['selfCreated', 'expensed', 'selfResolved']
+                  : isPreExpResolved
+                    ? ['preExpVoucher', 'preExpApply', 'preExpResolved', 'preExpConfirmed', 'preExpApproved']
+                    : applicantIsExpenseUser
+                      ? ['created', 'approved', 'expensed', 'selfResolved']
+                      : ['created', 'approved', 'expensed', 'resolved', 'confirmed', 'completed']
+            const labelMap: Record<string, string> = { created: '품의', approved: '승인', expensed: '지출', resolved: '결의', confirmed: '정산', completed: '완료', selfCreated: '품의·승인', selfResolved: '결의·정산', preExpVoucher: '전표', preExpApply: '품의', preExpResolved: '결의', preExpConfirmed: '정산', preExpApproved: '승인', preExp1Voucher: '전표', preExp1Apply: '품의', preExp1Approved: '승인', preExp1Resolved: '결의', preExp1Confirmed: '정산' }
+            const dateMap: Record<string, string> = { created: da.createdAt, approved: da.approvedAt, expensed: da.expensedAt, resolved: da.resolvedAt, confirmed: da.confirmedAt, completed: da.completedAt, selfCreated: da.createdAt, selfResolved: da.completedAt, preExpVoucher: da.expensedAt || da.createdAt, preExpApply: da.createdAt, preExpResolved: da.resolvedAt, preExpConfirmed: da.confirmedAt, preExpApproved: da.approvedAt, preExp1Voucher: da.expensedAt || da.createdAt, preExp1Apply: da.createdAt, preExp1Approved: da.approvedAt, preExp1Resolved: da.resolvedAt, preExp1Confirmed: da.confirmedAt }
+            const personMap: Record<string, string> = {
+              created: da.applicant,
+              approved: da.approver,
+              expensed: da.expenseUser || expenseManager,    // 지출: 경리(예산담당자)
+              resolved: da.resolveUser || da.applicant,       // 결의: 품의자(담당)
+              confirmed: da.confirmUser || expenseManager,    // 정산: 경리(예산담당자)
+              completed: '',
+              selfCreated: da.applicant,
+              selfResolved: da.completedBy || da.applicant || expenseManager,
+              preExpVoucher: da.expenseUser || expenseManager, preExpApply: da.applicant, preExpResolved: da.resolveUser || expenseManager, preExpConfirmed: da.confirmUser || expenseManager, preExpApproved: da.approver,
+              preExp1Voucher: da.expenseUser || expenseManager, preExp1Apply: da.applicant, preExp1Approved: da.approver, preExp1Resolved: da.resolveUser || da.applicant, preExp1Confirmed: da.confirmUser || expenseManager
+            }
+            const colorMap: Record<string, string> = { created: '#3b82f6', approved: '#22c55e', expensed: '#f97316', resolved: '#06b6d4', confirmed: '#8b5cf6', completed: '#4f6ef7', selfCreated: '#3b82f6', selfResolved: '#22c55e', preExpVoucher: '#f97316', preExpApply: '#3b82f6', preExpResolved: '#06b6d4', preExpConfirmed: '#8b5cf6', preExpApproved: '#22c55e', preExp1Voucher: '#f97316', preExp1Apply: '#3b82f6', preExp1Approved: '#22c55e', preExp1Resolved: '#06b6d4', preExp1Confirmed: '#8b5cf6' }
+            // 현재 상태 결정
+            const statusKeyMap: Record<string, string> = isSelfApproved
+              ? { pending: 'selfCreated', approved: 'selfCreated', expensed: 'expensed', toResolve: 'selfResolved', confirming: 'selfResolved', completed: 'selfResolved', vouchered: 'selfResolved', cancelled: 'selfCreated', rejected: 'selfCreated' }
+              : isPreExpResolved
+                ? { pending: 'preExpApply', preExpense: 'preExpApply', preExpenseResolved: 'preExpConfirmed', approved: 'preExpApproved', confirming: 'preExpApproved', completed: 'preExpApproved', vouchered: 'preExpApproved', cancelled: 'preExpApply', rejected: 'preExpApply' }
+                : applicantIsExpenseUser
+                  ? { pending: 'created', preExpense: 'created', approved: 'approved', expensed: 'expensed', toResolve: 'selfResolved', confirming: 'selfResolved', completed: 'selfResolved', vouchered: 'selfResolved', cancelled: 'created', rejected: 'created' }
+                  : { pending: 'created', preExpense: 'created', approved: 'approved', expensed: 'expensed', toResolve: 'resolved', confirming: 'confirmed', completed: 'completed', vouchered: 'completed', cancelled: 'created', rejected: 'created' }
+            // 선지출 케이스1: isPreExp이면 preExp1 키 사용
+            const preExp1KeyMap: Record<string, string> = { preExpense: 'preExp1Voucher', pending: 'preExp1Apply', approved: 'preExp1Approved', toResolve: 'preExp1Resolved', confirming: 'preExp1Confirmed', completed: 'preExp1Confirmed', vouchered: 'preExp1Confirmed', cancelled: 'preExp1Apply', rejected: 'preExp1Apply' }
+            const currentKey = (isPreExp && !isSelfApproved && !isPreExpResolved && !isGeneral) ? (preExp1KeyMap[status] || 'preExp1Voucher') : (statusKeyMap[status] || 'created')
+            const currentIdx = statusOrder.indexOf(currentKey)
+            const steps: TimelineStep[] = statusOrder.map((key, i) => ({
+              key,
+              label: labelMap[key] || key,
+              date: dateMap[key] || undefined,
+              person: personMap[key] || undefined,
+              status: status === 'rejected' && key === 'created' ? 'done' as const
+                : status === 'rejected' && i === 1 ? 'current' as const
+                : status === 'cancelled' ? (i <= currentIdx ? 'done' as const : 'skipped' as const)
+                : i < currentIdx ? 'done' as const
+                : i === currentIdx ? (dateMap[key] ? 'done' as const : 'current' as const)
+                : 'pending' as const,
+              color: colorMap[key] || '#94a3b8',
+              note: status === 'rejected' && i === 1 ? `반려: ${da.rejectReason || ''}` : undefined,
+            }))
+            // 반려 시 반려 단계 추가
+            if (status === 'rejected') {
+              steps.splice(1, 0, {
+                key: 'rejected', label: '반려', date: da.rejectedAt, person: da.approver,
+                status: 'done', color: '#ef4444', note: da.rejectReason || ''
+              })
+            }
+            // 폐기 시 폐기 단계 추가
+            if (status === 'cancelled') {
+              steps.push({
+                key: 'cancelled', label: '폐기', date: da.cancelledAt, person: da.applicant,
+                status: 'done', color: '#9ca3af'
+              })
+            }
+            return steps
+          })()}
           onUpdateAttachments={(updated) => {
             // 삭제된 첨부의 IndexedDB 이미지 정리
             const oldAtts: any[] = (detailApproval as any).attachments || []
@@ -1031,7 +1281,8 @@ export default function AcctApproval({ year }: { year: number }) {
                 const bCats: BudgetCat[] = getItem('acct_budget_cats', [])
                 const cat = catId ? bCats.find(c => String(c.id) === String(catId)) : null
                 const isExpenseManager = cat?.users?.includes(currentUserName) || false
-                return isExpenseManager ? (
+                const isSelfApprovedApprover = !!(detailApproval as any).selfApproved && (detailApproval as any).approver === currentUserName
+                return (isExpenseManager || isSelfApprovedApprover) ? (
                   <>
                     <button onClick={() => { setSettleCompleteMode(true); setSettleCompletePw(''); setSettleCompletePwError('') }} className="px-4 py-2 rounded-lg bg-[#22c55e] text-white text-sm font-bold hover:bg-[#16a34a] cursor-pointer flex items-center gap-1 shadow-sm"><Check size={13} /> 정산완료</button>
                     <button onClick={() => { setSettleRejectMode(true); setSettleRejectReason('') }} className="px-4 py-2 rounded-lg bg-[#ef4444] text-white text-sm font-bold hover:bg-[#dc2626] cursor-pointer flex items-center gap-1 shadow-sm"><Ban size={13} /> 정산반려</button>
@@ -1161,7 +1412,6 @@ export default function AcctApproval({ year }: { year: number }) {
                         newFiles.push(entry)
                       }
                       const updated=[...existing,...newFiles]
-                      // localStorage에는 dataUrl 없이 메타데이터만 저장
                       const metaOnly = updated.map(a => {const {dataUrl, ...rest} = a; return rest})
                       const approvals:any[]=getItem('acct_approvals',[])
                       const idx=approvals.findIndex(a=>a.id===detailApproval.id)
@@ -1173,9 +1423,18 @@ export default function AcctApproval({ year }: { year: number }) {
                       alert(`${fileCount}개 파일이 첨부되었습니다.`)
                     }} />
                   </label>
-                  {((detailApproval as any).attachments||[]).length>0 && (
-                    <button onClick={() => { if(!confirm('승인요청을 진행하시겠습니까?\n정산중 목록으로 이동됩니다.'))return; const approvals:any[]=getItem('acct_approvals',[]); const idx=approvals.findIndex(a=>a.id===detailApproval.id); if(idx>=0){approvals[idx].status='confirming';approvals[idx].confirmedAt=getLocalISOString();setItem('acct_approvals',approvals);setRefresh(r=>r+1)} resetApproveState();setDetailApproval(null) }} className="px-4 py-2 rounded-lg bg-[#8b5cf6] text-white text-sm font-bold hover:bg-[#7c3aed] cursor-pointer flex items-center gap-1 shadow-sm"><Send size={13} /> 승인요청</button>
-                  )}
+                  {((detailApproval as any).attachments||[]).length>0 && (() => {
+                    // 결의·정산 동시 처리 조건: selfApproved 또는 품의자=지출담당자
+                    const da = detailApproval as any
+                    const catId = da.budgetCatId ? String(da.budgetCatId) : ''
+                    const bCats: BudgetCat[] = getItem('acct_budget_cats', [])
+                    const cat = catId ? bCats.find(c => String(c.id) === catId) : null
+                    const applicantIsExpenseUser = !!(cat?.users?.includes(da.applicant))
+                    const canCombineResolve = da.selfApproved || applicantIsExpenseUser
+                    return canCombineResolve
+                      ? <button onClick={() => { if(!confirm('결의+정산을 동시 처리하시겠습니까?\n문서함으로 이동됩니다.'))return; const approvals:any[]=getItem('acct_approvals',[]); const idx=approvals.findIndex(a=>a.id===detailApproval.id); if(idx>=0){approvals[idx].status='completed';approvals[idx].confirmedAt=getLocalISOString();approvals[idx].completedAt=getLocalISOString();approvals[idx].completedBy=currentUserName;approvals[idx].resolvedAt=getLocalISOString();approvals[idx].resolveUser=currentUserName;approvals[idx].confirmUser=currentUserName;setItem('acct_approvals',approvals);setRefresh(r=>r+1)} resetApproveState();setDetailApproval(null) }} className="px-4 py-2 rounded-lg bg-[#22c55e] text-white text-sm font-bold hover:bg-[#16a34a] cursor-pointer flex items-center gap-1 shadow-sm"><Check size={13} /> 결의·정산 완료</button>
+                      : <button onClick={() => { if(!confirm('승인요청을 진행하시겠습니까?\n정산중 목록으로 이동됩니다.'))return; const approvals:any[]=getItem('acct_approvals',[]); const idx=approvals.findIndex(a=>a.id===detailApproval.id); if(idx>=0){approvals[idx].status='confirming';approvals[idx].confirmedAt=getLocalISOString();setItem('acct_approvals',approvals);setRefresh(r=>r+1)} resetApproveState();setDetailApproval(null) }} className="px-4 py-2 rounded-lg bg-[#8b5cf6] text-white text-sm font-bold hover:bg-[#7c3aed] cursor-pointer flex items-center gap-1 shadow-sm"><Send size={13} /> 승인요청</button>
+                  })()}
                 </>
               )}
             </>
@@ -1190,13 +1449,13 @@ export default function AcctApproval({ year }: { year: number }) {
         <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/40" onClick={e => { if (e.target === e.currentTarget) { setApproveMode(false); setApprovePwError('') } }}>
           <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-lg mx-4 animate-fadeIn max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--border-default)]">
-              <span className="text-sm font-extrabold text-[#22c55e] flex items-center gap-1.5">✅ {isPreExp ? '선지출 승인' : '품의 승인'}</span>
+              <span className="text-sm font-extrabold text-[#22c55e] flex items-center gap-1.5"><CircleCheckBig size={14} /> {isPreExp ? '선지출 승인' : '품의 승인'}</span>
               <button onClick={() => { setApproveMode(false); setApprovePwError('') }} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-pointer"><X size={18} /></button>
             </div>
             <div className="p-5 space-y-4">
               {/* 품의 내용 확인 */}
               <div className="space-y-2">
-                <div className="text-[11px] font-extrabold text-[var(--text-primary)] flex items-center gap-1">📋 품의 내용 확인</div>
+                <div className="text-[11px] font-extrabold text-[var(--text-primary)] flex items-center gap-1"><ClipboardList size={13} /> 품의 내용 확인</div>
                 <div className="bg-[var(--bg-muted)] rounded-lg p-3 space-y-2">
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="text-[var(--text-muted)]">품의명</span>
@@ -1265,7 +1524,7 @@ export default function AcctApproval({ year }: { year: number }) {
                   )}
                 </div>
                 {budgetSearchSelected && (
-                  <div className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/10 px-2.5 py-1.5 rounded-lg">✅ {budgetSearchSelected}</div>
+                  <div className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/10 px-2.5 py-1.5 rounded-lg flex items-center gap-1"><CircleCheckBig size={11} /> {budgetSearchSelected}</div>
                 )}
               </div>
               )}
@@ -1281,7 +1540,7 @@ export default function AcctApproval({ year }: { year: number }) {
                   placeholder={(detailApproval.amount || 0).toLocaleString()}
                 />
                 {approveAmount && parseInt(approveAmount.replace(/[^0-9]/g, '')) !== (detailApproval.amount || 0) && (
-                  <p className="text-[10px] text-amber-500 font-bold mt-0.5">⚠️ 신청금액과 다릅니다 (신청: ₩{(detailApproval.amount || 0).toLocaleString()})</p>
+                  <p className="text-[10px] text-amber-500 font-bold mt-0.5 flex items-center gap-1"><AlertTriangle size={10} /> 신청금액과 다릅니다 (신청: ₩{(detailApproval.amount || 0).toLocaleString()})</p>
                 )}
               </div>
               )}
@@ -1411,7 +1670,7 @@ export default function AcctApproval({ year }: { year: number }) {
                       </div>
                       <div>
                         <div className="text-[10px] text-[var(--text-muted)] font-bold mb-0.5">예산항목</div>
-                        <div className="text-[12px] text-[var(--text-primary)] font-bold">📋 {budgetPath}</div>
+                        <div className="text-[12px] text-[var(--text-primary)] font-bold flex items-center gap-1"><ClipboardList size={13} /> {budgetPath}</div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
@@ -1466,7 +1725,7 @@ export default function AcctApproval({ year }: { year: number }) {
 
                     {detailApproval.status === 'preExpense' && (
                       <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                        <div className="text-[11px] text-amber-700 dark:text-amber-400 font-bold">⚠️ 선지출 → 후품의 전환</div>
+                        <div className="text-[11px] text-amber-700 dark:text-amber-400 font-bold flex items-center gap-1"><AlertTriangle size={11} /> 선지출 → 후품의 전환</div>
                         <div className="text-[10px] text-amber-600 dark:text-amber-500 mt-1">수정 후 '품의할' 상태로 전환되어 승인자에게 승인 요청이 됩니다.</div>
                       </div>
                     )}
@@ -1506,7 +1765,7 @@ export default function AcctApproval({ year }: { year: number }) {
                   </div>
                   {detailApproval.status === 'preExpense' && (
                     <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                      <div className="text-[11px] text-amber-700 dark:text-amber-400 font-bold">⚠️ 선지출 → 후품의 전환</div>
+                      <div className="text-[11px] text-amber-700 dark:text-amber-400 font-bold flex items-center gap-1"><AlertTriangle size={11} /> 선지출 → 후품의 전환</div>
                       <div className="text-[10px] text-amber-600 dark:text-amber-500 mt-1">수정 후 '품의할' 상태로 전환되어 승인자에게 승인 요청이 됩니다.</div>
                     </div>
                   )}
@@ -1549,6 +1808,8 @@ export default function AcctApproval({ year }: { year: number }) {
           <PrintApprovalForm
             readOnly={false}
             data={{
+              id: detailApproval.id,
+              formTitle: da.formTitle || '',
               date: da.date || da.createdAt?.slice(0, 10) || '',
               expenseDate: da.date || da.createdAt?.slice(0, 10) || '',
               accountName: da.budgetItem || '',
@@ -1659,80 +1920,182 @@ export default function AcctApproval({ year }: { year: number }) {
               </div>
               {modalApprovalType !== 'general' && (
               <>
-              <div>
-                <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">예산구분</label>
-                <select value={(form as any).budgetCatId || ''} onChange={e => {
-                  const catId = e.target.value
-                  const cat = budgetCats.find(c => String(c.id) === catId) as any
-                  // 예산구분의 승인권자 자동 설정 (추가 승인권자 우선)
-                  let autoApprover = ''
-                  if (cat) {
-                    if (cat.approver) {
-                      // 추가 승인권자가 있으면 추가 승인권자 사용
-                      autoApprover = cat.approver
-                    } else if (cat.approvers && cat.approvers.length > 0) {
-                      autoApprover = cat.approvers[0]
-                    } else {
-                      const approverStaff = staffList.find(s => (s as any).approverType === 'approver')
-                      if (approverStaff) autoApprover = approverStaff.name
-                    }
-                  }
-                  setForm(f => ({ ...f, budgetCatId: catId, approver: autoApprover } as any))
-                }} className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none">
-                  <option value="">— 예산구분 선택 —</option>
-                  {budgetCats.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
-                </select>
+              {isMainApprover ? (
+              /* 승인자: 예산구분 대신 예산 배정 검색 */
+              <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/15 border border-blue-200 dark:border-blue-800/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-[11px] font-extrabold text-[#3b82f6] flex items-center gap-1"><CheckCircle2 size={12} /> 예산 배정</div>
+                  <div className="flex items-center gap-2 text-[10px]">
+                    <span className="text-[var(--text-muted)]">신청</span>
+                    <span className="font-bold text-[var(--text-primary)]">{form.applicant}</span>
+                    <span className="text-[var(--border-default)]">|</span>
+                    <span className="text-[var(--text-muted)]">승인</span>
+                    <span className="font-bold text-[#22c55e]">{form.approver || staffList.find(s => (s as any).approverType === 'approver')?.name || '-'}</span>
+                  </div>
+                </div>
+                <div className="relative">
+                  <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                  <input
+                    value={budgetSearchText}
+                    onChange={e => { setBudgetSearchText(e.target.value); setBudgetSearchFocused(true) }}
+                    onFocus={() => setBudgetSearchFocused(true)}
+                    placeholder="예산항목, 세목, 계정코드 검색..."
+                    className="w-full pl-8 pr-2 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-primary-500"
+                  />
+                  {budgetSearchFocused && budgetSearchResults.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg shadow-xl max-h-[200px] overflow-y-auto">
+                      {budgetSearchResults.map((r, i) => (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            setApproveBudgetCat(r.catId)
+                            setApproveBudgetItem(r.itemId)
+                            setApproveBudgetSub(r.subId || '')
+                            setApproveBudgetDetail(r.detailId || '')
+                            setBudgetSearchText(r.path)
+                            setBudgetSearchSelected(r.path)
+                            setBudgetSearchFocused(false)
+                            // 예산구분의 추가승인권자 확인
+                            const cat = budgetCats.find(c => String(c.id) === String(r.catId)) as any
+                            const additionalApprover = cat?.approver || ''
+                            // 기본값: 자동승인 (자기 자신)
+                            setForm(f => ({ ...f, budgetCatId: r.catId, approver: currentUserName, _additionalApprover: additionalApprover, budgetItem: r.itemName || '', budgetSubItem: r.subName || '' } as any))
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-[var(--bg-muted)] transition-colors cursor-pointer border-b border-[var(--border-default)] last:border-0"
+                        >
+                          <div className="text-[11px] font-bold text-[var(--text-primary)]">{r.path}</div>
+                          <div className="text-[10px] font-bold text-[#ef4444]">
+                            예산 ₩{r.amount.toLocaleString()} | 잔액 ₩{r.remaining.toLocaleString()}
+                            {r.accountCode && <span className="text-[var(--text-muted)] font-normal"> | {r.accountCode} {r.accountName || ''}</span>}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {budgetSearchSelected && (
+                  <div className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/10 px-2.5 py-1.5 rounded-lg flex items-center gap-1"><CircleCheckBig size={11} /> {budgetSearchSelected}</div>
+                )}
+                {approveBudgetItem && approveRemainingBudget && (
+                  <div className="text-[10px] px-2.5 py-1.5 rounded-lg bg-[var(--bg-muted)]">
+                    <span className="text-[var(--text-muted)]">예산 </span>
+                    <span className="font-bold">₩{(approveRemainingBudget.total || 0).toLocaleString()}</span>
+                    <span className="text-[var(--text-muted)]"> | 잔액 </span>
+                    <span className="font-bold text-[#22c55e]">₩{(approveRemainingBudget.remaining || 0).toLocaleString()}</span>
+                  </div>
+                )}
+                {/* 추가승인권자가 있을 경우 자동승인/승인요청 토글 */}
+                {(form as any)._additionalApprover && (form as any)._additionalApprover !== currentUserName && (form as any).budgetCatId && (
+                  <div className="pt-1 space-y-1.5">
+                    <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
+                      <AlertTriangle size={11} /> 추가승인권자: {(form as any)._additionalApprover}
+                    </div>
+                    <div className="flex items-center gap-1.5 p-1 rounded-lg bg-[var(--bg-muted)] border border-[var(--border-default)]">
+                      <button onClick={() => setForm(f => ({ ...f, approver: currentUserName } as any))} className={`flex-1 py-1 rounded-md text-[10px] font-extrabold transition-all cursor-pointer ${form.approver === currentUserName ? 'bg-[#3b82f6] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}>자동승인</button>
+                      <button onClick={() => setForm(f => ({ ...f, approver: (f as any)._additionalApprover } as any))} className={`flex-1 py-1 rounded-md text-[10px] font-extrabold transition-all cursor-pointer ${form.approver !== currentUserName ? 'bg-[#f97316] text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}>승인요청</button>
+                    </div>
+                    {form.approver !== currentUserName && (
+                      <div className="text-[9px] text-[var(--text-muted)]">
+                        {(form as any)._additionalApprover}에게 승인 요청 후 일반 5단계 프로세스로 진행됩니다.
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
+              ) : (
+              /* 일반 담당자: 기존 예산구분 드롭다운 */
+              <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/15 border border-blue-200 dark:border-blue-800/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-[11px] font-extrabold text-[#3b82f6] flex items-center gap-1"><CheckCircle2 size={12} /> 예산구분</div>
+                  <div className="flex items-center gap-2 text-[10px]">
+                    <span className="text-[var(--text-muted)]">신청</span>
+                    <span className="font-bold text-[var(--text-primary)]">{form.applicant}</span>
+                    <span className="text-[var(--border-default)]">|</span>
+                    <span className="text-[var(--text-muted)]">승인</span>
+                    {(() => {
+                      const selCatId2 = (form as any).budgetCatId || ''
+                      const selCat2 = selCatId2 ? budgetCats.find(c => String(c.id) === selCatId2) as any : null
+                      const approverName2 = selCat2?.approver || form.approver || staffList.find(s => (s as any).approverType === 'approver')?.name || ''
+                      return <span className="font-bold text-[#22c55e]">{approverName2 || '-'}</span>
+                    })()}
+                  </div>
+                </div>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, _budgetCatOpen: !(f as any)._budgetCatOpen } as any))}
+                    className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-left flex items-center justify-between cursor-pointer hover:border-[#3b82f6] transition-colors"
+                  >
+                    <span className={(form as any).budgetCatId ? 'text-[var(--text-primary)] font-bold' : 'text-[var(--text-muted)]'}>
+                      {(form as any).budgetCatId ? (budgetCats.find(c => String(c.id) === String((form as any).budgetCatId))?.name || '예산구분 선택') : '— 예산구분 선택 —'}
+                    </span>
+                    <ChevronDown size={14} className={`text-[var(--text-muted)] transition-transform ${(form as any)._budgetCatOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {(form as any)._budgetCatOpen && (
+                    <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-lg shadow-xl max-h-[200px] overflow-y-auto">
+                      {budgetCats.map(c => {
+                        const cat = c as any
+                        const isSelected = String((form as any).budgetCatId) === String(c.id)
+                        return (
+                          <button
+                            key={c.id}
+                            onClick={() => {
+                              let autoApprover = ''
+                              if (cat.approver) {
+                                autoApprover = cat.approver
+                              } else if (cat.approvers && cat.approvers.length > 0) {
+                                autoApprover = cat.approvers[0]
+                              } else {
+                                const approverStaff = staffList.find(s => (s as any).approverType === 'approver')
+                                if (approverStaff) autoApprover = approverStaff.name
+                              }
+                              setForm(f => ({ ...f, budgetCatId: String(c.id), approver: autoApprover, _budgetCatOpen: false } as any))
+                            }}
+                            className={`w-full text-left px-3 py-2 text-[12px] font-bold transition-colors cursor-pointer border-b border-[var(--border-default)] last:border-0 ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20 text-[#3b82f6]' : 'text-[var(--text-primary)] hover:bg-[var(--bg-muted)]'}`}
+                          >
+                            {isSelected && '✓ '}{c.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+              )}
               <div>
                 <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">금액 (원) *</label>
                 <input value={form.amount} onChange={e => handleAmtInput(e.target.value)} placeholder="0" className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none text-right font-bold" />
               </div>
               </>
               )}
+              {/* 일반품의: 신청자/승인권자 그리드 유지 */}
+              {modalApprovalType === 'general' && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">신청자</label>
                   <input value={form.applicant} onChange={e => setForm(f => ({ ...f, applicant: e.target.value }))} className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm text-[var(--text-primary)] outline-none" readOnly />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">{modalApprovalType === 'general' ? '승인권자' : '지출승인권한자'}</label>
-                  {modalApprovalType === 'general' ? (
-                    <CustomSelect
-                      value={form.approver}
-                      onChange={v => setForm(f => ({ ...f, approver: v }))}
-                      placeholder="— 승인권자 선택 —"
-                      options={[
-                        { value: '', label: '— 선택 —' },
-                        ...staffList.map(s => ({ value: s.name, label: `${s.name}${s.position ? ' (' + s.position + ')' : ''}` })),
-                      ]}
-                    />
-                  ) : (() => {
-                    const selCatId = (form as any).budgetCatId || ''
-                    const selCat = selCatId ? budgetCats.find(c => String(c.id) === selCatId) as any : null
-                    // 추가 승인권자가 있으면 추가 승인권자만 표시
-                    const additionalApprover = selCat?.approver || ''
-                    if (additionalApprover) {
-                      return (
-                        <div className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm font-bold text-[var(--text-primary)]">
-                          {additionalApprover}
-                        </div>
-                      )
-                    }
-                    return (
-                      <div className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] text-sm font-bold text-[var(--text-primary)]">
-                        {form.approver || <span className="text-[var(--text-muted)] font-normal">예산구분을 선택하세요</span>}
-                      </div>
-                    )
-                  })()}
+                  <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">승인권자</label>
+                  <CustomSelect
+                    value={form.approver}
+                    onChange={v => setForm(f => ({ ...f, approver: v }))}
+                    placeholder="— 승인권자 선택 —"
+                    options={[
+                      { value: '', label: '— 선택 —' },
+                      ...staffList.map(s => ({ value: s.name, label: `${s.name}${s.position ? ' (' + s.position + ')' : ''}` })),
+                    ]}
+                  />
                 </div>
               </div>
+              )}
               <div>
                 <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1 block">사유/메모</label>
                 <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="품의 사유를 입력해주세요" rows={3} className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none resize-none" />
               </div>
               {modalApprovalType === 'general' && (
                 <div className="p-2.5 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 text-[11px] text-purple-700 dark:text-purple-400">
-                  📋 일반품의는 승인권자가 승인 시 <strong>즉시 완료</strong> 처리됩니다.
+                  <ClipboardList size={12} className="inline" /> 일반품의는 승인권자가 승인 시 <strong>즉시 완료</strong> 처리됩니다.
                 </div>
               )}
             </div>

@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useMemo, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { formatNumber } from '../../utils/format'
-import { X, Printer, Eye, Edit3, Pin, Paperclip } from 'lucide-react'
+import { X, Printer, Eye, Edit3, Pin, Paperclip, Clock, CheckCircle2, XCircle, Send, Banknote, FileCheck, Trash2 } from 'lucide-react'
 import { loadMultipleImages } from '../../utils/attachmentDB'
 
 /* ─── 숫자를 한글 금액으로 변환 ── */
@@ -82,6 +82,18 @@ interface PrintApprovalData {
   counter?: string         // 대체경로
   method?: string
   title?: string
+  id?: string | number     // approval ID (문서별 타이틀 저장용)
+  formTitle?: string       // 문서별 커스텀 타이틀
+}
+
+export interface TimelineStep {
+  key: string
+  label: string
+  date?: string
+  person?: string
+  status: 'done' | 'current' | 'pending' | 'skipped'
+  color: string
+  note?: string
 }
 
 interface PrintApprovalFormProps {
@@ -90,20 +102,24 @@ interface PrintApprovalFormProps {
   actions?: ReactNode
   onUpdateAttachments?: (attachments: PrintAttachment[]) => void
   readOnly?: boolean
+  timeline?: TimelineStep[]
 }
 
-export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments, readOnly }: PrintApprovalFormProps) {
+export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments, readOnly, timeline }: PrintApprovalFormProps) {
   const canEdit = !readOnly
   const printRef = useRef<HTMLDivElement>(null)
   const isPreExpenseProposal = data.approvalType === '선지출' && data.approvalStatus === 'preExpense'
   const isPreExpenseResolution = data.approvalType === '선지출' && data.approvalStatus !== 'preExpense'
+  // 지출 전(품의서) vs 지출 후(결의서) 판단
+  const isBeforeExpense = ['pending', 'approved', 'rejected', 'preExpense'].includes(data.approvalStatus || '')
   const [formTitle, setFormTitle] = useState(() => {
+    // 1) 문서별 저장된 타이틀이 있으면 우선
+    if (data.formTitle) return data.formTitle
     if (data.isTransfer) return '대체결의서'
-    if (data.isGeneral) return localStorage.getItem('pf_title_general') || '품 의 서'
+    if (data.isGeneral) return '품 의 서'
     if (isPreExpenseProposal) return '선지출 품의서'
     if (isPreExpenseResolution) return '선지출 결의서'
-    const cached = localStorage.getItem('pf_title') || ''
-    return (cached && !cached.includes('선지출')) ? cached : '지출 결의서'
+    return isBeforeExpense ? '지 출  품 의 서' : '지 출  결 의 서'
   })
   const [printWidth, setPrintWidth] = useState(() => Number(localStorage.getItem('pf_width')) || 210)
   const [localAttachments, setLocalAttachments] = useState<PrintAttachment[]>(data.attachments || [])
@@ -194,31 +210,79 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
     <div className="print-approval-overlay">
       {/* 화면용 컨트롤 바 (인쇄 시 숨김) */}
       <div className="print-control-bar no-print">
-        <div className="print-control-inner">
+        {/* 1행: 타이틀/사이즈 + 액션 버튼 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap' }}>타이틀</span>
             <input
               value={formTitle}
               onChange={e => {
                 setFormTitle(e.target.value)
-                if (data.isGeneral) localStorage.setItem('pf_title_general', e.target.value)
-                else if (data.approvalType !== '선지출') localStorage.setItem('pf_title', e.target.value)
+                // 해당 문서에만 타이틀 저장
+                if (data.id) {
+                  const approvals: any[] = JSON.parse(localStorage.getItem('acct_approvals') || '[]')
+                  const idx = approvals.findIndex((a: any) => String(a.id) === String(data.id))
+                  if (idx >= 0) {
+                    approvals[idx].formTitle = e.target.value
+                    localStorage.setItem('acct_approvals', JSON.stringify(approvals))
+                  }
+                }
               }}
               className="pf-header-input"
-              style={{ width: 160 }}
+              style={{ width: 120 }}
             />
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap', marginLeft: 8 }}>가로(mm)</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap' }}>가로(mm)</span>
             <input
               type="number"
               value={printWidth}
               onChange={e => { const v = Number(e.target.value) || 210; setPrintWidth(v); localStorage.setItem('pf_width', String(v)) }}
               className="pf-header-input"
-              style={{ width: 70, textAlign: 'center' }}
+              style={{ width: 60, textAlign: 'center' }}
               min={100}
               max={420}
             />
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          {/* 타임라인 칩 (중앙) */}
+          {timeline && timeline.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 0, flex: '0 1 auto' }}>
+              {timeline.filter(s => s.key !== 'completed').map((step, i) => {
+                const iconMap: Record<string, React.ElementType> = { created: FileCheck, approved: CheckCircle2, rejected: XCircle, expensed: Banknote, resolved: Send, confirmed: Clock, completed: CheckCircle2, cancelled: Trash2 }
+                const Icon = iconMap[step.key] || Clock
+                const isDone = step.status === 'done'
+                const isCurrent = step.status === 'current'
+                return (
+                  <div key={step.key} style={{ display: 'flex', alignItems: 'center' }}>
+                    {i > 0 && (
+                      <div style={{ width: 16, height: 2, background: isDone || isCurrent ? step.color : '#e2e8f0', flexShrink: 0 }} />
+                    )}
+                    <div style={{
+                      width: step.label.includes('·') ? 120 : 96, height: 40, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                      borderRadius: 16, fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap',
+                      background: isDone ? step.color : isCurrent ? `${step.color}12` : '#fff',
+                      color: isDone ? '#fff' : isCurrent ? step.color : '#b0b8c4',
+                      border: isDone ? 'none' : isCurrent ? `2px solid ${step.color}` : '1.5px solid #e2e8f0',
+                      boxShadow: isDone ? `0 1px 4px ${step.color}30` : 'none',
+                      transition: 'all 0.2s', flexShrink: 0,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, lineHeight: 1 }}>
+                        <Icon size={12} />
+                        {step.label} {step.person || ''}
+                      </div>
+                      {step.date ? (
+                        <div style={{ fontSize: 8, opacity: 0.75, lineHeight: 1, marginTop: 3 }}>
+                          {step.date.slice(0, 10)} {step.date.slice(11, 16)}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 8, opacity: 0.4, lineHeight: 1, marginTop: 3 }}>—</div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {actions}
             <button className="print-btn-action" onClick={handlePrint}>
               <Printer size={16} />
               인쇄하기
@@ -491,7 +555,9 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
                     ? '상기 금액을 내용과 같이 선지출을 품의하오니 승인하여 주시기 바랍니다.'
                     : isPreExpenseResolution
                       ? '상기와 같이 선지출한 비용에 대하여 증빙서류를 첨부하여 결의합니다.'
-                      : '상기와 같이 지출한 비용에 대하여 증빙서류를 첨부하여 결의합니다.'}
+                      : isBeforeExpense
+                        ? '상기 금액을 내용과 같이 지출을 품의하오니 승인하여 주시기 바랍니다.'
+                        : '상기와 같이 지출한 비용에 대하여 증빙서류를 첨부하여 결의합니다.'}
               </div>
             </div>
 
@@ -611,12 +677,7 @@ export function PrintApprovalForm({ data, onClose, actions, onUpdateAttachments,
         </div>
       ))}
 
-      {/* 하단 액션 버튼 바 (인쇄 시 숨김) */}
-      {actions && (
-        <div className="print-bottom-bar no-print">
-          {actions}
-        </div>
-      )}
+
     </div>,
     document.body,
   )

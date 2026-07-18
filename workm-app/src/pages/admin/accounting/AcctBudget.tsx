@@ -8,6 +8,7 @@ import { cn } from '../../../utils/cn'
 import { createPortal } from 'react-dom'
 import { EmptyState } from '../../../components/common/EmptyState'
 import { DatePicker } from '../../../components/ui/DatePicker'
+import { CustomSelect } from '../../../components/ui/CustomSelect'
 import { useAuthStore } from '../../../stores/authStore'
 
 export default function AcctBudget({ year }: { year: number }) {
@@ -37,7 +38,7 @@ export default function AcctBudget({ year }: { year: number }) {
   const [bankAddingCardFor, setBankAddingCardFor] = useState<string | number | null>(null)
   const emptyCardForm = { cardName: '', cardCompany: '', cardNumber: '', cardType: '체크카드', cardUser: '', expiryDate: '' }
   const [bankCardForm, setBankCardForm] = useState(emptyCardForm)
-  const [catForm, setCatForm] = useState({ name: '', description: '', bank: '', accounts: [] as BudgetCatAccount[], periodFrom: `${year}-01-01`, periodTo: `${year}-12-31`, users: [] as string[], approver: '' })
+  const [catForm, setCatForm] = useState({ name: '', description: '', bank: '', accounts: [] as BudgetCatAccount[], periodFrom: `${year}-01-01`, periodTo: `${year}-12-31`, users: [] as string[], approver: '', extraExpenseUser: '' })
 
   // 계좌관리에서 등록된 계좌+카드 목록
   const registeredAccounts = useMemo(() => {
@@ -233,11 +234,11 @@ export default function AcctBudget({ year }: { year: number }) {
       const c = getItem<BudgetCat[]>('acct_budget_cats', []).find(x => String(x.id) === String(editId))
       if (c) {
         setCatEditId(editId)
-        setCatForm({ name: c.name || '', description: (c as any).description || '', bank: c.bank || c.bankInfo || '', accounts: c.accounts || (c.bank ? [{ id: Date.now(), bankName: c.bank || c.bankInfo || '', cards: [] }] : []), periodFrom: c.periodFrom || `${year}-01-01`, periodTo: c.periodTo || `${year}-12-31`, users: c.users || [], approver: c.approver || '' })
+        setCatForm({ name: c.name || '', description: (c as any).description || '', bank: c.bank || c.bankInfo || '', accounts: c.accounts || (c.bank ? [{ id: Date.now(), bankName: c.bank || c.bankInfo || '', cards: [] }] : []), periodFrom: c.periodFrom || `${year}-01-01`, periodTo: c.periodTo || `${year}-12-31`, users: c.users || [], approver: c.approver || '', extraExpenseUser: (c as any).extraExpenseUser || '' })
       }
     } else {
       setCatEditId(null)
-      setCatForm({ name: '', description: '', bank: '', accounts: [], periodFrom: `${year}-01-01`, periodTo: `${year}-12-31`, users: [], approver: '' })
+      setCatForm({ name: '', description: '', bank: '', accounts: [], periodFrom: `${year}-01-01`, periodTo: `${year}-12-31`, users: [], approver: '', extraExpenseUser: '' })
     }
     setCatModalOpen(true)
   }
@@ -1192,14 +1193,10 @@ export default function AcctBudget({ year }: { year: number }) {
               </div>
               {/* 등록된 지출수단 (수단등록 데이터에서 읽기 전용 표시) */}
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[11px] font-bold text-[var(--text-muted)]">
-                    등록된 지출수단
-                  </label>
-                  <span className="text-[9px] text-[var(--text-muted)]">수단등록에서 편집</span>
-                </div>
+                <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1.5 block">
+                  등록된 지출수단
+                </label>
                 {(() => {
-                  // acct_pay_methods_v2에서 현재 예산구분에 연결된 수단 조회
                   let allPMs: any[] = []
                   try {
                     const raw = localStorage.getItem('acct_pay_methods_v2')
@@ -1208,112 +1205,29 @@ export default function AcctBudget({ year }: { year: number }) {
                   const catIdStr = catEditId ? String(catEditId) : ''
                   const linkedPMs = catIdStr ? allPMs.filter((pm: any) => String(pm.budgetCatId) === catIdStr) : []
                   if (linkedPMs.length === 0) {
-                    return <div className="text-center text-[11px] text-[var(--text-muted)] py-3 border border-dashed border-[var(--border-default)] rounded-lg">등록된 지출수단이 없습니다</div>
+                    return (
+                      <div
+                        onClick={() => { setCatModalOpen(false); const hash = window.location.hash || ''; const qIdx = hash.indexOf('?'); const sp = new URLSearchParams(qIdx >= 0 ? hash.slice(qIdx) : ''); sp.set('tab', 'methodReg'); if (catEditId) sp.set('cat', String(catEditId)); sp.delete('bcat'); window.location.hash = `/accounting?${sp.toString()}` }}
+                        className="text-center text-[11px] text-[var(--text-muted)] py-3 border border-dashed border-[var(--border-default)] rounded-lg cursor-pointer hover:bg-[var(--bg-muted)] hover:border-primary-300 transition-colors"
+                      >등록된 지출수단이 없습니다 · 클릭하여 등록</div>
+                    )
                   }
-                  // 구분별 그룹핑
-                  const acctPMs = linkedPMs.filter((pm: any) => pm.category === '계좌')
-                  const cashPMs = linkedPMs.filter((pm: any) => pm.category === '현금')
-                  const notePMs = linkedPMs.filter((pm: any) => pm.category === '어음')
-                  const voucherPMs = linkedPMs.filter((pm: any) => pm.category === '상품권')
+                  const acctCnt = linkedPMs.filter((pm: any) => pm.category === '계좌').length
+                  const cardCnt = linkedPMs.reduce((s: number, pm: any) => s + (pm.cards?.length || 0), 0)
+                  const cashCnt = linkedPMs.filter((pm: any) => pm.category === '현금').length
+                  const noteCnt = linkedPMs.filter((pm: any) => pm.category === '어음').length
+                  const voucherCnt = linkedPMs.filter((pm: any) => pm.category === '상품권').length
                   return (
-                    <div className="space-y-2 max-h-[240px] overflow-y-auto">
-                      {/* 계좌 */}
-                      {acctPMs.length > 0 && (
-                        <div className="border border-blue-200 dark:border-blue-800/40 rounded-lg overflow-hidden">
-                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 dark:bg-blue-900/15 border-b border-blue-200 dark:border-blue-800/40">
-                            <Building2 size={11} className="text-blue-500" />
-                            <span className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400">계좌</span>
-                            <span className="text-[9px] text-blue-400 dark:text-blue-500">({acctPMs.length})</span>
-                          </div>
-                          <div className="divide-y divide-[var(--border-default)]/40">
-                            {acctPMs.map((pm: any) => (
-                              <div key={pm.id}>
-                                {/* 이체 */}
-                                <div className="flex items-center gap-2 px-3 py-2">
-                                  <ArrowLeftRight size={12} className="text-blue-400 shrink-0" />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-[11px] font-bold text-[var(--text-primary)] truncate">{pm.name}{pm.bankName ? ` (${pm.bankName})` : ''}</div>
-                                    <div className="text-[9.5px] text-[var(--text-muted)] truncate">{pm.accountNumber || ''}{pm.accountHolder ? ` • ${pm.accountHolder}` : ''}</div>
-                                  </div>
-                                </div>
-                                {/* 카드 */}
-                                {(pm.cards || []).length > 0 && (pm.cards || []).map((card: any) => (
-                                  <div key={card.id || card.cardNumber} className="flex items-center gap-2 px-3 py-1.5 pl-6 bg-indigo-50/50 dark:bg-indigo-900/5">
-                                    <CreditCard size={11} className="text-indigo-400 shrink-0" />
-                                    <div className="flex-1 min-w-0">
-                                      <span className="text-[10.5px] font-bold text-[var(--text-primary)]">{card.cardName || '카드'}</span>
-                                      <span className="text-[9.5px] text-[var(--text-muted)] ml-1.5">{card.cardNumber || ''}{card.cardUser ? ` (${card.cardUser})` : ''}</span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {/* 현금 */}
-                      {cashPMs.length > 0 && (
-                        <div className="border border-emerald-200 dark:border-emerald-800/40 rounded-lg overflow-hidden">
-                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-900/15 border-b border-emerald-200 dark:border-emerald-800/40">
-                            <Banknote size={11} className="text-emerald-500" />
-                            <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400">현금</span>
-                            <span className="text-[9px] text-emerald-400 dark:text-emerald-500">({cashPMs.length})</span>
-                          </div>
-                          <div className="divide-y divide-[var(--border-default)]/40">
-                            {cashPMs.map((pm: any) => (
-                              <div key={pm.id} className="flex items-center gap-2 px-3 py-2">
-                                <Banknote size={12} className="text-emerald-400 shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-[11px] font-bold text-[var(--text-primary)] truncate">{pm.name}</div>
-                                  {pm.storageLocation && <div className="text-[9.5px] text-[var(--text-muted)]">보관: {pm.storageLocation}</div>}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {/* 어음 */}
-                      {notePMs.length > 0 && (
-                        <div className="border border-amber-200 dark:border-amber-800/40 rounded-lg overflow-hidden">
-                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 dark:bg-amber-900/15 border-b border-amber-200 dark:border-amber-800/40">
-                            <FileText size={11} className="text-amber-500" />
-                            <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400">어음</span>
-                            <span className="text-[9px] text-amber-400 dark:text-amber-500">({notePMs.length})</span>
-                          </div>
-                          <div className="divide-y divide-[var(--border-default)]/40">
-                            {notePMs.map((pm: any) => (
-                              <div key={pm.id} className="flex items-center gap-2 px-3 py-2">
-                                <FileText size={12} className="text-amber-400 shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-[11px] font-bold text-[var(--text-primary)] truncate">{pm.name}</div>
-                                  <div className="text-[9.5px] text-[var(--text-muted)]">{pm.noteType || ''}{pm.noteBank ? ` • ${pm.noteBank}` : ''}{pm.notes?.length ? ` • ${pm.notes.length}건` : ''}</div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {/* 상품권 */}
-                      {voucherPMs.length > 0 && (
-                        <div className="border border-rose-200 dark:border-rose-800/40 rounded-lg overflow-hidden">
-                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 dark:bg-rose-900/15 border-b border-rose-200 dark:border-rose-800/40">
-                            <Ticket size={11} className="text-rose-500" />
-                            <span className="text-[10px] font-extrabold text-rose-600 dark:text-rose-400">상품권</span>
-                            <span className="text-[9px] text-rose-400 dark:text-rose-500">({voucherPMs.length})</span>
-                          </div>
-                          <div className="divide-y divide-[var(--border-default)]/40">
-                            {voucherPMs.map((pm: any) => (
-                              <div key={pm.id} className="flex items-center gap-2 px-3 py-2">
-                                <Ticket size={12} className="text-rose-400 shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-[11px] font-bold text-[var(--text-primary)] truncate">{pm.name}</div>
-                                  <div className="text-[9.5px] text-[var(--text-muted)]">{pm.voucherQty ? `${pm.voucherQty}매` : ''}{pm.voucherAmount ? ` • 액면 ${Number(pm.voucherAmount).toLocaleString()}원` : ''}</div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                    <div
+                      onClick={() => { setCatModalOpen(false); const hash = window.location.hash || ''; const qIdx = hash.indexOf('?'); const sp = new URLSearchParams(qIdx >= 0 ? hash.slice(qIdx) : ''); sp.set('tab', 'methodReg'); if (catEditId) sp.set('cat', String(catEditId)); sp.delete('bcat'); window.location.hash = `/accounting?${sp.toString()}` }}
+                      className="flex items-center gap-2 flex-wrap px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] cursor-pointer hover:bg-[var(--bg-muted)] hover:border-primary-300 transition-all group"
+                    >
+                      {acctCnt > 0 && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center gap-1"><Building2 size={10} /> 계좌 {acctCnt}</span>}
+                      {cardCnt > 0 && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 flex items-center gap-1"><CreditCard size={10} /> 카드 {cardCnt}</span>}
+                      {cashCnt > 0 && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center gap-1"><Banknote size={10} /> 현금 {cashCnt}</span>}
+                      {noteCnt > 0 && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 flex items-center gap-1"><FileText size={10} /> 어음 {noteCnt}</span>}
+                      {voucherCnt > 0 && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-900/20 text-rose-600 flex items-center gap-1"><Ticket size={10} /> 상품권 {voucherCnt}</span>}
+                      <span className="text-[9px] text-[var(--text-muted)] ml-auto group-hover:text-primary-500 transition-colors">수단등록에서 편집 →</span>
                     </div>
                   )
                 })()}
@@ -1333,18 +1247,13 @@ export default function AcctBudget({ year }: { year: number }) {
                 <label className="text-[11px] font-bold text-[var(--text-muted)] mb-1.5 block">
                   지출담당자
                 </label>
-                <select
+                <CustomSelect
                   value={catForm.users[0] || ''}
-                  onChange={e => {
-                    setCatForm(f => ({ ...f, users: e.target.value ? [e.target.value] : [] }))
-                  }}
-                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors"
-                >
-                  <option value="">선택하세요</option>
-                  {staffListForBudget.map(s => (
-                    <option key={s.id || s.name} value={s.name}>{s.name} {s.position || ''} {s.department || ''}</option>
-                  ))}
-                </select>
+                  onChange={v => setCatForm(f => ({ ...f, users: v ? [v] : [] }))}
+                  placeholder="지출담당자를 선택하세요"
+                  options={[{ value: '', label: '선택 안함' }, ...staffListForBudget.map(s => ({ value: s.name, label: `${s.name} ${s.position || ''} ${(s as any).department || ''}`.trim() }))]}
+                  className="rounded-lg"
+                />
               </div>
               {/* 승인담당자 */}
               <div>
@@ -1365,16 +1274,13 @@ export default function AcctBudget({ year }: { year: number }) {
                       ) : (
                         <div className="text-[11px] text-[var(--text-muted)] px-3 py-2 mb-2 rounded-lg border border-dashed border-[var(--border-default)]">기본승인담당자가 설정되지 않았습니다</div>
                       )}
-                      <select
+                      <CustomSelect
                         value={catForm.approver}
-                        onChange={e => setCatForm(f => ({ ...f, approver: e.target.value }))}
-                        className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] focus:border-primary-500 outline-none transition-colors"
-                      >
-                        <option value="">추가승인담당자를 선택하세요</option>
-                        {staffListForBudget.filter(s => s.name !== defaultApproverName && (s as any).approverType !== 'approver').map(s => (
-                          <option key={s.id || s.name} value={s.name}>{s.name} {s.position || ''} {(s as any).department || ''}</option>
-                        ))}
-                      </select>
+                        onChange={v => setCatForm(f => ({ ...f, approver: v }))}
+                        placeholder="추가승인담당자를 선택하세요"
+                        options={[{ value: '', label: '선택 안함' }, ...staffListForBudget.filter(s => s.name !== defaultApproverName && (s as any).approverType !== 'approver').map(s => ({ value: s.name, label: `${s.name} ${s.position || ''} ${(s as any).department || ''}`.trim() }))]}
+                        className="rounded-lg"
+                      />
                     </>
                   )
                 })()}

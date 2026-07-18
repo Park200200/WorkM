@@ -8,7 +8,7 @@ import { saveAttachmentImage, deleteAttachmentImage } from '../../../utils/attac
 import { PrintApprovalForm } from '../../../components/accounting/PrintApprovalForm'
 import type { BudgetCat, BudgetItem, BudgetItemDef, CashFlow, Approval, Voucher, PayMethodItem } from './types'
 import { getLocalDate, getLocalISOString, uid } from './utils'
-import { Wallet, ArrowDownCircle, ArrowUpCircle, ScrollText, Clock, ChevronDown, Trash2, Save, X, Check, ShieldCheck, RefreshCw, Paperclip, Eye, ArrowLeftRight, ClipboardList, Banknote, CreditCard, TrendingDown, TrendingUp, Building2 } from 'lucide-react'
+import { Wallet, ArrowDownCircle, ArrowUpCircle, ScrollText, Clock, ChevronDown, Trash2, Save, X, Check, ShieldCheck, RefreshCw, Paperclip, Eye, ArrowLeftRight, ClipboardList, Banknote, CreditCard, TrendingDown, TrendingUp, Building2, User, Wrench, PenLine } from 'lucide-react'
 import { cn } from '../../../utils/cn'
 import { EmptyState } from '../../../components/common/EmptyState'
 import { DatePicker } from '../../../components/ui/DatePicker'
@@ -24,6 +24,7 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
   const [showExpenseModal, setShowExpenseModal] = useState(false)
   const typeLabels = { expense: '지출하기', income: '입금전표', withdrawal: '출금전표' }
   const typeEmojis = { expense: '💸', income: '💵', withdrawal: '🏧' }
+  const typeIcons: Record<string, React.ReactNode> = { expense: <TrendingDown size={20} />, income: <TrendingUp size={20} />, withdrawal: <Banknote size={20} /> }
   const typeColors = { expense: '#ef4444', income: '#22c55e', withdrawal: '#f59e0b' }
   const typeGrads = { expense: 'from-[#ef4444] to-[#dc2626]', income: 'from-[#22c55e] to-[#16a34a]', withdrawal: 'from-[#f59e0b] to-[#d97706]' }
 
@@ -256,10 +257,18 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
   const vendorOptions = useMemo(() => {
     const vendors: Vendor[] = getItem('acct_vendors', [])
     const cats: BudgetCat[] = getItem('acct_budget_cats', [])
-    return vendors.map(v => {
+    const staffData: any[] = getItem('ws_users', [])
+    // 거래처 목록
+    const vendorList = vendors.map(v => {
       const cat = v.budgetCatId ? cats.find(c => String(c.id) === String(v.budgetCatId)) : null
-      return { value: v.name, label: v.name, budgetCatId: v.budgetCatId || '', catName: cat?.name || '' }
+      return { value: v.name, label: v.name, budgetCatId: v.budgetCatId || '', catName: cat?.name || '', vendorType: (v as any).vendorType || '거래처' }
     })
+    // 직원 목록 (거래처에 이미 등록된 직원은 제외)
+    const vendorNames = new Set(vendors.map(v => v.name))
+    const staffList2 = staffData
+      .filter(s => s.name && !vendorNames.has(s.name))
+      .map(s => ({ value: s.name, label: `${s.name}${s.position ? ' (' + s.position + ')' : ''}`, budgetCatId: '', catName: s.department || s.dept || '', vendorType: '직원' as string }))
+    return [...vendorList, ...staffList2]
   }, [refresh])
 
   /* 거래처 드롭다운 외부 클릭 닫기 */
@@ -518,7 +527,7 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
       const approvals = getItem<Approval[]>('acct_approvals', [])
       const updated = approvals.map(ap =>
         String(ap.id) === String(selectedApprovalId)
-          ? { ...ap, status: 'toResolve' as const }
+          ? { ...ap, status: 'toResolve' as const, expensedAt: getLocalISOString(), expenseUser: currentUserName }
           : ap
       )
       setItem('acct_approvals', updated)
@@ -620,9 +629,13 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
       } else {
         // 새 approval 생성
         const preApprovalId = uid()
+        // 자동 분류: 담당자 + 품의사유 + 첨부파일이 모두 있으면 케이스2(경리 대리처리)
+        const hasMemo = !!((form as any).memo && (form as any).memo.trim())
+        const hasAttachments = wdAttachments.length > 0
+        const isProxyMode = form.manager && form.manager !== currentUserName && hasMemo && hasAttachments
         approvals.push({
           id: preApprovalId,
-          status: 'preExpense',
+          status: isProxyMode ? 'preExpenseResolved' : 'preExpense',
           isPreExpense: true,
           selfExpense: isSelfExpense,
           title: `[선지출] ${form.desc || wdBudgetItem}`,
@@ -643,6 +656,17 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
           counter: form.counter || '',
           method: form.method || '',
           attachments: wdAttachments.length > 0 ? wdAttachments : undefined,
+          // 케이스2(경리 대리처리): 결의·정산 데이터 미리 저장
+          ...(isProxyMode ? {
+            preExpenseResolved: true,
+            expensedAt: getLocalISOString(),
+            expenseUser: currentUserName,
+            resolvedAt: getLocalISOString(),
+            resolveUser: currentUserName,
+            confirmedAt: getLocalISOString(),
+            confirmUser: currentUserName,
+            proxyBy: currentUserName,
+          } : {}),
         } as any)
         setItem('acct_approvals', approvals)
         finalApprovalId = preApprovalId
@@ -747,7 +771,7 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
       <>
       <div className={`bg-gradient-to-r ${typeGrads[type]} rounded-2xl p-4 text-white`}>
         <div className="flex items-center gap-2.5 mb-3">
-          <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-xl">{typeEmojis[type]}</div>
+          <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">{typeIcons[type]}</div>
           <div>
             <div className="text-[17px] font-extrabold">간편 {type === 'withdrawal' && withdrawalMode === 'transfer' ? '대체전표' : typeLabels[type]}</div>
             <div className="text-[11.5px] opacity-85">{type === 'withdrawal' && withdrawalMode === 'transfer' ? '자산 대체 내역을 입력하세요' : (type === 'income' ? '입금' : '지출') + ' 내역을 입력하세요'}</div>
@@ -1405,7 +1429,7 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
             {showCounterList && (
               <div className="absolute z-50 left-0 right-0 top-full mt-1 max-h-[200px] overflow-y-auto rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] shadow-lg">
                 {vendorOptions
-                  .filter(v => !counterSearch || v.label.toLowerCase().includes(counterSearch.toLowerCase()))
+                  .filter(v => !counterSearch || v.label.toLowerCase().includes(counterSearch.toLowerCase()) || v.value.toLowerCase().includes(counterSearch.toLowerCase()))
                   .map((v, i) => (
                     <button key={i} onClick={() => {
                       setForm(f => ({ ...f, counter: v.value }))
@@ -1423,11 +1447,33 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
                     }}
                       className="w-full text-left px-3 py-2 text-[13px] text-[var(--text-primary)] hover:bg-primary-50 dark:hover:bg-primary-900/20 cursor-pointer border-none bg-transparent flex items-center justify-between">
                       <span>{v.label}</span>
-                      {v.catName && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 font-bold ml-2 shrink-0">{v.catName}</span>}
+                      <div className="flex items-center gap-1 shrink-0">
+                        {v.vendorType && <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${v.vendorType === '거래처' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : v.vendorType === '개인' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : v.vendorType === '직원' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'}`}>{v.vendorType}</span>}
+                        {v.catName && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 font-bold">{v.catName}</span>}
+                      </div>
                     </button>
                   ))}
-                {vendorOptions.filter(v => !counterSearch || v.label.toLowerCase().includes(counterSearch.toLowerCase())).length === 0 && (
-                  <div className="px-3 py-2 text-[12px] text-[var(--text-muted)]">검색 결과가 없습니다</div>
+                {/* 즉시 등록: 검색어가 있고 정확히 일치하는 거래처가 없을 때 */}
+                {counterSearch.trim() && !vendorOptions.some(v => v.value === counterSearch.trim()) && (
+                  <div className="border-t border-[var(--border-default)] px-3 py-2 flex items-center justify-between">
+                    <div className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1"><PenLine size={11} /> "{counterSearch.trim().length > 3 ? counterSearch.trim().slice(0, 3) + '..' : counterSearch.trim()}" 새로 등록</div>
+                    <div className="flex items-center gap-1">
+                      {(['거래처', '개인'] as const).map(t => (
+                        <button key={t} onClick={() => {
+                          const vendors: any[] = getItem('acct_vendors', [])
+                          const newId = vendors.length > 0 ? Math.max(...vendors.map((x: any) => x.id || 0)) + 1 : 1
+                          vendors.push({ id: newId, name: counterSearch.trim(), vendorType: t })
+                          setItem('acct_vendors', vendors)
+                          setForm(f => ({ ...f, counter: counterSearch.trim() }))
+                          setCounterSearch('')
+                          setShowCounterList(false)
+                          setRefresh(r => r + 1)
+                        }} className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold cursor-pointer transition-all ${t === '거래처' ? 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-amber-100 text-amber-600 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                          {t === '거래처' ? <Building2 size={10} /> : <User size={10} />} {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             )}
@@ -1725,11 +1771,12 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
                 ...staffList.map(s => ({ value: s.name, label: s.name })),
               ]}
             />
+
           </div>
         )}
         {
           (() => {
-            const isSelfMode = type === 'withdrawal' && (!form.manager || form.manager === currentUserName)
+            const isSelfMode = type === 'withdrawal'
             return (
               <div>
                 <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">{isSelfMode ? '품의사유' : '비고'}</label>
@@ -1743,8 +1790,8 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
             )
           })()
         }
-        {/* 첨부파일 (출금전표 - 담당자 본인일 때만) */}
-        {type === 'withdrawal' && (!form.manager || form.manager === currentUserName) && (
+        {/* 첨부파일 (출금전표) */}
+        {type === 'withdrawal' && (
           <div className="pt-1">
             <div className="flex items-center gap-2">
               <label className="text-[10.5px] font-bold text-[var(--text-muted)] flex items-center gap-1"><Paperclip size={11} /> 첨부파일 (영수증/증빙)</label>
@@ -2189,7 +2236,7 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
             <div className={`bg-gradient-to-r ${typeGrads[type]} rounded-t-2xl p-4 text-white`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-xl">{typeEmojis[type]}</div>
+                  <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">{typeIcons[type]}</div>
                   <div>
                     <div className="text-[17px] font-extrabold">지출 등록</div>
                     <div className="text-[11.5px] opacity-85">승인된 품의의 지출 내역을 입력하세요</div>
@@ -2266,7 +2313,7 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
             {/* ── 하단: 지출 입력 ── */}
             <div className="p-4 space-y-3">
               <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-[11px] font-bold text-[var(--text-muted)]">✏️ 지출 입력</span>
+                <span className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1"><PenLine size={11} /> 지출 입력</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* 거래처 */}
@@ -2277,7 +2324,7 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
                   {showCounterList && (
                     <div className="absolute z-[10000] left-0 right-0 top-full mt-1 max-h-[200px] overflow-y-auto rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] shadow-lg">
                       {vendorOptions
-                        .filter(v => !counterSearch || v.label.toLowerCase().includes(counterSearch.toLowerCase()))
+                        .filter(v => !counterSearch || v.label.toLowerCase().includes(counterSearch.toLowerCase()) || v.value.toLowerCase().includes(counterSearch.toLowerCase()))
                         .map((v, i) => (
                           <button key={i} onClick={() => {
                             setForm(f => ({ ...f, counter: v.value }))
@@ -2286,11 +2333,32 @@ export default function AcctVoucherEntry({ year, type, catId }: { year: number; 
                           }}
                             className="w-full text-left px-3 py-2 text-[13px] text-[var(--text-primary)] hover:bg-primary-50 dark:hover:bg-primary-900/20 cursor-pointer border-none bg-transparent flex items-center justify-between">
                             <span>{v.label}</span>
-                            {v.catName && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 font-bold ml-2 shrink-0">{v.catName}</span>}
+                            <div className="flex items-center gap-1 shrink-0">
+                              {v.vendorType && <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${v.vendorType === '거래처' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : v.vendorType === '개인' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : v.vendorType === '직원' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'}`}>{v.vendorType}</span>}
+                              {v.catName && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 font-bold">{v.catName}</span>}
+                            </div>
                           </button>
                         ))}
-                      {vendorOptions.filter(v => !counterSearch || v.label.toLowerCase().includes(counterSearch.toLowerCase())).length === 0 && (
-                        <div className="px-3 py-2 text-[12px] text-[var(--text-muted)]">검색 결과가 없습니다</div>
+                      {counterSearch.trim() && !vendorOptions.some(v => v.value === counterSearch.trim()) && (
+                        <div className="border-t border-[var(--border-default)] px-3 py-2 flex items-center justify-between">
+                          <div className="text-[11px] font-bold text-[var(--text-muted)] flex items-center gap-1"><PenLine size={11} /> "{counterSearch.trim().length > 3 ? counterSearch.trim().slice(0, 3) + '..' : counterSearch.trim()}" 새로 등록</div>
+                          <div className="flex items-center gap-1">
+                            {(['거래처', '개인'] as const).map(t => (
+                              <button key={t} onClick={() => {
+                                const vendors: any[] = getItem('acct_vendors', [])
+                                const newId = vendors.length > 0 ? Math.max(...vendors.map((x: any) => x.id || 0)) + 1 : 1
+                                vendors.push({ id: newId, name: counterSearch.trim(), vendorType: t })
+                                setItem('acct_vendors', vendors)
+                                setForm(f => ({ ...f, counter: counterSearch.trim() }))
+                                setCounterSearch('')
+                                setShowCounterList(false)
+                                setRefresh(r => r + 1)
+                              }} className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold cursor-pointer transition-all ${t === '거래처' ? 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-amber-100 text-amber-600 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                                {t === '거래처' ? <Building2 size={10} /> : <User size={10} />} {t}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       )}
                     </div>
                   )}

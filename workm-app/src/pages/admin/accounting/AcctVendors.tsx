@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { getItem, setItem } from '../../../utils/storage'
 import { formatNumber } from '../../../utils/format'
 import { fmtPhone, fmtBizNo } from './utils'
-import { ContactRound, Plus, Edit3, Save, X, Building2, User, FileText, Lock, ArrowUp, Mail, MoreHorizontal, Trash2 } from 'lucide-react'
+import { ContactRound, Plus, Edit3, Save, X, Building2, User, FileText, Lock, ArrowUp, Mail, MoreHorizontal, Trash2, CreditCard, Wrench } from 'lucide-react'
 import { createPortal } from 'react-dom'
 
 export interface Vendor {
@@ -34,6 +34,14 @@ export interface Vendor {
   budgetCatId?: string
   /* 하위 호환 */
   address?: string
+  /* 구분 */
+  vendorType?: '거래처' | '개인' | '직원'
+  /* 계좌정보 */
+  bankName?: string
+  accountNumber?: string
+  accountHolder?: string
+  /* 소속 거래처 연결 (개인→거래처, 용역 관계) - 복수 가능 */
+  linkedVendorIds?: number[]
 }
 
 const EMPTY_VENDOR: Omit<Vendor, 'id'> = {
@@ -41,6 +49,8 @@ const EMPTY_VENDOR: Omit<Vendor, 'id'> = {
   ceoName: '', ceoPhone: '', managerName: '', managerRole: '', managerPhone: '', managerEmail: '', managerId: '', managerPw: '',
   bizNo: '', bizType: '', bizCategory: '', invoiceEmail: '', bizRegImage: '',
   memo: '', budgetCatId: '',
+  vendorType: '거래처', bankName: '', accountNumber: '', accountHolder: '',
+  linkedVendorIds: [],
 }
 
 function VendorRow({ v, idx, onView, onEdit, onDelete }: { v: any; idx: number; onView: (v: any) => void; onEdit: (v: any) => void; onDelete: (id: number) => void }) {
@@ -49,7 +59,22 @@ function VendorRow({ v, idx, onView, onEdit, onDelete }: { v: any; idx: number; 
     <tr className="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--bg-muted)] transition-colors cursor-pointer" onClick={() => onView(v)}>
       <td className="px-4 py-3 text-center text-[12px] text-[var(--text-muted)]">{idx + 1}</td>
       <td className="px-4 py-3">
-        <div className="font-bold text-[13px] text-[var(--text-primary)]">{v.name}</div>
+        <div className="font-bold text-[13px] text-[var(--text-primary)] flex items-center gap-1.5">
+          {v.name}
+          {v.vendorType && (() => {
+            const ids: number[] = v.linkedVendorIds || []
+            const isYongyeok = v.vendorType === '개인' && ids.length > 0
+            if (isYongyeok) {
+              return (
+                <>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">용역</span>
+                  <span className="text-[9px] px-1 py-0.5 rounded-full font-bold bg-purple-50 text-purple-500 dark:bg-purple-900/20 dark:text-purple-400 border border-purple-200 dark:border-purple-800/30">{ids.length}개사</span>
+                </>
+              )
+            }
+            return <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${v.vendorType === '거래처' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : v.vendorType === '개인' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'}`}>{v.vendorType}</span>
+          })()}
+        </div>
         {v.bizNo && <div className="text-[11px] text-[var(--text-muted)] font-mono mt-0.5">{v.bizNo}</div>}
       </td>
       <td className="px-4 py-3 text-[13px] text-[var(--text-primary)]">{v.ceoName || '-'}</td>
@@ -88,20 +113,127 @@ export default function AcctVendors() {
   const [viewOpen, setViewOpen] = useState(false)
   const [editId, setEditId] = useState<number | null>(null)
   const [search, setSearch] = useState('')
+  const [filterType, setFilterType] = useState<string>('전체')
   const [form, setForm] = useState<Omit<Vendor, 'id'>>(EMPTY_VENDOR)
   const [viewVendor, setViewVendor] = useState<Vendor | null>(null)
+  const [linkedSearch, setLinkedSearch] = useState('')
+  const [showLinkedList, setShowLinkedList] = useState(false)
+
+  // 초기 샘플 데이터 (한 번만 생성)
+  useEffect(() => {
+    const seeded = getItem<boolean>('acct_vendors_seeded', false)
+    if (seeded) return
+    const existing = getItem<Vendor[]>('acct_vendors', [])
+    const samples: Vendor[] = [
+      // 거래처 (3)
+      { id: 1, name: '(주)삼성전자', vendorType: '거래처', bizNo: '124-81-00998', ceoName: '한종희', phone: '031-200-1114', managerName: '김담당', managerPhone: '010-1234-5678', bankName: '국민은행', accountNumber: '123-456-78901', accountHolder: '(주)삼성전자' },
+      { id: 2, name: '(주)현대오피스', vendorType: '거래처', bizNo: '211-86-12345', ceoName: '박사장', phone: '02-555-1234', managerName: '이영업', managerPhone: '010-2345-6789', bankName: '신한은행', accountNumber: '110-234-567890', accountHolder: '(주)현대오피스' },
+      { id: 3, name: '쿠팡(주)', vendorType: '거래처', bizNo: '120-88-00767', ceoName: '강한승', phone: '1577-7011', managerName: '최매니저', bankName: '우리은행', accountNumber: '1005-801-234567', accountHolder: '쿠팡(주)' },
+      // 개인 (3)
+      { id: 4, name: '김프리', vendorType: '개인', phone: '010-3456-7890', bankName: '카카오뱅크', accountNumber: '3333-01-2345678', accountHolder: '김프리', memo: '프리랜서 디자이너' },
+      { id: 5, name: '이작가', vendorType: '개인', phone: '010-4567-8901', bankName: '토스뱅크', accountNumber: '1000-1234-5678', accountHolder: '이작가', memo: '콘텐츠 작가' },
+      { id: 6, name: '박강사', vendorType: '개인', phone: '010-5678-9012', bankName: '국민은행', accountNumber: '987-654-32101', accountHolder: '박강사', memo: '외부 강사' },
+      // 직원 (3)
+      { id: 7, name: '최대표', vendorType: '직원', phone: '010-1111-2222', bankName: '신한은행', accountNumber: '110-111-222222', accountHolder: '최대표', memo: '대표이사' },
+      { id: 8, name: '한경리', vendorType: '직원', phone: '010-3333-4444', bankName: '국민은행', accountNumber: '123-333-44444', accountHolder: '한경리', memo: '경리 담당' },
+      { id: 9, name: '박팀장', vendorType: '직원', phone: '010-5555-6666', bankName: '우리은행', accountNumber: '1005-555-666666', accountHolder: '박팀장', memo: '기획팀장' },
+      // 거래처 - 용역 (3)
+      { id: 10, name: '클린서비스', vendorType: '거래처', ceoName: '정대표', phone: '02-777-8888', bankName: '기업은행', accountNumber: '012-345-678901', accountHolder: '클린서비스', memo: '청소 용역' },
+      { id: 11, name: '세무법인 한울', vendorType: '거래처', ceoName: '강세무사', phone: '02-888-9999', bizNo: '107-86-54321', bankName: '하나은행', accountNumber: '267-890-123456', accountHolder: '세무법인 한울', memo: '세무/회계 용역' },
+      { id: 12, name: '보안솔루션', vendorType: '거래처', ceoName: '윤보안', phone: '02-999-1111', bankName: '신한은행', accountNumber: '110-999-111111', accountHolder: '보안솔루션', memo: 'IT 보안 용역' },
+    ]
+    // 기존 데이터에 병합 (이름 중복 제외)
+    const existingNames = new Set(existing.map(v => v.name))
+    const maxId = existing.length > 0 ? Math.max(...existing.map(v => v.id || 0)) : 0
+    const toAdd = samples.filter(s => !existingNames.has(s.name)).map((s, i) => ({ ...s, id: maxId + i + 1 }))
+    setItem('acct_vendors', [...existing, ...toAdd])
+    setItem('acct_vendors_seeded', true)
+    setRefresh(r => r + 1)
+  }, [])
+
+  // 마이그레이션: 기존 '용역'/'회사' → '거래처'로 변환
+  useEffect(() => {
+    const all = getItem<Vendor[]>('acct_vendors', [])
+    let changed = false
+    const migrated = all.map(v => {
+      let updated = { ...v }
+      if (!v.vendorType || (v as any).vendorType === '용역' || (v as any).vendorType === '회사') {
+        changed = true
+        updated = { ...updated, vendorType: '거래처' as const }
+      }
+      // linkedVendorId(단수) → linkedVendorIds(배열) 마이그레이션
+      if ((v as any).linkedVendorId && !v.linkedVendorIds) {
+        changed = true
+        updated = { ...updated, linkedVendorIds: [(v as any).linkedVendorId] }
+        delete (updated as any).linkedVendorId
+      }
+      return updated
+    })
+    if (changed) {
+      setItem('acct_vendors', migrated)
+      setRefresh(r => r + 1)
+    }
+  }, [])
+
+  // 사원관리(ws_users) → 직원 거래처 자동 동기화
+  useEffect(() => {
+    const staffList = getItem<any[]>('ws_users', [])
+    if (staffList.length === 0) return
+    const vendors = getItem<Vendor[]>('acct_vendors', [])
+    const existingStaffNames = new Set(vendors.filter(v => v.vendorType === '직원').map(v => v.name))
+    let changed = false
+    let maxId = vendors.length > 0 ? Math.max(...vendors.map(v => v.id || 0)) : 0
+
+    // 기존 직원 정보 업데이트
+    const updated = vendors.map(v => {
+      if (v.vendorType !== '직원') return v
+      const staff = staffList.find(s => s.name === v.name)
+      if (!staff) return v
+      const newPhone = staff.phone || ''
+      const newMemo = [staff.dept, staff.rank].filter(Boolean).join(' · ')
+      if (v.phone !== newPhone || v.memo !== newMemo) {
+        changed = true
+        return { ...v, phone: newPhone, memo: newMemo }
+      }
+      return v
+    })
+
+    // 새 사원 추가 (퇴사자 제외)
+    const toAdd: Vendor[] = []
+    for (const s of staffList) {
+      if (s.resignedAt || s.status === '퇴사') continue
+      if (existingStaffNames.has(s.name)) continue
+      maxId++
+      toAdd.push({
+        id: maxId,
+        name: s.name,
+        vendorType: '직원',
+        phone: s.phone || '',
+        memo: [s.dept, s.rank].filter(Boolean).join(' · '),
+        bankName: '', accountNumber: '', accountHolder: '',
+      })
+      changed = true
+    }
+
+    if (changed) {
+      setItem('acct_vendors', [...updated, ...toAdd])
+      setRefresh(r => r + 1)
+    }
+  }, [])
 
   const vendors = useMemo(() => {
     const all = getItem<Vendor[]>('acct_vendors', [])
-    if (!search.trim()) return all
+    let filtered = all
+    if (filterType !== '전체') filtered = filtered.filter(v => (v as any).vendorType === filterType)
+    if (!search.trim()) return filtered
     const q = search.trim().toLowerCase()
-    return all.filter(v =>
+    return filtered.filter(v =>
       v.name.toLowerCase().includes(q) ||
       v.bizNo?.toLowerCase().includes(q) ||
       v.ceoName?.toLowerCase().includes(q) ||
       v.managerName?.toLowerCase().includes(q)
     )
-  }, [refresh, search])
+  }, [refresh, search, filterType])
 
   const openAdd = () => {
     setEditId(null)
@@ -119,6 +251,8 @@ export default function AcctVendors() {
       bizNo: v.bizNo || '', bizType: v.bizType || '', bizCategory: v.bizCategory || '',
       invoiceEmail: v.invoiceEmail || '', bizRegImage: v.bizRegImage || '', memo: v.memo || '',
       budgetCatId: v.budgetCatId || '',
+      vendorType: v.vendorType || '거래처', bankName: v.bankName || '', accountNumber: v.accountNumber || '', accountHolder: v.accountHolder || '',
+      linkedVendorIds: v.linkedVendorIds || [],
     })
     setModalOpen(true)
   }
@@ -169,42 +303,126 @@ export default function AcctVendors() {
           <div className="p-5 space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={lbl}>◎ 거래처명 *</label>
-                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="(주)한국전자" className={inpCls2} />
+                <label className={lbl}>{form.vendorType === '직원' ? '◎ 사원명 *' : form.vendorType === '개인' ? '◎ 성명 *' : '◎ 거래처명 *'}</label>
+                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={form.vendorType === '직원' ? '홍길동' : form.vendorType === '개인' ? '홍길동' : '(주)한국전자'} className={inpCls2} />
               </div>
+              {/* 구분 */}
               <div>
-                <label className={lbl}>◎ 대표자</label>
-                <input value={form.ceoName} onChange={e => setForm(f => ({ ...f, ceoName: e.target.value }))} placeholder="김대표" className={inpCls2} />
+                <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-1 block">구분</label>
+                <div className="flex items-center gap-1.5">
+                  {(['거래처', '개인', '직원'] as const).map(t => (
+                    <button key={t} type="button" onClick={() => setForm(f => ({ ...f, vendorType: t }))} className={`flex-1 py-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${form.vendorType === t ? (t === '거래처' ? 'bg-blue-500 text-white' : t === '개인' ? 'bg-amber-500 text-white' : 'bg-emerald-500 text-white') : 'border border-[var(--border-default)] text-[var(--text-muted)] hover:bg-[var(--bg-muted)]'}`}>{t}</button>
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={lbl}>◎ 대표전화</label>
-                <input value={form.ceoPhone} onChange={e => setForm(f => ({ ...f, ceoPhone: fmtPhone(e.target.value) }))} placeholder="010-0000-0000" className={inpCls2} maxLength={13} />
+
+            {/* 거래처: 대표자 */}
+            {form.vendorType === '거래처' && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={lbl}>◎ 대표자</label>
+                  <input value={form.ceoName} onChange={e => setForm(f => ({ ...f, ceoName: e.target.value }))} placeholder="김대표" className={inpCls2} />
+                </div>
+                <div>
+                  <label className={lbl}>◎ 대표전화</label>
+                  <input value={form.ceoPhone} onChange={e => setForm(f => ({ ...f, ceoPhone: fmtPhone(e.target.value) }))} placeholder="010-0000-0000" className={inpCls2} maxLength={13} />
+                </div>
               </div>
-              <div>
-                <label className={lbl}>◎ 사업자번호</label>
-                <input value={form.bizNo} onChange={e => setForm(f => ({ ...f, bizNo: fmtBizNo(e.target.value) }))} placeholder="000-00-00000" className={inpCls2} maxLength={12} />
+            </>
+            )}
+
+            {/* 거래처만: 사업자정보 */}
+            {form.vendorType === '거래처' && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={lbl}>◎ 사업자번호</label>
+                  <input value={form.bizNo} onChange={e => setForm(f => ({ ...f, bizNo: fmtBizNo(e.target.value) }))} placeholder="000-00-00000" className={inpCls2} maxLength={12} />
+                </div>
+                <div>
+                  <label className={lbl}>◎ 세금계산서 이메일</label>
+                  <input type="email" value={form.invoiceEmail} onChange={e => setForm(f => ({ ...f, invoiceEmail: e.target.value }))} placeholder="tax@example.com" className={inpCls2} />
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={lbl}>업태</label>
-                <input value={form.bizType} onChange={e => setForm(f => ({ ...f, bizType: e.target.value }))} placeholder="제조, 서비스" className={inpCls2} />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={lbl}>업태</label>
+                  <input value={form.bizType} onChange={e => setForm(f => ({ ...f, bizType: e.target.value }))} placeholder="제조, 서비스" className={inpCls2} />
+                </div>
+                <div>
+                  <label className={lbl}>종목</label>
+                  <input value={form.bizCategory} onChange={e => setForm(f => ({ ...f, bizCategory: e.target.value }))} placeholder="전자부품" className={inpCls2} />
+                </div>
               </div>
-              <div>
-                <label className={lbl}>종목</label>
-                <input value={form.bizCategory} onChange={e => setForm(f => ({ ...f, bizCategory: e.target.value }))} placeholder="전자부품" className={inpCls2} />
-              </div>
-            </div>
+            </>
+            )}
+
+            {/* 공통: 전화번호 */}
             <div>
-              <label className={lbl}>◎ 세금계산서 이메일</label>
-              <input type="email" value={form.invoiceEmail} onChange={e => setForm(f => ({ ...f, invoiceEmail: e.target.value }))} placeholder="tax@example.com" className={inpCls2} />
+              <label className={lbl}>{form.vendorType === '직원' || form.vendorType === '개인' ? '연락처' : '전화번호'}</label>
+              <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: fmtPhone(e.target.value) }))} placeholder={form.vendorType === '직원' || form.vendorType === '개인' ? '010-0000-0000' : '02-0000-0000'} className={inpCls2} maxLength={13} />
             </div>
-            <div>
-              <label className={lbl}>전화번호</label>
-              <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: fmtPhone(e.target.value) }))} placeholder="02-0000-0000" className={inpCls2} maxLength={13} />
-            </div>
+
+            {/* 개인: 소속 거래처 연결 (용역 관계, 복수) */}
+            {form.vendorType === '개인' && (() => {
+              const companyList = getItem<Vendor[]>('acct_vendors', []).filter(v => (v as any).vendorType === '거래처')
+              const ids: number[] = (form as any).linkedVendorIds || []
+              const linkedItems = companyList.filter(v => ids.includes(v.id))
+              const available = companyList.filter(v => !ids.includes(v.id))
+              const q = linkedSearch.trim().toLowerCase()
+              const filtered = q ? available.filter(c => c.name.toLowerCase().includes(q) || (c.ceoName || '').toLowerCase().includes(q)) : available
+              return (
+                <div className="border-t border-dashed border-[var(--border-default)] pt-3 mt-1">
+                  <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-2 block flex items-center gap-1"><Building2 size={12} /> 소속 거래처 (용역)</label>
+                  {/* 이미 연결된 거래처 목록 */}
+                  {linkedItems.length > 0 && (
+                    <div className="space-y-1.5 mb-2">
+                      {linkedItems.map(lk => (
+                        <div key={lk.id} className="flex items-center gap-2">
+                          <div className="flex-1 px-3 py-2 rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-900/15 dark:border-blue-800/30 text-[12px] font-bold text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                            <Building2 size={11} /> {lk.name}
+                            {lk.ceoName && <span className="text-[10px] text-blue-400 font-normal">({lk.ceoName})</span>}
+                          </div>
+                          <button type="button" onClick={() => setForm(f => ({ ...f, linkedVendorIds: ((f as any).linkedVendorIds || []).filter((id: number) => id !== lk.id) } as any))} className="p-1 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 cursor-pointer transition-colors"><X size={13} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* 검색 추가 */}
+                  <div className="relative">
+                    <input
+                      value={linkedSearch}
+                      onChange={e => { setLinkedSearch(e.target.value); setShowLinkedList(true) }}
+                      onFocus={() => setShowLinkedList(true)}
+                      placeholder="거래처명 검색하여 추가..."
+                      className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] outline-none focus:border-blue-400 transition-colors"
+                    />
+                    {showLinkedList && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setShowLinkedList(false)} />
+                        <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl shadow-xl max-h-[180px] overflow-y-auto">
+                          {filtered.length > 0 ? filtered.slice(0, 10).map(c => (
+                            <button key={c.id} type="button" onClick={() => { setForm(f => ({ ...f, linkedVendorIds: [...((f as any).linkedVendorIds || []), c.id] } as any)); setLinkedSearch(''); setShowLinkedList(false) }}
+                              className="w-full text-left px-3 py-2.5 text-[13px] text-[var(--text-primary)] hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-none bg-transparent flex items-center gap-2">
+                              <Building2 size={11} className="text-blue-500 shrink-0" />
+                              <span className="font-bold">{c.name}</span>
+                              {c.ceoName && <span className="text-[11px] text-[var(--text-muted)]">({c.ceoName})</span>}
+                            </button>
+                          )) : (
+                            <div className="px-3 py-3 text-[12px] text-[var(--text-muted)] text-center">{available.length === 0 ? '모든 거래처가 연결됨' : '검색 결과가 없습니다'}</div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* 거래처만: 사업장주소 */}
+            {form.vendorType === '거래처' && (
             <div>
               <label className={lbl}>사업장주소</label>
               <div className="flex gap-2 mb-2">
@@ -214,10 +432,31 @@ export default function AcctVendors() {
               <input value={form.address1} readOnly placeholder="주소" className={`${inpCls2} bg-[var(--bg-muted)] mb-2`} />
               <input value={form.address2} onChange={e => setForm(f => ({ ...f, address2: e.target.value }))} placeholder="상세주소를 입력하세요" className={inpCls2} />
             </div>
+            )}
+
+            {/* 공통: 계좌정보 */}
+            <div className="col-span-2 border-t border-dashed border-[var(--border-default)] pt-3 mt-1">
+              <label className="text-[10.5px] font-bold text-[var(--text-muted)] mb-2 block flex items-center gap-1"><CreditCard size={12} /> 계좌정보</label>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="text-[9px] text-[var(--text-muted)] mb-0.5 block">은행명</label>
+                  <input value={(form as any).bankName || ''} onChange={e => setForm(f => ({ ...f, bankName: e.target.value } as any))} placeholder="은행명" className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] outline-none focus:border-primary-500" />
+                </div>
+                <div>
+                  <label className="text-[9px] text-[var(--text-muted)] mb-0.5 block">계좌번호</label>
+                  <input value={(form as any).accountNumber || ''} onChange={e => setForm(f => ({ ...f, accountNumber: e.target.value } as any))} placeholder="계좌번호" className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] outline-none focus:border-primary-500" />
+                </div>
+                <div>
+                  <label className="text-[9px] text-[var(--text-muted)] mb-0.5 block">예금주</label>
+                  <input value={(form as any).accountHolder || ''} onChange={e => setForm(f => ({ ...f, accountHolder: e.target.value } as any))} placeholder="예금주" className="w-full px-2.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] outline-none focus:border-primary-500" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* 담당자 정보 */}
+        {/* 거래처만: 담당자 정보 */}
+        {form.vendorType === '거래처' && (
         <div className={sectionCard}>
           <div className={sectionTitle}>
             <span className="text-[11px]"><User size={11} /></span>
@@ -256,8 +495,9 @@ export default function AcctVendors() {
             </div>
           </div>
         </div>
+        )}
 
-        {/* 비고 */}
+        {/* 공통: 비고 */}
         <div className={sectionCard}>
           <div className={sectionTitle}>
             <span className="text-[11px]"><Edit3 size={11} /></span>
@@ -269,7 +509,8 @@ export default function AcctVendors() {
         </div>
       </div>
 
-      {/* 우: 사업자등록증 */}
+      {/* 우: 사업자등록증 (거래처만) */}
+      {form.vendorType === '거래처' ? (
       <div className="w-[200px] shrink-0">
         <div className={sectionCard}>
           <div className={sectionTitle}>
@@ -301,6 +542,7 @@ export default function AcctVendors() {
           </div>
         </div>
       </div>
+      ) : null}
     </div>
   )
 
@@ -323,20 +565,22 @@ export default function AcctVendors() {
               <span className="text-[12px] font-extrabold text-primary-500">기본 정보</span>
             </div>
             <div className="px-5 py-1">
-              <Row label="거래처명" value={v.name} />
-              <Row label="사업자번호" value={v.bizNo} />
-              <Row label="대표자" value={v.ceoName} />
-              <Row label="대표전화" value={v.ceoPhone} />
-              <Row label="전화번호" value={v.phone} />
-              <Row label="업태" value={v.bizType} />
-              <Row label="종목" value={v.bizCategory} />
-              <Row label="이메일" value={v.invoiceEmail} />
-              <Row label="우편번호" value={v.zipCode} />
-              <Row label="주소" value={[v.address1 || v.address, v.address2].filter(Boolean).join(' ') || undefined} />
+              <Row label={v.vendorType === '직원' ? '사원명' : v.vendorType === '개인' ? '성명' : '거래처명'} value={v.name} />
+              {(v.vendorType === '거래처') && <Row label="사업자번호" value={v.bizNo} />}
+              {v.vendorType === '거래처' && <Row label="대표자" value={v.ceoName} />}
+              {v.vendorType === '거래처' && <Row label="대표전화" value={v.ceoPhone} />}
+              <Row label={v.vendorType === '직원' || v.vendorType === '개인' ? '연락처' : '전화번호'} value={v.phone} />
+              {v.vendorType === '거래처' && <Row label="업태" value={v.bizType} />}
+              {v.vendorType === '거래처' && <Row label="종목" value={v.bizCategory} />}
+              {v.vendorType === '거래처' && <Row label="이메일" value={v.invoiceEmail} />}
+              {v.vendorType === '거래처' && <Row label="우편번호" value={v.zipCode} />}
+              {v.vendorType === '거래처' && <Row label="주소" value={[v.address1 || v.address, v.address2].filter(Boolean).join(' ') || undefined} />}
+              {(v as any).bankName && <Row label="계좌" value={`${(v as any).bankName} ${(v as any).accountNumber || ''} (${(v as any).accountHolder || ''})`} />}
             </div>
           </div>
 
-          {/* 담당자 정보 */}
+          {/* 거래처: 담당자 정보 */}
+          {v.vendorType === '거래처' && (v.managerName || v.managerPhone) && (
           <div className={sectionCard}>
             <div className={sectionTitle}>
               <span className="text-[11px]"><User size={11} /></span>
@@ -350,6 +594,62 @@ export default function AcctVendors() {
               <Row label="아이디" value={v.managerId} />
             </div>
           </div>
+          )}
+
+          {/* 거래처: 소속 개인 목록 */}
+          {v.vendorType === '거래처' && (() => {
+            const allV = getItem<Vendor[]>('acct_vendors', [])
+            const linked = allV.filter(p => ((p as any).linkedVendorIds || []).includes(v.id))
+            if (linked.length === 0) return null
+            return (
+              <div className={sectionCard}>
+                <div className={sectionTitle}>
+                  <span className="text-[11px]"><User size={11} /></span>
+                  <span className="text-[12px] font-extrabold text-amber-500">소속 인원 (용역)</span>
+                </div>
+                <div className="px-5 py-2">
+                  <div className="space-y-1.5">
+                    {linked.map(p => (
+                      <div key={p.id} className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30">
+                        <User size={11} className="text-amber-500 shrink-0" />
+                        <span className="text-[12px] font-bold text-[var(--text-primary)]">{p.name}</span>
+                        {p.phone && <span className="text-[11px] text-[var(--text-muted)]">{p.phone}</span>}
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600 font-bold ml-auto">개인</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* 개인: 소속 거래처 (복수) */}
+          {v.vendorType === '개인' && ((v as any).linkedVendorIds || []).length > 0 && (() => {
+            const allV = getItem<Vendor[]>('acct_vendors', [])
+            const linkedList = allV.filter(y => ((v as any).linkedVendorIds || []).includes(y.id))
+            if (linkedList.length === 0) return null
+            return (
+              <div className={sectionCard}>
+                <div className={sectionTitle}>
+                  <span className="text-[11px]"><Building2 size={11} /></span>
+                  <span className="text-[12px] font-extrabold text-blue-500">소속 거래처 (용역)</span>
+                </div>
+                <div className="px-5 py-2">
+                  <div className="space-y-1.5">
+                    {linkedList.map(lk => (
+                      <div key={lk.id} className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30">
+                        <Building2 size={11} className="text-blue-500 shrink-0" />
+                        <span className="text-[12px] font-bold text-[var(--text-primary)]">{lk.name}</span>
+                        {lk.ceoName && <span className="text-[11px] text-[var(--text-muted)]">({lk.ceoName})</span>}
+                        {lk.phone && <span className="text-[11px] text-[var(--text-muted)]">{lk.phone}</span>}
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-bold ml-auto">거래처</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
 
           {/* 비고 */}
           <div className={sectionCard}>
@@ -363,7 +663,8 @@ export default function AcctVendors() {
           </div>
         </div>
 
-        {/* 우: 사업자등록증 */}
+        {/* 우: 사업자등록증 (거래처만) */}
+        {v.vendorType === '거래처' && (
         <div className="w-[200px] shrink-0">
           <div className={sectionCard}>
             <div className={sectionTitle}>
@@ -388,6 +689,7 @@ export default function AcctVendors() {
             </div>
           </div>
         </div>
+        )}
       </div>
     )
   }
@@ -404,6 +706,13 @@ export default function AcctVendors() {
             <div className="text-[11.5px] opacity-85">거래처 정보를 등록하고 관리합니다</div>
           </div>
         </div>
+      </div>
+
+      {/* 구분별 탭 */}
+      <div className="flex items-center gap-1 mb-3">
+        {['전체', '거래처', '개인', '직원'].map(t => (
+          <button key={t} onClick={() => setFilterType(t)} className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${filterType === t ? 'bg-primary-500 text-white shadow-sm' : 'text-[var(--text-muted)] hover:bg-[var(--bg-muted)]'}`}>{t}</button>
+        ))}
       </div>
 
       {/* 검색 + 등록 버튼 */}
